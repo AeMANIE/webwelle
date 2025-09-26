@@ -95,18 +95,56 @@ export default function MehrwertsteuerRechner() {
   };
 
   return (
-    <div className="py-20 bg-white">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <>
+      {/* Structured Data für SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "Mehrwertsteuer-Rechner",
+            "description": "Kostenloser Mehrwertsteuer-Rechner für Deutschland, Österreich und Schweiz. Berechnen Sie Brutto, Netto und MwSt mit verschiedenen Steuersätzen.",
+            "url": "https://webwelle.com/mehrwertsteuer",
+            "applicationCategory": "FinanceApplication",
+            "operatingSystem": "Web Browser",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "EUR"
+            },
+            "creator": {
+              "@type": "Organization",
+              "name": "WebWelle",
+              "url": "https://webwelle.com"
+            },
+            "featureList": [
+              "Mehrwertsteuer berechnen",
+              "Brutto zu Netto Umrechnung",
+              "Netto zu Brutto Umrechnung",
+              "Deutschland 19% und 7% Steuersatz",
+              "Österreich 20% und 10% Steuersatz",
+              "Schweiz 8.1%, 3.8% und 2.6% Steuersatz",
+              "Eigener Steuersatz eingeben",
+              "Copy-to-Clipboard Funktion"
+            ],
+            "screenshot": "https://webwelle.com/logo.png"
+          })
+        }}
+      />
+      
+      <div className="py-20 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
+        <header className="text-center mb-12">
           <div className="flex justify-center mb-6">
-            <Calculator className="w-16 h-16 text-primary" />
+            <Calculator className="w-16 h-16 text-primary" aria-hidden="true" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-            Mehrwertsteuer-Rechner
+            Mehrwertsteuer-Rechner 2024
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto font-light leading-relaxed">
-            Einfach Brutto, Netto und Mehrwertsteuer berechnen. Kostenloser MwSt-Rechner mit verschiedenen Steuersätzen.
+            Einfach Brutto, Netto und Mehrwertsteuer berechnen. Kostenloser MwSt-Rechner mit verschiedenen Steuersätzen für Deutschland, Österreich und Schweiz.
           </p>
 
           {/* CTA-Bereich */}
@@ -138,10 +176,10 @@ export default function MehrwertsteuerRechner() {
           <p className="text-lg text-gray-700 max-w-4xl mx-auto mt-12 leading-relaxed">
             Mit dem kostenlosen Mehrwertsteuer-Rechner von WebWelle lässt sich die Mehrwertsteuer für beliebige Beträge blitzschnell berechnen – ob für Netto, Brutto oder nur den Mehrwertsteuer-Betrag. Der Rechner unterstützt die üblichen deutschen Steuersätze von 19% und 7%, egal ob Einkauf (Netto) oder Verkauf (Brutto). Einfach Betrag und Mehrwertsteuersatz wählen: Sofort sehen Sie Netto-, Brutto- und Mehrwertsteuerwert inklusive verständlichem Rechenweg und Formel.
           </p>
-        </div>
+        </header>
 
             {/* Rechner */}
-            <div className="bg-gray-50 rounded-2xl p-8 shadow-lg border border-gray-200">
+            <main className="bg-gray-50 rounded-2xl p-8 shadow-lg border border-gray-200">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
                 MwSt-Rechner: Einfach die Mehrwertsteuer berechnen
               </h2>
@@ -150,7 +188,7 @@ export default function MehrwertsteuerRechner() {
               </p>
 
           {/* Steuersatz Auswahl */}
-          <div className="mb-8">
+          <section className="mb-8" aria-label="Mehrwertsteuersatz auswählen">
             <label className="block text-sm font-semibold text-gray-900 mb-4">
               Mehrwertsteuer für:
             </label>
@@ -246,10 +284,10 @@ export default function MehrwertsteuerRechner() {
               />
               <span className="text-sm text-gray-600">%</span>
             </div>
-          </div>
+          </section>
 
           {/* Berechnung */}
-          <div className="bg-white rounded-xl p-8 border border-gray-200">
+          <section className="bg-white rounded-xl p-8 border border-gray-200" aria-label="Mehrwertsteuer berechnen">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Netto */}
               <div className="text-center">
@@ -271,6 +309,7 @@ export default function MehrwertsteuerRechner() {
                     }}
                     className="w-full px-4 py-3 text-center text-2xl font-bold border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     placeholder="100"
+                    aria-label="Nettobetrag eingeben"
                   />
                   <button
                     onClick={() => copyToClipboard(result?.netto.toFixed(2) || '0', 'netto')}
@@ -329,6 +368,7 @@ export default function MehrwertsteuerRechner() {
                     }}
                     className="w-full px-4 py-3 text-center text-2xl font-bold border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     placeholder="119"
+                    aria-label="Bruttobetrag eingeben"
                   />
                   <button
                     onClick={() => copyToClipboard(result?.brutto.toFixed(2) || '0', 'brutto')}
@@ -420,11 +460,11 @@ export default function MehrwertsteuerRechner() {
                   </div>
                 </div>
               )}
-            </div>
-          </div>
+            </section>
+          </main>
 
           {/* Informationsbereich */}
-          <div className="mt-16 max-w-4xl mx-auto">
+          <section className="mt-16 max-w-4xl mx-auto" aria-label="Informationen zur Mehrwertsteuer">
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
                 Was ist die Mehrwertsteuer?
@@ -451,10 +491,11 @@ export default function MehrwertsteuerRechner() {
                 </li>
               </ul>
             </div>
-          </div>
+          </section>
 
 
+        </div>
       </div>
-    </div>
+    </>
   );
 }
