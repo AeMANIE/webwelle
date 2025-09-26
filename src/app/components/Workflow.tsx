@@ -40,45 +40,44 @@ export default function Workflow() {
   ];
 
   return (
-    <section id="arbeitsweise" className="py-20 bg-white">
+    <section id="arbeitsweise" className="py-20 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
             So einfach geht's
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto font-light leading-relaxed">
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed">
             Von der ersten Idee bis zum erfolgreichen Launch - unser bewährter Prozess 
             macht die Zusammenarbeit einfach und transparent.
           </p>
         </div>
 
         {/* Desktop Timeline */}
-        <div className="hidden lg:block">
+        <div className="hidden xl:block">
           <div className="relative">
             {/* Timeline Line */}
-            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-primary/30 transform -translate-y-1/2"></div>
+            <div className="absolute top-24 left-8 right-8 h-0.5 bg-primary/30"></div>
             
-            <div className="grid grid-cols-5 gap-8">
+            <div className="grid grid-cols-5 gap-4">
               {steps.map((step, index) => (
                 <div key={index} className="relative">
                   {/* Timeline Dot */}
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-primary rounded-full border-4 border-background shadow-lg"></div>
+                  <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-primary rounded-full border-4 border-background shadow-lg flex items-center justify-center">
+                    <span className="text-primary-foreground text-sm font-bold">{step.number}</span>
+                  </div>
                   
                   {/* Step Content */}
-                  <div className="text-center mt-8">
+                  <div className="text-center pt-16">
                     <div className="flex justify-center mb-4">
-                      <step.icon className="w-8 h-8 text-gray-700" />
+                      <step.icon className="w-8 h-8 text-primary" />
                     </div>
-                    <div className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mx-auto mb-4">
-                      {step.number}
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    <h3 className="text-lg font-semibold text-foreground mb-2 leading-tight">
                       {step.title}
                     </h3>
-                    <p className="text-primary font-medium text-sm mb-2">
+                    <p className="text-primary font-medium text-sm mb-3">
                       {step.description}
                     </p>
-                    <p className="text-gray-600 text-xs leading-relaxed font-light">
+                    <p className="text-muted-foreground text-xs leading-relaxed font-light">
                       {step.details}
                     </p>
                   </div>
@@ -88,28 +87,61 @@ export default function Workflow() {
           </div>
         </div>
 
-        {/* Mobile Timeline */}
-        <div className="lg:hidden space-y-8">
-          {steps.map((step, index) => (
-            <div key={index} className="flex items-start space-x-4">
-              <div className="flex-shrink-0">
-                <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold">
-                  {step.number}
+        {/* Tablet Timeline */}
+        <div className="hidden lg:block xl:hidden">
+          <div className="grid grid-cols-2 gap-8">
+            {steps.map((step, index) => (
+              <div key={index} className="bg-card rounded-xl p-6 border border-border">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold">
+                      {step.number}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-center mb-3">
+                      <step.icon className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      {step.title}
+                    </h3>
+                    <p className="text-primary font-medium text-sm mb-2">
+                      {step.description}
+                    </p>
+                    <p className="text-muted-foreground text-sm leading-relaxed font-light">
+                      {step.details}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="flex-1">
-                <div className="flex justify-center mb-3">
-                  <step.icon className="w-6 h-6 text-gray-700" />
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile Timeline */}
+        <div className="lg:hidden space-y-6">
+          {steps.map((step, index) => (
+            <div key={index} className="bg-card rounded-xl p-6 border border-border">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold">
+                    {step.number}
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {step.title}
-                </h3>
-                <p className="text-primary font-medium text-sm mb-2">
-                  {step.description}
-                </p>
-                <p className="text-gray-600 text-sm leading-relaxed font-light">
-                  {step.details}
-                </p>
+                <div className="flex-1">
+                  <div className="flex justify-center mb-3">
+                    <step.icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    {step.title}
+                  </h3>
+                  <p className="text-primary font-medium text-sm mb-2">
+                    {step.description}
+                  </p>
+                  <p className="text-muted-foreground text-sm leading-relaxed font-light">
+                    {step.details}
+                  </p>
+                </div>
               </div>
             </div>
           ))}
@@ -117,35 +149,35 @@ export default function Workflow() {
 
         {/* Benefits of our process */}
         <div className="mt-16">
-          <div className="bg-gray-50 rounded-2xl p-8 shadow-lg border border-gray-200">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+          <div className="bg-card/50 rounded-2xl p-8 shadow-lg border border-border">
+            <h3 className="text-2xl font-bold text-foreground mb-6 text-center">
               Warum unser Prozess funktioniert
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="text-center">
                 <div className="flex justify-center mb-3">
-                  <Clock className="w-6 h-6 text-gray-700" />
+                  <Clock className="w-6 h-6 text-primary" />
                 </div>
-                <h4 className="font-semibold text-gray-900 mb-2">Zeit sparen</h4>
-                <p className="text-gray-600 text-sm">
+                <h4 className="font-semibold text-foreground mb-2">Zeit sparen</h4>
+                <p className="text-muted-foreground text-sm">
                   Klare Struktur und bewährte Abläufe sorgen für effiziente Projektabwicklung.
                 </p>
               </div>
               <div className="text-center">
                 <div className="flex justify-center mb-3">
-                  <Eye className="w-6 h-6 text-gray-700" />
+                  <Eye className="w-6 h-6 text-primary" />
                 </div>
-                <h4 className="font-semibold text-gray-900 mb-2">Transparenz</h4>
-                <p className="text-gray-600 text-sm">
+                <h4 className="font-semibold text-foreground mb-2">Transparenz</h4>
+                <p className="text-muted-foreground text-sm">
                   Sie wissen immer, wo Ihr Projekt steht und was als nächstes passiert.
                 </p>
               </div>
               <div className="text-center">
                 <div className="flex justify-center mb-3">
-                  <CheckCircle className="w-6 h-6 text-gray-700" />
+                  <CheckCircle className="w-6 h-6 text-primary" />
                 </div>
-                <h4 className="font-semibold text-gray-900 mb-2">Qualität</h4>
-                <p className="text-gray-600 text-sm">
+                <h4 className="font-semibold text-foreground mb-2">Qualität</h4>
+                <p className="text-muted-foreground text-sm">
                   Jeder Schritt wird sorgfältig geplant und umgesetzt für optimale Ergebnisse.
                 </p>
               </div>
@@ -155,7 +187,7 @@ export default function Workflow() {
 
         {/* CTA */}
         <div className="mt-12 text-center">
-          <p className="text-lg text-gray-600 mb-6">
+          <p className="text-lg text-muted-foreground mb-6">
             Bereit, Ihren digitalen Erfolg zu starten?
           </p>
           <a
