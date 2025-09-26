@@ -1,0 +1,130 @@
+Hier ist die **Collections-Übersicht** mit jeweiligem Zweck/Beschreibung für dein Projekt:
+
+| Collection         | Zweck / Beschreibung                                                                                       |
+|--------------------|-----------------------------------------------------------------------------------------------------------|
+| customers          | Verwaltung aller Kundendaten, Login, Verträge, Buchungen und Rechnungen                                   |
+| sellers            | Verwaltung der Verkäuferdaten, Onboarding mit Dokumenten, Verträge, Provisionsübersicht                   |
+| customer_invoices  | Speicherung und Verwaltung aller Rechnungen, die an Kunden ausgestellt werden                             |
+| seller_invoices    | Speicherung und Verwaltung aller Provisionsabrechnungen und Rechnungen für Verkäufer                      |
+| bookings           | Verwaltung aller Buchungen durch Kunden, inkl. gewünschtem Termin, Produkt und zugeordnetem Verkäufer      |
+| capacities         | Abbildung der verfügbaren Kapazitäten/Slots je Verkäufer und Tag, für die Terminplanung                   |
+| products           | Übersicht und Verwaltung aller angebotenen Produkte und Dienstleistungen, inkl. Preis, Typ, Aktionen      |
+| contracts          | Speicherung und Verwaltung aller digital unterschriebenen Verträge für Kunden und Verkäufer                |
+| promotions         | Verwaltung von Promo-Codes, Rabatten und Aktionen für Produkte und Dienstleistungen                        |
+
+
+
+### 1. Kunden (customers)
+
+| Feldname         | Typ         | Beschreibung                         |
+|------------------|-------------|--------------------------------------|
+| id               | UUID        | Eindeutige Kunden-ID                 |
+| email            | String      | E-Mail-Adresse                       |
+| password         | String      | Verschlüsseltes Passwort             |
+| name             | String      | Name des Kunden                      |
+| phone            | String      | Telefonnummer                        |
+| registered_at    | DateTime    | Registrierungsdatum                  |
+| status           | String      | Aktiv, Inaktiv, Gesperrt             |
+| contracts        | M2M         | Verknüpfte Verträge                  |
+
+### 2. Verkäufer (sellers)
+
+| Feldname         | Typ         | Beschreibung                         |
+|------------------|-------------|--------------------------------------|
+| id               | UUID        | Eindeutige Verkäufer-ID              |
+| email            | String      | E-Mail-Adresse                       |
+| password         | String      | Verschlüsseltes Passwort             |
+| name             | String      | Name des Verkäufers                  |
+| phone            | String      | Telefonnummer                        |
+| registered_at    | DateTime    | Registrierungsdatum                  |
+| status           | String      | Aktiv, Inaktiv, Gesperrt             |
+| business_doc     | File        | Gewerbeschein                        |
+| id_doc           | File        | Ausweisdokument                      |
+| iban             | String      | IBAN                                 |
+| police_clearance | File        | Führungszeugnis                      |
+| contracts        | M2M         | Verknüpfte Verträge                  |
+
+### 3. Kunden-Rechnungen (customer_invoices)
+
+| Feldname         | Typ         | Beschreibung                         |
+|------------------|-------------|--------------------------------------|
+| id               | UUID        | Rechnungs-ID                         |
+| customer_id      | M2O         | Verknüpfte Kunden-ID                 |
+| order_id         | M2O         | Verknüpfte Bestellung                |
+| amount           | Decimal     | Rechnungsbetrag                      |
+| status           | String      | Offen, Bezahlt, Überfällig           |
+| issued_at        | DateTime    | Ausstellungsdatum                    |
+| pdf              | File        | PDF-Datei der Rechnung               |
+
+### 4. Verkäufer-Rechnungen (seller_invoices)
+
+| Feldname         | Typ         | Beschreibung                         |
+|------------------|-------------|--------------------------------------|
+| id               | UUID        | Rechnungs-ID                         |
+| seller_id        | M2O         | Verknüpfte Verkäufer-ID              |
+| commission_id    | M2O         | Zugehörige Provision                 |
+| amount           | Decimal     | Rechnungsbetrag                      |
+| status           | String      | Offen, Bezahlt, Überfällig           |
+| issued_at        | DateTime    | Ausstellungsdatum                    |
+| pdf              | File        | PDF-Datei der Rechnung               |
+
+### 5. Buchungen (bookings)
+
+| Feldname         | Typ         | Beschreibung                         |
+|------------------|-------------|--------------------------------------|
+| id               | UUID        | Buchungs-ID                          |
+| customer_id      | M2O         | Verknüpfte Kunden-ID                 |
+| product_id       | M2O         | Gebuchtes Produkt                    |
+| seller_id        | M2O         | Optional: zugeordneter Verkäufer     |
+| status           | String      | Offen, Bestätigt, Abgelehnt          |
+| preferred_date   | DateTime    | Wunsch-/Vorschlagstermin             |
+| notes            | Text        | Zusätzliche Infos des Kunden         |
+| created_at       | DateTime    | Buchungsdatum                        |
+
+### 6. Kapazitäten (capacities)
+
+| Feldname         | Typ         | Beschreibung                         |
+|------------------|-------------|--------------------------------------|
+| id               | UUID        | Kapazitäts-ID                        |
+| seller_id        | M2O         | Verkäufer, dem die Kapazität gehört  |
+| date             | Date        | Datum                                |
+| max_bookings     | Integer     | Maximale Buchungen an diesem Tag     |
+| booked           | Integer     | Bereits gebuchte Plätze              |
+
+### 7. Produkte (products)
+
+| Feldname         | Typ         | Beschreibung                         |
+|------------------|-------------|--------------------------------------|
+| id               | UUID        | Produkt-ID                           |
+| name             | String      | Produktname                          |
+| description      | Text        | Beschreibung                         |
+| price            | Decimal     | Preis                                |
+| type             | String      | Einmalzahlung, Abo                   |
+| interval         | String      | Monatlich, Jährlich (bei Abo)        |
+| active           | Boolean     | Produkt aktiv/inaktiv                |
+| promo            | M2M         | Verknüpfte Promotionen               |
+
+### 8. Verträge (contracts)
+
+| Feldname         | Typ         | Beschreibung                         |
+|------------------|-------------|--------------------------------------|
+| id               | UUID        | Vertrags-ID                          |
+| user_id          | M2O         | Kunde oder Verkäufer                 |
+| type             | String      | Kaufvertrag, Verkäufervertrag        |
+| signed_at        | DateTime    | Datum der Unterschrift               |
+| pdf              | File        | Vertrag als PDF                      |
+| status           | String      | Signiert, Offen                      |
+
+### 9. Promotionen (promotions)
+
+| Feldname         | Typ         | Beschreibung                         |
+|------------------|-------------|--------------------------------------|
+| id               | UUID        | Promo-ID                             |
+| code             | String      | Promo-Code                           |
+| discount_type    | String      | Prozentual, Festbetrag               |
+| discount_value   | Decimal     | Rabattwert                           |
+| valid_from       | DateTime    | Gültig ab                            |
+| valid_until      | DateTime    | Gültig bis                           |
+| active           | Boolean     | Aktiv/Inaktiv                        |
+
+
