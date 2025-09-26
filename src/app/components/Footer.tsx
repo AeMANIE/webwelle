@@ -92,6 +92,7 @@ export default function Footer() {
               <li><a href="/datenschutz" className="text-muted-foreground hover:text-primary transition-colors font-light">Datenschutz</a></li>
               <li><a href="/agb" className="text-muted-foreground hover:text-primary transition-colors font-light">AGB</a></li>
               <li><a href="/widerruf" className="text-muted-foreground hover:text-primary transition-colors font-light">Widerruf</a></li>
+              <li><Link href="/mehrwertsteuer" className="text-muted-foreground hover:text-primary transition-colors font-light">MwSt-Rechner</Link></li>
             </ul>
           </div>
         </div>
