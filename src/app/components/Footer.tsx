@@ -11,18 +11,18 @@ export default function Footer() {
             <div className="mb-6">
               <div className="flex items-center space-x-1 mb-4">
                 <Image
-                  src="/logo250.png"
+                  src="/webwellelogo.svg"
                   alt="WebWelle Logo"
                   width={40}
                   height={40}
-                  className="h-20 w-auto"
+                  className="h-12 sm:h-16 md:h-20 w-auto flex-shrink-0"
                 />
                 <Image
                   src="/webwellecom-weissihr.svg"
                   alt="WebWelle"
                   width={120}
                   height={32}
-                  className="h-20 w-auto"
+                  className="h-8 sm:h-12 md:h-16 lg:h-20 w-auto max-w-[200px] sm:max-w-[250px] md:max-w-none"
                 />
               </div>
               <p className="text-muted-foreground text-lg font-light leading-relaxed">

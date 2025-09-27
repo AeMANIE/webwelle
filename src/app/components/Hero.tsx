@@ -104,8 +104,16 @@ export default function Hero() {
         }}
         preload="auto"
         controls={false}
+        aria-label="WebWelle Hintergrundvideo - Welle Animation"
       >
         <source src={isMobile ? "/MeinFilm.mp4" : "/Welle3.mp4"} type="video/mp4" />
+        <track
+          kind="captions"
+          srcLang="de"
+          label="Deutsche Untertitel"
+          src={null}
+          default
+        />
         Ihr Browser unterstützt das Video-Element nicht.
       </video>
       

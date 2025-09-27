@@ -27,7 +27,7 @@ export default function Header() {
             >
               {/* Logo Bild */}
               <Image
-                src="/logo250.png"
+                src="/webwellelogo.svg"
                 alt="WebWelle Logo"
                 width={50}
                 height={50}
@@ -43,6 +43,7 @@ export default function Header() {
                   width={120}
                   height={32}
                   className="h-15 w-auto"
+                  priority
                 />
               </div>
             </Link>
@@ -85,8 +86,10 @@ export default function Header() {
             <button
               onClick={toggleMenu}
               className="text-foreground hover:text-primary focus:outline-none focus:text-primary"
+              aria-label={isMenuOpen ? "Navigation schließen" : "Navigation öffnen"}
+              aria-expanded={isMenuOpen}
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 {isMenuOpen ? (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 ) : (

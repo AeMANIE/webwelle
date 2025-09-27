@@ -98,16 +98,16 @@ export default function FAQ() {
 
         {/* Contact CTA */}
         <div className="mt-12 text-center">
-          <div className="bg-primary/10 rounded-2xl p-4 sm:p-6 md:p-8 border border-primary/20">
-            <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-3 sm:mb-4">
+          <div className="bg-primary/10 rounded-2xl p-6 sm:p-8 md:p-10 border border-primary/20">
+            <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-4 sm:mb-6">
               Haben Sie weitere Fragen?
             </h3>
-            <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 px-2">
+            <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8 px-2 leading-relaxed">
               Wir beantworten gerne alle Ihre Fragen in einem kostenlosen Erstgespräch.
             </p>
             <a
               href="#cta"
-              className="inline-block bg-primary text-primary-foreground px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-sm sm:text-base md:text-lg whitespace-nowrap"
+              className="inline-block bg-primary text-primary-foreground px-6 sm:px-8 md:px-10 py-3 sm:py-4 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-sm sm:text-base md:text-lg whitespace-nowrap"
             >
               Kostenloses Gespräch vereinbaren
             </a>

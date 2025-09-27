@@ -141,7 +141,7 @@ export default function MehrwertsteuerRechner() {
             <Calculator className="w-16 h-16 text-primary" aria-hidden="true" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-            Mehrwertsteuer-Rechner 2024
+            Mehrwertsteuer Rechner
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto font-light leading-relaxed">
             Einfach Brutto, Netto und Mehrwertsteuer berechnen. Kostenloser MwSt-Rechner mit verschiedenen Steuersätzen für Deutschland, Österreich und Schweiz.
@@ -328,7 +328,7 @@ export default function MehrwertsteuerRechner() {
               {/* MwSt-Betrag */}
               <div className="text-center">
                 <label className="block text-sm font-semibold text-gray-900 mb-3">
-                  + Mwst-Betrag:
+                  + Mwst-Betrag ({steuersatz}%):
                 </label>
                 <div className="relative">
                   <div className="w-full px-4 py-3 text-center text-2xl font-bold border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
@@ -425,7 +425,7 @@ export default function MehrwertsteuerRechner() {
                     
                     {/* Komplette Zusammenfassung zum Kopieren */}
                     <div className="bg-gray-50 rounded-lg p-4 border border-gray-300">
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-3">
                         <span className="text-sm font-semibold text-gray-700">Komplette Berechnung:</span>
                         <button
                           onClick={() => copyToClipboard(
@@ -435,7 +435,7 @@ export default function MehrwertsteuerRechner() {
                             `Brutto (mit MwSt): ${result.brutto.toFixed(2)} €`,
                             'summary'
                           )}
-                          className="flex items-center space-x-2 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+                          className="flex items-center justify-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium w-full sm:w-auto"
                         >
                           {copied === 'summary' ? (
                             <>
@@ -450,7 +450,7 @@ export default function MehrwertsteuerRechner() {
                           )}
                         </button>
                       </div>
-                      <div className="font-mono text-sm text-gray-800 bg-gray-100 p-3 rounded border select-none cursor-default">
+                      <div className="font-mono text-xs sm:text-sm text-gray-800 bg-gray-100 p-3 rounded border select-none cursor-default overflow-x-auto">
                         <div>Mehrwertsteuer-Berechnung ({result.mwst}%):</div>
                         <div>Netto (ohne MwSt): {result.netto.toFixed(2)} €</div>
                         <div>MwSt-Betrag: {result.mwstBetrag.toFixed(2)} €</div>
