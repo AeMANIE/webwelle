@@ -79,9 +79,11 @@ export default function CookieBanner() {
                 height={32}
                 className="h-8 w-auto"
               />
-              <img
+              <Image
                 src="/webwellecom-weissihr.svg"
                 alt="WebWelle"
+                width={120}
+                height={32}
                 className="h-6 w-auto"
               />
             </div>

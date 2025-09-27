@@ -7,7 +7,6 @@ export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playCount, setPlayCount] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-  const [videoLoaded, setVideoLoaded] = useState(false);
 
   useEffect(() => {
     // Prüfe ob es sich um ein mobiles Gerät handelt
@@ -27,8 +26,6 @@ export default function Hero() {
     if (!video) return;
 
     const handleLoadedData = () => {
-      setVideoLoaded(true);
-      
       // Video starten (immer stumm)
       video.muted = true;
       video.volume = 0;
@@ -55,7 +52,7 @@ export default function Hero() {
     };
 
     const handleLoadedMetadata = () => {
-      setVideoLoaded(true);
+      // Video-Metadaten geladen
     };
 
     const handleCanPlay = () => {
@@ -111,7 +108,7 @@ export default function Hero() {
           kind="captions"
           srcLang="de"
           label="Deutsche Untertitel"
-          src={null}
+          src=""
           default
         />
         Ihr Browser unterstützt das Video-Element nicht.
