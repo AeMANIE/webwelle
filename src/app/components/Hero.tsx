@@ -6,13 +6,20 @@ import { Zap, DollarSign, Palette } from 'lucide-react';
 export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playCount, setPlayCount] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
+  const [, setIsMobile] = useState(false);
+  const [videoSrc, setVideoSrc] = useState("/Aa.mp4");
 
   useEffect(() => {
     // Prüfe ob es sich um ein mobiles Gerät handelt
     const checkMobile = () => {
       const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      console.log('Mobile check:', { 
+        width: window.innerWidth, 
+        userAgent: navigator.userAgent, 
+        isMobile: isMobileDevice 
+      });
       setIsMobile(isMobileDevice);
+      setVideoSrc(isMobileDevice ? "/Aa90.mp4" : "/Aa.mp4");
     };
     
     checkMobile();
@@ -49,6 +56,8 @@ export default function Hero() {
 
     const handleError = (e: Event) => {
       console.error('Video error:', e);
+      console.error('Video src:', video.src);
+      console.error('Video currentSrc:', video.currentSrc);
     };
 
     const handleLoadedMetadata = () => {
@@ -103,14 +112,7 @@ export default function Hero() {
         controls={false}
         aria-label="WebWelle Hintergrundvideo - Welle Animation"
       >
-        <source src={isMobile ? "/MeinFilm.mp4" : "/Welle3.mp4"} type="video/mp4" />
-        <track
-          kind="captions"
-          srcLang="de"
-          label="Deutsche Untertitel"
-          src=""
-          default
-        />
+        <source src={videoSrc} type="video/mp4" />
         Ihr Browser unterstützt das Video-Element nicht.
       </video>
       
