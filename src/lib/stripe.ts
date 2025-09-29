@@ -1,21 +1,23 @@
-import { loadStripe, Stripe } from '@stripe/stripe-js';
-
 // Stripe public key - sollte aus Umgebungsvariablen kommen
 const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_publishable_key_here';
 
-// Lazy loading für Stripe - nur laden wenn benötigt
-let stripePromise: Promise<Stripe | null> | null = null;
+// KEINE Stripe-Imports im initialen Bundle!
 
-export const getStripe = (): Promise<Stripe | null> => {
-  if (!stripePromise) {
-    stripePromise = loadStripe(stripePublishableKey, {
-      // Optimierte Konfiguration für bessere Performance
-      locale: 'de',
-      // Nur notwendige Features laden
-      stripeAccount: undefined,
-    });
+// Stripe nur laden wenn Checkout-Button geklickt wird
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const loadStripeOnDemand = async (): Promise<any> => {
+  if (typeof window === 'undefined') return null;
+  
+  // Prüfen ob Stripe bereits geladen ist
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if ((window as any).Stripe) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (window as any).Stripe(stripePublishableKey);
   }
-  return stripePromise;
+  
+  // Dynamisch laden - nur wenn wirklich benötigt
+  const { loadStripe } = await import('@stripe/stripe-js');
+  return loadStripe(stripePublishableKey, { locale: 'de' });
 };
 
 // Preis-Konfiguration
@@ -86,20 +88,4 @@ export async function createCheckoutSession(
   }
 }
 
-// Stripe Checkout weiterleiten
-export async function redirectToCheckout(sessionId: string) {
-  const stripe = await getStripe();
-  
-  if (!stripe) {
-    throw new Error('Stripe konnte nicht geladen werden');
-  }
-
-  const { error } = await stripe.redirectToCheckout({
-    sessionId,
-  });
-
-  if (error) {
-    console.error('Fehler beim Weiterleiten zu Stripe:', error);
-    throw error;
-  }
-}
+// Diese Funktion wird nicht mehr benötigt - Stripe wird on-demand geladen

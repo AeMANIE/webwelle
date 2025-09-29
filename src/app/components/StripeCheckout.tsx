@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { createCheckoutSession, redirectToCheckout } from '@/lib/stripe';
+import { createCheckoutSession, loadStripeOnDemand } from '@/lib/stripe';
 
 interface StripeCheckoutProps {
   packageType: 'nextjs' | 'wordpress';
@@ -32,7 +32,7 @@ export default function StripeCheckout({
     setError(null);
 
     try {
-      // Stripe nur laden wenn tatsächlich benötigt
+      // Session erstellen
       const sessionId = await createCheckoutSession(
         packageType,
         isMonthly,
@@ -41,7 +41,21 @@ export default function StripeCheckout({
         formData
       );
       
-      await redirectToCheckout(sessionId);
+      // Stripe erst JETZT laden
+      const stripe = await loadStripeOnDemand();
+      
+      if (!stripe) {
+        throw new Error('Stripe konnte nicht geladen werden');
+      }
+
+      // Zu Stripe Checkout weiterleiten
+      const { error } = await stripe.redirectToCheckout({
+        sessionId,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
     } catch (err) {
       console.error('Checkout-Fehler:', err);
       setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten');

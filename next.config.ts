@@ -37,11 +37,11 @@ const nextConfig: NextConfig = {
       config.optimization.splitChunks = {
         chunks: 'all',
         cacheGroups: {
-          // Stripe in separaten Chunk
+          // Stripe komplett aus Bundle entfernen - nur on-demand laden
           stripe: {
             test: /[\\/]node_modules[\\/]@stripe[\\/]/,
             name: 'stripe',
-            chunks: 'all',
+            chunks: 'async', // Nur async chunks - nicht im initial bundle
             priority: 20,
           },
           // Vendor libraries

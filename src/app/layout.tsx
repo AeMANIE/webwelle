@@ -37,14 +37,8 @@ export default function RootLayout({
   return (
     <html lang="de" data-scroll-behavior="smooth">
       <head>
-        {/* Preconnect zu wichtigen externen Domains */}
-        <link rel="preconnect" href="https://js.stripe.com" />
-        <link rel="preconnect" href="https://m.stripe.network" />
-        <link rel="dns-prefetch" href="https://js.stripe.com" />
-        <link rel="dns-prefetch" href="https://m.stripe.network" />
-        
+        {/* Stripe nur bei Bedarf laden - KEINE Preconnect */}
         {/* Resource Hints für bessere Performance */}
-        <link rel="preload" href="https://js.stripe.com/v3/" as="script" />
         <link rel="modulepreload" href="/_next/static/chunks/app/layout.js" />
         
         {/* Preload critical resources */}
