@@ -1,0 +1,216 @@
+Allgemeine Informationen (Pflichtangaben)
+
+1. Firmen- oder Projektname:
+
+(Freitextfeld)
+
+2. Haben Sie bereits eine Website?
+
+  Nein, kompletter Neubau
+
+  Ja, soll überarbeitet werden
+
+  Weiß nicht / Unsicher
+
+2. Zielgruppe (Checkboxen + Freitext)
+
+3. Zielgruppe im Fokus:
+
+  Privatkunden (B2C)
+
+  Unternehmen (B2B)
+
+  Behörden/Non-Profit
+
+  Sonstiges: _________
+
+4. Soll die Website regional ausgerichtet sein?
+
+  Ja, nur Deutschland
+
+  Ja, spezifische Region (z.B. Allgäu)
+
+  Nein, international
+
+  Egal
+
+3. Design & Stil (4-Icons + Radio-Buttons)
+
+5. Welcher Design-Stil passt zu Ihnen?
+
+  !Modern Modern & minimalistisch
+
+  !Creative Kreativ & verspielt
+
+  !Professional Klassisch & seriös
+
+  !Tech Technisch & futuristisch
+
+6. Haben Sie Branding-Materialien?
+
+  Logo vorhanden
+
+  Farbpalette definiert
+
+  Schriftarten festgelegt
+
+  Nein, benötige Hilfe
+
+4. Website-Struktur (Drag & Drop Prioritäten)
+
+7. Wichtigste Seiten (Top 4):
+
+  Startseite
+
+  Leistungen/Shop
+
+  Über uns
+
+  Kontakt
+
+  Blog/News
+
+  Portfolio
+
+  Karriere
+
+  FAQ
+
+5. Funktionen (Checkboxen mit 4 Hauptkategorien)
+
+8. Welche Funktionen benötigen Sie?
+
+Essenziell:
+
+  Responsive Design
+
+  SEO-Optimierung
+
+Interaktion:
+
+  Kontaktformular
+
+  Live-Chat
+
+E-Commerce:
+
+  Online-Shop
+
+  Warenkorb
+
+Spezial:
+
+  Terminbuchung
+
+  Mitgliederbereich
+
+6. Inhalte (Ja/Nein + Upload)
+
+9. Bereits vorhandene Materialien:
+
+  Texte
+
+  Bilder/Videos
+
+  Styleguides
+
+  Nichts vorhanden
+
+10. Dateien hochladen:
+
+(Drag & Drop-Bereich)
+
+7. Technische Anforderungen (Dropdown-Menüs)
+
+11. Hosting:
+
+  Neues Hosting benötigt
+
+  Bestehendes Hosting nutzen
+
+  Keine Ahnung
+
+  Andere Lösung
+
+
+
+8. Budget & Zeitplan (Slider + Kalender)
+
+13. Budget-Rahmen:
+
+(Slider: €2.000 – €50.000+)
+
+14. Fertigstellungstermin:
+
+  Dringend (< 1 Monat)
+
+  Flexibel (1-3 Monate)
+
+  Langfristig (> 3 Monate)
+
+  Unklar
+
+Haben Sie bereits ein Logo, oder soll ein neues erstellt werden?
+
+• Welche Werte und Emotionen soll das Logo vermitteln?
+
+• Gibt es Farb- oder Stilvorgaben, die zur Markenidentität passen?
+
+      .     Welche Webseiten von meine Konkurrenz mag ich ?
+
+Farbkonzept
+
+• Welche Farben repräsentieren Ihre Marke? Gibt es eine bestehende Farbpalette?
+
+• Soll die Farbwahl auf bestimmte Zielgruppen abgestimmt sein? (z. B. Farbpsychologie für Nutzerinteraktion).
+
+• Möchten Sie Farbverläufe oder spezielle Effekte im Design nutzen?
+
+Printmedien
+
+• Welche Printmaterialien benötigen Sie? (Visitenkarten, Flyer, Broschüren).
+
+• Soll das Design konsistent mit der Website und dem Branding sein?
+
+Automatisierung
+
+• Gibt es Prozesse, die Sie automatisieren möchten? (z. B. Newsletter, Buchungssysteme).
+
+• Welche Tools oder Plattformen nutzen Sie bereits?
+
+Fotografie
+
+• Benötigen Sie professionelle Fotos für die Website oder Printmedien?
+
+• Soll Fotografie für visuelles Storytelling eingesetzt werden?
+
+• Haben Sie bereits Bildmaterial, oder soll dies organisiert werden?
+
+
+
+Rechtliche Aspekte
+
+• Gibt es rechtliche Anforderungen, die berücksichtigt werden müssen? (z. B. DSGVO-Konformität in Deutschland).
+
+• Soll ein Impressum, eine Datenschutzerklärung und AGB integriert werden?
+
+Wartung und Support
+
+• Benötigen Sie regelmäßige Wartung und Updates für die Website nach Fertigstellung?
+
+• Möchten Sie geschult werden, um kleinere Änderungen selbst vorzunehmen?
+
+
+
+Konkurrenzanalyse
+
+• Wer sind Ihre Hauptkonkurrenten? Haben Sie deren Websites analysiert?
+
+• Gibt es etwas, das Sie von Ihren Konkurrenten abheben möchte?
+
+Langfristige Vision
+
+• Wie soll sich Ihre Marke in den nächsten 3–5 Jahren entwickeln? Soll die Website darauf ausgerichtet sein?
+
+• Möchten Sie eine skalierbare Lösung für zukünftige Erweiterungen?
+

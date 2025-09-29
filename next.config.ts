@@ -2,9 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // output: 'export', // Kommentiert aus für Server-Side Rendering
-  trailingSlash: true,
+  trailingSlash: false,
   images: {
     unoptimized: true
+  },
+  // Turbopack Root Directory explizit setzen
+  turbopack: {
+    root: '/Users/aemaniegmbh/Desktop/Webwelle/frontend/2909-9'
   },
   // Performance Optimierungen
   experimental: {
