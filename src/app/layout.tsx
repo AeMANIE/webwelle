@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import PerformanceOptimizer from "./components/PerformanceOptimizer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -37,17 +36,9 @@ export default function RootLayout({
   return (
     <html lang="de" data-scroll-behavior="smooth">
       <head>
-        {/* Stripe nur bei Bedarf laden - KEINE Preconnect */}
-        {/* Resource Hints für bessere Performance */}
-        <link rel="modulepreload" href="/_next/static/chunks/app/layout.js" />
-        
         {/* Preload critical resources */}
         <link rel="preload" href="/webwellelogo.svg" as="image" type="image/svg+xml" />
         <link rel="preload" href="/webwellecom-weissihr.svg" as="image" type="image/svg+xml" />
-        
-        {/* Resource hints für bessere Performance */}
-        <link rel="preload" href="/_next/static/css/app/layout.css" as="style" />
-        <link rel="preload" href="/_next/static/chunks/webpack.js" as="script" />
         {/* Critical CSS inline für bessere Performance */}
         <style dangerouslySetInnerHTML={{
           __html: `
@@ -107,7 +98,6 @@ export default function RootLayout({
       <body
         className={`${inter.variable} font-sans antialiased`}
       >
-        <PerformanceOptimizer />
         {children}
       </body>
     </html>
