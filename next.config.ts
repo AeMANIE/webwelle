@@ -6,10 +6,12 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true
   },
-  // Turbopack Root Directory explizit setzen
-  turbopack: {
-    root: '/Users/aemaniegmbh/Desktop/Webwelle/frontend/2909-9'
-  },
+  // Turbopack Root Directory - nur für lokale Entwicklung
+  ...(process.env.NODE_ENV === 'development' && {
+    turbopack: {
+      root: process.cwd()
+    }
+  }),
   // Performance Optimierungen
   experimental: {
     optimizePackageImports: ['lucide-react']
