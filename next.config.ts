@@ -76,6 +76,26 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Korrekte MIME-Types für CSS
+      {
+        source: '/:path*\\.css',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'text/css; charset=utf-8',
+          },
+        ],
+      },
+      // Korrekte MIME-Types für JS
+      {
+        source: '/:path*\\.js',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/javascript; charset=utf-8',
+          },
+        ],
+      },
       // Statische Assets - lange Cache-Zeit
       {
         source: '/_next/static/(.*)',
