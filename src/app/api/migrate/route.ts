@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createTables } from '@/lib/database';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     await createTables();

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Lightbulb, X } from 'lucide-react';
-import { createCheckoutSession, redirectToCheckout } from '@/lib/stripe';
+import StripeCheckout from './StripeCheckout';
 
 export default function Products() {
   const [isMonthly, setIsMonthly] = useState(false);
@@ -282,29 +282,13 @@ function BookingForm({ packageType, isMonthly, onClose }: {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    try {
-      // Validierung der Pflichtfelder
-      if (!formData.firmenname || !formData.name || !formData.email) {
-        alert('Bitte füllen Sie alle Pflichtfelder aus.');
-        return;
-      }
-
-      // Stripe Checkout Session erstellen
-      const sessionId = await createCheckoutSession(
-        packageType,
-        isMonthly,
-        formData.email,
-        formData.name,
-        formData
-      );
-
-      // Zu Stripe Checkout weiterleiten
-      await redirectToCheckout(sessionId);
-      
-    } catch (error) {
-      console.error('Fehler beim Erstellen der Zahlung:', error);
-      alert('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie uns direkt.');
+    // Validierung der Pflichtfelder
+    if (!formData.firmenname || !formData.name || !formData.email) {
+      alert('Bitte füllen Sie alle Pflichtfelder aus.');
+      return;
     }
+    
+    // Form wird durch StripeCheckout-Komponente verarbeitet
   };
 
   return (
@@ -508,12 +492,16 @@ function BookingForm({ packageType, isMonthly, onClose }: {
 
       {/* Submit Buttons */}
       <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-border">
-        <button
-          type="submit"
+        <StripeCheckout
+          packageType={packageType}
+          isMonthly={isMonthly}
+          customerEmail={formData.email}
+          customerName={formData.name}
+          formData={formData}
           className="flex-1 bg-primary text-primary-foreground py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors font-semibold"
         >
           {isMonthly ? 'Monatliche Zahlung starten' : 'Einmalzahlung starten'}
-        </button>
+        </StripeCheckout>
         <button
           type="button"
           onClick={onClose}

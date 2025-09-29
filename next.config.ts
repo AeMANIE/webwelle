@@ -1,10 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // output: 'export', // Kommentiert aus für Server-Side Rendering
+  // Server-Side Rendering für bessere Performance
   trailingSlash: false,
   images: {
-    unoptimized: true
+    unoptimized: true,
+    // Optimierte Bildformate
+    formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 31536000, // 1 Jahr
   },
   // Turbopack Root Directory - nur für lokale Entwicklung
   ...(process.env.NODE_ENV === 'development' && {
@@ -14,11 +17,44 @@ const nextConfig: NextConfig = {
   }),
   // Performance Optimierungen
   experimental: {
-    optimizePackageImports: ['lucide-react']
+    optimizePackageImports: ['lucide-react', '@stripe/stripe-js'],
+    // Modern bundling
+    esmExternals: true,
   },
+  // Optimierte Server-Komponenten
+  serverExternalPackages: ['pg'],
+  // Output file tracing
+  outputFileTracingRoot: process.cwd(),
   // Modern JavaScript für bessere Performance
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production'
+    removeConsole: process.env.NODE_ENV === 'production',
+    // Tree shaking optimieren
+    reactRemoveProperties: process.env.NODE_ENV === 'production' ? { properties: ['^data-testid$'] } : false,
+  },
+  // Bundle splitting optimieren
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          // Stripe in separaten Chunk
+          stripe: {
+            test: /[\\/]node_modules[\\/]@stripe[\\/]/,
+            name: 'stripe',
+            chunks: 'all',
+            priority: 20,
+          },
+          // Vendor libraries
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+            priority: 10,
+          },
+        },
+      };
+    }
+    return config;
   },
   // Headers für bessere Caching
   async headers() {
@@ -40,12 +76,43 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Statische Assets - lange Cache-Zeit
       {
-        source: '/static/(.*)',
+        source: '/_next/static/(.*)',
         headers: [
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Bilder - mittlere Cache-Zeit
+      {
+        source: '/:path*\\.(png|jpg|jpeg|gif|webp|svg|ico)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, s-maxage=31536000',
+          },
+        ],
+      },
+      // CSS und JS - mittlere Cache-Zeit mit Revalidation
+      {
+        source: '/:path*\\.(css|js)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800',
+          },
+        ],
+      },
+      // HTML - kurze Cache-Zeit für Updates
+      {
+        source: '/:path*\\.(html|htm)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600, s-maxage=86400',
           },
         ],
       },

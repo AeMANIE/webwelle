@@ -1,9 +1,22 @@
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe, Stripe } from '@stripe/stripe-js';
 
 // Stripe public key - sollte aus Umgebungsvariablen kommen
 const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_publishable_key_here';
 
-export const stripePromise = loadStripe(stripePublishableKey);
+// Lazy loading für Stripe - nur laden wenn benötigt
+let stripePromise: Promise<Stripe | null> | null = null;
+
+export const getStripe = (): Promise<Stripe | null> => {
+  if (!stripePromise) {
+    stripePromise = loadStripe(stripePublishableKey, {
+      // Optimierte Konfiguration für bessere Performance
+      locale: 'de',
+      // Nur notwendige Features laden
+      stripeAccount: undefined,
+    });
+  }
+  return stripePromise;
+};
 
 // Preis-Konfiguration
 export const PRICE_CONFIG = {
@@ -75,7 +88,7 @@ export async function createCheckoutSession(
 
 // Stripe Checkout weiterleiten
 export async function redirectToCheckout(sessionId: string) {
-  const stripe = await stripePromise;
+  const stripe = await getStripe();
   
   if (!stripe) {
     throw new Error('Stripe konnte nicht geladen werden');
