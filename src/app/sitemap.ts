@@ -6,12 +6,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://webwelle.com'
   
   return [
+    // Hauptseite
     {
       url: baseUrl,
       lastModified: new Date(),
-      changeFrequency: 'monthly',
+      changeFrequency: 'weekly',
       priority: 1,
     },
+    // Hauptsektionen (Anker-Links)
     {
       url: `${baseUrl}/#produkte`,
       lastModified: new Date(),
@@ -48,12 +50,72 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    // Tools und Services
     {
       url: `${baseUrl}/mehrwertsteuer`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
+    // Kundenbereich
+    {
+      url: `${baseUrl}/customer`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/customer/login`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    // Registrierung und Authentifizierung
+    {
+      url: `${baseUrl}/register`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/forgot-password`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/reset-password`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/verify-email`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    // Admin-Bereich
+    {
+      url: `${baseUrl}/admin`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
+    {
+      url: `${baseUrl}/admin/login`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
+    // Erfolgsseiten
+    {
+      url: `${baseUrl}/success`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    // Rechtliche Seiten
     {
       url: `${baseUrl}/impressum`,
       lastModified: new Date(),
