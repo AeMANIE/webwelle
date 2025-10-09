@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { LogIn } from 'lucide-react';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -69,6 +70,10 @@ export default function Header() {
             <Link href="/#kontakt" className="text-foreground hover:text-primary transition-colors font-medium">
               Kontakt
             </Link>
+            <Link href="/customer" className="text-primary hover:text-primary/80 transition-colors font-medium border border-primary px-3 py-1 rounded-md flex items-center space-x-1">
+              <LogIn className="w-4 h-4" />
+              <span>Login</span>
+            </Link>
           </nav>
 
           {/* CTA Button */}
@@ -121,6 +126,10 @@ export default function Header() {
               </Link>
               <Link href="/#kontakt" className="block px-3 py-2 text-foreground hover:text-primary font-medium" onClick={closeMenu}>
                 Kontakt
+              </Link>
+              <Link href="/customer" className="flex items-center justify-center space-x-2 px-3 py-2 text-primary hover:text-primary/80 font-medium border border-primary rounded-md" onClick={closeMenu}>
+                <LogIn className="w-4 h-4" />
+                <span>Login</span>
               </Link>
               <Link
                 href="/#cta"

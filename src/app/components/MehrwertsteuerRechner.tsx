@@ -19,6 +19,11 @@ export default function MehrwertsteuerRechner() {
   const [copied, setCopied] = useState<string | null>(null);
   const [calculationType, setCalculationType] = useState<'netto' | 'brutto'>('netto');
 
+  // Funktion zur Formatierung von Zahlen im deutschen Format (mit Komma)
+  const formatGermanNumber = (value: number): string => {
+    return value.toFixed(2).replace('.', ',');
+  };
+
   const calculateFromNetto = (nettoValue: number, steuersatz: number): CalculationResult => {
     const mwstBetrag = nettoValue * (steuersatz / 100);
     const brutto = nettoValue + mwstBetrag;
@@ -55,14 +60,16 @@ export default function MehrwertsteuerRechner() {
   // Automatische Berechnung bei Änderungen
   useEffect(() => {
     if (calculationType === 'netto') {
-      const nettoValue = parseFloat(netto);
+      // Konvertiere deutsches Format (Komma) zu englischem Format (Punkt) für Berechnung
+      const nettoValue = parseFloat(netto.replace(',', '.'));
       if (!isNaN(nettoValue) && nettoValue > 0) {
         setResult(calculateFromNetto(nettoValue, steuersatz));
       } else {
         setResult(null);
       }
     } else {
-      const bruttoValue = parseFloat(brutto);
+      // Konvertiere deutsches Format (Komma) zu englischem Format (Punkt) für Berechnung
+      const bruttoValue = parseFloat(brutto.replace(',', '.'));
       if (!isNaN(bruttoValue) && bruttoValue > 0) {
         setResult(calculateFromBrutto(bruttoValue, steuersatz));
       } else {
@@ -296,23 +303,27 @@ export default function MehrwertsteuerRechner() {
                 </label>
                 <div className="relative">
                   <input
-                    type="number"
-                    step="0.01"
-                    value={calculationType === 'netto' ? netto : (result ? result.netto.toFixed(2) : '')}
+                    type="text"
+                    inputMode="decimal"
+                    value={calculationType === 'netto' ? netto : (result ? formatGermanNumber(result.netto) : '')}
                     onChange={(e) => {
-                      setNetto(e.target.value);
+                      // Erlaube nur Zahlen, Komma und Punkt
+                      const value = e.target.value.replace(/[^0-9,.]/g, '');
+                      // Ersetze Punkt durch Komma für deutsches Format
+                      const germanValue = value.replace('.', ',');
+                      setNetto(germanValue);
                       setCalculationType('netto');
                       setBrutto('');
                     }}
                     onFocus={(e) => {
                       e.target.select();
                     }}
-                    className="w-full px-4 py-3 text-center text-2xl font-bold border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full px-4 py-3 text-center text-2xl font-bold border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="100"
                     aria-label="Nettobetrag eingeben"
                   />
                   <button
-                    onClick={() => copyToClipboard(result?.netto.toFixed(2) || '0', 'netto')}
+                    onClick={() => copyToClipboard(result ? formatGermanNumber(result.netto) : '0,00', 'netto')}
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
                     title="Kopieren"
                   >
@@ -332,10 +343,10 @@ export default function MehrwertsteuerRechner() {
                 </label>
                 <div className="relative">
                   <div className="w-full px-4 py-3 text-center text-2xl font-bold border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
-                    {result ? result.mwstBetrag.toFixed(2) : '0.00'}
+                    {result ? formatGermanNumber(result.mwstBetrag) : '0,00'}
                   </div>
                   <button
-                    onClick={() => copyToClipboard(result?.mwstBetrag.toFixed(2) || '0', 'mwst')}
+                    onClick={() => copyToClipboard(result ? formatGermanNumber(result.mwstBetrag) : '0,00', 'mwst')}
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
                     title="Kopieren"
                   >
@@ -355,23 +366,27 @@ export default function MehrwertsteuerRechner() {
                 </label>
                 <div className="relative">
                   <input
-                    type="number"
-                    step="0.01"
-                    value={calculationType === 'brutto' ? brutto : (result ? result.brutto.toFixed(2) : '')}
+                    type="text"
+                    inputMode="decimal"
+                    value={calculationType === 'brutto' ? brutto : (result ? formatGermanNumber(result.brutto) : '')}
                     onChange={(e) => {
-                      setBrutto(e.target.value);
+                      // Erlaube nur Zahlen, Komma und Punkt
+                      const value = e.target.value.replace(/[^0-9,.]/g, '');
+                      // Ersetze Punkt durch Komma für deutsches Format
+                      const germanValue = value.replace('.', ',');
+                      setBrutto(germanValue);
                       setCalculationType('brutto');
                       setNetto('');
                     }}
                     onFocus={(e) => {
                       e.target.select();
                     }}
-                    className="w-full px-4 py-3 text-center text-2xl font-bold border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full px-4 py-3 text-center text-2xl font-bold border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="119"
                     aria-label="Bruttobetrag eingeben"
                   />
                   <button
-                    onClick={() => copyToClipboard(result?.brutto.toFixed(2) || '0', 'brutto')}
+                    onClick={() => copyToClipboard(result ? formatGermanNumber(result.brutto) : '0,00', 'brutto')}
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
                     title="Kopieren"
                   >
@@ -406,19 +421,19 @@ export default function MehrwertsteuerRechner() {
                       <div className="text-center">
                         <div className="text-sm font-semibold text-gray-600 mb-2">Netto (ohne MwSt)</div>
                         <div className="text-2xl font-bold text-gray-900 select-none cursor-default">
-                          {result.netto.toFixed(2)} €
+                          {formatGermanNumber(result.netto)} €
                         </div>
                       </div>
                       <div className="text-center">
                         <div className="text-sm font-semibold text-gray-600 mb-2">MwSt-Betrag ({result.mwst}%)</div>
                         <div className="text-2xl font-bold text-gray-900 select-none cursor-default">
-                          {result.mwstBetrag.toFixed(2)} €
+                          {formatGermanNumber(result.mwstBetrag)} €
                         </div>
                       </div>
                       <div className="text-center">
                         <div className="text-sm font-semibold text-gray-600 mb-2">Brutto (mit MwSt)</div>
                         <div className="text-2xl font-bold text-gray-900 select-none cursor-default">
-                          {result.brutto.toFixed(2)} €
+                          {formatGermanNumber(result.brutto)} €
                         </div>
                       </div>
                     </div>
@@ -430,9 +445,9 @@ export default function MehrwertsteuerRechner() {
                         <button
                           onClick={() => copyToClipboard(
                             `Mehrwertsteuer-Berechnung (${result.mwst}%):\n` +
-                            `Netto (ohne MwSt): ${result.netto.toFixed(2)} €\n` +
-                            `MwSt-Betrag: ${result.mwstBetrag.toFixed(2)} €\n` +
-                            `Brutto (mit MwSt): ${result.brutto.toFixed(2)} €`,
+                            `Netto (ohne MwSt): ${formatGermanNumber(result.netto)} €\n` +
+                            `MwSt-Betrag: ${formatGermanNumber(result.mwstBetrag)} €\n` +
+                            `Brutto (mit MwSt): ${formatGermanNumber(result.brutto)} €`,
                             'summary'
                           )}
                           className="flex items-center justify-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium w-full sm:w-auto"
@@ -452,9 +467,9 @@ export default function MehrwertsteuerRechner() {
                       </div>
                       <div className="font-mono text-xs sm:text-sm text-gray-800 bg-gray-100 p-3 rounded border select-none cursor-default overflow-x-auto">
                         <div>Mehrwertsteuer-Berechnung ({result.mwst}%):</div>
-                        <div>Netto (ohne MwSt): {result.netto.toFixed(2)} €</div>
-                        <div>MwSt-Betrag: {result.mwstBetrag.toFixed(2)} €</div>
-                        <div>Brutto (mit MwSt): {result.brutto.toFixed(2)} €</div>
+                        <div>Netto (ohne MwSt): {formatGermanNumber(result.netto)} €</div>
+                        <div>MwSt-Betrag: {formatGermanNumber(result.mwstBetrag)} €</div>
+                        <div>Brutto (mit MwSt): {formatGermanNumber(result.brutto)} €</div>
                       </div>
                     </div>
                   </div>
