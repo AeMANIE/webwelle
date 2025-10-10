@@ -18,21 +18,62 @@ Webdesign, das Kunden gewinnt – mit garantierter Performance und festen Preise
 
 ***
 
-## **Produkte: Websites nach Maß – Zwei Modelle, zwei Wege zum Erfolg**
+## **Produkte: Websites nach Maß **
 
-- **React / Next.js Website (Premium):**  
-  Für maximale Geschwindigkeit, höchste Individualisierbarkeit und modernstes Nutzererlebnis. Ideal für Unternehmen mit speziellen Anforderungen und maximalen Performance-Zielen.
-  - **Ab 2.490 € (Einmalzahlung, 24 Monate Laufzeit)**
-  - **Oder 119 € mtl. (24 Monate, inkl. 20% Aufschlag)**
+StarterWelle One-Page Website – Ihr digitaler Auftritt auf den Punkt gebracht: 
+Ihre Marke. Ihr Stil. Ihr Erfolg – auf einer modernen, schnellen Onepager-Website. Ideal als Landingpage für Kampagnen oder als professionelles Unternehmensprofil.
+Mit klarer Struktur, überzeugendem Design und messbarer Performance sorgt Ihre Website vom ersten Klick an für Wirkung.
+Enthaltene Leistungen:
+	•	Individuell gestaltete Onepage-Website
+	•	Rechtliches Basispaket (Impressum, Datenschutz, Cookie-Banner)
+	•	Kontaktformular mit Spamschutz
+	•	Hosting & Wartung inklusive
+	•	Domain (.de oder .com)
+	•	E-Mail-Postfach (z. B. info@deine-firma.de)
+77 € monatlich oder 840 € jährlich (netto)
 
-- **WordPress Website (Klassisch):**  
-  Für preisbewusste Kunden, die schnell und einfach starten wollen. Perfekt für kleine Unternehmen, Praxen oder Dienstleister.
-  - **Ab 1.290 € (Einmalzahlung, 24 Monate Laufzeit)**
-  - **Oder 65 € mtl. (24 Monate, inkl. 20% Aufschlag)**
 
-**Alle Preise inkl. Domain, Hosting & Support.**
+BusinessWelle Unternehmenswebsite (bis 3 Seiten)
+Ihr professioneller Online-Auftritt für wachsende Unternehmen: 
+Machen Sie Eindruck – mit einer individuell gestalteten, mehrseitigen Website, die Ihr Unternehmen modern, überzeugend und nutzerorientiert präsentiert. Drei optimal strukturierte Seiten sorgen für klare Botschaften, maximale Sichtbarkeit und ideale Auffindbarkeit bei Google.
+Enthaltene Leistungen:
+	•	Komplett individuell erstellte Website (bis zu 3 Seiten)
+	•	Rechtliches Komplettpaket (Impressum, Datenschutz & Cookie-Banner)
+	•	Kontaktformular mit cleverem Spamschutz
+	•	Hosting & technische Wartung
+	•	Domain (.de oder .com) inklusive
+	•	E-Mail-Postfach (z.B. info@deine-firma.de)
+	•	SEO-freundliche Grundoptimierung
+	•	Dezente Animationen und visuelle Highlights für mehr Dynamik
+139 € monatlich oder 1.520 € einmalig (netto)
 
+
+ErfolgsWelle 
+Premium-Unternehmenswebsite (bis 5 Seiten)
+Der nächste Level für Ihren Markenauftritt: Schaffen Sie eine digitale Bühne, die Ihre Marke unverwechselbar inszeniert und Ihr Unternehmen an die Spitze der Online-Wahrnehmung bringt. Maßgeschneiderte Premium-Website – optimal für ambitionierte Unternehmen, die ihr Wachstum beschleunigen und Mitbewerber digital überholen möchten. Bis zu fünf Seiten, in Technik und Design State-of-the-Art – mit hoher Performance und beständiger Sichtbarkeit.
+Enthaltene Leistungen:
+	•	Individuell konzipierte Premium-Website (bis zu 5 Seiten)
+	•	Rechtliches Rundum-Paket (Impressum, Datenschutz, Cookie-Management)
+	•	Erweiterte Kontakt- & Interaktionsformulare
+  Hosting & Premium-Wartung, inkl. Überwachung & Updates
+	•	Domain (.de oder .com) inklusive
+	•	E-Mail-Postfach (z.B. info@deine-firma.de)
+	•	Vollständige SEO-Strategie (OnPage & OffPage)
+	•	Premium-Animationen, Scroll- und Ladeeffekte
+	•	Professionelle Bildergalerie
+	•	Monatliche Performance-Auswertung & kontinuierliche Optimierung
+278 € monatlich oder 3.289 € einmalig (netto)
 ***
+
+StarterWelle (77€ monatlich / 840€ jährlich):
+Monatlich: price_1SGWPMQoIwTqROaydTqIlX1W
+Jährlich: price_1SGWRJQoIwTqROayqyfkpogg
+BusinessWelle (139€ monatlich / 1.520€ jährlich):
+Monatlich: price_1SGWwcQoIwTqROayxY5cIBsS
+Jährlich: price_1SGWxJQoIwTqROayweTQw8CD
+ErfolgsWelle (278€ monatlich / 3.289€ jährlich):
+Monatlich: price_1SGX48QoIwTqROaybDtPgQIX
+Jährlich: price_1SGX5kQoIwTqROaybEHbhBtv
 
 ## **Vorteile: Darum WebWelle**
 

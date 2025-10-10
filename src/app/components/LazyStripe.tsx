@@ -6,7 +6,7 @@ import { lazy, Suspense } from 'react';
 const StripeCheckout = lazy(() => import('./StripeCheckout'));
 
 interface LazyStripeProps {
-  packageType: 'nextjs' | 'wordpress';
+  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle';
   isMonthly: boolean;
   customerEmail: string;
   customerName: string;

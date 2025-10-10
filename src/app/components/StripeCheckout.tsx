@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { createCheckoutSession, loadStripeOnDemand } from '@/lib/stripe';
 
 interface StripeCheckoutProps {
-  packageType: 'nextjs' | 'wordpress';
+  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle';
   isMonthly: boolean;
   customerEmail: string;
   customerName: string;
@@ -69,7 +69,7 @@ export default function StripeCheckout({
       onClick={handleCheckout}
       disabled={isLoading}
       className={`${className} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-      aria-label={`${packageType} ${isMonthly ? 'monatlich' : 'einmalig'} kaufen`}
+      aria-label={`${packageType} ${isMonthly ? 'monatlich' : 'jährlich'} kaufen`}
     >
       {isLoading ? (
         <div className="flex items-center justify-center gap-2">

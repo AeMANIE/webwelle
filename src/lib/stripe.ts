@@ -20,29 +20,41 @@ export const loadStripeOnDemand = async (): Promise<any> => {
   return loadStripe(stripePublishableKey, { locale: 'de' });
 };
 
-// Preis-Konfiguration
+// Preis-Konfiguration für WebWelle-Pakete
 export const PRICE_CONFIG = {
-  nextjs: {
+  starterwelle: {
     monthly: {
-      priceId: 'price_1SCfrMQoIwTqROaytxsYCUXq', // Stripe Price ID für monatliche Next.js Zahlung (119€)
-      amount: 11900, // 119€ in Cent
+      priceId: 'price_1SGWPMQoIwTqROaydTqIlX1W', // StarterWelle monatlich (77€)
+      amount: 7700, // 77€ in Cent
       currency: 'eur'
     },
-    oneTime: {
-      priceId: 'price_1SCfs1QoIwTqROayf5unUmw5', // Stripe Price ID für einmalige Next.js Zahlung
-      amount: 249000, // 2490€ in Cent
+    yearly: {
+      priceId: 'price_1SGWRJQoIwTqROayqyfkpogg', // StarterWelle jährlich (840€)
+      amount: 84000, // 840€ in Cent
       currency: 'eur'
     }
   },
-  wordpress: {
+  businesswelle: {
     monthly: {
-      priceId: 'price_wordpress_monthly', // TODO: WordPress monatlich erstellen
-      amount: 6500, // 65€ in Cent
+      priceId: 'price_1SGWwcQoIwTqROayxY5cIBsS', // BusinessWelle monatlich (139€)
+      amount: 13900, // 139€ in Cent
       currency: 'eur'
     },
-    oneTime: {
-      priceId: 'price_wordpress_onetime', // TODO: WordPress einmalig erstellen
-      amount: 129000, // 1290€ in Cent
+    yearly: {
+      priceId: 'price_1SGWxJQoIwTqROayweTQw8CD', // BusinessWelle jährlich (1.520€)
+      amount: 152000, // 1520€ in Cent
+      currency: 'eur'
+    }
+  },
+  erfolgswelle: {
+    monthly: {
+      priceId: 'price_1SGX48QoIwTqROaybDtPgQIX', // ErfolgsWelle monatlich (278€)
+      amount: 27800, // 278€ in Cent
+      currency: 'eur'
+    },
+    yearly: {
+      priceId: 'price_1SGX5kQoIwTqROaybEHbhBtv', // ErfolgsWelle jährlich (3.289€)
+      amount: 328900, // 3289€ in Cent
       currency: 'eur'
     }
   }
@@ -50,7 +62,7 @@ export const PRICE_CONFIG = {
 
 // Stripe Checkout Session erstellen
 export async function createCheckoutSession(
-  packageType: 'nextjs' | 'wordpress',
+  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle',
   isMonthly: boolean,
   customerEmail: string,
   customerName: string,
@@ -68,9 +80,9 @@ export async function createCheckoutSession(
         customerEmail,
         customerName,
         formData,
-        priceId: PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'oneTime'].priceId,
-        amount: PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'oneTime'].amount,
-        currency: PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'oneTime'].currency
+        priceId: PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].priceId,
+        amount: PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].amount,
+        currency: PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].currency
       }),
     });
 
