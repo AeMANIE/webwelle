@@ -12,7 +12,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "WebWelle – Ihre Erfolgswelle | Festpreis-Webdesign",
-  description: "Webdesign, das Kunden gewinnt – mit garantierter Performance und festen Preisen. React/Next.js und WordPress Websites ab 1.290€. Individuell. Transparent. Modern.",
+  description: "Professionelles Webdesign mit festen Preisen. StarterWelle ab 77€/Monat, BusinessWelle ab 139€/Monat, ErfolgsWelle ab 278€/Monat. Inkl. Domain, Hosting & Support. Individuell. Transparent.",
   keywords: "Webdesign, Festpreis, Next.js, WordPress, E-Commerce, SEO, Performance, Allgäu, Kempten",
   authors: [{ name: "WebWelle" }],
   icons: {
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "WebWelle – Ihre Erfolgswelle",
-    description: "Festpreis-Webdesign, das messbar wirkt. Individuell. Transparent. Modern.",
+    description: "WebWelle – Ihre Erfolgswelle für professionelle Websites zum Festpreis. Individuelles und modernes Webdesign, transparente Preise, blitzschneller Start und jederzeit flexibel erweiterbar. Maximale Geschwindigkeit, klare Kommunikation und messbare Ergebnisse für Ihr Business.",
     type: "website",
     locale: "de_DE",
   },
