@@ -5,7 +5,7 @@ import { Lightbulb, Check } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Products() {
-  const [isMonthly, setIsMonthly] = useState(false);
+  const [isMonthly, setIsMonthly] = useState(true);
 
   return (
     <section id="produkte" className="py-20 bg-background">

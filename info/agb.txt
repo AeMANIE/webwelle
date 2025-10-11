@@ -1,0 +1,203 @@
+
+***
+
+## Allgemeine Geschäftsbedingungen (AGB) der AeManie GmbH
+
+### 1. Überblick
+
+Diese Hosting-Vereinbarung („Vereinbarung“) wird geschlossen zwischen der AeManie GmbH, Uhlandstraße 16, 87437 Kempten (Allgäu) („AeManie“, „wir“, „uns“) und dem Kunden („Sie“, „Ihr“, „Nutzer“), und tritt mit Ihrer elektronischen Zustimmung in Kraft.  
+
+Diese Vereinbarung regelt die Bedingungen Ihrer Nutzung unserer Hosting-Dienstleistungen („Leistungen“) und stellt die vollständige Vereinbarung zwischen Ihnen und AeManie hinsichtlich der hierin geregelten Themen dar.  
+
+Mit Ihrer elektronischen Zustimmung erkennen Sie an, dass Sie diese Vereinbarung sowie die universellen Nutzungsbedingungen auf webwelle.com, die hiermit durch Bezugnahme Bestandteil dieser Vereinbarung sind, gelesen und akzeptiert haben. Darüber hinaus gelten alle weiteren Vereinbarungen und Richtlinien, die ausdrücklich einbezogen wurden.  
+
+„Wir“, „uns“ oder „unser“ beziehen sich auf die AeManie GmbH. „Sie“, „Ihr“, „Nutzer“ oder „Kunde“ bezieht sich auf die Person oder Organisation, die diese Vereinbarung akzeptiert. Aus dieser Vereinbarung ergeben sich keine Rechte oder Vorteile für Dritte.  
+
+AeManie GmbH behält sich das Recht vor, diese Vereinbarung, die zugehörigen Richtlinien oder Konditionen sowie etwaige Grenzen oder Einschränkungen der Leistungen nach eigenem Ermessen jederzeit zu ändern oder anzupassen. Solche Änderungen treten unmittelbar nach Veröffentlichung auf der Website in Kraft. Ihre fortgesetzte Nutzung der Dienstleistungen nach solchen Änderungen gilt als Zustimmung zur jeweils aktuellen Fassung. Wenn Sie nicht zustimmen, verzichten Sie bitte auf die Nutzung der Leistungen. Gelegentlich informieren wir Sie per E-Mail über wichtige Änderungen; bitte halten Sie Ihre Kontaktdaten immer aktuell. Für nicht erhaltene E-Mails infolge falscher Adressdaten übernehmen wir keine Haftung.
+
+***
+
+### 2. Beschreibung der Leistungen
+
+Wir bieten verschiedene Hosting-Pakete an:
+
+**Webhosting:**  
+Beim Erwerb von Webhosting wird Ihre Website auf einen oder mehrere Server platziert, deren Ressourcen mit anderen Kunden geteilt werden. Ihre Seite erhält jedoch eine eindeutige Adresse (DNS).  
+
+**Virtuelle Private Server („VPS“):**  
+Beim Erwerb eines VPS teilen Sie sich den physischen Server mit anderen Kunden, verfügen aber über volle Kontrolle über Ihren eigenen Serverbereich sowie die vollständige Konfiguration Ihrer Instanz. Sie erhalten Administrator-/Root-Zugriff und eine eigene, dedizierte IP-Adresse.
+
+***
+
+### 3. Einschränkungen; Kündigung des Kontos
+
+**Migration von Servern:**  
+Sie erkennen an und stimmen zu, dass es im normalen Geschäftsbetrieb notwendig sein kann, Server zu migrieren. Daher kann ungeachtet einer dedizierten IP-Adresse eine andere IP vergeben werden. Es besteht keine Garantie auf dauerhaften Erhalt einmal vergebener IP-Adressen.  
+
+**Beendigung der Leistungen:**  
+Mit Ablauf oder Kündigung Ihrer gebuchten Leistungen sind Sie verpflichtet, die Nutzung der Dienste einzustellen und alle im Zusammenhang mit den Diensten zugewiesenen IP-Adressen oder Server-Namen freizugeben. Insbesondere müssen Sie die Domains (DNS) von unseren Servern wegführen. Vor Beendigung der Dienste liegt es in Ihrer Verantwortung, sämtliche Webseiten‑, Datenbank‑ oder Serverinhalte von unseren Systemen zu sichern und zu übertragen. Wir übernehmen keine Verpflichtung, Ihre Inhalte zu einem anderen Anbieter zu übertragen oder bereitzustellen. Werden die Inhalte vor Kündigung nicht übertragen, löschen wir sie nach Ablauf unwiederbringlich und stellen keine Kopie bereit.
+
+**Kostenlose Produkt-Gutschriften:**  
+Mit Beendigung aller Leistungen verfallen sämtliche im Rahmen der Leistungen bereitgestellten kostenlosen Produktgutschriften oder Zugänge.
+
+***
+
+
+***
+
+### 4. Ihre Pflichten
+
+**Missbräuchliche Aktivitäten:**  
+Sie verpflichten sich, unsere Server und Ihre Website nicht als Quelle, Zwischensystem, Antwortadresse oder Zieladresse für sogenannte Mailbomben, Internetangriffe (wie Paketflutung, Paketbeschädigung, Denial-of-Service) oder andere missbräuchliche Aktivitäten zu verwenden. Jegliches Hacking, Eindringen in Computersysteme oder die Veröffentlichung von Informationen über solche Themen sowie Links zu solchen Inhalten sind strengstens untersagt. Die Nutzung Ihrer Website als anonymes Gateway ist verboten. Auch das Ausführen von Software oder Skripten, die eine übermäßige Serverlast verursachen (nach Einschätzung von AeManie GmbH), ist nicht gestattet. Wir behalten uns das Recht vor, Ihre Website zeitweise oder dauerhaft von unseren Servern zu entfernen, wenn Sie gegen diese Vereinbarung verstoßen oder Aktivitäten durchführen, die die Stabilität unseres Netzwerks gefährden. Alle unter Ihrem Hosting-Account betriebenen Websites können entfernt werden, wenn eine davon gegen diese Vereinbarung verstößt.
+
+Zusätzlich zu den Verhaltensregeln unserer universellen Nutzungsbedingungen verpflichten Sie sich unter anderem dazu, unsere Dienste nicht zu nutzen, um:  
+1. Inhalte zu verbreiten, die nach vernünftiger Betrachtung als extrem anstößig, vulgär oder böswillig gelten.  
+2. Personen über Absender, Herkunft oder Quelle von Nachrichten irrezuführen.  
+3. Sich unbefugt oder über Ihre Berechtigungsstufe hinaus Zugang zu Computersystemen, Servern, Netzwerken oder Accounts Dritter zu verschaffen oder dessen zu versuchen.  
+4. Aktivitäten durchzuführen, die nach unserem Ermessen im Widerspruch zum Geist oder Zweck dieser Vereinbarung oder unserer Richtlinien stehen.  
+5. Ihren Server als "Open Relay" oder für ähnliche Zwecke zu benutzen.
+
+Das Betreiben eines öffentlichen rekursiven DNS-Dienstes auf einem unserer Server ist untersagt. Alle verwendeten rekursiven DNS-Server müssen so gesichert sein, dass sie ausschließlich internen Netzzugang oder nur eine begrenzte Anzahl von IP-Adressen zulassen. Wir behalten uns das Recht vor, solche Dienste aktiv zu erkennen und Server, die diese Vorgaben verletzen, vom Netzwerk zu trennen.
+
+**Speicherung und Sicherheit:**  
+Sie sind allein dafür verantwortlich:  
+1. Maßnahmen zur Vermeidung von Datenverlusten oder ‑schäden zu ergreifen,  
+2. eigenständig Sicherungen (Backups) Ihrer Webseiten- und Serverdaten zu erstellen,  
+3. die Sicherheit und Vertraulichkeit aller über unsere Systeme gespeicherten oder übertragenen Inhalte sicherzustellen.
+
+Unsere Backup-Dienste (sofern angeboten) laufen in bestimmten Intervallen und überschreiben vorherige Sicherungen. Es werden jeweils maximal die Backups der letzten zwei Wochen gespeichert (ggf. weitere tägliche Backups je nach Tarif). Dieser Service wird als freundliche Zusatzleistung ohne Garantie auf Verfügbarkeit erbracht und kann von uns jederzeit geändert werden. Die AeManie GmbH übernimmt keinerlei Verantwortung für die auf Ihrem Account gespeicherten Dateien oder Daten. Sie tragen die volle Verantwortung für Ihre Inhalte und haben eigene Backups zu erstellen. Accounts mit einem Speicherplatzverbrauch über 30 GB können von Backups ausgenommen werden.
+
+Unsere Server sind kein Archivspeicher. Für eventuellen Verlust, Schaden oder Vernichtung Ihrer Inhalte haften wir nicht. Unsere Services sind nicht für den Betrieb mit Anforderungen der PCI (Datensicherheit bei Kartenzahlungen) oder HIPAA (Medizinische Daten in den USA) konzipiert und dürfen nicht als solche genutzt werden.
+
+Bei Überschreitung des für E-Mails reservierten Speicherspiegels senden wir eine Warnung bei 10 GB und behalten uns vor, die Schreibfunktion bei Erreichen dieses Limits zu sperren, bis Platz geschaffen wurde. Im Falle von Sicherheitskompromittierungen an Ihrem Account behalten wir uns das Recht auf eine forensische Untersuchung vor.
+
+**Datenschutz & Datensicherheit:**  
+Sie sind allein verantwortlich und verpflichtet, sämtliche Anforderungen der Datenschutzgesetze, insbesondere der Datenschutz-Grundverordnung (DSGVO, EU 2016/679), für alle über Ihre Website oder Server verarbeiteten personenbezogenen Daten einzuhalten. Für diese Daten gelten Sie als Verantwortlicher gemäß DSGVO, jegliche Haftung der AeManie GmbH wird ausdrücklich ausgeschlossen.
+
+Sie sind zudem alleine für alle technischen und organisatorischen Maßnahmen verantwortlich, die zum Schutz solcher Daten erforderlich sind, insbesondere für die Sicherstellung von Datenintegrität, Vertraulichkeit und Verfügbarkeit. Für etwaige Datenschutzverletzungen haften Sie, es sei denn, der Vorfall beruht ausschließlich auf technischen Fehlern oder Mängeln der von AeManie GmbH bereitgestellten und ausdrücklich zugesicherten Serverdienste.
+
+Soweit im Einzelfall personenbezogene Daten durch AeManie GmbH im Rahmen der Dienstebereitstellung verarbeitet werden, gilt folgendes:  
+1. Die Verarbeitung erfolgt nur nach Ihrer ausdrücklichen Weisung oder wie gesetzlich zwingend vorgeschrieben.  
+2. Die AeManie GmbH setzt angemessene technische und organisatorische Maßnahmen zur Sicherung der Daten um; die vollständige Sicherheit kann jedoch nicht garantiert werden.  
+3. Nach Vertragsende werden auf Ihr Verlangen alle verfügbaren personenbezogenen Daten gelöscht, unzugänglich gemacht oder zurückgegeben, sofern keine gesetzliche Aufbewahrungspflicht besteht.  
+4. Sie sind verpflichtet, die Rechtmäßigkeit der Datenverarbeitung sicherzustellen und Nutzerinformationen entsprechend Art. 13/14 DSGVO ordnungsgemäß zu erfüllen.  
+5. Sie erteilen AeManie GmbH eine allgemeine Genehmigung zur Einbindung von Subunternehmern bei der Verarbeitung personenbezogener Daten im Rahmen der Leistungserbringung.  
+6. Die Haftung der AeManie GmbH ist auf die in den letzten sechs Monaten an AeManie gezahlten Entgelte für die betreffenden Leistungen beschränkt.
+
+***
+
+***
+
+### 4. Inhalt der Website/des Servers
+
+**Verantwortung für Inhalte:**  
+Sie sind allein für die Bereitstellung, Aktualisierung, das Hochladen sowie die Pflege aller Inhalte, Daten, Dateien und Materialien Ihrer Website oder Ihres Servers verantwortlich. Dazu zählen unter anderem: Marken, Abbildungen, Grafiken, Fotos, Videos, Audiodateien, E-Mails, Nachrichten, Meta-Tags, Domainnamen, Software, Texte sowie sämtliche Seiten und Daten, die angezeigt, verlinkt, übertragen oder gespeichert werden.  
+
+Sie erkennen an, dass es für die technische Unterstützung durch AeManie GmbH notwendig sein kann, Support-Mitarbeitern Änderungen an Ihrem gehosteten Produkt vorzunehmen, Inhalte zu modifizieren oder zu entfernen. Dies umfasst auch sämtliche im Rahmen der Services bereitgestellten oder für Sie registrierten Domainnamen.
+
+**Einhaltung geltender Gesetze:**  
+Sie sind dafür verantwortlich, sicherzustellen, dass Ihre Website (auch im Fall von durch uns bereitgestellten Website Buildern) und deren Inhalte allen anwendbaren lokalen, nationalen und internationalen Gesetzen entsprechen. Falls bestimmte Funktionen gesetzlich vorgeschrieben sind, tragen allein Sie die Verantwortung für die Umsetzung (bei Bedarf auch durch Drittanbieter).
+
+**Steuern:**  
+Sie sind für das Einziehen und Verwalten aller Zahlungen Ihrer Endkunden allein verantwortlich – ebenso für die korrekte Abführung sämtlicher anfallender Steuern nach nationalem und internationalem Recht, insbesondere beim Verkauf über unsere Services. Es liegt in Ihrer Verantwortung, Zahlungsdienstleister ordnungsgemäß zu nutzen und etwaige Vereinbarungen oder Compliance-Regelungen umzusetzen sowie alle weiteren Abgaben und Verpflichtungen (z. B. Exportregeln) einzuhalten. Bei Verkäufen ins Ausland sind ggf. zusätzlich ausländische Steuervorschriften zu beachten. Für die steuerliche Richtigkeit und die Abwicklung übernimmt AeManie GmbH keine Haftung.
+
+**Vorlagen:**  
+Von AeManie GmbH und über unsere Plattform bereitgestellte Vorlagen (beispielsweise für Datenschutz, AGB oder Widerruf) sind lediglich unverbindliche Muster zu Illustrationszwecken und stellen keine rechtliche, steuerliche oder fachliche Beratung dar. Sie sind selbst dafür verantwortlich, den Inhalt dieser Vorlagen auf Ihre tatsächlichen Geschäftsabläufe anzupassen, zu ergänzen und auf Rechtskonformität zu prüfen. Jegliche Nutzung dieser Vorlagen erfolgt auf eigenes Risiko.
+
+**Drittanbieterdienste:**  
+Falls Sie eigene Konten oder Abonnements bei angebundenen Drittanbietern nutzen (z. B. für Website-Builder-Integrationen), sind Sie selbst für deren Verwaltung und reibungslose Funktion verantwortlich.
+
+***
+
+### 5. Besondere Bestimmungen zum Webhosting
+
+**Speicher- und Paketgrenzen:**  
+Alle Hosting-Tarife, auch solche mit explizit "unbegrenzten" Ressourcen, unterliegen technischen Grenzen wie: Inode-Anzahl, Datenbankgröße, CPU-Leistung, RAM, gleichzeitige Zugriffe und Prozesse. Werden diese Grenzen überschritten, können Sie aufgefordert werden, Inhalte zu reduzieren, umzustellen oder den Tarif zu wechseln. Bei Überbeanspruchung behält sich AeManie GmbH das Recht vor, Ihren Dienst zeitweise oder dauerhaft einzuschränken. Alle aktuellen Ressourcenbegrenzungen werden transparent auf unserer Website veröffentlicht und können jederzeit angepasst werden.
+
+Sie erkennen an, dass eingehender UDP-Traffic in Shared-Hosting-Umgebungen nicht unterstützt wird.
+
+**Inhaltsbeschränkungen:**  
+Es ist untersagt, folgende Inhalte oder Funktionen auf Ihrer Website bereitzustellen:
+- Onlinedienste zur anonymen Bild‑ oder Dateiablage für andere Websites (wie Imagehoster, File Mirroring, Rapidshare etc.),
+- Werbebannerdienste für Dritte („Banner Rotation“),
+- kommerzielles Audiostreaming (mehr als ein bis zwei Streams gleichzeitig),
+- E-Mail-Serverdienste, die dem Versand von Massen-/Sammelmailings dienen („offene Relays“),
+- Massen-SMS-Gateways ohne Zuordnung,
+- Sicherungen oder Spiegelungen von Inhalten fremder Systeme (Backups fremder Rechner),
+- Bittorrent‑Tracker oder vergleichbare Filesharing-Dienste,
+- Scripte, die nachweislich die Performance oder Verfügbarkeit des Servers gefährden.
+
+**Unlimitierte Leistungen:**  
+Manche Tarife enthalten unlimitierte Funktionen, d. h. keine festen Begrenzungen für bestimmte Ressourcen. Dennoch gilt stets eine Fair‑Use‑Regel. Unlimitierte Leistungen sind für die typische Nutzung kleiner Unternehmen bestimmt, nicht für den massenhaften Datenverkehr oder Massen-Datenbankverwaltung. Bei Überschreitung der Fair‑Use‑Grenzen (z. B. Datenbanken größer als 3 GB, mehr als 300 Datenbanken im Shared Hosting, mehr als 6 GB Datenbanknutzung im Cloud Hosting etc.) kann AeManie GmbH eine Reduzierung, ein Upgrade oder andere Maßnahmen zur Einhaltung der Stabilität fordern oder Konten vorübergehend einschränken.
+
+**Kostenlose Domains:**  
+Manche Hostingpakete beinhalten kostenlose Domains als Werbeaktion. Ein Anspruch besteht nur auf die explizit genannten Domainendungen und unter den im dazugehörigen Aktionsbereich aufgeführten Bedingungen.
+
+
+***
+
+### 6. Besondere Bestimmungen für VPS-Hosting
+
+**cPanel:**  
+Falls Sie cPanel zu Ihrem Server hinzufügen, erkennen Sie an, dass die cPanel-Endnutzer-Lizenzbedingungen (EULA) Anwendung finden und Bestandteil dieser Vereinbarung sind.
+
+***
+
+### 7. Service-Verfügbarkeitsgarantie
+
+Wir gewähren eine monatliche **Verfügbarkeitsgarantie von 99,9 %** („Service-Uptime-Garantie“) für unsere Dienste. Falls diese Verfügbarkeit in einem Kalendermonat nicht erreicht wird (maßgeblich ist hierbei unsere eigene Messung und Feststellung), können Sie innerhalb von 30 Tagen nach der Störung eine Gutschrift in Höhe von 5 % Ihres monatlichen Hosting-Preises beantragen. Diese Gutschrift kann ausschließlich für zukünftige Produkte oder Dienstleistungen von AeManie GmbH verwendet werden und beinhaltet keine Steuern.
+
+Die Service-Uptime-Garantie gilt nicht bei:
+- planmäßigen Wartungs- oder Reparaturarbeiten,
+- von Ihnen verursachten Störungen (Custom-Scripte, Drittanbieter-Installationen, etc.),
+- Ausfällen, die nur FTP- oder E-Mail-Services betreffen, aber nicht die Erreichbarkeit Ihrer Internetseite,
+- Ursachen, die außerhalb unseres Einflussbereichs liegen (z. B. DDOS-Attacken, IP-Blacklists),
+- Ausfällen aufgrund spezifischer Programmierumgebungen,
+- Unterbrechungen beim Internetdienst Ihres Providers,
+- Unterbrechungen auf dem Übertragungsweg zwischen Ihrem Internetzugang und unseren Servern,
+- Browser-/DNS-Caching-Problemen,
+- Ihrem eigenen Verschulden oder Fahrlässigkeit,
+- Störungen durch Dritte,
+- Verstößen gegen unsere Allgemeinen Geschäftsbedingungen.
+
+Ansprüche auf eine Service-Gutschrift müssen spätestens 30 Tage nach Auftreten des Ausfalls geltend gemacht werden.
+
+***
+
+### 8. Geld-zurück-Garantie
+
+Produkte und Dienstleistungen, die für Rückerstattungen in Frage kommen, sind in unserer „Rückerstattungs-Richtlinie“ (Refund Policy) beschrieben.
+
+***
+
+### 9. Drittanbieter-Software
+
+**Definition:**  
+„Drittanbieter-Software“ bezeichnet jede Software oder Anwendung, die von einem Drittanbieter entwickelt und bereitgestellt wird und von AeManie GmbH in Kombination mit den eigenen Diensten verwendet werden kann.
+
+**Betrieb und Nutzung:**  
+AeManie GmbH kann jederzeit Drittanbieter-Software ändern, aktualisieren oder deren Bereitstellung einstellen. Sie verpflichten sich, notwendige Maßnahmen zur Installation von Updates oder Änderungen zu unterstützen. Drittanbieter-Software wird nicht verkauft oder separat vertrieben; die Nutzung ist ausschließlich im Rahmen der angebotenen Hosting-Dienste erlaubt.
+
+Ihre persönlichen Informationen werden ggf. zum Zweck der Bereitstellung der Drittanbieter-Software an den jeweiligen Anbieter weitergegeben. Die Nutzung der Drittanbieter-Software unterliegt den Vertragsbedingungen von AeManie GmbH und ggf. den Lizenzbedingungen des Drittanbieters. Das Herunterladen, Installieren oder Nutzen von Drittanbieter-Software ist erst nach Zustimmung zu den jeweiligen Lizenzbedingungen erlaubt.
+
+Das Entfernen, Ändern oder Verbergen von Urheberrechts-, Marken- oder sonstigen Schutzrechtsvermerken innerhalb solcher Software ist untersagt. Ein Reverse Engineering, Dekompilieren oder Disassemblieren ist nur in dem Umfang erlaubt, wie gesetzlich vorgeschrieben.
+
+Drittanbieter und deren Lieferanten übernehmen keine Garantie oder Haftung für Schäden (direkt, indirekt oder Folgeschäden) aus der Nutzung solcher Software. Für den Support der Drittanbieter-Software ist ausschließlich AeManie GmbH, nicht der Drittanbieter, zuständig.
+
+***
+
+### 10. Überschriften, selbstständige Klauseln, Salvatorische Klausel
+
+Die Überschriften in diesen AGB dienen nur der Übersicht und Auslegungshilfe und haben keinen Einfluss auf die inhaltliche Auslegung dieser Vereinbarung. Jede Klausel dieser AGB ist als eigenständig und unabhängig auszulegen. Sollte eine Klausel oder ein Teil einer Klausel durch ein zuständiges Gericht für rechtswidrig, ungültig oder nicht durchsetzbar erklärt werden, bleiben die übrigen Bestimmungen unberührt und gelten weiterhin vollumfänglich.
+
+***
+
+### 11. Definitionen; Vorrang bei Konflikten
+
+Großgeschriebene Begriffe, die hier nicht ausdrücklich definiert sind, erhalten ihre Bedeutung gemäß der „Universellen Nutzungsbedingungen“ (Universal Terms of Service) der AeManie GmbH. Im Falle eines Widerspruchs zwischen den Regelungen dieser Vereinbarung und den universellen Nutzungsbedingungen gelten die Bestimmungen dieser Vereinbarung vorrangig.
+
+***
+
+
+
+

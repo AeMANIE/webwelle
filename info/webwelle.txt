@@ -65,15 +65,7 @@ Enthaltene Leistungen:
 278 € monatlich oder 3.289 € einmalig (netto)
 ***
 
-StarterWelle (77€ monatlich / 840€ jährlich):
-Monatlich: price_1SGWPMQoIwTqROaydTqIlX1W
-Jährlich: price_1SGWRJQoIwTqROayqyfkpogg
-BusinessWelle (139€ monatlich / 1.520€ jährlich):
-Monatlich: price_1SGWwcQoIwTqROayxY5cIBsS
-Jährlich: price_1SGWxJQoIwTqROayweTQw8CD
-ErfolgsWelle (278€ monatlich / 3.289€ jährlich):
-Monatlich: price_1SGX48QoIwTqROaybDtPgQIX
-Jährlich: price_1SGX5kQoIwTqROaybEHbhBtv
+
 
 ## **Vorteile: Darum WebWelle**
 
