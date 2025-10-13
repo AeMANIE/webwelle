@@ -102,6 +102,20 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Spezifisch für app/layout.css
+      {
+        source: '/_next/static/css/app/layout.css',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'text/css; charset=utf-8',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
+      },
       // Korrekte MIME-Types für JS
       {
         source: '/:path*\\.js',

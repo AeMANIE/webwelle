@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 
+const year = new Date().getFullYear();
+
 export const metadata: Metadata = {
-  title: "Mehrwertsteuer-Rechner 2024 | Brutto, Netto + MwSt berechnen | WebWelle",
+  title: `Mehrwertsteuer-Rechner ${year} | Brutto, Netto + MwSt berechnen | WebWelle`,
   description: "Kostenloser Mehrwertsteuer-Rechner für Deutschland, Österreich & Schweiz. Berechnen Sie Brutto, Netto und MwSt mit 19%, 7%, 20%, 10%, 8.1%, 3.8%, 2.6% oder eigenem Steuersatz. Sofortige Berechnung mit Copy-Funktion.",
-  keywords: "Mehrwertsteuer Rechner, MwSt berechnen, Brutto Netto Rechner, Steuerrechner 2024, Umsatzsteuer, Deutschland 19% 7%, Österreich 20% 10%, Schweiz 8.1% 3.8% 2.6%, kostenlos, WebWelle",
+  keywords: `Mehrwertsteuer Rechner, MwSt berechnen, Brutto Netto Rechner, Steuerrechner ${year}, Umsatzsteuer, Deutschland 19% 7%, Österreich 20% 10%, Schweiz 8.1% 3.8% 2.6%, kostenlos, WebWelle`,
   authors: [{ name: "WebWelle" }],
   creator: "WebWelle",
   publisher: "WebWelle",
@@ -23,7 +25,7 @@ export const metadata: Metadata = {
     locale: 'de_DE',
     url: 'https://webwelle.com/mehrwertsteuer',
     siteName: 'WebWelle',
-    title: 'Mehrwertsteuer-Rechner 2024 | Brutto, Netto + MwSt berechnen',
+    title: `Mehrwertsteuer-Rechner ${year} | Brutto, Netto + MwSt berechnen`,
     description: 'Kostenloser Mehrwertsteuer-Rechner für Deutschland, Österreich & Schweiz. Berechnen Sie Brutto, Netto und MwSt mit verschiedenen Steuersätzen.',
     images: [
       {
@@ -36,7 +38,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Mehrwertsteuer-Rechner 2024 | Brutto, Netto + MwSt berechnen',
+    title: `Mehrwertsteuer-Rechner ${year} | Brutto, Netto + MwSt berechnen`,
     description: 'Kostenloser Mehrwertsteuer-Rechner für Deutschland, Österreich & Schweiz.',
     images: ['https://webwelle.com/logo.png'],
   },
