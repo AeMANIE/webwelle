@@ -1,0 +1,87 @@
+WebWelle – Metatags Übersicht (Stand: aktuell)
+
+1) Startseite (/)
+- Datei: src/app/layout.tsx
+- Title: "WebWelle – Ihre Erfolgswelle | Festpreis-Webdesign"
+- Description: Professionelles Webdesign mit festen Preisen (Pakete, inkl. Domain/Hosting/Support)
+- Keywords: Webdesign, Festpreis, Next.js, WordPress, E-Commerce, SEO, Performance, Allgäu, Kempten
+- OpenGraph: Titel/Beschreibung für Sharing
+
+2) KI-Agenten (/ai-agent)
+- Datei: src/app/ai-agent/page.tsx
+- Title: "KI-Agenten für Unternehmen | Automatisierung, Leads & Support | WebWelle"
+- Description: Zeitgewinn, Lead-Qualifizierung, Terminbuchung, Support – integriert in Prozesse
+- Keywords: KI-Agenten, Automatisierung, Leadgenerierung, Kundensupport, Chatbot, Terminbuchung, CRM, WebWelle
+- Robots: index, follow
+- OpenGraph/Twitter: Titel + Kurzbeschreibung
+
+3) Mehrwertsteuer-Rechner (/mehrwertsteuer)
+- Datei: src/app/mehrwertsteuer/layout.tsx
+- Title: "Mehrwertsteuer-Rechner {aktuelles Jahr} | Brutto, Netto + MwSt berechnen | WebWelle"
+- Description: Kostenloser MwSt-Rechner (DE/AT/CH, verschiedene Sätze), Copy-Funktion
+- Keywords: Dynamisch mit aktuellem Jahr
+- OpenGraph/Twitter: Titel + Kurzbeschreibung, Bild: /logo.png
+
+4) Buchungsseiten – Website Pakete
+4.1) StarterWelle (/buchung/starterwelle)
+- Datei: src/app/buchung/starterwelle/page.tsx
+- Title: "StarterWelle buchen | WebWelle"
+- Description: One-Page Website – 77 €/Monat oder 840 € jährlich, inkl. Domain/Hosting/Support
+
+4.2) BusinessWelle (/buchung/businesswelle)
+- Datei: src/app/buchung/businesswelle/page.tsx
+- Title: "BusinessWelle buchen | WebWelle"
+- Description: Bis zu 3 Seiten – 139 €/Monat oder 1.520 € jährlich, inkl. SEO & Support
+
+4.3) ErfolgsWelle (/buchung/erfolgswelle)
+- Datei: src/app/buchung/erfolgswelle/page.tsx
+- Title: "ErfolgsWelle buchen | WebWelle"
+- Description: Premium-Unternehmenswebsite – 278 €/Monat oder 3.289 € jährlich, bis 5 Seiten
+
+5) Buchungsseiten – KI-Agenten Pakete
+5.1) FlowWelle (/buchung/flowwelle)
+- Datei: src/app/buchung/flowwelle/page.tsx
+- Title: "FlowWelle buchen | KI-Agent Einstieg | WebWelle"
+- Description: Einstieg in KI-Automatisierung: bis 5 Workflow-Schritte, Anfragen, Terminbuchung, Support
+- Robots: index, follow
+
+5.2) PowerWelle (/buchung/powerwelle)
+- Datei: src/app/buchung/powerwelle/page.tsx
+- Title: "PowerWelle buchen | KI-Agent für wachsende Unternehmen | WebWelle"
+- Description: 6–10 Workflows, Multichannel-Support, CRM-Integration – ideal für Wachstum
+- Robots: index, follow
+
+5.3) MeisterWelle (/buchung/meisterwelle)
+- Datei: src/app/buchung/meisterwelle/page.tsx
+- Title: "MeisterWelle buchen | Premium KI-Agenten & Integrationen | WebWelle"
+- Description: Premium-KI, umfangreiche API-Anbindung, individuelle Workflows & Strategie
+- Robots: index, follow
+
+6) Rechtliche Seiten
+6.1) AGB (/agb)
+- Datei: src/app/agb/layout.tsx
+- Title: "AGB | WebWelle – Rechtliche Grundlagen & Vertragsbedingungen"
+- Description: Leistungen, Vertragsbedingungen, Gewährleistung, Zahlungsmodalitäten
+- Robots: index, follow
+
+6.2) Datenschutz (/datenschutz)
+- Datei: src/app/datenschutz/layout.tsx
+- Title: "Datenschutzerklärung | WebWelle – Transparenz & Sicherheit"
+- Description: DSGVO-konforme Infos zur Datenverarbeitung (Erhebung, Nutzung, Rechte)
+- Robots: index, follow
+
+6.3) Impressum (/impressum)
+- Datei: src/app/impressum/layout.tsx
+- Title: "Impressum | WebWelle – Anbieterkennzeichnung & Kontakt"
+- Description: Verantwortliche, Kontakt, rechtliche Angaben gemäß § 5 TMG
+- Robots: index, follow
+
+6.4) Widerruf (/widerruf)
+- Datei: src/app/widerruf/layout.tsx
+- Title: "Widerrufsbelehrung | WebWelle – Rechte & Fristen"
+- Description: Widerrufsrecht, Fristen, Ausnahmen, Ablauf
+- Robots: index, follow
+
+Hinweis
+- Nicht genannte Seiten erben die Standard-Metatags aus src/app/layout.tsx.
+- OpenGraph/Twitter sind auf Kernseiten gepflegt; für weitere Sharing-Optimierung können spezifische Bilder ergänzt werden.
