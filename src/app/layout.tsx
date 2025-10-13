@@ -39,15 +39,18 @@ export default function RootLayout({
         {/* Preload critical resources */}
         <link rel="preload" href="/webwellelogo.svg" as="image" type="image/svg+xml" />
         <link rel="preload" href="/webwellecom-weissihr.svg" as="image" type="image/svg+xml" />
-        {/* DNS prefetch für externe Ressourcen */}
+        {/* DNS prefetch und preconnect für externe Ressourcen */}
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
         <link rel="dns-prefetch" href="//js.stripe.com" />
-        {/* Critical CSS inline für bessere Performance */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://js.stripe.com" />
+        {/* Critical CSS inline für bessere Performance - verhindert Render-blocking */}
         <style dangerouslySetInnerHTML={{
           __html: `
-            /* Critical above-the-fold styles */
+            /* Critical above-the-fold styles - Header und Hero */
             * { box-sizing: border-box; }
-            body { margin: 0; font-family: var(--font-inter), system-ui, -apple-system, sans-serif; background: #0e141f; color: #ffffff; }
+            body { margin: 0; font-family: var(--font-inter), system-ui, -apple-system, sans-serif; background: #0e141f; color: #ffffff; line-height: 1.6; }
             .bg-background { background-color: #0e141f; }
             .text-foreground { color: #ffffff; }
             .text-primary { color: #DCA441; }
@@ -68,6 +71,7 @@ export default function RootLayout({
             .transition-colors { transition: color 150ms, background-color 150ms, border-color 150ms; }
             .font-medium { font-weight: 500; }
             .font-semibold { font-weight: 600; }
+            .font-bold { font-weight: 700; }
             .rounded-lg { border-radius: 0.5rem; }
             .h-6 { height: 1.5rem; }
             .w-6 { width: 1.5rem; }
@@ -85,16 +89,65 @@ export default function RootLayout({
             .hover\\:bg-primary\\/90:hover { background-color: rgba(220, 164, 65, 0.9); }
             .focus\\:outline-none:focus { outline: 2px solid transparent; }
             .focus\\:text-primary:focus { color: #DCA441; }
+            .min-h-screen { min-height: 100vh; }
+            .relative { position: relative; }
+            .absolute { position: absolute; }
+            .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+            .w-full { width: 100%; }
+            .h-full { height: 100%; }
+            .object-cover { object-fit: cover; }
+            .text-center { text-align: center; }
+            .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+            .text-5xl { font-size: 3rem; line-height: 1; }
+            .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+            .mb-6 { margin-bottom: 1.5rem; }
+            .mb-8 { margin-bottom: 2rem; }
+            .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+            .py-32 { padding-top: 8rem; padding-bottom: 8rem; }
+            .overflow-hidden { overflow: hidden; }
             @media (min-width: 640px) {
               .sm\\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
             }
             @media (min-width: 768px) {
               .md\\:flex { display: flex; }
               .md\\:hidden { display: none; }
+              .md\\:py-32 { padding-top: 8rem; padding-bottom: 8rem; }
             }
             @media (min-width: 1024px) {
               .lg\\:px-8 { padding-left: 2rem; padding-right: 2rem; }
             }
+          `
+        }} />
+        {/* Non-critical CSS asynchron laden - optimierte Strategie */}
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            // CSS asynchron laden - verhindert Render-blocking
+            function loadCSS(href, media) {
+              var link = document.createElement('link');
+              link.rel = 'stylesheet';
+              link.href = href;
+              link.media = media || 'print';
+              link.onload = function() { 
+                this.media = 'all';
+                this.onload = null;
+              };
+              document.head.appendChild(link);
+            }
+            
+            // CSS sofort asynchron laden - nicht warten auf DOM ready
+            loadCSS('/_next/static/css/app/layout.css');
+            
+            // Zusätzliche CSS-Dateien nach kurzer Verzögerung
+            setTimeout(function() {
+              // Weitere CSS-Dateien falls vorhanden
+              var cssFiles = [
+                '/_next/static/css/701a6e5abf3c4c3d.css',
+                '/_next/static/css/20a8705cbd1073c4.css'
+              ];
+              cssFiles.forEach(function(href) {
+                loadCSS(href);
+              });
+            }, 50);
           `
         }} />
       </head>

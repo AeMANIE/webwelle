@@ -44,6 +44,14 @@ const nextConfig: NextConfig = {
             chunks: 'async', // Nur async chunks - nicht im initial bundle
             priority: 20,
           },
+          // CSS in separaten Chunks
+          styles: {
+            test: /\.(css|scss|sass)$/,
+            name: 'styles',
+            chunks: 'all',
+            priority: 15,
+            enforce: true,
+          },
           // Vendor libraries
           vendor: {
             test: /[\\/]node_modules[\\/]/,
@@ -88,6 +96,10 @@ const nextConfig: NextConfig = {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
           },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
         ],
       },
       // Korrekte MIME-Types für JS
@@ -100,17 +112,21 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // Statische Assets - lange Cache-Zeit
+      // Statische Assets - lange Cache-Zeit (1 Jahr)
       {
         source: '/_next/static/(.*)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            value: 'public, max-age=31536000, immutable, s-maxage=31536000',
           },
           {
             key: 'Expires',
             value: new Date(Date.now() + 31536000 * 1000).toUTCString(),
+          },
+          {
+            key: 'Vary',
+            value: 'Accept-Encoding',
           },
         ],
       },
@@ -124,13 +140,17 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // CSS und JS - mittlere Cache-Zeit mit Revalidation
+      // CSS und JS - optimierte Cache-Zeit
       {
         source: '/:path*\\.(css|js)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800',
+            value: 'public, max-age=31536000, immutable, s-maxage=31536000',
+          },
+          {
+            key: 'Expires',
+            value: new Date(Date.now() + 31536000 * 1000).toUTCString(),
           },
         ],
       },
