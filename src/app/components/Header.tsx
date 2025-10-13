@@ -95,9 +95,6 @@ export default function Header() {
         {isMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-card rounded-lg mt-2 border border-border shadow-lg">
-<<<<<<< HEAD
-              <Link href={{ pathname: '/', hash: 'produkte' }} className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
-=======
               <Link 
                 href="/#produkte" 
                 className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
@@ -112,24 +109,11 @@ export default function Header() {
                   }
                 }}
               >
->>>>>>> 0ad31427903353d31e593ac7cb04fc5403870e20
                 Produkte
               </Link>
               <Link href="/ai-agent" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
                 KI-Agenten
               </Link>
-<<<<<<< HEAD
-              <Link href={{ pathname: '/', hash: 'vorteile' }} className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
-                Vorteile
-              </Link>
-              <Link href={{ pathname: '/', hash: 'leistungen' }} className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
-                Leistungen
-              </Link>
-              <Link href={{ pathname: '/', hash: 'faq' }} className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
-                FAQ
-              </Link>
-              <Link href={{ pathname: '/', hash: 'kontakt' }} className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
-=======
               <Link 
                 href="/#vorteile" 
                 className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
@@ -192,7 +176,6 @@ export default function Header() {
                   }
                 }}
               >
->>>>>>> 0ad31427903353d31e593ac7cb04fc5403870e20
                 Kontakt
               </Link>
               <div className="pt-2 border-t border-border">
