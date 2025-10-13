@@ -1,8 +1,15 @@
+import type { Metadata } from 'next';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import BookingForm from '../../components/BookingForm';
 import ScrollToTop from '../../components/ScrollToTop';
 import CookieBanner from '../../components/CookieBanner';
+
+export const metadata: Metadata = {
+  title: 'MeisterWelle buchen | Premium KI-Agenten & Integrationen | WebWelle',
+  description: 'MeisterWelle: Premium-KI mit umfangreicher API-Anbindung, individuellen Workflows und Strategie-Optimierung. Für echte Marktführer – jetzt buchen.',
+  robots: { index: true, follow: true },
+};
 
 export default function MeisterWelleBookingPage() {
   return (

@@ -1,8 +1,15 @@
+import type { Metadata } from 'next';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import BookingForm from '../../components/BookingForm';
 import ScrollToTop from '../../components/ScrollToTop';
 import CookieBanner from '../../components/CookieBanner';
+
+export const metadata: Metadata = {
+  title: 'FlowWelle buchen | KI-Agent Einstieg | WebWelle',
+  description: 'FlowWelle: Der smarte Einstieg in die KI-Automatisierung. Bis zu 5 Workflow-Schritte, Anfragemanagement, Terminbuchung und Support – jetzt buchen.',
+  robots: { index: true, follow: true },
+};
 
 export default function FlowWelleBookingPage() {
   return (

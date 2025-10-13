@@ -1,8 +1,15 @@
+import type { Metadata } from 'next';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import BookingForm from '../../components/BookingForm';
 import ScrollToTop from '../../components/ScrollToTop';
 import CookieBanner from '../../components/CookieBanner';
+
+export const metadata: Metadata = {
+  title: 'PowerWelle buchen | KI-Agent für wachsende Unternehmen | WebWelle',
+  description: 'PowerWelle: KI-Automatisierung mit 6–10 Workflow-Schritten, Multichannel-Support und CRM-Integration. Ideal für wachsende Unternehmen – jetzt buchen.',
+  robots: { index: true, follow: true },
+};
 
 export default function PowerWelleBookingPage() {
   return (
