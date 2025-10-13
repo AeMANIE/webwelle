@@ -49,22 +49,82 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
-            <Link href="/#produkte" className="text-foreground hover:text-primary transition-colors font-medium">
+            <Link 
+              href="/#produkte" 
+              className="text-foreground hover:text-primary transition-colors font-medium"
+              onClick={(e) => {
+                e.preventDefault();
+                const element = document.getElementById('produkte');
+                if (element) {
+                  const headerHeight = 80; // Header-Höhe in Pixel
+                  const elementPosition = element.offsetTop - headerHeight;
+                  window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+                }
+              }}
+            >
               Produkte
             </Link>
             <Link href="/ai-agent" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
               KI-Agenten
             </Link>
-            <Link href="/#vorteile" className="text-foreground hover:text-primary transition-colors font-medium">
+            <Link 
+              href="/#vorteile" 
+              className="text-foreground hover:text-primary transition-colors font-medium"
+              onClick={(e) => {
+                e.preventDefault();
+                const element = document.getElementById('vorteile');
+                if (element) {
+                  const headerHeight = 80;
+                  const elementPosition = element.offsetTop - headerHeight;
+                  window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+                }
+              }}
+            >
               Vorteile
             </Link>
-            <Link href="/#leistungen" className="text-foreground hover:text-primary transition-colors font-medium">
+            <Link 
+              href="/#leistungen" 
+              className="text-foreground hover:text-primary transition-colors font-medium"
+              onClick={(e) => {
+                e.preventDefault();
+                const element = document.getElementById('leistungen');
+                if (element) {
+                  const headerHeight = 80;
+                  const elementPosition = element.offsetTop - headerHeight;
+                  window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+                }
+              }}
+            >
               Leistungen
             </Link>
-            <Link href="/#faq" className="text-foreground hover:text-primary transition-colors font-medium">
+            <Link 
+              href="/#faq" 
+              className="text-foreground hover:text-primary transition-colors font-medium"
+              onClick={(e) => {
+                e.preventDefault();
+                const element = document.getElementById('faq');
+                if (element) {
+                  const headerHeight = 80;
+                  const elementPosition = element.offsetTop - headerHeight;
+                  window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+                }
+              }}
+            >
               FAQ
             </Link>
-            <Link href="/#kontakt" className="text-foreground hover:text-primary transition-colors font-medium">
+            <Link 
+              href="/#kontakt" 
+              className="text-foreground hover:text-primary transition-colors font-medium"
+              onClick={(e) => {
+                e.preventDefault();
+                const element = document.getElementById('kontakt');
+                if (element) {
+                  const headerHeight = 80;
+                  const elementPosition = element.offsetTop - headerHeight;
+                  window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+                }
+              }}
+            >
               Kontakt
             </Link>
             <Link href="/customer" className="text-primary hover:text-primary/80 transition-colors font-medium border border-primary px-3 py-1 rounded-md flex items-center space-x-1">
@@ -95,22 +155,87 @@ export default function Header() {
         {isMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-card rounded-lg mt-2 border border-border shadow-lg">
-              <Link href="/#produkte" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
+              <Link 
+                href="/#produkte" 
+                className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  closeMenu();
+                  const element = document.getElementById('produkte');
+                  if (element) {
+                    const headerHeight = 80;
+                    const elementPosition = element.offsetTop - headerHeight;
+                    window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+                  }
+                }}
+              >
                 Produkte
               </Link>
               <Link href="/ai-agent" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
                 KI-Agenten
               </Link>
-              <Link href="/#vorteile" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
+              <Link 
+                href="/#vorteile" 
+                className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  closeMenu();
+                  const element = document.getElementById('vorteile');
+                  if (element) {
+                    const headerHeight = 80;
+                    const elementPosition = element.offsetTop - headerHeight;
+                    window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+                  }
+                }}
+              >
                 Vorteile
               </Link>
-              <Link href="/#leistungen" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
+              <Link 
+                href="/#leistungen" 
+                className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  closeMenu();
+                  const element = document.getElementById('leistungen');
+                  if (element) {
+                    const headerHeight = 80;
+                    const elementPosition = element.offsetTop - headerHeight;
+                    window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+                  }
+                }}
+              >
                 Leistungen
               </Link>
-              <Link href="/#faq" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
+              <Link 
+                href="/#faq" 
+                className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  closeMenu();
+                  const element = document.getElementById('faq');
+                  if (element) {
+                    const headerHeight = 80;
+                    const elementPosition = element.offsetTop - headerHeight;
+                    window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+                  }
+                }}
+              >
                 FAQ
               </Link>
-              <Link href="/#kontakt" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
+              <Link 
+                href="/#kontakt" 
+                className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  closeMenu();
+                  const element = document.getElementById('kontakt');
+                  if (element) {
+                    const headerHeight = 80;
+                    const elementPosition = element.offsetTop - headerHeight;
+                    window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+                  }
+                }}
+              >
                 Kontakt
               </Link>
               <div className="pt-2 border-t border-border">

@@ -110,7 +110,6 @@ export default function Hero() {
         }}
         preload="metadata"
         controls={false}
-        aria-label="WebWelle Hintergrundvideo - Welle Animation"
       >
         <source src={videoSrc} type="video/mp4" />
         <track
