@@ -112,13 +112,6 @@ export default function Hero() {
         controls={false}
       >
         <source src={videoSrc} type="video/mp4" />
-        <track
-          kind="captions"
-          srcLang="de"
-          label="Deutsche Untertitel"
-          src="/captions/welle4-captions.vtt"
-          default
-        />
         Ihr Browser unterstützt das Video-Element nicht.
       </video>
       
