@@ -11,6 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://webwelle.com'),
   title: "WebWelle – Ihre Erfolgswelle | Festpreis-Webdesign",
   description: "Professionelles Webdesign mit festen Preisen. StarterWelle ab 77€/Monat, BusinessWelle ab 139€/Monat, ErfolgsWelle ab 278€/Monat. Inkl. Domain, Hosting & Support. Individuell. Transparent.",
   keywords: "Webdesign, Festpreis, Next.js, WordPress, E-Commerce, SEO, Performance, Allgäu, Kempten",

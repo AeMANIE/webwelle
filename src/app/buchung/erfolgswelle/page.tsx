@@ -6,6 +6,43 @@ import BookingForm from '@/app/components/BookingForm';
 export const metadata: Metadata = {
   title: 'ErfolgsWelle buchen | WebWelle',
   description: 'Buchen Sie Ihre ErfolgsWelle Premium-Unternehmenswebsite - 278€ monatlich oder 3.289€ jährlich. Bis zu 5 Seiten mit Premium-Features.',
+  keywords: 'ErfolgsWelle buchen, Premium-Unternehmenswebsite, WebWelle, 278€ monatlich, 3.289€ jährlich, 5 Seiten, Premium-Features, Allgäu, Kempten',
+  authors: [{ name: 'WebWelle' }],
+  creator: 'WebWelle',
+  publisher: 'WebWelle',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'de_DE',
+    url: 'https://webwelle.com/buchung/erfolgswelle',
+    siteName: 'WebWelle',
+    title: 'ErfolgsWelle buchen | WebWelle',
+    description: 'Buchen Sie Ihre ErfolgsWelle Premium-Unternehmenswebsite - 278€ monatlich oder 3.289€ jährlich. Bis zu 5 Seiten mit Premium-Features.',
+    images: [
+      {
+        url: '/logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'WebWelle Logo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ErfolgsWelle buchen | WebWelle',
+    description: 'Buchen Sie Ihre ErfolgsWelle Premium-Unternehmenswebsite - 278€ monatlich oder 3.289€ jährlich. Bis zu 5 Seiten mit Premium-Features.',
+    images: ['/logo.png'],
+  },
 };
 
 export default function ErfolgsWelleBooking() {

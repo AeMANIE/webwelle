@@ -6,6 +6,43 @@ import BookingForm from '@/app/components/BookingForm';
 export const metadata: Metadata = {
   title: 'StarterWelle buchen | WebWelle',
   description: 'Buchen Sie Ihre StarterWelle One-Page Website - 77€ monatlich oder 840€ jährlich. Inkl. Domain, Hosting & Support.',
+  keywords: 'StarterWelle buchen, One-Page Website, WebWelle, 77€ monatlich, 840€ jährlich, Domain, Hosting, Support, Allgäu, Kempten',
+  authors: [{ name: 'WebWelle' }],
+  creator: 'WebWelle',
+  publisher: 'WebWelle',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'de_DE',
+    url: 'https://webwelle.com/buchung/starterwelle',
+    siteName: 'WebWelle',
+    title: 'StarterWelle buchen | WebWelle',
+    description: 'Buchen Sie Ihre StarterWelle One-Page Website - 77€ monatlich oder 840€ jährlich. Inkl. Domain, Hosting & Support.',
+    images: [
+      {
+        url: '/logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'WebWelle Logo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'StarterWelle buchen | WebWelle',
+    description: 'Buchen Sie Ihre StarterWelle One-Page Website - 77€ monatlich oder 840€ jährlich. Inkl. Domain, Hosting & Support.',
+    images: ['/logo.png'],
+  },
 };
 
 export default function StarterWelleBooking() {

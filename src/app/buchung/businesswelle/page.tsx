@@ -6,6 +6,43 @@ import BookingForm from '@/app/components/BookingForm';
 export const metadata: Metadata = {
   title: 'BusinessWelle buchen | WebWelle',
   description: 'Buchen Sie Ihre BusinessWelle Unternehmenswebsite - 139€ monatlich oder 1.520€ jährlich. Bis zu 3 Seiten inkl. SEO & Support.',
+  keywords: 'BusinessWelle buchen, Unternehmenswebsite, WebWelle, 139€ monatlich, 1.520€ jährlich, 3 Seiten, SEO, Support, Allgäu, Kempten',
+  authors: [{ name: 'WebWelle' }],
+  creator: 'WebWelle',
+  publisher: 'WebWelle',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'de_DE',
+    url: 'https://webwelle.com/buchung/businesswelle',
+    siteName: 'WebWelle',
+    title: 'BusinessWelle buchen | WebWelle',
+    description: 'Buchen Sie Ihre BusinessWelle Unternehmenswebsite - 139€ monatlich oder 1.520€ jährlich. Bis zu 3 Seiten inkl. SEO & Support.',
+    images: [
+      {
+        url: '/logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'WebWelle Logo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'BusinessWelle buchen | WebWelle',
+    description: 'Buchen Sie Ihre BusinessWelle Unternehmenswebsite - 139€ monatlich oder 1.520€ jährlich. Bis zu 3 Seiten inkl. SEO & Support.',
+    images: ['/logo.png'],
+  },
 };
 
 export default function BusinessWelleBooking() {
