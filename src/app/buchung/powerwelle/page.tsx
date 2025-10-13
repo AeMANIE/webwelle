@@ -1,8 +1,55 @@
+import type { Metadata } from 'next';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import BookingForm from '../../components/BookingForm';
 import ScrollToTop from '../../components/ScrollToTop';
 import CookieBanner from '../../components/CookieBanner';
+
+export const metadata: Metadata = {
+  title: "PowerWelle buchen | KI-Agent für wachsende Unternehmen | WebWelle",
+  description: "6–10 Workflows, Multichannel-Support, CRM-Integration – ideal für Wachstum. PowerWelle für 179€/Monat buchen.",
+  keywords: "PowerWelle buchen, KI-Agent wachsende Unternehmen, Workflow-Automatisierung, CRM-Integration, Multichannel-Support, WebWelle",
+  authors: [{ name: "WebWelle" }],
+  creator: "WebWelle",
+  publisher: "WebWelle",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'de_DE',
+    url: 'https://webwelle.com/buchung/powerwelle',
+    siteName: 'WebWelle',
+    title: 'PowerWelle buchen | KI-Agent für wachsende Unternehmen',
+    description: '6–10 Workflows, Multichannel-Support, CRM-Integration – ideal für Wachstum.',
+    images: [
+      {
+        url: 'https://webwelle.com/logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'WebWelle PowerWelle KI-Agent',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PowerWelle buchen | KI-Agent für wachsende Unternehmen',
+    description: '6–10 Workflows, Multichannel-Support, CRM-Integration – ideal für Wachstum.',
+    images: ['https://webwelle.com/logo.png'],
+  },
+  alternates: {
+    canonical: 'https://webwelle.com/buchung/powerwelle',
+  },
+  category: 'Technology',
+};
 
 export default function PowerWelleBookingPage() {
   return (
