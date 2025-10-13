@@ -76,13 +76,17 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // Korrekte MIME-Types für CSS
+      // Korrekte MIME-Types für CSS - verhindert MIME-Type Fehler
       {
-        source: '/:path*\\.css',
+        source: '/_next/static/css/(.*)',
         headers: [
           {
             key: 'Content-Type',
             value: 'text/css; charset=utf-8',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
           },
         ],
       },
@@ -103,6 +107,10 @@ const nextConfig: NextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Expires',
+            value: new Date(Date.now() + 31536000 * 1000).toUTCString(),
           },
         ],
       },

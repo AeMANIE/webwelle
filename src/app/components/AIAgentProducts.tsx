@@ -99,6 +99,8 @@ export default function AIAgentProducts() {
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                 isMonthly ? 'bg-primary' : 'bg-gray-200'
               }`}
+              aria-label={`Preisanzeige umschalten auf ${isMonthly ? 'Jährlich' : 'Monatlich'}`}
+              aria-pressed={isMonthly}
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${

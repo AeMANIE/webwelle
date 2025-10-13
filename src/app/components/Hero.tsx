@@ -108,11 +108,18 @@ export default function Hero() {
           width: '100%',
           height: '100%'
         }}
-        preload="auto"
+        preload="metadata"
         controls={false}
         aria-label="WebWelle Hintergrundvideo - Welle Animation"
       >
         <source src={videoSrc} type="video/mp4" />
+        <track
+          kind="captions"
+          srcLang="de"
+          label="Deutsche Untertitel"
+          src="/captions/welle4-captions.vtt"
+          default
+        />
         Ihr Browser unterstützt das Video-Element nicht.
       </video>
       

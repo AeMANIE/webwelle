@@ -39,6 +39,9 @@ export default function RootLayout({
         {/* Preload critical resources */}
         <link rel="preload" href="/webwellelogo.svg" as="image" type="image/svg+xml" />
         <link rel="preload" href="/webwellecom-weissihr.svg" as="image" type="image/svg+xml" />
+        {/* DNS prefetch für externe Ressourcen */}
+        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="//js.stripe.com" />
         {/* Critical CSS inline für bessere Performance */}
         <style dangerouslySetInnerHTML={{
           __html: `
