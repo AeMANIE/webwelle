@@ -1,11 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Lightbulb, Check } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Products() {
   const [isMonthly, setIsMonthly] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
 
   return (
     <section id="produkte" className="py-20 bg-background">
@@ -56,21 +62,14 @@ export default function Products() {
 
             <div className="mb-6">
               <div className="text-3xl font-bold text-foreground mb-2">
-                {isMonthly ? '77 € mtl.' : '840 € jährlich'}
+                {isMounted ? (isMonthly ? '77 € mtl.' : '840 € jährlich') : '77 € mtl.'}
               </div>
               <p className="text-sm text-muted-foreground mb-4">
-                {isMonthly ? '24 Monate, inkl. 20% Aufschlag' : 'Einmalzahlung, 24 Monate Laufzeit'}
+                {isMounted ? (isMonthly ? '24 Monate, Nettopreis' : 'Netto Jährlich,  24 Monate Laufzeit') : '24 Monate, Nettopreis'}
               </p>
-              {!isMonthly && (
-                <div className="text-lg font-semibold text-foreground">
-                  Oder 77 € mtl.
-                </div>
-              )}
-              {isMonthly && (
-                <div className="text-lg font-semibold text-foreground">
-                  Oder 840 € jährlich
-                </div>
-              )}
+              <div className="text-lg font-semibold text-foreground">
+                {isMounted ? (isMonthly ? 'Oder 840 € jährlich' : 'Oder 77 € mtl.') : 'Oder 840 € jährlich'}
+              </div>
             </div>
 
             <div className="space-y-3 mb-8">
@@ -128,21 +127,14 @@ export default function Products() {
 
             <div className="mb-6">
               <div className="text-3xl font-bold text-primary mb-2">
-                {isMonthly ? '139 € mtl.' : '1.520 € jährlich'}
+                {isMounted ? (isMonthly ? '139 € mtl.' : '1.520 € jährlich') : '139 € mtl.'}
               </div>
               <p className="text-sm text-muted-foreground mb-4">
-                {isMonthly ? '24 Monate, inkl. 20% Aufschlag' : 'Einmalzahlung, 24 Monate Laufzeit'}
+                {isMounted ? (isMonthly ? '24 Monate, Nettopreis' : 'Netto Jährlich,  24 Monate Laufzeit') : '24 Monate, Nettopreis'}
               </p>
-              {!isMonthly && (
-                <div className="text-lg font-semibold text-foreground">
-                  Oder 139 € mtl.
-                </div>
-              )}
-              {isMonthly && (
-                <div className="text-lg font-semibold text-foreground">
-                  Oder 1.520 € jährlich
-                </div>
-              )}
+              <div className="text-lg font-semibold text-foreground">
+                {isMounted ? (isMonthly ? 'Oder 1.520 € jährlich' : 'Oder 139 € mtl.') : 'Oder 1.520 € jährlich'}
+              </div>
             </div>
 
             <div className="space-y-3 mb-8">
@@ -178,6 +170,15 @@ export default function Products() {
                 <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
                 <span className="text-foreground text-sm">Dezente Animationen und visuelle Highlights</span>
               </div>
+              <div className="flex items-center">
+                <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                <Link 
+                  href="/ai-agent"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-1 rounded-full text-sm font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
+                >
+                  KI-Agenten Fähig
+                </Link>
+              </div>
             </div>
 
             <Link
@@ -208,21 +209,14 @@ export default function Products() {
 
             <div className="mb-6">
               <div className="text-3xl font-bold text-foreground mb-2">
-                {isMonthly ? '278 € mtl.' : '3.289 € jährlich'}
+                {isMounted ? (isMonthly ? '278 € mtl.' : '3.289 € jährlich') : '278 € mtl.'}
               </div>
               <p className="text-sm text-muted-foreground mb-4">
-                {isMonthly ? '24 Monate, inkl. 20% Aufschlag' : 'Einmalzahlung, 24 Monate Laufzeit'}
+                {isMounted ? (isMonthly ? '24 Monate, Nettopreis' : 'Netto Jährlich,  24 Monate Laufzeit') : '24 Monate, Nettopreis'}
               </p>
-              {!isMonthly && (
-                <div className="text-lg font-semibold text-foreground">
-                  Oder 278 € mtl.
-                </div>
-              )}
-              {isMonthly && (
-                <div className="text-lg font-semibold text-foreground">
-                  Oder 3.289 € jährlich
-                </div>
-              )}
+              <div className="text-lg font-semibold text-foreground">
+                {isMounted ? (isMonthly ? 'Oder 3.289 € jährlich' : 'Oder 278 € mtl.') : 'Oder 3.289 € jährlich'}
+              </div>
             </div>
 
             <div className="space-y-3 mb-8">
@@ -265,6 +259,15 @@ export default function Products() {
               <div className="flex items-center">
                 <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
                 <span className="text-foreground text-sm">Monatliche Performance-Auswertung & kontinuierliche Optimierung</span>
+              </div>
+              <div className="flex items-center">
+                <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                <Link 
+                  href="/ai-agent"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-1 rounded-full text-sm font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
+                >
+                  KI-Agenten Fähig
+                </Link>
               </div>
             </div>
 

@@ -80,7 +80,7 @@ export default function Footer() {
               <li><Link href="/#leistungen" className="text-muted-foreground hover:text-primary transition-colors font-light">SEO & Performance</Link></li>
               <li><Link href="/#leistungen" className="text-muted-foreground hover:text-primary transition-colors font-light">Branding</Link></li>
               <li><Link href="/#leistungen" className="text-muted-foreground hover:text-primary transition-colors font-light">Hosting & Support</Link></li>
-              <li><Link href="/#leistungen" className="text-muted-foreground hover:text-primary transition-colors font-light">KI-Lösungen</Link></li>
+              <li><Link href="/ai-agent" className="text-muted-foreground hover:text-primary transition-colors font-light">KI-Agenten</Link></li>
             </ul>
           </div>
 
