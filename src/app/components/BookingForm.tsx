@@ -6,12 +6,15 @@ import { ArrowLeft } from 'lucide-react';
 import StripeCheckout from './StripeCheckout';
 
 interface BookingFormProps {
-  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle';
+  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle';
   packageName: string;
   packageDescription: string;
+  features?: string[];
+  monthlyPrice?: number;
+  yearlyPrice?: number;
 }
 
-export default function BookingForm({ packageType, packageName, packageDescription }: BookingFormProps) {
+export default function BookingForm({ packageType, packageName, packageDescription, features, monthlyPrice, yearlyPrice }: BookingFormProps) {
   const router = useRouter();
   const [isMonthly, setIsMonthly] = useState(false);
   const [formData, setFormData] = useState({
@@ -74,6 +77,15 @@ export default function BookingForm({ packageType, packageName, packageDescripti
   };
 
   const getPackagePrices = () => {
+    // Wenn Preise als Props übergeben wurden, diese verwenden
+    if (monthlyPrice && yearlyPrice) {
+      return { 
+        monthly: `${monthlyPrice} € mtl.`, 
+        yearly: `${yearlyPrice} € jährlich` 
+      };
+    }
+    
+    // Fallback für bestehende Webdesign-Pakete
     switch (packageType) {
       case 'starterwelle':
         return { monthly: '77 € mtl.', yearly: '840 € jährlich' };
@@ -81,6 +93,12 @@ export default function BookingForm({ packageType, packageName, packageDescripti
         return { monthly: '139 € mtl.', yearly: '1.520 € jährlich' };
       case 'erfolgswelle':
         return { monthly: '278 € mtl.', yearly: '3.289 € jährlich' };
+      case 'flowwelle':
+        return { monthly: '99 € mtl.', yearly: '990 € jährlich' };
+      case 'powerwelle':
+        return { monthly: '179 € mtl.', yearly: '1.790 € jährlich' };
+      case 'meisterwelle':
+        return { monthly: '249 € mtl.', yearly: '2.490 € jährlich' };
       default:
         return { monthly: '', yearly: '' };
     }
@@ -107,6 +125,21 @@ export default function BookingForm({ packageType, packageName, packageDescripti
             <div>
               <h4 className="font-semibold text-foreground mb-2">{packageName}</h4>
               <p className="text-muted-foreground text-sm mb-4">{packageDescription}</p>
+              
+              {/* Features für AI-Agent Pakete */}
+              {features && features.length > 0 && (
+                <div className="mt-4">
+                  <h5 className="font-semibold text-foreground mb-2 text-sm">Paket-Features:</h5>
+                  <ul className="space-y-1">
+                    {features.map((feature, index) => (
+                      <li key={index} className="flex items-center text-sm text-muted-foreground">
+                        <span className="w-1.5 h-1.5 bg-primary rounded-full mr-2 flex-shrink-0"></span>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
             <div>
               <h4 className="font-semibold text-foreground mb-2">Zahlungsoptionen</h4>
@@ -166,19 +199,40 @@ export default function BookingForm({ packageType, packageName, packageDescripti
             
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                Haben Sie bereits eine Website? *
+                {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) 
+                  ? 'Welche Prozesse möchten Sie automatisieren? *' 
+                  : 'Haben Sie bereits eine Website? *'
+                }
               </label>
-              <select
-                required
-                value={formData.bestehendeWebsite}
-                onChange={(e) => handleInputChange('bestehendeWebsite', e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
-              >
-                <option value="">Bitte wählen</option>
-                <option value="nein">Nein, kompletter Neubau</option>
-                <option value="ja">Ja, soll überarbeitet werden</option>
-                <option value="unsicher">Weiß nicht / Unsicher</option>
-              </select>
+              {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) ? (
+                <select
+                  required
+                  value={formData.bestehendeWebsite}
+                  onChange={(e) => handleInputChange('bestehendeWebsite', e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                  <option value="">Bitte wählen</option>
+                  <option value="kundenanfragen">Kundenanfragen & Support</option>
+                  <option value="terminbuchung">Terminbuchung & Kalender</option>
+                  <option value="datenverarbeitung">Datenverarbeitung & -übertragung</option>
+                  <option value="kommunikation">Interne Kommunikation</option>
+                  <option value="marketing">Marketing & Lead-Generierung</option>
+                  <option value="buchhaltung">Buchhaltung & Rechnungswesen</option>
+                  <option value="individuell">Individuelle Prozesse</option>
+                </select>
+              ) : (
+                <select
+                  required
+                  value={formData.bestehendeWebsite}
+                  onChange={(e) => handleInputChange('bestehendeWebsite', e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                  <option value="">Bitte wählen</option>
+                  <option value="nein">Nein, kompletter Neubau</option>
+                  <option value="ja">Ja, soll überarbeitet werden</option>
+                  <option value="unsicher">Weiß nicht / Unsicher</option>
+                </select>
+              )}
             </div>
           </div>
         </div>
@@ -233,10 +287,26 @@ export default function BookingForm({ packageType, packageName, packageDescripti
         {/* Funktionen */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
-            Welche Funktionen benötigen Sie? (mehrere Auswahl möglich)
+            {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) 
+              ? 'Welche KI-Funktionen benötigen Sie? (mehrere Auswahl möglich)'
+              : 'Welche Funktionen benötigen Sie? (mehrere Auswahl möglich)'
+            }
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
+            {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) ? [
+              'Automatische E-Mail-Antworten',
+              'Chatbot-Integration',
+              'Terminbuchung & Kalender',
+              'Datenanalyse & Reporting',
+              'CRM-Integration',
+              'Buchhaltungs-Integration',
+              'Marketing-Automatisierung',
+              'Kundenservice-Automatisierung',
+              'Lead-Generierung',
+              'Workflow-Management',
+              'API-Integrationen',
+              'Individuelle Anpassungen'
+            ] : [
               'Responsive Design',
               'SEO-Optimierung',
               'Kontaktformular',
@@ -262,7 +332,10 @@ export default function BookingForm({ packageType, packageName, packageDescripti
         {/* Budget */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
-            Budget-Rahmen
+            {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) 
+              ? 'Monatliches Budget für KI-Automatisierung'
+              : 'Budget-Rahmen'
+            }
           </label>
           <select
             value={formData.budget}
@@ -270,11 +343,23 @@ export default function BookingForm({ packageType, packageName, packageDescripti
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
           >
             <option value="">Bitte wählen</option>
-            <option value="2000-5000">€2.000 - €5.000</option>
-            <option value="5000-10000">€5.000 - €10.000</option>
-            <option value="10000-20000">€10.000 - €20.000</option>
-            <option value="20000-50000">€20.000 - €50.000</option>
-            <option value="50000+">€50.000+</option>
+            {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) ? [
+              { value: "100-200", label: "€100 - €200 pro Monat" },
+              { value: "200-500", label: "€200 - €500 pro Monat" },
+              { value: "500-1000", label: "€500 - €1.000 pro Monat" },
+              { value: "1000-2000", label: "€1.000 - €2.000 pro Monat" },
+              { value: "2000+", label: "€2.000+ pro Monat" }
+            ].map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            )) : [
+              { value: "2000-5000", label: "€2.000 - €5.000" },
+              { value: "5000-10000", label: "€5.000 - €10.000" },
+              { value: "10000-20000", label: "€10.000 - €20.000" },
+              { value: "20000-50000", label: "€20.000 - €50.000" },
+              { value: "50000+", label: "€50.000+" }
+            ].map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
           </select>
         </div>
 

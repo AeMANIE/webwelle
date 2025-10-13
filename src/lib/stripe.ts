@@ -57,12 +57,49 @@ export const PRICE_CONFIG = {
       amount: 328900, // 3289€ in Cent
       currency: 'eur'
     }
+  },
+  // AI-Agent Pakete
+  flowwelle: {
+    monthly: {
+      priceId: 'price_flowwelle_monthly', // FlowWelle monatlich (99€) - TODO: Echte Stripe Price ID
+      amount: 9900, // 99€ in Cent
+      currency: 'eur'
+    },
+    yearly: {
+      priceId: 'price_flowwelle_yearly', // FlowWelle jährlich (990€) - TODO: Echte Stripe Price ID
+      amount: 99000, // 990€ in Cent
+      currency: 'eur'
+    }
+  },
+  powerwelle: {
+    monthly: {
+      priceId: 'price_powerwelle_monthly', // PowerWelle monatlich (179€) - TODO: Echte Stripe Price ID
+      amount: 17900, // 179€ in Cent
+      currency: 'eur'
+    },
+    yearly: {
+      priceId: 'price_powerwelle_yearly', // PowerWelle jährlich (1.790€) - TODO: Echte Stripe Price ID
+      amount: 179000, // 1790€ in Cent
+      currency: 'eur'
+    }
+  },
+  meisterwelle: {
+    monthly: {
+      priceId: 'price_meisterwelle_monthly', // MeisterWelle monatlich (249€) - TODO: Echte Stripe Price ID
+      amount: 24900, // 249€ in Cent
+      currency: 'eur'
+    },
+    yearly: {
+      priceId: 'price_meisterwelle_yearly', // MeisterWelle jährlich (2.490€) - TODO: Echte Stripe Price ID
+      amount: 249000, // 2490€ in Cent
+      currency: 'eur'
+    }
   }
 };
 
 // Stripe Checkout Session erstellen
 export async function createCheckoutSession(
-  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle',
+  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle',
   isMonthly: boolean,
   customerEmail: string,
   customerName: string,
