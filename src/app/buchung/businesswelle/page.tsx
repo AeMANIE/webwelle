@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
 import BookingForm from '@/app/components/BookingForm';
@@ -89,11 +90,13 @@ export default function BusinessWelleBooking() {
           </div>
         </div>
 
-        <BookingForm 
-          packageType="businesswelle"
-          packageName="BusinessWelle"
-          packageDescription="Unternehmenswebsite (bis 3 Seiten) - Ihr professioneller Online-Auftritt"
-        />
+        <Suspense fallback={<div className="text-center py-8">Lade Buchungsformular...</div>}>
+          <BookingForm 
+            packageType="businesswelle"
+            packageName="BusinessWelle"
+            packageDescription="Unternehmenswebsite (bis 3 Seiten) - Ihr professioneller Online-Auftritt"
+          />
+        </Suspense>
         </div>
       </main>
       <Footer />

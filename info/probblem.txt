@@ -6,3 +6,13 @@ Defensive JSON-Parsing im Stripe-Webhook.
 Kurzfazit
 Build/Lint: ok.
 Sicherheitslücken: Middleware-JWT ohne Signatur, 2FA prüft nicht gegen Store, Token im non-HttpOnly-Cookie, Stripe/Email Fallback-Secrets.
+
+
+7 warnings found (use docker --debug to expand):
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "JWT_SECRET") (line 12)
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "STRIPE_SECRET_KEY") (line 12)
+- UndefinedVar: Usage of undefined variable '$NIXPACKS_PATH' (line 18)
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "ADMIN_PASSWORD") (line 11)
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "JWT_SECRET") (line 11)
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "STRIPE_SECRET_KEY") (line 11)
+- SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "ADMIN_PASSWORD") (line 12)

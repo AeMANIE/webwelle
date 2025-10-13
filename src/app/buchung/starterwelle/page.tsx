@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
 import BookingForm from '@/app/components/BookingForm';
@@ -82,11 +83,13 @@ export default function StarterWelleBooking() {
           </div>
         </div>
 
-        <BookingForm 
-          packageType="starterwelle"
-          packageName="StarterWelle"
-          packageDescription="One-Page Website - Ihr digitaler Auftritt auf den Punkt gebracht"
-        />
+        <Suspense fallback={<div className="text-center py-8">Lade Buchungsformular...</div>}>
+          <BookingForm 
+            packageType="starterwelle"
+            packageName="StarterWelle"
+            packageDescription="One-Page Website - Ihr digitaler Auftritt auf den Punkt gebracht"
+          />
+        </Suspense>
         </div>
       </main>
       <Footer />

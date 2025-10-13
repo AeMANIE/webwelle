@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import StripeCheckout from './StripeCheckout';
 
@@ -16,7 +16,9 @@ interface BookingFormProps {
 
 export default function BookingForm({ packageType, packageName, packageDescription, features, monthlyPrice, yearlyPrice }: BookingFormProps) {
   const router = useRouter();
-  const [isMonthly, setIsMonthly] = useState(false);
+  const searchParams = useSearchParams();
+  const [isMonthly, setIsMonthly] = useState(true);
+
   const [formData, setFormData] = useState({
     // Allgemeine Informationen
     firmenname: '',
@@ -41,7 +43,7 @@ export default function BookingForm({ packageType, packageName, packageDescripti
     hosting: '',
     
     // Budget & Zeitplan
-    budget: '',
+    budget: '' as string,
     fertigstellungstermin: '',
     
     // Kontaktdaten
@@ -51,8 +53,38 @@ export default function BookingForm({ packageType, packageName, packageDescripti
     nachricht: ''
   });
 
+  // URL-Parameter für Zahlungsmodus lesen
+  useEffect(() => {
+    const billingParam = searchParams.get('billing');
+    if (billingParam === 'monthly') {
+      setIsMonthly(true);
+    } else if (billingParam === 'yearly') {
+      setIsMonthly(false);
+    }
+    // Wenn kein Parameter vorhanden ist, bleibt der Standard (monatlich)
+  }, [searchParams]);
+
+  // Sicherstellen, dass budget immer ein String ist
+  useEffect(() => {
+    if (typeof formData.budget === 'object' && formData.budget !== null) {
+      setFormData(prev => ({ ...prev, budget: '' }));
+    }
+  }, [formData.budget]);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Sicherstellen, dass budget immer ein String ist
+  const getBudgetValue = () => {
+    const budget = formData.budget;
+    if (typeof budget === 'string') {
+      return budget;
+    }
+    if (typeof budget === 'object' && budget !== null && 'value' in budget) {
+      return (budget as { value: string }).value;
+    }
+    return '';
   };
 
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
@@ -157,27 +189,13 @@ export default function BookingForm({ packageType, packageName, packageDescripti
           </div>
         </div>
 
-        {/* Preis-Toggle */}
-        <div className="flex items-center justify-center space-x-4 mb-8">
-          <span className={`text-sm font-medium ${!isMonthly ? 'text-foreground' : 'text-muted-foreground'}`}>
-            Jährlich
-          </span>
-          <button
-            type="button"
-            onClick={() => setIsMonthly(!isMonthly)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-              isMonthly ? 'bg-primary' : 'bg-gray-200'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                isMonthly ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </button>
-          <span className={`text-sm font-medium ${isMonthly ? 'text-foreground' : 'text-muted-foreground'}`}>
-            Monatlich
-          </span>
+        {/* Gewählter Zahlungsmodus anzeigen */}
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-8">
+          <div className="flex items-center justify-center">
+            <span className="text-primary font-semibold">
+              Gewählter Zahlungsmodus: {isMonthly ? 'Monatlich' : 'Jährlich'}
+            </span>
+          </div>
         </div>
 
         {/* Allgemeine Informationen */}
@@ -338,28 +356,31 @@ export default function BookingForm({ packageType, packageName, packageDescripti
             }
           </label>
           <select
-            value={formData.budget}
+            value={getBudgetValue()}
             onChange={(e) => handleInputChange('budget', e.target.value)}
             className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
           >
             <option value="">Bitte wählen</option>
-            {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) ? [
-              { value: "100-200", label: "€100 - €200 pro Monat" },
-              { value: "200-500", label: "€200 - €500 pro Monat" },
-              { value: "500-1000", label: "€500 - €1.000 pro Monat" },
-              { value: "1000-2000", label: "€1.000 - €2.000 pro Monat" },
-              { value: "2000+", label: "€2.000+ pro Monat" }
-            ].map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            )) : [
-              { value: "2000-5000", label: "€2.000 - €5.000" },
-              { value: "5000-10000", label: "€5.000 - €10.000" },
-              { value: "10000-20000", label: "€10.000 - €20.000" },
-              { value: "20000-50000", label: "€20.000 - €50.000" },
-              { value: "50000+", label: "€50.000+" }
-            ].map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
+            {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) ? 
+              [
+                { value: "100-200", label: "€100 - €200 pro Monat" },
+                { value: "200-500", label: "€200 - €500 pro Monat" },
+                { value: "500-1000", label: "€500 - €1.000 pro Monat" },
+                { value: "1000-2000", label: "€1.000 - €2.000 pro Monat" },
+                { value: "2000+", label: "€2.000+ pro Monat" }
+              ].map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              )) : 
+              [
+                { value: "2000-5000", label: "€2.000 - €5.000" },
+                { value: "5000-10000", label: "€5.000 - €10.000" },
+                { value: "10000-20000", label: "€10.000 - €20.000" },
+                { value: "20000-50000", label: "€20.000 - €50.000" },
+                { value: "50000+", label: "€50.000+" }
+              ].map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))
+            }
           </select>
         </div>
 

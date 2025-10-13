@@ -69,9 +69,6 @@ export default function Products() {
               <p className="text-sm text-muted-foreground mb-4">
                 {isMounted ? (isMonthly ? '24 Monate, Nettopreis' : 'Netto Jährlich,  24 Monate Laufzeit') : '24 Monate, Nettopreis'}
               </p>
-              <div className="text-lg font-semibold text-foreground">
-                {isMounted ? (isMonthly ? 'Oder 840 € jährlich' : 'Oder 77 € mtl.') : 'Oder 840 € jährlich'}
-              </div>
             </div>
 
             <div className="space-y-3 mb-8">
@@ -85,11 +82,15 @@ export default function Products() {
               </div>
               <div className="flex items-center">
                 <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
-                <span className="text-foreground text-sm">Kontaktformular mit Spamschutz</span>
+                <span className="text-foreground text-sm">Kontaktformular</span>
               </div>
               <div className="flex items-center">
                 <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
                 <span className="text-foreground text-sm">Hosting & Wartung inklusive</span>
+              </div>
+              <div className="flex items-center">
+                <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                <span className="text-foreground text-sm">Backup alle 2 Wochen</span>
               </div>
               <div className="flex items-center">
                 <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
@@ -102,7 +103,7 @@ export default function Products() {
             </div>
 
             <Link
-              href="/buchung/starterwelle"
+              href={`/buchung/starterwelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
               className="w-full bg-secondary text-secondary-foreground py-3 px-6 rounded-lg hover:bg-secondary/90 transition-colors font-semibold text-center block"
             >
               Jetzt buchen
@@ -134,9 +135,6 @@ export default function Products() {
               <p className="text-sm text-muted-foreground mb-4">
                 {isMounted ? (isMonthly ? '24 Monate, Nettopreis' : 'Netto Jährlich,  24 Monate Laufzeit') : '24 Monate, Nettopreis'}
               </p>
-              <div className="text-lg font-semibold text-foreground">
-                {isMounted ? (isMonthly ? 'Oder 1.520 € jährlich' : 'Oder 139 € mtl.') : 'Oder 1.520 € jährlich'}
-              </div>
             </div>
 
             <div className="space-y-3 mb-8">
@@ -150,11 +148,15 @@ export default function Products() {
               </div>
               <div className="flex items-center">
                 <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
-                <span className="text-foreground text-sm">Kontaktformular mit cleverem Spamschutz</span>
+                <span className="text-foreground text-sm">Kontaktformular</span>
               </div>
               <div className="flex items-center">
                 <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
                 <span className="text-foreground text-sm">Hosting & technische Wartung</span>
+              </div>
+              <div className="flex items-center">
+                <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                <span className="text-foreground text-sm">Backup alle 2 Wochen</span>
               </div>
               <div className="flex items-center">
                 <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
@@ -184,7 +186,7 @@ export default function Products() {
             </div>
 
             <Link
-              href="/buchung/businesswelle"
+              href={`/buchung/businesswelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
               className="w-full bg-primary text-primary-foreground py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-center block"
             >
               Jetzt buchen
@@ -216,9 +218,6 @@ export default function Products() {
               <p className="text-sm text-muted-foreground mb-4">
                 {isMounted ? (isMonthly ? '24 Monate, Nettopreis' : 'Netto Jährlich,  24 Monate Laufzeit') : '24 Monate, Nettopreis'}
               </p>
-              <div className="text-lg font-semibold text-foreground">
-                {isMounted ? (isMonthly ? 'Oder 3.289 € jährlich' : 'Oder 278 € mtl.') : 'Oder 3.289 € jährlich'}
-              </div>
             </div>
 
             <div className="space-y-3 mb-8">
@@ -232,11 +231,15 @@ export default function Products() {
               </div>
               <div className="flex items-center">
                 <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
-                <span className="text-foreground text-sm">Erweiterte Kontakt- & Interaktionsformulare</span>
+                <span className="text-foreground text-sm">Interaktionsformulare</span>
               </div>
               <div className="flex items-center">
                 <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
                 <span className="text-foreground text-sm">Hosting & Premium-Wartung, inkl. Überwachung & Updates</span>
+              </div>
+              <div className="flex items-center">
+                <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                <span className="text-foreground text-sm">Tägliches Backup</span>
               </div>
               <div className="flex items-center">
                 <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
@@ -274,7 +277,7 @@ export default function Products() {
             </div>
 
             <Link
-              href="/buchung/erfolgswelle"
+              href={`/buchung/erfolgswelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
               className="w-full bg-secondary text-secondary-foreground py-3 px-6 rounded-lg hover:bg-secondary/90 transition-colors font-semibold text-center block"
             >
               Jetzt buchen

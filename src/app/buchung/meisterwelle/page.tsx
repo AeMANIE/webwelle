@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import BookingForm from '../../components/BookingForm';
@@ -68,22 +69,24 @@ export default function MeisterWelleBookingPage() {
             </div>
             
             <div className="bg-card rounded-2xl p-8 border border-border">
-              <BookingForm 
-                packageType="meisterwelle"
-                packageName="MeisterWelle"
-                packageDescription="Für höchste Ansprüche mit unbegrenzt komplexen Workflows"
-                features={[
-                  "Mehr als 10 Workflow-Schritte",
-                  "Großprojekte & intelligente Automation",
-                  "Individuelle Anpassungen",
-                  "Umfangreiche API- und Systemanbindung",
-                  "Vollautomatisierte Premium-Kommunikation",
-                  "Monatliche Strategie- und Performance-Auswertung",
-                  "Kontinuierliche Optimierung"
-                ]}
-                monthlyPrice={249}
-                yearlyPrice={2490}
-              />
+              <Suspense fallback={<div className="text-center py-8">Lade Buchungsformular...</div>}>
+                <BookingForm 
+                  packageType="meisterwelle"
+                  packageName="MeisterWelle"
+                  packageDescription="Für höchste Ansprüche mit unbegrenzt komplexen Workflows"
+                  features={[
+                    "Mehr als 10 Workflow-Schritte",
+                    "Großprojekte & intelligente Automation",
+                    "Individuelle Anpassungen",
+                    "Umfangreiche API- und Systemanbindung",
+                    "Vollautomatisierte Premium-Kommunikation",
+                    "Monatliche Strategie- und Performance-Auswertung",
+                    "Kontinuierliche Optimierung"
+                  ]}
+                  monthlyPrice={249}
+                  yearlyPrice={2490}
+                />
+              </Suspense>
             </div>
           </div>
         </div>

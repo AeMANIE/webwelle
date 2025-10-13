@@ -137,16 +137,6 @@ export default function AIAgentProducts() {
               <p className="text-sm text-muted-foreground mb-4">
                 {isMonthly ? '24 Monate, Nettopreis' : 'Netto Jährlich,  24 Monate Laufzeit'}
               </p>
-              {!isMonthly && (
-                <div className="text-lg font-semibold text-foreground">
-                  Oder 99 € mtl.
-                </div>
-              )}
-              {isMonthly && (
-                <div className="text-lg font-semibold text-foreground">
-                  Oder 990 € jährlich
-                </div>
-              )}
             </div>
 
             <div className="space-y-3 mb-8">
@@ -177,7 +167,7 @@ export default function AIAgentProducts() {
             </div>
 
             <Link
-              href="/buchung/flowwelle"
+              href={`/buchung/flowwelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
               className="w-full bg-secondary text-secondary-foreground py-3 px-6 rounded-lg hover:bg-secondary/90 transition-colors font-semibold text-center block"
             >
               Jetzt buchen
@@ -212,16 +202,6 @@ export default function AIAgentProducts() {
               <p className="text-sm text-muted-foreground mb-4">
                 {isMonthly ? '24 Monate, Nettopreis' : 'Netto Jährlich,  24 Monate Laufzeit'}
               </p>
-              {!isMonthly && (
-                <div className="text-lg font-semibold text-foreground">
-                  Oder 179 € mtl.
-                </div>
-              )}
-              {isMonthly && (
-                <div className="text-lg font-semibold text-foreground">
-                  Oder 1.790 € jährlich
-                </div>
-              )}
             </div>
 
             <div className="space-y-3 mb-8">
@@ -252,7 +232,7 @@ export default function AIAgentProducts() {
             </div>
 
             <Link
-              href="/buchung/powerwelle"
+              href={`/buchung/powerwelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
               className="w-full bg-primary text-primary-foreground py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-center block"
             >
               Jetzt buchen
@@ -287,16 +267,6 @@ export default function AIAgentProducts() {
               <p className="text-sm text-muted-foreground mb-4">
                 {isMonthly ? '24 Monate, Nettopreis' : 'Netto Jährlich,  24 Monate Laufzeit'}
               </p>
-              {!isMonthly && (
-                <div className="text-lg font-semibold text-foreground">
-                  Oder 249 € mtl.
-                </div>
-              )}
-              {isMonthly && (
-                <div className="text-lg font-semibold text-foreground">
-                  Oder 2.490 € jährlich
-                </div>
-              )}
             </div>
 
             <div className="space-y-3 mb-8">
@@ -331,7 +301,7 @@ export default function AIAgentProducts() {
             </div>
 
             <Link
-              href="/buchung/meisterwelle"
+              href={`/buchung/meisterwelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
               className="w-full bg-secondary text-secondary-foreground py-3 px-6 rounded-lg hover:bg-secondary/90 transition-colors font-semibold text-center block"
             >
               Jetzt buchen
@@ -390,19 +360,19 @@ export default function AIAgentProducts() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/buchung/flowwelle"
+                href={`/buchung/flowwelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
                 className="bg-primary text-primary-foreground py-3 px-8 rounded-lg hover:bg-primary/90 transition-colors font-semibold"
               >
                 FlowWelle buchen
               </Link>
               <Link
-                href="/buchung/powerwelle"
+                href={`/buchung/powerwelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
                 className="bg-secondary text-secondary-foreground py-3 px-8 rounded-lg hover:bg-secondary/90 transition-colors font-semibold"
               >
                 PowerWelle buchen
               </Link>
               <Link
-                href="/buchung/meisterwelle"
+                href={`/buchung/meisterwelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
                 className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-3 px-8 rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-colors font-semibold"
               >
                 MeisterWelle buchen

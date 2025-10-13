@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
 import BookingForm from '@/app/components/BookingForm';
@@ -91,11 +92,13 @@ export default function ErfolgsWelleBooking() {
           </div>
         </div>
 
-        <BookingForm 
-          packageType="erfolgswelle"
-          packageName="ErfolgsWelle"
-          packageDescription="Premium-Unternehmenswebsite (bis 5 Seiten) - Der nächste Level für Ihren Markenauftritt"
-        />
+        <Suspense fallback={<div className="text-center py-8">Lade Buchungsformular...</div>}>
+          <BookingForm 
+            packageType="erfolgswelle"
+            packageName="ErfolgsWelle"
+            packageDescription="Premium-Unternehmenswebsite (bis 5 Seiten) - Der nächste Level für Ihren Markenauftritt"
+          />
+        </Suspense>
         </div>
       </main>
       <Footer />
