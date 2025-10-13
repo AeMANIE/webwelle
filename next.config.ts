@@ -64,7 +64,7 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  // Headers für bessere Caching
+  // Headers für bessere Caching und MIME-Type Korrektur
   async headers() {
     return [
       {
@@ -84,7 +84,7 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // Korrekte MIME-Types für CSS - verhindert MIME-Type Fehler
+      // Alle CSS-Dateien mit korrektem MIME-Type
       {
         source: '/_next/static/css/(.*)',
         headers: [
@@ -93,8 +93,18 @@ const nextConfig: NextConfig = {
             value: 'text/css; charset=utf-8',
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Alle JS-Dateien mit korrektem MIME-Type
+      {
+        source: '/_next/static/chunks/(.*)',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/javascript; charset=utf-8',
           },
           {
             key: 'Cache-Control',
@@ -102,45 +112,13 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // Spezifisch für app/layout.css
-      {
-        source: '/_next/static/css/app/layout.css',
-        headers: [
-          {
-            key: 'Content-Type',
-            value: 'text/css; charset=utf-8',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-        ],
-      },
-      // Korrekte MIME-Types für JS
-      {
-        source: '/:path*\\.js',
-        headers: [
-          {
-            key: 'Content-Type',
-            value: 'application/javascript; charset=utf-8',
-          },
-        ],
-      },
-      // Statische Assets - lange Cache-Zeit (1 Jahr)
+      // Statische Assets - optimierte Cache-Strategie
       {
         source: '/_next/static/(.*)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable, s-maxage=31536000',
-          },
-          {
-            key: 'Expires',
-            value: new Date(Date.now() + 31536000 * 1000).toUTCString(),
-          },
-          {
-            key: 'Vary',
-            value: 'Accept-Encoding',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },
@@ -150,31 +128,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=86400, s-maxage=31536000',
-          },
-        ],
-      },
-      // CSS und JS - optimierte Cache-Zeit
-      {
-        source: '/:path*\\.(css|js)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable, s-maxage=31536000',
-          },
-          {
-            key: 'Expires',
-            value: new Date(Date.now() + 31536000 * 1000).toUTCString(),
-          },
-        ],
-      },
-      // HTML - kurze Cache-Zeit für Updates
-      {
-        source: '/:path*\\.(html|htm)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=3600, s-maxage=86400',
+            value: 'public, max-age=86400',
           },
         ],
       },

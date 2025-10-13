@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
         customerName,
         formData: JSON.stringify(formData),
       },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3002'}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3002'}/#produkte?cancelled=true`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/#produkte?cancelled=true`,
       locale: 'de',
       billing_address_collection: 'required',
       shipping_address_collection: {

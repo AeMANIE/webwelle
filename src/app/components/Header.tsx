@@ -61,8 +61,8 @@ export default function Header() {
             <Link href={{ pathname: '/', hash: 'leistungen' }} className="text-foreground hover:text-primary transition-colors font-medium">
               Leistungen
             </Link>
-            <Link href={{ pathname: '/', hash: 'faq' }} className="text-foreground hover:text-primary transition-colors font-medium">
-              FAQ
+            <Link href={{ pathname: '/', hash: 'arbeitsweise' }} className="text-foreground hover:text-primary transition-colors font-medium">
+              Arbeitsweise
             </Link>
             <Link href={{ pathname: '/', hash: 'kontakt' }} className="text-foreground hover:text-primary transition-colors font-medium">
               Kontakt
@@ -147,12 +147,12 @@ export default function Header() {
                 Leistungen
               </Link>
               <Link 
-                href="/#faq" 
+                href="/#arbeitsweise" 
                 className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
                 onClick={(e) => {
                   e.preventDefault();
                   closeMenu();
-                  const element = document.getElementById('faq');
+                  const element = document.getElementById('arbeitsweise');
                   if (element) {
                     const headerHeight = 80;
                     const elementPosition = element.offsetTop - headerHeight;
@@ -160,7 +160,7 @@ export default function Header() {
                   }
                 }}
               >
-                FAQ
+                Arbeitsweise
               </Link>
               <Link 
                 href="/#kontakt" 

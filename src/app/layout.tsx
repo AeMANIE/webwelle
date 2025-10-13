@@ -119,42 +119,7 @@ export default function RootLayout({
             }
           `
         }} />
-        {/* Non-critical CSS asynchron laden - optimierte Strategie */}
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            // CSS asynchron laden - verhindert Render-blocking
-            function loadCSS(href, media) {
-              var link = document.createElement('link');
-              link.rel = 'stylesheet';
-              link.href = href;
-              link.media = media || 'print';
-              link.type = 'text/css';
-              link.onload = function() { 
-                this.media = 'all';
-                this.onload = null;
-              };
-              link.onerror = function() {
-                console.warn('Failed to load CSS:', href);
-              };
-              document.head.appendChild(link);
-            }
-            
-            // CSS sofort asynchron laden - nicht warten auf DOM ready
-            loadCSS('/_next/static/css/app/layout.css');
-            
-            // Zusätzliche CSS-Dateien nach kurzer Verzögerung
-            setTimeout(function() {
-              // Weitere CSS-Dateien falls vorhanden
-              var cssFiles = [
-                '/_next/static/css/701a6e5abf3c4c3d.css',
-                '/_next/static/css/20a8705cbd1073c4.css'
-              ];
-              cssFiles.forEach(function(href) {
-                loadCSS(href);
-              });
-            }, 50);
-          `
-        }} />
+        {/* CSS wird normal über Next.js geladen - keine asynchronen Scripts */}
       </head>
       <body
         className={`${inter.variable} font-sans antialiased`}
