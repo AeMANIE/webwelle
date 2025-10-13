@@ -1,8 +1,55 @@
+import type { Metadata } from 'next';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import BookingForm from '../../components/BookingForm';
 import ScrollToTop from '../../components/ScrollToTop';
 import CookieBanner from '../../components/CookieBanner';
+
+export const metadata: Metadata = {
+  title: "FlowWelle buchen | KI-Agent Einstieg | WebWelle",
+  description: "Einstieg in KI-Automatisierung: bis 5 Workflow-Schritte, Anfragen, Terminbuchung, Support. FlowWelle für 99€/Monat buchen.",
+  keywords: "FlowWelle buchen, KI-Agent Einstieg, Workflow-Automatisierung, Terminbuchung, Leadgenerierung, WebWelle",
+  authors: [{ name: "WebWelle" }],
+  creator: "WebWelle",
+  publisher: "WebWelle",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'de_DE',
+    url: 'https://webwelle.com/buchung/flowwelle',
+    siteName: 'WebWelle',
+    title: 'FlowWelle buchen | KI-Agent Einstieg',
+    description: 'Einstieg in KI-Automatisierung: bis 5 Workflow-Schritte, Anfragen, Terminbuchung, Support.',
+    images: [
+      {
+        url: 'https://webwelle.com/logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'WebWelle FlowWelle KI-Agent',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'FlowWelle buchen | KI-Agent Einstieg',
+    description: 'Einstieg in KI-Automatisierung: bis 5 Workflow-Schritte, Anfragen, Terminbuchung, Support.',
+    images: ['https://webwelle.com/logo.png'],
+  },
+  alternates: {
+    canonical: 'https://webwelle.com/buchung/flowwelle',
+  },
+  category: 'Technology',
+};
 
 export default function FlowWelleBookingPage() {
   return (

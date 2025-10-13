@@ -75,11 +75,11 @@ export default function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-4 text-foreground">Leistungen</h4>
             <ul className="space-y-2">
-              <li><Link href="/#produkte" className="text-muted-foreground hover:text-primary transition-colors font-light">Webdesign</Link></li>
-              <li><Link href="/#produkte" className="text-muted-foreground hover:text-primary transition-colors font-light">E-Commerce</Link></li>
-              <li><Link href="/#leistungen" className="text-muted-foreground hover:text-primary transition-colors font-light">SEO & Performance</Link></li>
-              <li><Link href="/#leistungen" className="text-muted-foreground hover:text-primary transition-colors font-light">Branding</Link></li>
-              <li><Link href="/#leistungen" className="text-muted-foreground hover:text-primary transition-colors font-light">Hosting & Support</Link></li>
+              <li><Link href={{ pathname: '/', hash: 'produkte' }} className="text-muted-foreground hover:text-primary transition-colors font-light">Webdesign</Link></li>
+              <li><Link href={{ pathname: '/', hash: 'produkte' }} className="text-muted-foreground hover:text-primary transition-colors font-light">E-Commerce</Link></li>
+              <li><Link href={{ pathname: '/', hash: 'leistungen' }} className="text-muted-foreground hover:text-primary transition-colors font-light">SEO & Performance</Link></li>
+              <li><Link href={{ pathname: '/', hash: 'leistungen' }} className="text-muted-foreground hover:text-primary transition-colors font-light">Branding</Link></li>
+              <li><Link href={{ pathname: '/', hash: 'leistungen' }} className="text-muted-foreground hover:text-primary transition-colors font-light">Hosting & Support</Link></li>
               <li><Link href="/ai-agent" className="text-muted-foreground hover:text-primary transition-colors font-light">KI-Agenten</Link></li>
             </ul>
           </div>
@@ -88,10 +88,10 @@ export default function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-4 text-foreground">Rechtliches</h4>
             <ul className="space-y-2">
-              <li><a href="/impressum" className="text-muted-foreground hover:text-primary transition-colors font-light">Impressum</a></li>
-              <li><a href="/datenschutz" className="text-muted-foreground hover:text-primary transition-colors font-light">Datenschutz</a></li>
-              <li><a href="/agb" className="text-muted-foreground hover:text-primary transition-colors font-light">AGB</a></li>
-              <li><a href="/widerruf" className="text-muted-foreground hover:text-primary transition-colors font-light">Widerruf</a></li>
+              <li><Link href="/impressum" className="text-muted-foreground hover:text-primary transition-colors font-light">Impressum</Link></li>
+              <li><Link href="/datenschutz" className="text-muted-foreground hover:text-primary transition-colors font-light">Datenschutz</Link></li>
+              <li><Link href="/agb" className="text-muted-foreground hover:text-primary transition-colors font-light">AGB</Link></li>
+              <li><Link href="/widerruf" className="text-muted-foreground hover:text-primary transition-colors font-light">Widerruf</Link></li>
               <li><Link href="/mehrwertsteuer" className="text-muted-foreground hover:text-primary transition-colors font-light">MwSt-Rechner</Link></li>
             </ul>
           </div>

@@ -127,9 +127,13 @@ export default function RootLayout({
               link.rel = 'stylesheet';
               link.href = href;
               link.media = media || 'print';
+              link.type = 'text/css';
               link.onload = function() { 
                 this.media = 'all';
                 this.onload = null;
+              };
+              link.onerror = function() {
+                console.warn('Failed to load CSS:', href);
               };
               document.head.appendChild(link);
             }

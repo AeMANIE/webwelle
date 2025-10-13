@@ -1,8 +1,55 @@
+import type { Metadata } from 'next';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import BookingForm from '../../components/BookingForm';
 import ScrollToTop from '../../components/ScrollToTop';
 import CookieBanner from '../../components/CookieBanner';
+
+export const metadata: Metadata = {
+  title: "MeisterWelle buchen | Premium KI-Agenten & Integrationen | WebWelle",
+  description: "Premium-KI, umfangreiche API-Anbindung, individuelle Workflows & Strategie. MeisterWelle für 249€/Monat buchen.",
+  keywords: "MeisterWelle buchen, Premium KI-Agenten, API-Integration, individuelle Workflows, Strategie, WebWelle",
+  authors: [{ name: "WebWelle" }],
+  creator: "WebWelle",
+  publisher: "WebWelle",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'de_DE',
+    url: 'https://webwelle.com/buchung/meisterwelle',
+    siteName: 'WebWelle',
+    title: 'MeisterWelle buchen | Premium KI-Agenten & Integrationen',
+    description: 'Premium-KI, umfangreiche API-Anbindung, individuelle Workflows & Strategie.',
+    images: [
+      {
+        url: 'https://webwelle.com/logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'WebWelle MeisterWelle KI-Agent',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MeisterWelle buchen | Premium KI-Agenten & Integrationen',
+    description: 'Premium-KI, umfangreiche API-Anbindung, individuelle Workflows & Strategie.',
+    images: ['https://webwelle.com/logo.png'],
+  },
+  alternates: {
+    canonical: 'https://webwelle.com/buchung/meisterwelle',
+  },
+  category: 'Technology',
+};
 
 export default function MeisterWelleBookingPage() {
   return (

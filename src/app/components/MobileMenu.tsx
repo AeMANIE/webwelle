@@ -39,22 +39,22 @@ export default function MobileMenu() {
       {isMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-card rounded-lg mt-2 border border-border">
-            <Link href="/#produkte" className="block px-3 py-2 text-foreground hover:text-primary font-medium" onClick={closeMenu}>
+            <Link href={{ pathname: '/', hash: 'produkte' }} className="block px-3 py-2 text-foreground hover:text-primary font-medium" onClick={closeMenu}>
               Produkte
             </Link>
             <Link href="/ai-agent" className="block px-3 py-2 text-foreground hover:text-primary font-medium" onClick={closeMenu}>
               KI-Agenten
             </Link>
-            <Link href="/#vorteile" className="block px-3 py-2 text-foreground hover:text-primary font-medium" onClick={closeMenu}>
+            <Link href={{ pathname: '/', hash: 'vorteile' }} className="block px-3 py-2 text-foreground hover:text-primary font-medium" onClick={closeMenu}>
               Vorteile
             </Link>
-            <Link href="/#leistungen" className="block px-3 py-2 text-foreground hover:text-primary font-medium" onClick={closeMenu}>
+            <Link href={{ pathname: '/', hash: 'leistungen' }} className="block px-3 py-2 text-foreground hover:text-primary font-medium" onClick={closeMenu}>
               Leistungen
             </Link>
-            <Link href="/#faq" className="block px-3 py-2 text-foreground hover:text-primary font-medium" onClick={closeMenu}>
+            <Link href={{ pathname: '/', hash: 'faq' }} className="block px-3 py-2 text-foreground hover:text-primary font-medium" onClick={closeMenu}>
               FAQ
             </Link>
-            <Link href="/#kontakt" className="block px-3 py-2 text-foreground hover:text-primary font-medium" onClick={closeMenu}>
+            <Link href={{ pathname: '/', hash: 'kontakt' }} className="block px-3 py-2 text-foreground hover:text-primary font-medium" onClick={closeMenu}>
               Kontakt
             </Link>
             <Link href="/customer" className="flex items-center justify-center space-x-2 px-3 py-2 text-primary hover:text-primary/80 font-medium border border-primary rounded-md" onClick={closeMenu}>
@@ -62,7 +62,7 @@ export default function MobileMenu() {
               <span>Login</span>
             </Link>
             <Link
-              href="/#cta"
+              href={{ pathname: '/', hash: 'cta' }}
               className="block px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-center font-semibold"
               onClick={closeMenu}
             >

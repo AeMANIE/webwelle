@@ -1,0 +1,8 @@
+Wenn du möchtest, übernehme ich direkt die wichtigsten Fixes:
+Signatur-Validierung in middleware.ts (jose) und Umstellung auf HttpOnly-Set-Cookie im Login.
+TAN-Verifizierung gegen tan.ts in verify-tan und customerLogin2FA.
+Entfernen der Stripe-/Email-Fallbacks und harte Abbrüche ohne ENV.
+Defensive JSON-Parsing im Stripe-Webhook.
+Kurzfazit
+Build/Lint: ok.
+Sicherheitslücken: Middleware-JWT ohne Signatur, 2FA prüft nicht gegen Store, Token im non-HttpOnly-Cookie, Stripe/Email Fallback-Secrets.
