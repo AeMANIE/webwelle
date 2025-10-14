@@ -106,7 +106,7 @@ export default function Products() {
               href={`/buchung/starterwelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
               className="w-full bg-secondary text-secondary-foreground py-3 px-6 rounded-lg hover:bg-secondary/90 transition-colors font-semibold text-center block"
             >
-              Jetzt buchen
+              Wellenstart 
             </Link>
           </div>
 
@@ -189,7 +189,7 @@ export default function Products() {
               href={`/buchung/businesswelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
               className="w-full bg-primary text-primary-foreground py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-center block"
             >
-              Jetzt buchen
+              Wellenstart
             </Link>
           </div>
 
@@ -280,7 +280,7 @@ export default function Products() {
               href={`/buchung/erfolgswelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
               className="w-full bg-secondary text-secondary-foreground py-3 px-6 rounded-lg hover:bg-secondary/90 transition-colors font-semibold text-center block"
             >
-              Jetzt buchen
+              Wellenstart
             </Link>
           </div>
         </div>

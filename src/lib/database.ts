@@ -10,7 +10,7 @@ const pool = new Pool({
 export interface BookingData {
   id?: number;
   session_id: string;
-  package_type: 'nextjs' | 'wordpress';
+  package_type: 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle';
   is_monthly: boolean;
   customer_name: string;
   customer_email: string;

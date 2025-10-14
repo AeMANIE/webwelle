@@ -39,10 +39,11 @@ interface BookingFormData {
   nachricht: string;
 }
 
-export default function BookingForm({ packageType, packageName, packageDescription, features, monthlyPrice, yearlyPrice }: BookingFormProps) {
+export default function BookingForm({ packageType, packageName, packageDescription, monthlyPrice, yearlyPrice }: BookingFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isMonthly, setIsMonthly] = useState(true);
+  const STORAGE_KEY = `bookingForm:${packageType}`;
 
   const [formData, setFormData] = useState<BookingFormData>({
     // Allgemeine Informationen
@@ -68,16 +69,45 @@ export default function BookingForm({ packageType, packageName, packageDescripti
     nachricht: ''
   });
 
-  // URL-Parameter für Zahlungsmodus lesen
+  // Persistenz: Laden (mit Ablauf 7 Tage) & URL-Parameter berücksichtigen
   useEffect(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null;
+      if (raw) {
+        const parsed = JSON.parse(raw) as { ts: number; data: BookingFormData; isMonthly: boolean } | null;
+        // 7 Tage in ms
+        const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+        if (parsed && Date.now() - parsed.ts < oneWeekMs) {
+          setFormData(parsed.data);
+          setIsMonthly(parsed.isMonthly);
+        } else {
+          window.localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+    } catch {
+      // ignorieren – Persistenz ist best-effort
+    }
+
+    // URL-Parameter für Zahlungsmodus hat Priorität gegenüber Persistenz
     const billingParam = searchParams.get('billing');
     if (billingParam === 'monthly') {
       setIsMonthly(true);
     } else if (billingParam === 'yearly') {
       setIsMonthly(false);
     }
-    // Wenn kein Parameter vorhanden ist, bleibt der Standard (monatlich)
-  }, [searchParams]);
+  }, [searchParams, STORAGE_KEY]);
+
+  // Persistenz: Speichern bei Änderungen
+  useEffect(() => {
+    try {
+      const payload = JSON.stringify({ ts: Date.now(), data: formData, isMonthly });
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(STORAGE_KEY, payload);
+      }
+    } catch {
+      // ignorieren
+    }
+  }, [formData, isMonthly, STORAGE_KEY]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));

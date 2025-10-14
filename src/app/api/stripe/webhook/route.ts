@@ -83,7 +83,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       
       const bookingData = {
         session_id: session.id,
-        package_type: metadata.packageType as 'nextjs' | 'wordpress',
+        package_type: metadata.packageType as 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle',
         is_monthly: metadata.isMonthly === 'true',
         customer_name: metadata.customerName || formData.customerName || 'Unbekannt',
         customer_email: session.customer_email || formData.customerEmail || 'unbekannt@example.com',

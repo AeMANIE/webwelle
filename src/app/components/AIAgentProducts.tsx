@@ -170,7 +170,7 @@ export default function AIAgentProducts() {
               href={`/buchung/flowwelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
               className="w-full bg-secondary text-secondary-foreground py-3 px-6 rounded-lg hover:bg-secondary/90 transition-colors font-semibold text-center block"
             >
-              Jetzt buchen
+              Wellenstart 
             </Link>
           </div>
 
@@ -235,7 +235,7 @@ export default function AIAgentProducts() {
               href={`/buchung/powerwelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
               className="w-full bg-primary text-primary-foreground py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-center block"
             >
-              Jetzt buchen
+              Wellenstart 
             </Link>
           </div>
 
@@ -304,7 +304,7 @@ export default function AIAgentProducts() {
               href={`/buchung/meisterwelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
               className="w-full bg-secondary text-secondary-foreground py-3 px-6 rounded-lg hover:bg-secondary/90 transition-colors font-semibold text-center block"
             >
-              Jetzt buchen
+             Wellenstart 
             </Link>
           </div>
         </div>

@@ -4,15 +4,12 @@ const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '
 // KEINE Stripe-Imports im initialen Bundle!
 
 // Stripe nur laden wenn Checkout-Button geklickt wird
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const loadStripeOnDemand = async (): Promise<any> => {
+export const loadStripeOnDemand = async (): Promise<unknown> => {
   if (typeof window === 'undefined') return null;
   
   // Prüfen ob Stripe bereits geladen ist
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if ((window as any).Stripe) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (window as any).Stripe(stripePublishableKey);
+  if ((window as unknown as { Stripe?: unknown }).Stripe) {
+    return (window as unknown as { Stripe: (key: string) => unknown }).Stripe(stripePublishableKey);
   }
   
   // Dynamisch laden - nur wenn wirklich benötigt
@@ -97,6 +94,51 @@ export const PRICE_CONFIG = {
   }
 };
 
+// Zusatzoptionen (Add-ons) Preis-Konfiguration
+export const ADDON_PRICE_CONFIG: Record<string, {
+  oneTime?: { priceId: string };
+  monthly?: { priceId: string };
+}> = {
+  // Keys müssen mit BookingForm "zusatzfunktionen" übereinstimmen
+  'blitz-welle': {
+    oneTime: { priceId: 'price_1SI2S6QoIwTqROay7zklRjIQ' }, // 249,99 €
+  },
+  'logo-welle': {
+    oneTime: { priceId: 'price_1SI2T1QoIwTqROayUnmc8Fjm' }, // 299 €
+  },
+  terminbuchung: {
+    oneTime: { priceId: 'price_1SI2TuQoIwTqROay124259lI' }, // 1.599 €
+    monthly: { priceId: 'price_1SI2WFQoIwTqROayiYbscwip' }, // 145,99 € mntl
+  },
+  'online-shop': {
+    oneTime: { priceId: 'price_1SI2YAQoIwTqROayxsJwyBJy' }, // 2.999 €
+    monthly: { priceId: 'price_1SI2Z7QoIwTqROay9qWE87Pj' }, // 274,99 € mntl
+  },
+  'mitglieder-welle': {
+    oneTime: { priceId: 'price_1SI2ZsQoIwTqROay53gUCPvq' }, // 2.399 €
+    monthly: { priceId: 'price_1SI2akQoIwTqROayxQ1jSUCl' }, // 219,99 € mntl
+  },
+  'foto-welle-5': {
+    oneTime: { priceId: 'price_1SI2buQoIwTqROayOtScLodL' }, // 575 €
+  },
+  'foto-welle-10': {
+    oneTime: { priceId: 'price_1SI2cgQoIwTqROayhymWbiWs' }, // 999 €
+  },
+  'foto-welle-20': {
+    oneTime: { priceId: 'price_1SI2dLQoIwTqROayiKC0lEx3' }, // 1.750 €
+  },
+  lieferdienst: {
+    oneTime: { priceId: 'price_1SI2eJQoIwTqROayIDtCsqMD' }, // 2.999 €
+    monthly: { priceId: 'price_1SI2fVQoIwTqROay2pTT2q2z' }, // 279,99 € mntl
+  },
+  'google-my-business': {
+    oneTime: { priceId: 'price_1SI2gKQoIwTqROayF1uuJVCZ' }, // 399 €
+  },
+  visitenkarten: {
+    oneTime: { priceId: 'price_1SI2mUQoIwTqROaykbL0F5Tg' }, // 100 €
+  },
+};
+
 // Stripe Checkout Session erstellen
 export async function createCheckoutSession(
   packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle',
@@ -106,6 +148,33 @@ export async function createCheckoutSession(
   formData: Record<string, unknown>
 ) {
   try {
+    // Zusatzoptionen (aus dem Formular) in Price-IDs umwandeln
+    const selectedAddonsField = (formData as Record<string, unknown>)['zusatzfunktionen'];
+    const selectedAddons = Array.isArray(selectedAddonsField)
+      ? (selectedAddonsField as string[])
+      : [];
+
+    // Zahlungsart pro Add-on aus dem Formular berücksichtigen, sonst Fallback:
+    const perAddonPaymentField = (formData as Record<string, unknown>)['zusatzzahlung'];
+    const perAddonPaymentPreference: Record<string, 'oneTime' | 'monthly' | undefined> = (perAddonPaymentField as Record<string, 'oneTime' | 'monthly'>) || {};
+    let hasRecurringAddons = false;
+    const addOnPriceIds = selectedAddons
+      .map((key) => {
+        const cfg = ADDON_PRICE_CONFIG[key];
+        if (!cfg) return undefined;
+        const preferred = perAddonPaymentPreference[key];
+        if (preferred === 'monthly') {
+          if (cfg.monthly?.priceId) {
+            hasRecurringAddons = true;
+            return cfg.monthly.priceId;
+          }
+          return cfg.oneTime?.priceId;
+        }
+        // default: einmalig
+        return cfg.oneTime?.priceId || cfg.monthly?.priceId;
+      })
+      .filter((v): v is string => Boolean(v));
+
     const response = await fetch('/api/stripe/create-checkout-session', {
       method: 'POST',
       headers: {
@@ -117,6 +186,8 @@ export async function createCheckoutSession(
         customerEmail,
         customerName,
         formData,
+        hasRecurringAddons,
+        addOnPriceIds,
         priceId: PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].priceId,
         amount: PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].amount,
         currency: PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].currency
@@ -126,7 +197,9 @@ export async function createCheckoutSession(
     if (!response.ok) {
       const errorData = await response.json();
       console.error('API Fehler:', errorData);
-      throw new Error(errorData.details || 'Fehler beim Erstellen der Checkout-Session');
+      console.error('Response Status:', response.status);
+      console.error('Response Headers:', response.headers);
+      throw new Error(errorData.details || errorData.error || 'Fehler beim Erstellen der Checkout-Session');
     }
 
     const { sessionId } = await response.json();

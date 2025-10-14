@@ -49,7 +49,7 @@ export default function StripeCheckout({
       }
 
       // Zu Stripe Checkout weiterleiten
-      const { error } = await stripe.redirectToCheckout({
+      const { error } = await (stripe as { redirectToCheckout: (params: { sessionId: string }) => Promise<{ error?: { message: string } }> }).redirectToCheckout({
         sessionId,
       });
 

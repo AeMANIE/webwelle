@@ -6,7 +6,7 @@ export async function POST() {
     // Test-Buchung erstellen
     const testBooking = {
       session_id: 'cs_test_' + Date.now(),
-      package_type: 'nextjs' as const,
+      package_type: 'starterwelle' as const,
       is_monthly: false,
       customer_name: 'Test Kunde',
       customer_email: 'test@example.com',
