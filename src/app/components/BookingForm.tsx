@@ -365,89 +365,74 @@ export default function BookingForm({ packageType, packageName, packageDescripti
             </span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Paketinfo (nur links, eine Überschrift reicht) */}
-            <div className="lg:col-span-2">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
+          {/* Warenkorb-Layout (einzelne Liste, Text links – Preis rechts) */}
+          {(() => {
+            const options = [
+              { value: 'blitz-welle', label: 'Blitz-Welle: Online in 2 Wochen', price: '249,99 €', supportsMonthly: false as const },
+              { value: 'logo-welle', label: 'LogoWelle: Exklusives Logo-Design', price: '299 €', supportsMonthly: false as const },
+              { value: 'terminbuchung', label: 'Terminbuchungs-System: Online-Terminbuchung für Ihre Kunden', price: '1.599 €', monthlyPrice: '145,99 € mtl', supportsMonthly: true as const },
+              { value: 'online-shop', label: 'Online-Shop: Mit integriertem Warenkorb (bis zu 10 Produkte)', price: '2.999 €', monthlyPrice: '274,99 € mtl', supportsMonthly: true as const },
+              { value: 'mitglieder-welle', label: 'MitgliederWelle: Mitgliederbereich inkl. Admin-Funktionen', price: '2.399 €', monthlyPrice: '219,99 € mtl', supportsMonthly: true as const },
+              { value: 'foto-welle-5', label: 'FotoWelle: Profi-Fotopaket (5 Fotos)', price: '575 €', supportsMonthly: false as const },
+              { value: 'foto-welle-10', label: 'FotoWelle: Profi-Fotopaket (10 Fotos)', price: '999 €', supportsMonthly: false as const },
+              { value: 'foto-welle-20', label: 'FotoWelle: Profi-Fotopaket (20 Fotos)', price: '1.750 €', supportsMonthly: false as const },
+              { value: 'lieferdienst', label: 'Lieferdienst: Integration eines eigenen Lieferdienstes', price: '2.999 €', monthlyPrice: '279,99 € mtl', supportsMonthly: true as const },
+              { value: 'google-my-business', label: 'Google My Business Komplettservice: Listung, Pflege und Optimierung', price: '399 €', supportsMonthly: false as const },
+              { value: 'visitenkarten', label: 'Visitenkarten-Paket – Ihr Unternehmen professionell in Szene gesetzt', price: '100 €', supportsMonthly: false as const }
+            ];
+
+            // Paket-Zeile vorbereiten
+            const cartRows: Array<{ left: React.ReactNode; right: string; section: 'package' | 'addons' }>= [];
+            cartRows.push({
+              left: (
                 <div>
-                  <h4 className="font-semibold text-foreground mb-1">{packageName}</h4>
-                  <p className="text-muted-foreground text-sm">{packageDescription}</p>
+                  <div className="font-semibold text-foreground">{packageName}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{packageDescription}</div>
                 </div>
-              </div>
-              {features && features.length > 0 && (
-                <div className="mt-4">
-                  <h5 className="font-semibold text-foreground mb-2 text-sm">Paket-Features</h5>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {features.map((feature, index) => (
-                      <li key={index} className="flex items-start text-sm text-muted-foreground">
-                        <span className="w-1.5 h-1.5 bg-primary rounded-full mr-2 mt-1 flex-shrink-0"></span>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+              ),
+              right: isMonthly ? prices.monthly : prices.yearly,
+              section: 'package'
+            });
 
-            {/* Zahlungsmodus und Add-ons (rechts): zeigt Paket + Preis/Modus und darunter Add-ons */}
-            <div>
-              <div className="rounded-lg border border-border p-4 bg-background">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-foreground truncate">{packageName}</div>
-                    <div className="text-xs text-muted-foreground mt-1 break-words">
-                      {packageDescription}
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-2xl md:text-3xl font-bold text-primary leading-none">
-                      {isMonthly ? prices.monthly : prices.yearly}
-                    </div>
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground mt-1">
-                      {isMonthly ? 'Monatlich' : 'Jährlich'}
-                    </div>
-                  </div>
-                </div>
-              </div>
+            // Add-on Zeilen
+            formData.zusatzfunktionen.forEach((key) => {
+              const opt = options.find(o => o.value === key);
+              if (!opt) return;
+              const zahlung = formData.zusatzzahlung?.[key];
+              const chosen = opt.supportsMonthly && zahlung === 'monthly' && opt.monthlyPrice ? opt.monthlyPrice : opt.price;
+              cartRows.push({
+                left: (<div className="text-foreground">{opt.label}</div>),
+                right: chosen || '',
+                section: 'addons'
+              });
+            });
 
-              {formData.zusatzfunktionen.length > 0 && (
-                <div className="mt-4">
-                  <h5 className="font-semibold text-foreground mb-2 text-sm">Gewählte Zusatzoptionen</h5>
-                  <ul className="space-y-2">
-                    {(() => {
-                      const options = [
-                        { value: 'blitz-welle', label: 'Blitz-Welle: Online in 2 Wochen', price: '249,99 €', supportsMonthly: false as const },
-                        { value: 'logo-welle', label: 'LogoWelle: Exklusives Logo-Design', price: '299 €', supportsMonthly: false as const },
-                        { value: 'terminbuchung', label: 'Terminbuchungs-System: Online-Terminbuchung für Ihre Kunden', price: '1.599 €', monthlyPrice: '145,99 € mtl', supportsMonthly: true as const },
-                        { value: 'online-shop', label: 'Online-Shop: Mit integriertem Warenkorb (bis zu 10 Produkte)', price: '2.999 €', monthlyPrice: '274,99 € mtl', supportsMonthly: true as const },
-                        { value: 'mitglieder-welle', label: 'MitgliederWelle: Mitgliederbereich inkl. Admin-Funktionen', price: '2.399 €', monthlyPrice: '219,99 € mtl', supportsMonthly: true as const },
-                        { value: 'foto-welle-5', label: 'FotoWelle: Profi-Fotopaket (5 Fotos)', price: '575 €', supportsMonthly: false as const },
-                        { value: 'foto-welle-10', label: 'FotoWelle: Profi-Fotopaket (10 Fotos)', price: '999 €', supportsMonthly: false as const },
-                        { value: 'foto-welle-20', label: 'FotoWelle: Profi-Fotopaket (20 Fotos)', price: '1.750 €', supportsMonthly: false as const },
-                        { value: 'lieferdienst', label: 'Lieferdienst: Integration eines eigenen Lieferdienstes', price: '2.999 €', monthlyPrice: '279,99 € mtl', supportsMonthly: true as const },
-                        { value: 'google-my-business', label: 'Google My Business Komplettservice: Listung, Pflege und Optimierung', price: '399 €', supportsMonthly: false as const },
-                        { value: 'visitenkarten', label: 'Visitenkarten-Paket – Ihr Unternehmen professionell in Szene gesetzt', price: '100 €', supportsMonthly: false as const }
-                      ];
-                      return formData.zusatzfunktionen.map((key) => {
-                        const opt = options.find(o => o.value === key);
-                        if (!opt) return null;
-                        const zahlung = formData.zusatzzahlung?.[key];
-                        const chosenPrice = opt.supportsMonthly && zahlung === 'monthly' && opt.monthlyPrice ? opt.monthlyPrice : opt.price;
-                        return (
-                          <li key={key} className="grid grid-cols-1 sm:grid-cols-3 gap-1 items-start text-sm">
-                            <div className="sm:col-span-2 min-w-0 pr-2">
-                              <div className="text-foreground break-words">{opt.label}</div>
-                            </div>
-                            <div className="sm:col-span-1 text-right flex-shrink-0 whitespace-nowrap text-primary font-semibold">{chosenPrice}</div>
-                          </li>
-                        );
-                      });
-                    })()}
-                  </ul>
+            return (
+              <div className="space-y-3">
+                {/* Section: Ausgewähltes Paket */}
+                <h5 className="font-semibold text-foreground text-sm">Ausgewähltes Paket</h5>
+                <div className="grid grid-cols-[1fr_auto] gap-3 items-start border border-border rounded-lg p-3 bg-background">
+                  <div>{cartRows[0]?.left}</div>
+                  <div className="text-right font-semibold text-primary whitespace-nowrap">{cartRows[0]?.right}</div>
                 </div>
-              )}
-            </div>
-          </div>
+
+                {/* Section: Gewählte Zusatzoptionen */}
+                {cartRows.filter(r => r.section === 'addons').length > 0 && (
+                  <div className="space-y-2">
+                    <h5 className="font-semibold text-foreground text-sm">Gewählte Zusatzoptionen</h5>
+                    <ul className="space-y-2">
+                      {cartRows.filter(r => r.section === 'addons').map((row, idx) => (
+                        <li key={idx} className="grid grid-cols-[1fr_auto] gap-3 items-start border border-border rounded-lg p-3 bg-background">
+                          <div className="min-w-0 break-words">{row.left}</div>
+                          <div className="text-right font-semibold text-primary whitespace-nowrap">{row.right}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Submit Buttons */}
