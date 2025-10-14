@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         addOnPriceIds: JSON.stringify(addOnPriceIds || []),
       },
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/#produkte?cancelled=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/buchung/${packageType}?cancelled=true`,
       locale: 'de',
       billing_address_collection: 'required',
       shipping_address_collection: {

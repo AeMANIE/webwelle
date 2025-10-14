@@ -43,6 +43,7 @@ export default function BookingForm({ packageType, packageName, packageDescripti
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isMonthly, setIsMonthly] = useState(true);
+  const [showCancelledMessage, setShowCancelledMessage] = useState(false);
   const STORAGE_KEY = `bookingForm:${packageType}`;
 
   const [formData, setFormData] = useState<BookingFormData>({
@@ -94,6 +95,19 @@ export default function BookingForm({ packageType, packageName, packageDescripti
       setIsMonthly(true);
     } else if (billingParam === 'yearly') {
       setIsMonthly(false);
+    }
+
+    // Prüfe ob der Benutzer von Stripe zurückkommt (cancelled)
+    const cancelledParam = searchParams.get('cancelled');
+    if (cancelledParam === 'true') {
+      setShowCancelledMessage(true);
+      // Nachricht nach 5 Sekunden ausblenden
+      setTimeout(() => setShowCancelledMessage(false), 5000);
+      
+      // URL-Parameter bereinigen (ohne Reload)
+      const url = new URL(window.location.href);
+      url.searchParams.delete('cancelled');
+      window.history.replaceState({}, '', url.toString());
     }
   }, [searchParams, STORAGE_KEY]);
 
@@ -185,7 +199,26 @@ export default function BookingForm({ packageType, packageName, packageDescripti
 
       <form onSubmit={handleSubmit} className="space-y-8">
         
-
+        {/* Cancelled Message */}
+        {showCancelledMessage && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.726-1.36 3.491 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-yellow-800">
+                  Zahlung abgebrochen
+                </h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>Sie haben die Zahlung abgebrochen. Sie können Ihre Auswahl hier korrigieren und erneut versuchen.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Wellenstart – Ihr individuelles Wunschprojekt */}
         <div>
