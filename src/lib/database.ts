@@ -27,6 +27,18 @@ export interface BookingData {
   status: 'pending' | 'paid' | 'failed' | 'cancelled';
   created_at?: Date;
   updated_at?: Date;
+  // Neue Felder für Directus-Integration
+  checkout_mode?: string;
+  package_price_display?: string;
+  currency?: string;
+  total_amount_cents?: number;
+  existing_website_url?: string;
+  design_reference_url?: string;
+  selected_addons?: Array<Record<string, unknown>>;
+  raw_form_data?: Record<string, unknown>;
+  stripe_metadata?: Record<string, unknown>;
+  stripe_subscription_id?: string;
+  stripe_invoice_id?: string;
 }
 
 // Buchung in Datenbank speichern
