@@ -23,28 +23,16 @@ export default function BookingForm({ packageType, packageName, packageDescripti
     // Allgemeine Informationen
     firmenname: '',
     bestehendeWebsite: '',
+    aktuelleWebsiteUrl: '',
+    wettbewerberWebsite: '',
     zielgruppe: [] as string[],
-    regionaleAusrichtung: '',
     
     // Design & Stil
     designStil: '',
-    brandingMaterialien: [] as string[],
+    designVorbild: '',
     
-    // Website-Struktur
-    wichtigsteSeiten: [] as string[],
-    
-    // Funktionen
-    funktionen: [] as string[],
-    
-    // Inhalte
-    vorhandeneMaterialien: [] as string[],
-    
-    // Technische Anforderungen
-    hosting: '',
-    
-    // Budget & Zeitplan
-    budget: '' as string,
-    fertigstellungstermin: '',
+    // WebWelle Zusatzauswahl
+    zusatzfunktionen: [] as string[],
     
     // Kontaktdaten
     name: '',
@@ -64,27 +52,8 @@ export default function BookingForm({ packageType, packageName, packageDescripti
     // Wenn kein Parameter vorhanden ist, bleibt der Standard (monatlich)
   }, [searchParams]);
 
-  // Sicherstellen, dass budget immer ein String ist
-  useEffect(() => {
-    if (typeof formData.budget === 'object' && formData.budget !== null) {
-      setFormData(prev => ({ ...prev, budget: '' }));
-    }
-  }, [formData.budget]);
-
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  // Sicherstellen, dass budget immer ein String ist
-  const getBudgetValue = () => {
-    const budget = formData.budget;
-    if (typeof budget === 'string') {
-      return budget;
-    }
-    if (typeof budget === 'object' && budget !== null && 'value' in budget) {
-      return (budget as { value: string }).value;
-    }
-    return '';
   };
 
   const handleCheckboxChange = (field: string, value: string, checked: boolean) => {
@@ -174,33 +143,25 @@ export default function BookingForm({ packageType, packageName, packageDescripti
               )}
             </div>
             <div>
-              <h4 className="font-semibold text-foreground mb-2">Zahlungsoptionen</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-foreground">Jährlich:</span>
-                  <span className="font-semibold text-foreground">{prices.yearly}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-foreground">Monatlich:</span>
-                  <span className="font-semibold text-foreground">{prices.monthly}</span>
+              <h4 className="font-semibold text-foreground mb-2">Gewählter Zahlungsmodus</h4>
+              <div className="bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30 rounded-lg p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary mb-1">
+                    {isMonthly ? prices.monthly : prices.yearly}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {isMonthly ? 'Monatliche Zahlung' : 'Jährliche Zahlung'}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Gewählter Zahlungsmodus anzeigen */}
-        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-8">
-          <div className="flex items-center justify-center">
-            <span className="text-primary font-semibold">
-              Gewählter Zahlungsmodus: {isMonthly ? 'Monatlich' : 'Jährlich'}
-            </span>
-          </div>
-        </div>
 
-        {/* Allgemeine Informationen */}
+        {/* Wellenstart – Ihr individuelles Wunschprojekt */}
         <div>
-          <h4 className="text-lg font-semibold text-foreground mb-4">Allgemeine Informationen</h4>
+          <h4 className="text-lg font-semibold text-foreground mb-4">Wellenstart – Ihr individuelles Wunschprojekt</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
@@ -212,56 +173,64 @@ export default function BookingForm({ packageType, packageName, packageDescripti
                 value={formData.firmenname}
                 onChange={(e) => handleInputChange('firmenname', e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="Wie soll Ihre digitale Erfolgswelle heißen?"
               />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) 
-                  ? 'Welche Prozesse möchten Sie automatisieren? *' 
-                  : 'Haben Sie bereits eine Website? *'
-                }
+                Haben Sie bereits eine Website? *
               </label>
-              {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) ? (
-                <select
-                  required
-                  value={formData.bestehendeWebsite}
-                  onChange={(e) => handleInputChange('bestehendeWebsite', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
-                >
-                  <option value="">Bitte wählen</option>
-                  <option value="kundenanfragen">Kundenanfragen & Support</option>
-                  <option value="terminbuchung">Terminbuchung & Kalender</option>
-                  <option value="datenverarbeitung">Datenverarbeitung & -übertragung</option>
-                  <option value="kommunikation">Interne Kommunikation</option>
-                  <option value="marketing">Marketing & Lead-Generierung</option>
-                  <option value="buchhaltung">Buchhaltung & Rechnungswesen</option>
-                  <option value="individuell">Individuelle Prozesse</option>
-                </select>
-              ) : (
-                <select
-                  required
-                  value={formData.bestehendeWebsite}
-                  onChange={(e) => handleInputChange('bestehendeWebsite', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
-                >
-                  <option value="">Bitte wählen</option>
-                  <option value="nein">Nein, kompletter Neubau</option>
-                  <option value="ja">Ja, soll überarbeitet werden</option>
-                  <option value="unsicher">Weiß nicht / Unsicher</option>
-                </select>
-              )}
+              <select
+                required
+                value={formData.bestehendeWebsite}
+                onChange={(e) => handleInputChange('bestehendeWebsite', e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="">Bitte wählen</option>
+                <option value="nein">Nein – Ich starte völlig neu</option>
+                <option value="Ja">Ja – Bitte tragen Sie Ihre aktuelle Website-Adresse ein</option>
+              </select>
             </div>
+          </div>
+          
+          {formData.bestehendeWebsite === 'Ja' && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Aktuelle Website-Adresse
+              </label>
+              <input
+                type="url"
+                value={formData.aktuelleWebsiteUrl}
+                onChange={(e) => handleInputChange('aktuelleWebsiteUrl', e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="https://ihre-website.de"
+              />
+            </div>
+          )}
+          
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Wettbewerber-Website
+            </label>
+            <input
+              type="url"
+              value={formData.wettbewerberWebsite}
+              onChange={(e) => handleInputChange('wettbewerberWebsite', e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="Gibt es eine Mitbewerber-Seite, die Sie besonders anspricht?"
+            />
+            <p className="text-sm text-muted-foreground mt-1">
+              Teilen Sie die Webadresse für Inspiration und Strategievorsprung
+            </p>
           </div>
         </div>
 
-        {/* Zielgruppe */}
+        {/* Ihre Zielgruppe im Fokus */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Zielgruppe (mehrere Auswahl möglich)
-          </label>
+          <h4 className="text-lg font-semibold text-foreground mb-4">Ihre Zielgruppe im Fokus</h4>
           <div className="space-y-2">
-            {['Privatkunden (B2C)', 'Unternehmen (B2B)', 'Behörden/Non-Profit'].map((option) => (
+            {['Privatkunden (B2C)', 'Geschäftskunden (B2B)', 'Behörden oder Non-Profit'].map((option) => (
               <label key={option} className="flex items-center">
                 <input
                   type="checkbox"
@@ -275,12 +244,10 @@ export default function BookingForm({ packageType, packageName, packageDescripti
           </div>
         </div>
 
-        {/* Design-Stil */}
+        {/* Stilrichtung & Inspirationsquelle */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Welcher Design-Stil passt zu Ihnen? *
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <h4 className="text-lg font-semibold text-foreground mb-4">Stilrichtung & Inspirationsquelle</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             {[
               { value: 'modern', label: 'Modern & minimalistisch' },
               { value: 'creative', label: 'Kreativ & verspielt' },
@@ -300,89 +267,62 @@ export default function BookingForm({ packageType, packageName, packageDescripti
               </label>
             ))}
           </div>
-        </div>
-
-        {/* Funktionen */}
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
-            {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) 
-              ? 'Welche KI-Funktionen benötigen Sie? (mehrere Auswahl möglich)'
-              : 'Welche Funktionen benötigen Sie? (mehrere Auswahl möglich)'
-            }
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) ? [
-              'Automatische E-Mail-Antworten',
-              'Chatbot-Integration',
-              'Terminbuchung & Kalender',
-              'Datenanalyse & Reporting',
-              'CRM-Integration',
-              'Buchhaltungs-Integration',
-              'Marketing-Automatisierung',
-              'Kundenservice-Automatisierung',
-              'Lead-Generierung',
-              'Workflow-Management',
-              'API-Integrationen',
-              'Individuelle Anpassungen'
-            ] : [
-              'Responsive Design',
-              'SEO-Optimierung',
-              'Kontaktformular',
-              'Live-Chat',
-              'Online-Shop',
-              'Warenkorb',
-              'Terminbuchung',
-              'Mitgliederbereich'
-            ].map((option) => (
-              <label key={option} className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.funktionen.includes(option)}
-                  onChange={(e) => handleCheckboxChange('funktionen', option, e.target.checked)}
-                  className="mr-2 text-primary focus:ring-primary"
-                />
-                <span className="text-foreground">{option}</span>
-              </label>
-            ))}
+          
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Design-Vorbild (Web-URL)
+            </label>
+            <input
+              type="url"
+              value={formData.designVorbild}
+              onChange={(e) => handleInputChange('designVorbild', e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="Kennen Sie eine Website, deren Aussehen Ihnen besonders gefällt?"
+            />
+            <p className="text-sm text-muted-foreground mt-1">
+              Tragen Sie hier den Link ein
+            </p>
           </div>
         </div>
 
-        {/* Budget */}
+        {/* WebWelle Zusatzauswahl */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
-            {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) 
-              ? 'Monatliches Budget für KI-Automatisierung'
-              : 'Budget-Rahmen'
-            }
-          </label>
-          <select
-            value={getBudgetValue()}
-            onChange={(e) => handleInputChange('budget', e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
-          >
-            <option value="">Bitte wählen</option>
-            {['flowwelle', 'powerwelle', 'meisterwelle'].includes(packageType) ? 
-              [
-                { value: "100-200", label: "€100 - €200 pro Monat" },
-                { value: "200-500", label: "€200 - €500 pro Monat" },
-                { value: "500-1000", label: "€500 - €1.000 pro Monat" },
-                { value: "1000-2000", label: "€1.000 - €2.000 pro Monat" },
-                { value: "2000+", label: "€2.000+ pro Monat" }
-              ].map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              )) : 
-              [
-                { value: "2000-5000", label: "€2.000 - €5.000" },
-                { value: "5000-10000", label: "€5.000 - €10.000" },
-                { value: "10000-20000", label: "€10.000 - €20.000" },
-                { value: "20000-50000", label: "€20.000 - €50.000" },
-                { value: "50000+", label: "€50.000+" }
-              ].map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))
-            }
-          </select>
+          <h4 className="text-lg font-semibold text-foreground mb-4">WebWelle Zusatzauswahl: Mehr Leistung für Ihr Projekt</h4>
+          <p className="text-muted-foreground mb-4">
+            Wählen Sie zusätzliche Wunschfunktionen – alle Preise sind netto und werden transparent im Angebot ausgewiesen:
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { value: 'blitz-welle', label: 'Blitz-Welle: Online in 2 Wochen', price: '249,99 €' },
+              { value: 'logo-welle', label: 'LogoWelle: Exklusives Logo-Design', price: '299 €' },
+              { value: 'terminbuchung', label: 'Terminbuchungs-System: Online-Terminbuchung für Ihre Kunden', price: '1.599 €' },
+              { value: 'online-shop', label: 'Online-Shop: Mit integriertem Warenkorb (bis zu 10 Produkte)', price: '2.999 €' },
+              { value: 'mitglieder-welle', label: 'MitgliederWelle: Mitgliederbereich inkl. Admin-Funktionen', price: '2.399 €' },
+              { value: 'foto-welle-5', label: 'FotoWelle: Profi-Fotopaket (5 Fotos)', price: '575 €' },
+              { value: 'foto-welle-10', label: 'FotoWelle: Profi-Fotopaket (10 Fotos)', price: '999 €' },
+              { value: 'foto-welle-20', label: 'FotoWelle: Profi-Fotopaket (20 Fotos)', price: '1.750 €' },
+              { value: 'lieferdienst', label: 'Lieferdienst: Integration eines eigenen Lieferdienstes', price: '2.999 €' },
+              { value: 'google-my-business', label: 'Google My Business Komplettservice: Listung, Pflege und Optimierung', price: '399 €' }
+            ].map((option) => (
+              <label key={option.value} className="flex items-start p-3 border border-border rounded-lg hover:bg-primary/5 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={formData.zusatzfunktionen.includes(option.value)}
+                  onChange={(e) => handleCheckboxChange('zusatzfunktionen', option.value, e.target.checked)}
+                  className="mr-3 mt-1 text-primary focus:ring-primary"
+                />
+                <div className="flex-1">
+                  <span className="text-foreground font-medium">{option.label}</span>
+                  <div className="text-primary font-semibold text-sm mt-1">{option.price}</div>
+                </div>
+              </label>
+            ))}
+          </div>
+          <p className="text-sm text-muted-foreground mt-4">
+            Alle gewählten Zusatzfunktionen heben Ihr Webprojekt gezielt auf ein neues Level und werden persönlich mit Ihnen abgestimmt.
+          </p>
         </div>
+
 
         {/* Kontaktdaten */}
         <div>

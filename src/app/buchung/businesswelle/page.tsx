@@ -1,90 +1,112 @@
-import { Metadata } from 'next';
-import { Suspense } from 'react';
+'use client';
+
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Check } from 'lucide-react';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
 import BookingForm from '@/app/components/BookingForm';
 
-export const metadata: Metadata = {
-  title: 'BusinessWelle buchen | WebWelle',
-  description: 'Buchen Sie Ihre BusinessWelle Unternehmenswebsite - 139€ monatlich oder 1.520€ jährlich. Bis zu 3 Seiten inkl. SEO & Support.',
-  keywords: 'BusinessWelle buchen, Unternehmenswebsite, WebWelle, 139€ monatlich, 1.520€ jährlich, 3 Seiten, SEO, Support, Allgäu, Kempten',
-  authors: [{ name: 'WebWelle' }],
-  creator: 'WebWelle',
-  publisher: 'WebWelle',
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-  openGraph: {
-    type: 'website',
-    locale: 'de_DE',
-    url: 'https://webwelle.com/buchung/businesswelle',
-    siteName: 'WebWelle',
-    title: 'BusinessWelle buchen | WebWelle',
-    description: 'Buchen Sie Ihre BusinessWelle Unternehmenswebsite - 139€ monatlich oder 1.520€ jährlich. Bis zu 3 Seiten inkl. SEO & Support.',
-    images: [
-      {
-        url: '/logo.png',
-        width: 1200,
-        height: 630,
-        alt: 'WebWelle Logo',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'BusinessWelle buchen | WebWelle',
-    description: 'Buchen Sie Ihre BusinessWelle Unternehmenswebsite - 139€ monatlich oder 1.520€ jährlich. Bis zu 3 Seiten inkl. SEO & Support.',
-    images: ['/logo.png'],
-  },
-};
+function BusinessWelleContent() {
+  const searchParams = useSearchParams();
+  const [isMonthly, setIsMonthly] = useState(true);
 
-export default function BusinessWelleBooking() {
+  useEffect(() => {
+    const billingParam = searchParams.get('billing');
+    if (billingParam === 'yearly') {
+      setIsMonthly(false);
+    } else {
+      setIsMonthly(true); // Default zu monatlich
+    }
+  }, [searchParams]);
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
       <main className="bg-background py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-4">
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6 tracking-tight">
             BusinessWelle buchen
           </h1>
-          <p className="text-xl text-muted-foreground mb-8">
-            Unternehmenswebsite (bis 3 Seiten) - Ihr professioneller Online-Auftritt
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed mb-8">
+            Bringen Sie Ihr Unternehmen auf das nächste Level
+          </p>
+          <p className="text-lg text-muted-foreground max-w-4xl mx-auto mb-12">
+            BusinessWelle ist Ihr Wachstumsmotor für mehr Sichtbarkeit, Kunden und Umsatz. Setzen Sie auf eine individuell gestaltete Website mit klarer Struktur, SEO-Optimierung und dezenten Animationen – alles aus einer Hand und inklusive technischer Wartung und Backups. Profitieren Sie von modernster Technik und exklusiven KI-Agenten-Funktionen, die Ihr Unternehmen digital nach vorne bringen.
           </p>
           
-          <div className="bg-primary/10 border border-primary/20 rounded-lg p-6 max-w-2xl mx-auto">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <h2 className="text-2xl font-bold text-primary">BusinessWelle</h2>
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-8 border-2 border-primary/20 relative max-w-4xl mx-auto">
+            <div className="absolute top-4 right-4">
               <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
                 Beliebt
               </span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Preise:</h3>
-                <p className="text-foreground">139 € monatlich</p>
-                <p className="text-foreground">1.520 € jährlich</p>
+            
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold text-foreground mb-2 tracking-wide">
+                BusinessWelle
+              </h3>
+              <p className="text-sm text-primary font-semibold mb-2">Unternehmenswebsite (bis 3 Seiten)</p>
+              <p className="text-muted-foreground mb-4 font-light leading-relaxed">
+                Ihr professioneller Online-Auftritt für wachsende Unternehmen. Drei optimal strukturierte Seiten sorgen für klare Botschaften und maximale Sichtbarkeit.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <div className="text-3xl font-bold text-primary mb-2">
+                {isMonthly ? '139 € mtl.' : '1.520 € jährlich'}
               </div>
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Enthalten:</h3>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Komplett individuell erstellte Website (bis zu 3 Seiten)</li>
-                  <li>• Rechtliches Komplettpaket</li>
-                  <li>• Kontaktformular mit cleverem Spamschutz</li>
-                  <li>• Hosting & technische Wartung</li>
-                  <li>• Domain (.de oder .com) inklusive</li>
-                  <li>• E-Mail-Postfach</li>
-                  <li>• SEO-freundliche Grundoptimierung</li>
-                  <li>• Dezente Animationen und visuelle Highlights</li>
-                </ul>
+              <p className="text-sm text-muted-foreground mb-4">
+                {isMonthly ? '24 Monate, Nettopreis' : 'Netto Jährlich, 24 Monate Laufzeit'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                  <span className="text-foreground text-sm">Komplett individuell erstellte Website </span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                  <span className="text-foreground text-sm">Rechtliches Komplettpaket </span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                  <span className="text-foreground text-sm">Kontaktformular</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                  <span className="text-foreground text-sm">Hosting & technische Wartung</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                  <span className="text-foreground text-sm">Backup alle 2 Wochen</span>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                  <span className="text-foreground text-sm">Domain (.de oder .com) inklusive</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                  <span className="text-foreground text-sm">E-Mail-Postfach (z.B. info@deine-firma.de)</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                  <span className="text-foreground text-sm">SEO-freundliche Grundoptimierung</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                  <span className="text-foreground text-sm">Dezente Animationen und visuelle Highlights</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0" />
+                  <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-1 rounded-full text-sm font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-200">KI-Agenten Fähig</span>
+                </div>
               </div>
             </div>
           </div>
@@ -101,5 +123,13 @@ export default function BusinessWelleBooking() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function BusinessWelleBooking() {
+  return (
+    <Suspense fallback={<div className="text-center py-8">Lade Seite...</div>}>
+      <BusinessWelleContent />
+    </Suspense>
   );
 }
