@@ -96,8 +96,8 @@ export async function POST(request: NextRequest) {
       ],
     };
 
-    // payment_intent_data nur für one-time payments hinzufügen
-    if (!isMonthly) {
+    // payment_intent_data nur für one-time payments hinzufügen (nicht für subscriptions)
+    if (!isMonthly && !hasRecurringAddons) {
       sessionConfig.payment_intent_data = {
         metadata: {
           packageType,
