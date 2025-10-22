@@ -82,9 +82,11 @@ const nextConfig: NextConfig = {
         },
       };
       
-      // Tree shaking optimieren
-      config.optimization.usedExports = true;
-      config.optimization.sideEffects = false;
+      // Tree shaking optimieren (nur in Production)
+      if (!dev) {
+        config.optimization.usedExports = true;
+        config.optimization.sideEffects = false;
+      }
     }
     return config;
   },
