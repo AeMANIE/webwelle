@@ -32,14 +32,59 @@ if (typeof window !== 'undefined') {
 export default function AppEntwicklungPage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
+  const featuresTrackRef = useRef<HTMLDivElement>(null);
+  const featuresContainerRef = useRef<HTMLDivElement>(null);
   const solutionsRef = useRef<HTMLDivElement>(null);
   const processRef = useRef<HTMLDivElement>(null);
   const faqRef = useRef<HTMLDivElement>(null);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   const toggleFAQ = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
   };
+
+  useEffect(() => setIsMounted(true), []);
+
+  // Auto-Scroll Marquee mit GSAP und ScrollTrigger Pause bei Hover/Sichtbarkeit
+  useEffect(() => {
+    if (!isMounted || !featuresTrackRef.current) return;
+    const track = featuresTrackRef.current;
+
+    // Dupliziere Slides für nahtlose Schleife
+    const slides = Array.from(track.querySelectorAll<HTMLElement>('[data-slide]'));
+    if (slides.length === 0) return;
+
+    const totalWidth = slides.reduce((acc, el) => acc + el.offsetWidth, 0);
+    // Falls Inhalt schmaler als Viewport, nicht animieren
+    if (totalWidth <= (featuresContainerRef.current?.offsetWidth || 0)) return;
+
+    const ctx = gsap.context(() => {
+      const tween = gsap.to(track, {
+        x: () => `-=${totalWidth}`,
+        duration: Math.max(20, totalWidth / 80),
+        ease: 'none',
+        repeat: -1,
+      });
+
+      // Pause bei Hover
+      track.addEventListener('mouseenter', () => tween.pause());
+      track.addEventListener('mouseleave', () => tween.resume());
+
+      // Pause, wenn Bereich nicht im Viewport
+      ScrollTrigger.create({
+        trigger: featuresContainerRef.current,
+        start: 'top bottom',
+        end: 'bottom top',
+        onEnter: () => tween.resume(),
+        onEnterBack: () => tween.resume(),
+        onLeave: () => tween.pause(),
+        onLeaveBack: () => tween.pause(),
+      });
+    }, featuresTrackRef);
+
+    return () => ctx.revert();
+  }, [isMounted]);
 
   useEffect(() => {
     // Hero Animation
@@ -151,22 +196,22 @@ export default function AppEntwicklungPage() {
 
   const features = [
     {
-      icon: <Smartphone className="h-6 w-6 text-gray-800" />,
+      icon: Smartphone,
       title: "iOS & Android Apps",
       description: "Maßgeschneiderte Apps für beide Plattformen – genau passend zu Ihrem Geschäftsmodell"
     },
     {
-      icon: <Zap className="h-6 w-6 text-gray-800" />,
+      icon: Zap,
       title: "Hohe Performance",
       description: "Beeindruckende User Experience und ansprechendes Design mit maximaler Stabilität"
     },
     {
-      icon: <Shield className="h-6 w-6 text-gray-800" />,
+      icon: Shield,
       title: "Datensicherheit",
       description: "Absolute Datensicherheit und Skalierbarkeit für langfristiges Wachstum"
     },
     {
-      icon: <Users className="h-6 w-6 text-gray-800" />,
+      icon: Users,
       title: "Persönlicher Support",
       description: "Keine versteckten Kosten – persönlicher Ansprechpartner von der Idee bis zur App-Veröffentlichung"
     }
@@ -260,12 +305,12 @@ export default function AppEntwicklungPage() {
               Mobile App-Entwicklung
             </Badge>
             
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6">
-              Ihre Plattform für{' '}
-              <span className="text-primary">
-                Wachstum
-              </span>
-            </h1>
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
+                      Ihre Plattform für{' '}
+                      <span className="text-primary">
+                        Wachstum
+                      </span>
+                    </h1>
           
           <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
             Ihr Unternehmen. Ihre App. Ihre Möglichkeiten.
@@ -319,24 +364,45 @@ export default function AppEntwicklungPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {features.map((feature, index) => (
-              <div key={index} className="group h-full rounded-2xl border border-gray-200 bg-gray-50 p-5 md:p-6 shadow-sm transition-shadow hover:shadow-md">
-                <div className="flex items-start gap-4">
-                  <div className="rounded-xl bg-white border border-gray-200 p-3 shadow-sm">
-                    {feature.icon}
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-base md:text-lg font-semibold text-gray-900 leading-snug">
-                      {feature.title}
-                    </h3>
-                    <p className="mt-1 text-sm md:text-base text-gray-600 font-light leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
+          {/* Horizontaler Slider */}
+          <div ref={featuresContainerRef} className="relative overflow-hidden">
+            {/* Soft Gradients links/rechts */}
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-white to-transparent" />
+
+            {/* Track */}
+            <div
+              ref={featuresTrackRef}
+              className="flex gap-4 md:gap-6 will-change-transform"
+              aria-label="WebWelle App-Entwicklung Features Slider"
+            >
+              {[...features, ...features].map((feature, index) => {
+                const IconComponent = feature.icon;
+                return (
+                  <article
+                    key={`${feature.title}-${index}`}
+                    data-slide
+                    className="shrink-0 w-[88%] sm:w-[60%] md:w-[45%] lg:w-[32%]"
+                  >
+                    <div className="group h-full rounded-2xl border border-gray-200 bg-gray-50 p-5 md:p-6 shadow-sm transition-shadow hover:shadow-md">
+                      <div className="flex items-start gap-4">
+                        <div className="rounded-xl bg-white border border-gray-200 p-3 shadow-sm">
+                          <IconComponent className="h-6 w-6 text-gray-800" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-base md:text-lg font-semibold text-gray-900 leading-snug">
+                            {feature.title}
+                          </h3>
+                          <p className="mt-1 text-sm md:text-base text-gray-600 font-light leading-relaxed">
+                            {feature.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
