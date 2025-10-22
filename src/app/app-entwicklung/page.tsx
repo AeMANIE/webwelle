@@ -3,6 +3,10 @@
 import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import ScrollToTop from '../components/ScrollToTop';
+import CookieBanner from '../components/CookieBanner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -235,27 +239,29 @@ export default function AppEntwicklungPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Hero Section */}
-      <section ref={heroRef} className="relative py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <Badge variant="secondary" className="mb-6 text-sm font-medium">
-            <Rocket className="h-4 w-4 mr-2" />
-            Mobile App-Entwicklung
-          </Badge>
+    <div className="min-h-screen bg-white">
+      <Header />
+      <main>
+        {/* Hero Section */}
+        <section ref={heroRef} className="relative py-20 px-4 sm:px-6 lg:px-8 bg-white">
+          <div className="max-w-7xl mx-auto text-center">
+            <Badge variant="secondary" className="mb-6 text-sm font-medium bg-primary/10 text-primary">
+              <Rocket className="h-4 w-4 mr-2" />
+              Mobile App-Entwicklung
+            </Badge>
+            
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6">
+              Ihre Plattform für{' '}
+              <span className="text-primary">
+                Wachstum
+              </span>
+            </h1>
           
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-            Ihre Plattform für{' '}
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Wachstum
-            </span>
-          </h1>
-          
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
             Ihr Unternehmen. Ihre App. Ihre Möglichkeiten.
           </p>
           
-          <p className="text-lg text-gray-700 mb-12 max-w-4xl mx-auto leading-relaxed">
+          <p className="text-lg text-muted-foreground mb-12 max-w-4xl mx-auto leading-relaxed">
             WebWelle entwickelt individuelle Apps für Android & iOS, die Ihre Zielgruppe begeistern und digitales Wachstum ermöglichen. Von der ersten Idee bis zum Launch steht Ihr Erfolg im Mittelpunkt – maßgeschneiderte Lösungen, die wirklich performen.
           </p>
 
@@ -265,7 +271,7 @@ export default function AppEntwicklungPage() {
               {slogans.map((slogan, index) => (
                 <div
                   key={index}
-                  className="text-lg font-semibold text-gray-800 italic mb-2"
+                  className="text-lg font-semibold text-foreground italic mb-2"
                   style={{
                     animation: `fadeInOut 10s infinite ${index * 2}s`
                   }}
@@ -277,7 +283,7 @@ export default function AppEntwicklungPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            <Button size="lg" className="bg-primary hover:bg-primary/90">
               Jetzt App-Erfolg starten
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -292,7 +298,7 @@ export default function AppEntwicklungPage() {
       <section ref={featuresRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
               Warum WebWelle App-Entwicklung?
             </h2>
             <Separator className="w-24 mx-auto" />
@@ -300,15 +306,15 @@ export default function AppEntwicklungPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow duration-300 border-0 shadow-md">
+              <Card key={index} className="text-center hover:shadow-lg transition-shadow duration-300 border border-border">
                 <CardHeader>
                   <div className="flex justify-center mb-4">
                     {feature.icon}
                   </div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                  <CardTitle className="text-xl text-foreground">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-gray-600">
+                  <CardDescription className="text-muted-foreground">
                     {feature.description}
                   </CardDescription>
                 </CardContent>
@@ -319,10 +325,10 @@ export default function AppEntwicklungPage() {
       </section>
 
       {/* Solutions Section */}
-      <section ref={solutionsRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-50 to-purple-50">
+      <section ref={solutionsRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
               Unsere App-Lösungen auf einen Blick
             </h2>
             <Separator className="w-24 mx-auto" />
@@ -330,17 +336,17 @@ export default function AppEntwicklungPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             {solutions.map((solution, index) => (
-              <Card key={index} className="text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg bg-white">
+              <Card key={index} className="text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-border bg-card">
                 <CardHeader>
                   <div className="flex justify-center mb-4">
-                    <div className="p-3 rounded-full bg-gradient-to-r from-blue-100 to-purple-100">
+                    <div className="p-3 rounded-full bg-primary/10">
                       {solution.icon}
                     </div>
                   </div>
-                  <CardTitle className="text-lg">{solution.title}</CardTitle>
+                  <CardTitle className="text-lg text-foreground">{solution.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-gray-600">
+                  <CardDescription className="text-muted-foreground">
                     {solution.description}
                   </CardDescription>
                 </CardContent>
@@ -354,7 +360,7 @@ export default function AppEntwicklungPage() {
       <section ref={processRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
               So läuft Ihr App-Projekt ab
             </h2>
             <Separator className="w-24 mx-auto" />
@@ -364,21 +370,21 @@ export default function AppEntwicklungPage() {
             {processSteps.map((step, index) => (
               <div key={index} className="flex items-center space-x-8">
                 <div className="flex-shrink-0">
-                  <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl">
                     {step.number}
                   </div>
                 </div>
                 <div className="flex-grow">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-foreground mb-2">
                     {step.title}
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-muted-foreground">
                     {step.description}
                   </p>
                 </div>
                 {index < processSteps.length - 1 && (
                   <div className="hidden lg:block">
-                    <ArrowRight className="h-6 w-6 text-gray-400" />
+                    <ArrowRight className="h-6 w-6 text-muted-foreground" />
                   </div>
                 )}
               </div>
@@ -388,10 +394,10 @@ export default function AppEntwicklungPage() {
       </section>
 
       {/* FAQ Section */}
-      <section ref={faqRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-gray-50 to-blue-50">
+      <section ref={faqRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
               FAQ: Häufige Fragen zur App-Entwicklung
             </h2>
             <Separator className="w-24 mx-auto" />
@@ -399,14 +405,14 @@ export default function AppEntwicklungPage() {
 
           <div className="space-y-6">
             {faqs.map((faq, index) => (
-              <Card key={index} className="border-0 shadow-md">
+              <Card key={index} className="border border-border">
                 <CardHeader>
-                  <CardTitle className="text-lg text-gray-900">
+                  <CardTitle className="text-lg text-foreground">
                     {faq.question}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-gray-600 text-base">
+                  <CardDescription className="text-muted-foreground text-base">
                     {faq.answer}
                   </CardDescription>
                 </CardContent>
@@ -417,29 +423,33 @@ export default function AppEntwicklungPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-purple-600">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-primary">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
+          <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground mb-6">
             Jetzt App-Erfolg starten!
           </h2>
-          <p className="text-xl text-blue-100 mb-8">
+          <p className="text-xl text-primary-foreground/90 mb-8">
             Lassen Sie Ihre digitale Vision Wirklichkeit werden:
           </p>
-          <p className="text-lg text-blue-200 mb-12">
+          <p className="text-lg text-primary-foreground/80 mb-12">
             Jetzt unverbindlich Anfrage stellen und gemeinsam App-Geschichte schreiben.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" className="bg-white text-blue-600 hover:bg-gray-100">
+            <Button size="lg" variant="secondary" className="bg-background text-foreground hover:bg-background/90">
               Unverbindliche Anfrage stellen
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600">
+            <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
               Kostenlose Beratung
             </Button>
           </div>
         </div>
       </section>
+      </main>
+      <Footer />
+      <ScrollToTop />
+      <CookieBanner />
 
       <style jsx>{`
         @keyframes fadeInOut {
