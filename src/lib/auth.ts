@@ -5,9 +5,13 @@ import { generateTAN, sendTANEmail } from './email';
 import { verifyTAN, createTAN } from './tan';
 import { logLoginAttempt, logFailedAuth } from './security-logger';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET Umgebungsvariable ist nicht gesetzt');
+// JWT Secret zur Laufzeit validieren
+function getJWTSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET Umgebungsvariable ist nicht gesetzt');
+  }
+  return secret;
 }
 
 export interface User {
@@ -18,19 +22,21 @@ export interface User {
 }
 
 // Admin-Benutzer (in Produktion aus Datenbank)
-const ADMIN_USERS = [
-  {
-    id: 'admin-1',
-    email: process.env.ADMIN_EMAIL,
-    password: process.env.ADMIN_PASSWORD_HASH, // Gehashtes Passwort aus ENV
-    name: 'WebWelle Admin',
-    role: 'admin' as const
+function getAdminUsers() {
+  // Prüfe ob Admin-Konfiguration vorhanden ist (nur zur Laufzeit)
+  if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD_HASH) {
+    throw new Error('ADMIN_EMAIL und ADMIN_PASSWORD_HASH Umgebungsvariablen sind erforderlich');
   }
-];
-
-// Prüfe ob Admin-Konfiguration vorhanden ist
-if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD_HASH) {
-  throw new Error('ADMIN_EMAIL und ADMIN_PASSWORD_HASH Umgebungsvariablen sind erforderlich');
+  
+  return [
+    {
+      id: 'admin-1',
+      email: process.env.ADMIN_EMAIL,
+      password: process.env.ADMIN_PASSWORD_HASH, // Gehashtes Passwort aus ENV
+      name: 'WebWelle Admin',
+      role: 'admin' as const
+    }
+  ];
 }
 
 // Passwort hashen
@@ -52,7 +58,7 @@ export function createToken(user: User): string {
       role: user.role,
       name: user.name 
     },
-    JWT_SECRET!,
+    getJWTSecret(),
     { expiresIn: '24h' }
   );
 }
@@ -60,7 +66,7 @@ export function createToken(user: User): string {
 // JWT Token verifizieren
 export function verifyToken(token: string): User | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET!) as { id: string; email: string; role: 'admin' | 'customer'; name: string };
+    const decoded = jwt.verify(token, getJWTSecret()) as { id: string; email: string; role: 'admin' | 'customer'; name: string };
     return {
       id: decoded.id,
       email: decoded.email,
@@ -74,7 +80,7 @@ export function verifyToken(token: string): User | null {
 
 // Admin-Login
 export async function adminLogin(email: string, password: string): Promise<{ user: User; token: string } | null> {
-  const admin = ADMIN_USERS.find(u => u.email === email);
+  const admin = getAdminUsers().find(u => u.email === email);
   if (!admin) {
     logFailedAuth(`Admin-Login: E-Mail nicht gefunden - ${email}`);
     return null;

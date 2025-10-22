@@ -3,18 +3,24 @@ import Stripe from 'stripe';
 import { saveBooking, BookingData } from '@/lib/database';
 import { validateBookingForm } from '@/lib/validation';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-08-27.basil',
-});
-
-// Prüfe Stripe-Konfiguration
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY Umgebungsvariable ist nicht gesetzt');
+// Stripe-Konfiguration zur Laufzeit validieren
+function getStripeInstance(): Stripe {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  
+  if (!secretKey) {
+    throw new Error('STRIPE_SECRET_KEY Umgebungsvariable ist nicht gesetzt');
+  }
+  
+  return new Stripe(secretKey, {
+    apiVersion: '2025-08-27.basil',
+  });
 }
 
 export async function POST(request: NextRequest) {
   try {
     console.log('Stripe Checkout Session wird erstellt...');
+    
+    const stripe = getStripeInstance();
     
     const {
       packageType,

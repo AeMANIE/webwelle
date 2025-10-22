@@ -1,7 +1,10 @@
-// Stripe public key - muss aus Umgebungsvariablen kommen
-const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-if (!stripePublishableKey) {
-  throw new Error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY Umgebungsvariable ist nicht gesetzt');
+// Stripe public key zur Laufzeit validieren
+function getStripePublishableKey(): string {
+  const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  if (!key) {
+    throw new Error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY Umgebungsvariable ist nicht gesetzt');
+  }
+  return key;
 }
 
 // KEINE Stripe-Imports im initialen Bundle!
@@ -12,12 +15,12 @@ export const loadStripeOnDemand = async (): Promise<unknown> => {
   
   // Prüfen ob Stripe bereits geladen ist
   if ((window as unknown as { Stripe?: unknown }).Stripe) {
-    return (window as unknown as { Stripe: (key: string) => unknown }).Stripe(stripePublishableKey);
+    return (window as unknown as { Stripe: (key: string) => unknown }).Stripe(getStripePublishableKey());
   }
   
   // Dynamisch laden - nur wenn wirklich benötigt
   const { loadStripe } = await import('@stripe/stripe-js');
-  return loadStripe(stripePublishableKey, { locale: 'de' });
+  return loadStripe(getStripePublishableKey(), { locale: 'de' });
 };
 
 // Preis-Konfiguration für WebWelle-Pakete

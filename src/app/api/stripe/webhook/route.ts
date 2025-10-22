@@ -2,19 +2,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { headers } from 'next/headers';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
-
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY Umgebungsvariable ist nicht gesetzt');
-}
-
-if (!process.env.STRIPE_WEBHOOK_SECRET) {
-  throw new Error('STRIPE_WEBHOOK_SECRET Umgebungsvariable ist nicht gesetzt');
+// Stripe-Konfiguration zur Laufzeit validieren
+function getStripeConfig() {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  
+  if (!secretKey) {
+    throw new Error('STRIPE_SECRET_KEY Umgebungsvariable ist nicht gesetzt');
+  }
+  
+  if (!webhookSecret) {
+    throw new Error('STRIPE_WEBHOOK_SECRET Umgebungsvariable ist nicht gesetzt');
+  }
+  
+  return {
+    stripe: new Stripe(secretKey),
+    webhookSecret
+  };
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const { stripe, webhookSecret } = getStripeConfig();
     const body = await request.text();
     const headersList = await headers();
     const signature = headersList.get('stripe-signature');
@@ -39,11 +48,11 @@ export async function POST(request: NextRequest) {
         break;
       
       case 'invoice.payment_succeeded':
-        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice, stripe);
         break;
       
       case 'invoice.payment_failed':
-        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice, stripe);
         break;
       
       case 'customer.subscription.created':
@@ -150,7 +159,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   }
 }
 
-async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
+async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice, stripe: Stripe) {
   console.log('Zahlung erfolgreich:', invoice.id);
   
   try {
@@ -178,7 +187,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   }
 }
 
-async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice, stripe: Stripe) {
   console.log('Zahlung fehlgeschlagen:', invoice.id);
   
   try {
