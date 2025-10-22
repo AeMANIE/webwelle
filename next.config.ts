@@ -116,7 +116,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Type',
-            value: 'text/css; charset=utf-8',
+            value: 'text/css',
           },
           {
             key: 'Cache-Control',
@@ -130,7 +130,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Type',
-            value: 'application/javascript; charset=utf-8',
+            value: 'application/javascript',
           },
           {
             key: 'Cache-Control',

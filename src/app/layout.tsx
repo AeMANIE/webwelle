@@ -47,8 +47,8 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://js.stripe.com" />
         {/* Resource hints für bessere Performance */}
-        <link rel="preload" href="/_next/static/css/app/layout.css" as="style" />
-        <link rel="preload" href="/_next/static/chunks/webpack.js" as="script" />
+        <link rel="preload" href="/webwellelogo.svg" as="image" type="image/svg+xml" />
+        <link rel="preload" href="/webwellecom-weissihr.svg" as="image" type="image/svg+xml" />
         {/* Critical CSS inline für bessere Performance - verhindert Render-blocking */}
         <style dangerouslySetInnerHTML={{
           __html: `
