@@ -55,6 +55,9 @@ export default function Header() {
             <Link href="/ai-agent" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
               KI-Agenten
             </Link>
+            <Link href="/app-entwicklung" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
+              App-Entwicklung
+            </Link>
             <Link href={{ pathname: '/', hash: 'vorteile' }} className="text-foreground hover:text-primary transition-colors font-medium">
               Vorteile
             </Link>
@@ -113,6 +116,9 @@ export default function Header() {
               </Link>
               <Link href="/ai-agent" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
                 KI-Agenten
+              </Link>
+              <Link href="/app-entwicklung" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
+                App-Entwicklung
               </Link>
               <Link 
                 href="/#vorteile" 

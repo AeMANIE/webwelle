@@ -81,6 +81,7 @@ export default function Footer() {
               <li><Link href={{ pathname: '/', hash: 'leistungen' }} className="text-muted-foreground hover:text-primary transition-colors font-light">Branding</Link></li>
               <li><Link href={{ pathname: '/', hash: 'leistungen' }} className="text-muted-foreground hover:text-primary transition-colors font-light">Hosting & Support</Link></li>
               <li><Link href="/ai-agent" className="text-muted-foreground hover:text-primary transition-colors font-light">KI-Agenten</Link></li>
+              <li><Link href="/app-entwicklung" className="text-muted-foreground hover:text-primary transition-colors font-light">App-Entwicklung</Link></li>
             </ul>
           </div>
 
