@@ -9,7 +9,6 @@ import ScrollToTop from '../components/ScrollToTop';
 import CookieBanner from '../components/CookieBanner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { 
   Smartphone, 
   Zap, 
@@ -249,18 +248,18 @@ export default function AppEntwicklungPage() {
               Mobile App-Entwicklung
             </Badge>
             
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6">
               Ihre Plattform für{' '}
               <span className="text-primary">
                 Wachstum
               </span>
             </h1>
           
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
             Ihr Unternehmen. Ihre App. Ihre Möglichkeiten.
           </p>
           
-          <p className="text-lg text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed font-light">
+          <p className="text-lg text-muted-foreground mb-12 max-w-4xl mx-auto leading-relaxed font-light">
             WebWelle entwickelt individuelle Apps für Android & iOS, die Ihre Zielgruppe begeistern und digitales Wachstum ermöglichen. Von der ersten Idee bis zum Launch steht Ihr Erfolg im Mittelpunkt – maßgeschneiderte Lösungen, die wirklich performen.
           </p>
 
@@ -270,7 +269,7 @@ export default function AppEntwicklungPage() {
               {slogans.map((slogan, index) => (
                 <div
                   key={index}
-                  className="text-lg font-semibold text-gray-800 italic mb-2"
+                  className="text-lg font-semibold text-foreground italic mb-2"
                   style={{
                     animation: `fadeInOut 10s infinite ${index * 2}s`
                   }}
@@ -294,27 +293,29 @@ export default function AppEntwicklungPage() {
       </section>
 
       {/* Features Section */}
-      <section ref={featuresRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section ref={featuresRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 tracking-tight">
               Warum WebWelle App-Entwicklung?
             </h2>
-            <Separator className="w-24 mx-auto" />
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed">
+              Wir setzen auf Transparenz, Qualität und persönliche Betreuung. Entdecken Sie, was uns unterscheidet.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
-              <div key={index} className="group h-full rounded-2xl border border-gray-200 bg-gray-50 p-5 md:p-6 shadow-sm transition-shadow hover:shadow-md">
+              <div key={index} className="group h-full rounded-2xl border border-border bg-card p-5 md:p-6 shadow-sm transition-shadow hover:shadow-md">
                 <div className="flex items-start gap-4">
-                  <div className="rounded-xl bg-white border border-gray-200 p-3 shadow-sm">
+                  <div className="rounded-xl bg-background border border-border p-3 shadow-sm">
                     {feature.icon}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-base md:text-lg font-semibold text-gray-900 leading-snug">
+                    <h3 className="text-base md:text-lg font-semibold text-foreground leading-snug">
                       {feature.title}
                     </h3>
-                    <p className="mt-1 text-sm md:text-base text-gray-600 font-light leading-relaxed">
+                    <p className="mt-1 text-sm md:text-base text-muted-foreground font-light leading-relaxed">
                       {feature.description}
                     </p>
                   </div>
@@ -326,25 +327,27 @@ export default function AppEntwicklungPage() {
       </section>
 
       {/* Solutions Section */}
-      <section ref={solutionsRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section ref={solutionsRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 tracking-tight">
               Unsere App-Lösungen auf einen Blick
             </h2>
-            <Separator className="w-24 mx-auto" />
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed">
+              Von Business-Apps bis hin zu E-Commerce-Lösungen – wir entwickeln die perfekte App für Ihr Unternehmen.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             {solutions.map((solution, index) => (
-              <div key={index} className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
+              <div key={index} className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 rounded-2xl border border-border bg-card p-6 shadow-sm">
                 <div className="flex justify-center mb-4">
-                  <div className="rounded-xl bg-white border border-gray-200 p-3 shadow-sm">
+                  <div className="rounded-xl bg-background border border-border p-3 shadow-sm">
                     {solution.icon}
                   </div>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{solution.title}</h3>
-                <p className="text-sm text-gray-600 font-light leading-relaxed">
+                <h3 className="text-lg font-semibold text-foreground mb-2">{solution.title}</h3>
+                <p className="text-sm text-muted-foreground font-light leading-relaxed">
                   {solution.description}
                 </p>
               </div>
@@ -354,13 +357,15 @@ export default function AppEntwicklungPage() {
       </section>
 
       {/* Process Section */}
-      <section ref={processRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section ref={processRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 tracking-tight">
               So läuft Ihr App-Projekt ab
             </h2>
-            <Separator className="w-24 mx-auto" />
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed">
+              Von der ersten Idee bis zum erfolgreichen Launch - unser bewährter Prozess für App-Entwicklung.
+            </p>
           </div>
 
           <div className="space-y-8">
@@ -372,16 +377,16 @@ export default function AppEntwicklungPage() {
                   </div>
                 </div>
                 <div className="flex-grow">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-foreground mb-2">
                     {step.title}
                   </h3>
-                  <p className="text-gray-600 font-light leading-relaxed">
+                  <p className="text-muted-foreground font-light leading-relaxed">
                     {step.description}
                   </p>
                 </div>
                 {index < processSteps.length - 1 && (
                   <div className="hidden lg:block">
-                    <ArrowRight className="h-6 w-6 text-gray-400" />
+                    <ArrowRight className="h-6 w-6 text-muted-foreground" />
                   </div>
                 )}
               </div>
