@@ -19,7 +19,10 @@ import {
   ArrowRight,
   Star,
   Target,
-  Rocket
+  Rocket,
+  MessageCircle,
+  FileText,
+  Palette
 } from 'lucide-react';
 
 // GSAP Plugin registrieren
@@ -195,29 +198,39 @@ export default function AppEntwicklungPage() {
 
   const processSteps = [
     {
-      number: "01",
+      number: 1,
       title: "Unverbindliche Beratung",
-      description: "Klärung Ihrer Ziele und Anforderungen"
+      description: "Klärung Ihrer Ziele und Anforderungen",
+      details: "In einem persönlichen Gespräch erfahren wir mehr über Ihre Ziele, Wünsche und Anforderungen für Ihr App-Projekt.",
+      icon: MessageCircle
     },
     {
-      number: "02",
-      title: "Individuelles Angebot ab 20.000 €",
-      description: "Transparenz von Anfang an"
+      number: 2,
+      title: "Individuelles Angebot ab 20.000€",
+      description: "Transparenz von Anfang an",
+      details: "Einfacher Online-Checkout mit flexiblen Zahlungsoptionen: Einmalzahlung oder monatliche Raten.",
+      icon: FileText
     },
     {
-      number: "03",
+      number: 3,
       title: "Konzept & Design",
-      description: "Maßgeschneidert für Ihre Marke und Zielgruppe"
+      description: "Maßgeschneidert für Ihre Marke und Zielgruppe",
+      details: "Regelmäßige Updates und transparente Kommunikation über den Fortschritt Ihres App-Projekts.",
+      icon: Palette
     },
     {
-      number: "04",
+      number: 4,
       title: "Entwicklung & Testing",
-      description: "Agil, effizient, mit Fokus auf Qualität"
+      description: "Agil, effizient, mit Fokus auf Qualität",
+      details: "Professionelle Umsetzung mit modernsten Technologien und höchster Qualität für Ihre App.",
+      icon: Rocket
     },
     {
-      number: "05",
+      number: 5,
       title: "Deployment & Support",
-      description: "App-Launch in den Stores, nachhaltige Betreuung"
+      description: "App-Launch in den Stores, nachhaltige Betreuung",
+      details: "Professioneller Launch Ihrer App mit kontinuierlicher Optimierung und langfristigem Support.",
+      icon: Target
     }
   ];
 
@@ -293,29 +306,32 @@ export default function AppEntwicklungPage() {
       </section>
 
       {/* Features Section */}
-      <section ref={featuresRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 tracking-tight">
+      <section ref={featuresRef} className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10 md:mb-12">
+            <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700">
+              <Zap className="h-3.5 w-3.5 text-yellow-500" /> App-Entwicklung
+            </span>
+            <h2 className="mt-4 text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
               Warum WebWelle App-Entwicklung?
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed">
+            <p className="mt-3 text-base md:text-lg text-gray-600 max-w-3xl mx-auto font-light leading-relaxed">
               Wir setzen auf Transparenz, Qualität und persönliche Betreuung. Entdecken Sie, was uns unterscheidet.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {features.map((feature, index) => (
-              <div key={index} className="group h-full rounded-2xl border border-border bg-card p-5 md:p-6 shadow-sm transition-shadow hover:shadow-md">
+              <div key={index} className="group h-full rounded-2xl border border-gray-200 bg-gray-50 p-5 md:p-6 shadow-sm transition-shadow hover:shadow-md">
                 <div className="flex items-start gap-4">
-                  <div className="rounded-xl bg-background border border-border p-3 shadow-sm">
+                  <div className="rounded-xl bg-white border border-gray-200 p-3 shadow-sm">
                     {feature.icon}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-base md:text-lg font-semibold text-foreground leading-snug">
+                    <h3 className="text-base md:text-lg font-semibold text-gray-900 leading-snug">
                       {feature.title}
                     </h3>
-                    <p className="mt-1 text-sm md:text-base text-muted-foreground font-light leading-relaxed">
+                    <p className="mt-1 text-sm md:text-base text-gray-600 font-light leading-relaxed">
                       {feature.description}
                     </p>
                   </div>
@@ -327,10 +343,10 @@ export default function AppEntwicklungPage() {
       </section>
 
       {/* Solutions Section */}
-      <section ref={solutionsRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
-        <div className="max-w-7xl mx-auto">
+      <section ref={solutionsRef} className="py-20 bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 tracking-tight">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
               Unsere App-Lösungen auf einen Blick
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed">
@@ -338,18 +354,20 @@ export default function AppEntwicklungPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {solutions.map((solution, index) => (
-              <div key={index} className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <div className="flex justify-center mb-4">
-                  <div className="rounded-xl bg-background border border-border p-3 shadow-sm">
+              <div key={index} className="group">
+                <div className="bg-card rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border hover:border-primary/50">
+                  <div className="flex justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                     {solution.icon}
                   </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-3 text-center">
+                    {solution.title}
+                  </h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed font-light">
+                    {solution.description}
+                  </p>
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">{solution.title}</h3>
-                <p className="text-sm text-muted-foreground font-light leading-relaxed">
-                  {solution.description}
-                </p>
               </div>
             ))}
           </div>
@@ -357,10 +375,10 @@ export default function AppEntwicklungPage() {
       </section>
 
       {/* Process Section */}
-      <section ref={processRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
-        <div className="max-w-7xl mx-auto">
+      <section ref={processRef} className="py-20 bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 tracking-tight">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
               So läuft Ihr App-Projekt ab
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed">
@@ -368,27 +386,97 @@ export default function AppEntwicklungPage() {
             </p>
           </div>
 
-          <div className="space-y-8">
+          {/* Desktop Timeline */}
+          <div className="hidden xl:block">
+            <div className="relative">
+              {/* Timeline Line */}
+              <div className="absolute top-24 left-8 right-8 h-0.5 bg-primary/30"></div>
+              
+              <div className="grid grid-cols-5 gap-4">
+                {processSteps.map((step, index) => (
+                  <div key={index} className="relative">
+                    {/* Timeline Dot */}
+                    <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-primary rounded-full border-4 border-background shadow-lg flex items-center justify-center">
+                      <span className="text-primary-foreground text-sm font-bold">{step.number}</span>
+                    </div>
+                    
+                    {/* Step Content */}
+                    <div className="text-center pt-16">
+                      <div className="flex justify-center mb-4">
+                        <step.icon className="w-8 h-8 text-primary" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground mb-2 leading-tight">
+                        {step.title}
+                      </h3>
+                      <p className="text-primary font-medium text-sm mb-3">
+                        {step.description}
+                      </p>
+                      <p className="text-muted-foreground text-xs leading-relaxed font-light">
+                        {step.details}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Tablet Timeline */}
+          <div className="hidden lg:block xl:hidden">
+            <div className="grid grid-cols-2 gap-8">
+              {processSteps.map((step, index) => (
+                <div key={index} className="bg-card rounded-xl p-6 border border-border">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold">
+                        {step.number}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-center mb-3">
+                        <step.icon className="w-6 h-6 text-primary" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                        {step.title}
+                      </h3>
+                      <p className="text-primary font-medium text-sm mb-2">
+                        {step.description}
+                      </p>
+                      <p className="text-muted-foreground text-sm leading-relaxed font-light">
+                        {step.details}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Mobile Timeline */}
+          <div className="lg:hidden space-y-6">
             {processSteps.map((step, index) => (
-              <div key={index} className="flex items-center space-x-8">
-                <div className="flex-shrink-0">
-                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl">
-                    {step.number}
+              <div key={index} className="bg-card rounded-xl p-6 border border-border">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold">
+                      {step.number}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-center mb-3">
+                      <step.icon className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      {step.title}
+                    </h3>
+                    <p className="text-primary font-medium text-sm mb-2">
+                      {step.description}
+                    </p>
+                    <p className="text-muted-foreground text-sm leading-relaxed font-light">
+                      {step.details}
+                    </p>
                   </div>
                 </div>
-                <div className="flex-grow">
-                  <h3 className="text-xl font-semibold text-foreground mb-2">
-                    {step.title}
-                  </h3>
-                  <p className="text-muted-foreground font-light leading-relaxed">
-                    {step.description}
-                  </p>
-                </div>
-                {index < processSteps.length - 1 && (
-                  <div className="hidden lg:block">
-                    <ArrowRight className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                )}
               </div>
             ))}
           </div>
