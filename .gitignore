@@ -41,3 +41,12 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+
+# Projekt-Dokumente/Interne Dateien nicht committen/deployen
+/EMAIL_SETUP.md
+/PRICE_IDS_UPDATE.md
+/PRODUCTION_SETUP.md
+/README.md
+/STRIPE_SETUP.md
+/info/
+.env.localecho

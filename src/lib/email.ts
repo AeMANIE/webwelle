@@ -7,12 +7,12 @@ export function generateTAN(): string {
 async function getTransporter() {
   const nodemailer = await import('nodemailer');
   return nodemailer.createTransport({
-    host: 'smtp.hostinger.com',
-    port: 465,
-    secure: true, // SSL für Port 465
+    host: process.env.EMAIL_SMTP_HOST || 'smtp.hostinger.com',
+    port: parseInt(process.env.EMAIL_SMTP_PORT || '465'),
+    secure: process.env.EMAIL_SMTP_SECURE === 'true',
     auth: {
-      user: process.env.EMAIL_USER || 'info@webwelle.com',
-      pass: process.env.EMAIL_PASS || 'your-email-password'
+      user: process.env.EMAIL_SMTP_USER || 'info@webwelle.com',
+      pass: process.env.EMAIL_SMTP_PASSWORD || 'your-email-password'
     }
   });
 }
@@ -21,7 +21,7 @@ async function getTransporter() {
 export async function sendTANEmail(email: string, tan: string, customerName: string): Promise<boolean> {
   try {
     // Prüfe ob E-Mail-Konfiguration vorhanden ist
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    if (!process.env.EMAIL_SMTP_USER || !process.env.EMAIL_SMTP_PASSWORD) {
       console.log('='.repeat(80));
       console.log('📧 TAN-E-MAIL FÜR ENTWICKLUNG');
       console.log('='.repeat(80));
@@ -29,7 +29,7 @@ export async function sendTANEmail(email: string, tan: string, customerName: str
       console.log(`Name: ${customerName}`);
       console.log(`TAN: ${tan}`);
       console.log('='.repeat(80));
-      console.log('E-Mail-Konfiguration nicht gefunden. Konfigurieren Sie EMAIL_USER und EMAIL_PASS in .env.local');
+      console.log('E-Mail-Konfiguration nicht gefunden. Konfigurieren Sie EMAIL_SMTP_USER und EMAIL_SMTP_PASSWORD in .env.local');
       console.log('='.repeat(80));
       return true; // Für Entwicklung als erfolgreich markieren
     }
@@ -87,7 +87,7 @@ export async function sendTANEmail(email: string, tan: string, customerName: str
 export async function sendVerificationEmail(email: string, name: string, token: string): Promise<boolean> {
   try {
     // Prüfe ob E-Mail-Konfiguration vorhanden ist
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    if (!process.env.EMAIL_SMTP_USER || !process.env.EMAIL_SMTP_PASSWORD) {
       console.log('='.repeat(80));
       console.log('📧 VERIFIKATIONS-E-MAIL FÜR ENTWICKLUNG');
       console.log('='.repeat(80));
@@ -95,7 +95,7 @@ export async function sendVerificationEmail(email: string, name: string, token: 
       console.log(`Name: ${name}`);
       console.log(`Verifikations-Link: ${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/verify-email?token=${token}`);
       console.log('='.repeat(80));
-      console.log('E-Mail-Konfiguration nicht gefunden. Konfigurieren Sie EMAIL_USER und EMAIL_PASS in .env.local');
+      console.log('E-Mail-Konfiguration nicht gefunden. Konfigurieren Sie EMAIL_SMTP_USER und EMAIL_SMTP_PASSWORD in .env.local');
       console.log('='.repeat(80));
       return true; // Für Entwicklung als erfolgreich markieren
     }
@@ -215,6 +215,53 @@ export async function sendTestEmail(email: string): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('❌ Fehler beim Senden der Test-E-Mail:', error);
+    return false;
+  }
+}
+
+// Generische E-Mail-Funktion
+export async function sendEmail(options: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+}): Promise<boolean> {
+  try {
+    // Prüfe ob E-Mail-Konfiguration vorhanden ist
+    if (!process.env.EMAIL_SMTP_USER || !process.env.EMAIL_SMTP_PASSWORD) {
+      console.log('='.repeat(80));
+      console.log('📧 E-MAIL FÜR ENTWICKLUNG');
+      console.log('='.repeat(80));
+      console.log(`An: ${options.to}`);
+      console.log(`Betreff: ${options.subject}`);
+      console.log('HTML-Inhalt:');
+      console.log(options.html);
+      if (options.text) {
+        console.log('Text-Inhalt:');
+        console.log(options.text);
+      }
+      console.log('='.repeat(80));
+      console.log('E-Mail-Konfiguration nicht gefunden. Konfigurieren Sie EMAIL_SMTP_USER und EMAIL_SMTP_PASSWORD in .env.local');
+      console.log('='.repeat(80));
+      return true; // Für Entwicklung als erfolgreich markieren
+    }
+
+    // Echte E-Mail senden
+    const transporter = await getTransporter();
+    
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'info@webwelle.com',
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log('✅ E-Mail erfolgreich gesendet an:', options.to);
+    return true;
+  } catch (error) {
+    console.error('❌ Fehler beim Senden der E-Mail:', error);
     return false;
   }
 }
