@@ -2,9 +2,13 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { validatePassword, verifyPassword as verifyPasswordUtil } from './password';
 import { generateTAN, sendTANEmail } from './email';
-import { createTAN } from './tan';
+import { verifyTAN, createTAN } from './tan';
+import { logLoginAttempt, logFailedAuth } from './security-logger';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET Umgebungsvariable ist nicht gesetzt');
+}
 
 export interface User {
   id: string;
@@ -17,12 +21,17 @@ export interface User {
 const ADMIN_USERS = [
   {
     id: 'admin-1',
-    email: process.env.ADMIN_EMAIL || 'admin@webwelle.com',
-    password: '$2b$12$X3TZcc7rp3bLLkoJR/nhv.EkQY.o4/AL18gUQwHY7N.5wYGwbz5Su', // admin123 (gehasht)
+    email: process.env.ADMIN_EMAIL,
+    password: process.env.ADMIN_PASSWORD_HASH, // Gehashtes Passwort aus ENV
     name: 'WebWelle Admin',
     role: 'admin' as const
   }
 ];
+
+// Prüfe ob Admin-Konfiguration vorhanden ist
+if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD_HASH) {
+  throw new Error('ADMIN_EMAIL und ADMIN_PASSWORD_HASH Umgebungsvariablen sind erforderlich');
+}
 
 // Passwort hashen
 export async function hashPassword(password: string): Promise<string> {
@@ -43,7 +52,7 @@ export function createToken(user: User): string {
       role: user.role,
       name: user.name 
     },
-    JWT_SECRET,
+    JWT_SECRET!,
     { expiresIn: '24h' }
   );
 }
@@ -51,7 +60,7 @@ export function createToken(user: User): string {
 // JWT Token verifizieren
 export function verifyToken(token: string): User | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string; role: 'admin' | 'customer'; name: string };
+    const decoded = jwt.verify(token, JWT_SECRET!) as { id: string; email: string; role: 'admin' | 'customer'; name: string };
     return {
       id: decoded.id,
       email: decoded.email,
@@ -66,25 +75,54 @@ export function verifyToken(token: string): User | null {
 // Admin-Login
 export async function adminLogin(email: string, password: string): Promise<{ user: User; token: string } | null> {
   const admin = ADMIN_USERS.find(u => u.email === email);
-  if (!admin) return null;
+  if (!admin) {
+    logFailedAuth(`Admin-Login: E-Mail nicht gefunden - ${email}`);
+    return null;
+  }
   
-  const isValid = await verifyPassword(password, admin.password);
-  if (!isValid) return null;
+  const isValid = await verifyPassword(password, admin.password!);
+  if (!isValid) {
+    logFailedAuth(`Admin-Login: Ungültiges Passwort - ${email}`);
+    return null;
+  }
   
   const user: User = {
-    id: admin.id,
-    email: admin.email,
+    id: admin.id!,
+    email: admin.email!,
     role: admin.role,
-    name: admin.name
+    name: admin.name!
   };
   
   const token = createToken(user);
+  logLoginAttempt(email, true);
   return { user, token };
 }
 
 // Kunden-Login mit 2FA
 export async function customerLogin(email: string, password: string): Promise<{ user: User; token: string } | null> {
-  // Temporäre Test-Kunden mit gehashten Passwörtern
+  // In Produktion: Kunden aus Datenbank laden
+  if (process.env.NODE_ENV === 'production') {
+    const { getCustomerByEmail } = await import('./database');
+    const customer = await getCustomerByEmail(email);
+    
+    if (!customer) return null;
+    
+    // Passwort verifizieren
+    const isValidPassword = await verifyPasswordUtil(password, customer.password_hash);
+    if (!isValidPassword) return null;
+    
+    const user: User = {
+      id: customer.id!.toString(),
+      email: customer.email,
+      role: 'customer',
+      name: customer.name
+    };
+    
+    const token = createToken(user);
+    return { user, token };
+  }
+
+  // Für Entwicklung: Hardcoded Test-Kunden
   const CUSTOMER_USERS = [
     {
       id: 'customer-1',
@@ -208,10 +246,10 @@ export async function customerLogin2FA(email: string, tan: string): Promise<{ us
     return null;
   }
   
-  // Für Entwicklung: TAN-Validierung vereinfacht
-  // Prüfe nur ob TAN 6-stellig und numerisch ist
-  if (!/^\d{6}$/.test(tan)) {
-    console.log('TAN-Format ungültig:', tan);
+  // TAN gegen Store validieren
+  const tanValidation = verifyTAN(email, tan);
+  if (!tanValidation.valid) {
+    console.log('TAN-Validierung fehlgeschlagen:', tanValidation.message);
     return null;
   }
   

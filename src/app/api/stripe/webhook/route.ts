@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { headers } from 'next/headers';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_your_secret_key_here');
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_your_webhook_secret_here';
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('STRIPE_SECRET_KEY Umgebungsvariable ist nicht gesetzt');
+}
+
+if (!process.env.STRIPE_WEBHOOK_SECRET) {
+  throw new Error('STRIPE_WEBHOOK_SECRET Umgebungsvariable ist nicht gesetzt');
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,30 +80,65 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         packageType: metadata.packageType,
         isMonthly: metadata.isMonthly,
         customerName: metadata.customerName,
-        formData: JSON.parse(metadata.formData || '{}')
+        formData: metadata.formData
       });
 
       // Buchung in Datenbank speichern
       const { saveBooking } = await import('@/lib/database');
       
-      const formData = JSON.parse(metadata.formData || '{}');
+      // Defensive JSON-Parsing
+      let formData: Record<string, unknown> = {};
+      try {
+        formData = metadata.formData ? JSON.parse(metadata.formData) : {};
+      } catch (parseError) {
+        console.error('Fehler beim Parsen der FormData:', parseError);
+        formData = {};
+      }
+      
+      // Defensive Parsing für Arrays
+      let targetGroup: string[] = [];
+      try {
+        targetGroup = formData.targetGroup ? JSON.parse(formData.targetGroup as string) : [];
+        if (!Array.isArray(targetGroup)) targetGroup = [];
+      } catch (parseError) {
+        console.error('Fehler beim Parsen der targetGroup:', parseError);
+        targetGroup = [];
+      }
+
+      let functions: string[] = [];
+      try {
+        functions = formData.functions ? JSON.parse(formData.functions as string) : [];
+        if (!Array.isArray(functions)) functions = [];
+      } catch (parseError) {
+        console.error('Fehler beim Parsen der functions:', parseError);
+        functions = [];
+      }
       
       const bookingData = {
         session_id: session.id,
         package_type: metadata.packageType as 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle',
         is_monthly: metadata.isMonthly === 'true',
-        customer_name: metadata.customerName || formData.customerName || 'Unbekannt',
-        customer_email: session.customer_email || formData.customerEmail || 'unbekannt@example.com',
-        customer_phone: formData.customerPhone || null,
-        company_name: formData.companyName || 'Unbekanntes Unternehmen',
-        existing_website: formData.existingWebsite || 'nein',
-        target_group: formData.targetGroup ? JSON.parse(formData.targetGroup) : [],
-        design_style: formData.designStyle || 'modern',
-        functions: formData.functions ? JSON.parse(formData.functions) : [],
-        budget: formData.budget || 'nicht angegeben',
-        message: formData.message || null,
+        checkout_mode: 'payment' as const,
+        package_price_display: metadata.packagePriceDisplay || 'Preis nicht angegeben',
+        currency: 'eur',
+        total_amount_cents: session.amount_total || 0,
+        customer_name: metadata.customerName || (formData.customerName as string) || undefined,
+        customer_email: session.customer_email || (formData.customerEmail as string) || undefined,
+        customer_phone: (formData.customerPhone as string) || undefined,
+        company_name: (formData.companyName as string) || undefined,
+        existing_website: (formData.existingWebsite as string) === 'ja' ? true : false,
+        existing_website_url: (formData.existingWebsiteUrl as string) || undefined,
+        target_group: targetGroup,
+        design_style: (formData.designStyle as string) || undefined,
+        design_reference_url: (formData.designReferenceUrl as string) || undefined,
+        selected_addons: formData.selectedAddons ? JSON.parse(formData.selectedAddons as string) : undefined,
+        message: (formData.message as string) || undefined,
+        raw_form_data: formData,
+        stripe_metadata: metadata,
         stripe_customer_id: session.customer as string || undefined,
         stripe_payment_intent_id: session.payment_intent as string || undefined,
+        stripe_subscription_id: session.subscription as string || undefined,
+        stripe_invoice_id: session.invoice as string || undefined,
         status: 'paid' as const
       };
 

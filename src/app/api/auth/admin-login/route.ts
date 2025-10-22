@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminLogin } from '@/lib/auth';
+import { validateLoginForm } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
-    if (!email || !password) {
+    // Input-Validierung
+    const validation = validateLoginForm(email, password);
+    if (!validation.isValid) {
       return NextResponse.json(
-        { error: 'E-Mail und Passwort sind erforderlich' },
+        { error: 'Ungültige Eingaben', details: validation.errors },
         { status: 400 }
       );
     }
@@ -21,11 +24,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    // HttpOnly Cookie setzen für sichere Token-Speicherung
+    const response = NextResponse.json({
       success: true,
-      user: result.user,
-      token: result.token
+      user: result.user
     });
+
+    response.cookies.set('auth-token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60, // 24 Stunden
+      path: '/'
+    });
+
+    return response;
 
   } catch (error) {
     console.error('Admin Login Fehler:', error);

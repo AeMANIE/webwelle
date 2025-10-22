@@ -1,23 +1,41 @@
 import { NextResponse } from 'next/server';
 import { customerLogin2FA } from '@/lib/auth';
+import { verifyTAN } from '@/lib/tan';
+import { validateEmail, validateTAN } from '@/lib/validation';
 
 export async function POST(request: Request) {
   try {
     const { email, tan } = await request.json();
     console.log('Verify-TAN API:', { email, tan });
     
-    if (!email || !tan) {
+    // Input-Validierung
+    if (!email || !email.trim()) {
       return NextResponse.json(
-        { success: false, error: 'E-Mail und TAN sind erforderlich' },
+        { success: false, error: 'E-Mail ist erforderlich' },
         { status: 400 }
       );
     }
 
-    // Für Entwicklung: Direkte TAN-Validierung ohne Store
-    // Prüfe ob TAN 6-stellig und numerisch ist
-    if (!/^\d{6}$/.test(tan)) {
+    if (!validateEmail(email)) {
       return NextResponse.json(
-        { success: false, error: 'TAN muss 6-stellig und numerisch sein' },
+        { success: false, error: 'Ungültige E-Mail-Adresse' },
+        { status: 400 }
+      );
+    }
+
+    const tanValidation = validateTAN(tan);
+    if (!tanValidation.isValid) {
+      return NextResponse.json(
+        { success: false, error: tanValidation.errors.tan },
+        { status: 400 }
+      );
+    }
+
+    // TAN gegen Store validieren
+    const tanStoreValidation = verifyTAN(email, tan);
+    if (!tanStoreValidation.valid) {
+      return NextResponse.json(
+        { success: false, error: tanStoreValidation.message },
         { status: 401 }
       );
     }
@@ -27,11 +45,21 @@ export async function POST(request: Request) {
     console.log('Verify-TAN Result:', result);
     
     if (result) {
-      return NextResponse.json({ 
+      // HttpOnly Cookie setzen für sichere Token-Speicherung
+      const response = NextResponse.json({ 
         success: true, 
-        user: result.user, 
-        token: result.token 
+        user: result.user
       });
+
+      response.cookies.set('auth-token', result.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60, // 24 Stunden
+        path: '/'
+      });
+
+      return response;
     } else {
       return NextResponse.json(
         { success: false, error: 'Login fehlgeschlagen' },

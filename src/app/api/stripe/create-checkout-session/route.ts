@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-// import { saveBooking, BookingData } from '@/lib/database'; // Temporär deaktiviert
+import { saveBooking, BookingData } from '@/lib/database';
+import { validateBookingForm } from '@/lib/validation';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_your_secret_key_here', {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
 });
 
 // Prüfe Stripe-Konfiguration
 if (!process.env.STRIPE_SECRET_KEY) {
-  console.error('WARNUNG: STRIPE_SECRET_KEY ist nicht gesetzt!');
+  throw new Error('STRIPE_SECRET_KEY Umgebungsvariable ist nicht gesetzt');
 }
 
 export async function POST(request: NextRequest) {
@@ -111,30 +112,43 @@ export async function POST(request: NextRequest) {
 
     console.log('Stripe Session erfolgreich erstellt:', session.id);
     
-    // Buchungsdaten in Datenbank speichern (temporär deaktiviert für Debugging)
+    // Buchungsdaten in Datenbank speichern
     try {
-      console.log('Datenbank-Speicherung temporär deaktiviert für Debugging');
-      // const bookingData: BookingData = {
-      //   session_id: session.id,
-      //   package_type: packageType,
-      //   is_monthly: isMonthly,
-      //   customer_name: customerName,
-      //   customer_email: customerEmail,
-      //   customer_phone: formData.telefon || undefined,
-      //   company_name: formData.firmenname,
-      //   existing_website: formData.bestehendeWebsite,
-      //   target_group: formData.zielgruppe || [],
-      //   design_style: formData.designStil,
-      //   functions: formData.funktionen || [],
-      //   budget: formData.budget,
-      //   message: formData.nachricht || undefined,
-      //   status: 'pending'
-      // };
+      // Formular-Validierung
+      const validation = validateBookingForm(formData);
+      if (!validation.isValid) {
+        console.error('Formular-Validierung fehlgeschlagen:', validation.errors);
+        // Session wurde bereits erstellt, aber Daten sind ungültig
+        // In Produktion sollte hier ein Rollback erfolgen
+      }
+
+      const bookingData: BookingData = {
+        session_id: session.id,
+        package_type: packageType,
+        is_monthly: isMonthly,
+        checkout_mode: 'payment',
+        package_price_display: `${amount} €${isMonthly ? ' mtl.' : ''}`,
+        currency: currency || 'eur',
+        total_amount_cents: Math.round(amount * 100),
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_phone: formData.customerPhone as string || undefined,
+        company_name: formData.companyName as string || undefined,
+        existing_website: (formData.existingWebsite as string) === 'ja' ? true : false,
+        existing_website_url: formData.existingWebsiteUrl as string || undefined,
+        target_group: formData.targetGroup as string[] || [],
+        design_style: formData.designStyle as string || undefined,
+        design_reference_url: formData.designReferenceUrl as string || undefined,
+        selected_addons: formData.selectedAddons ? JSON.parse(formData.selectedAddons as string) : undefined,
+        message: formData.message as string || undefined,
+        raw_form_data: formData,
+        status: 'pending'
+      };
       
-      // await saveBooking(bookingData);
-      // console.log('Buchungsdaten erfolgreich gespeichert');
+      await saveBooking(bookingData);
+      console.log('✅ Buchungsdaten erfolgreich gespeichert');
     } catch (dbError) {
-      console.error('Fehler beim Speichern der Buchungsdaten:', dbError);
+      console.error('❌ Fehler beim Speichern der Buchungsdaten:', dbError);
       // Stripe Session wurde erstellt, aber DB-Speicherung fehlgeschlagen
       // Das ist nicht kritisch, da die Daten in Stripe Metadata gespeichert sind
     }

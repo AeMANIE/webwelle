@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     const newPasswordHash = await hashPassword(newPassword);
 
     // Passwort in Datenbank aktualisieren
-    await updateCustomer(customer.id!, {
+    await updateCustomer(customer.email, {
       password_hash: newPasswordHash
     });
 

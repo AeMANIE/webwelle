@@ -1,130 +1,84 @@
-Hier ist die **Collections-Übersicht** mit jeweiligem Zweck/Beschreibung für dein Projekt:
+webwelle_bookings — Vollständige Feldliste
+Feldname                  |  Typ       |  Besonderheiten                                                                        |  required?
+--------------------------+------------+----------------------------------------------------------------------------------------+-----------
+id                        |  uuid      |  Primary Key, auto-generated                                                           |  ja       
+created_at                |  datetime  |  Default: now()                                                                        |  ja       
+status                    |  string    |  Enum: pending, paid, failed, cancelled, default pending                               |  ja       
+session_id                |  string    |  Unique, Stripe Checkout Session                                                       |  ja       
+package_type              |  string    |  Enum: starterwelle, businesswelle, erfolgswelle, flowwelle, powerwelle, meisterwelle  |  ja       
+is_monthly                |  boolean   |                                                                                        |  ja       
+checkout_mode             |  string    |  Enum: payment, subscription                                                           |  ja       
+package_price_display     |  string    |  Beispiel: "139 € mtl."                                                                |  ja       
+currency                  |  string    |  Default: eur                                                                          |  ja       
+total_amount_cents        |  integer   |  Betrag in Cent                                                                        |  ja       
+customer_name             |  string    |  Nullable                                                                              |  nein     
+customer_email            |  string    |  Nullable, Index empfohlen                                                             |  nein     
+customer_phone            |  string    |  Nullable                                                                              |  nein     
+company_name              |  string    |  Nullable                                                                              |  nein     
+existing_website          |  boolean   |  Nullable                                                                              |  nein     
+existing_website_url      |  string    |  Nullable                                                                              |  nein     
+target_group              |  json      |  string[], Nullable                                                                    |  nein     
+design_style              |  string    |  Nullable, optional Enum: modern, creative, professional, tech                         |  nein     
+design_reference_url      |  string    |  Nullable                                                                              |  nein     
+selected_addons           |  json      |  [{key, billing, priceId, amountCents}], Nullable                                      |  nein     
+message                   |  text      |  Nullable                                                                              |  nein     
+raw_form_data             |  json      |  vollständiges Formular, Nullable                                                      |  nein     
+stripe_metadata           |  json      |  Nullable                                                                              |  nein     
+stripe_customer_id        |  string    |  Nullable                                                                              |  nein     
+stripe_payment_intent_id  |  string    |  Nullable                                                                              |  nein     
+stripe_subscription_id    |  string    |  Nullable                                                                              |  nein     
+stripe_invoice_id         |  string    |  Nullable                                                                              |  nein     
 
-| Collection         | Zweck / Beschreibung                                                                                       |
-|--------------------|-----------------------------------------------------------------------------------------------------------|
-| customers          | Verwaltung aller Kundendaten, Login, Verträge, Buchungen und Rechnungen                                   |
-| sellers            | Verwaltung der Verkäuferdaten, Onboarding mit Dokumenten, Verträge, Provisionsübersicht                   |
-| customer_invoices  | Speicherung und Verwaltung aller Rechnungen, die an Kunden ausgestellt werden                             |
-| seller_invoices    | Speicherung und Verwaltung aller Provisionsabrechnungen und Rechnungen für Verkäufer                      |
-| bookings           | Verwaltung aller Buchungen durch Kunden, inkl. gewünschtem Termin, Produkt und zugeordnetem Verkäufer      |
-| capacities         | Abbildung der verfügbaren Kapazitäten/Slots je Verkäufer und Tag, für die Terminplanung                   |
-| products           | Übersicht und Verwaltung aller angebotenen Produkte und Dienstleistungen, inkl. Preis, Typ, Aktionen      |
-| contracts          | Speicherung und Verwaltung aller digital unterschriebenen Verträge für Kunden und Verkäufer                |
-| promotions         | Verwaltung von Promo-Codes, Rabatten und Aktionen für Produkte und Dienstleistungen                        |
+Collection: webwelle_invoices
 
+Feldname           |  Typ       |  Besonderheiten                                              |  required?
+-------------------+------------+--------------------------------------------------------------+-----------
+id                 |  uuid      |  Primary Key, auto-generated                                 |  ja       
+created_at         |  datetime  |  Default: now()                                              |  ja       
+booking_id         |  uuid      |  Foreign Key zu webwelle_bookings.id                         |  ja       
+invoice_number     |  string    |  Einzigartig, z.B. „R-2025-001“                              |  ja       
+amount_cents       |  integer   |  Betrag in Cent, >0                                          |  ja       
+currency           |  string    |  Default: eur                                                |  ja       
+status             |  string    |  Enum: draft, sent, paid, overdue, cancelled; default draft  |  ja       
+due_date           |  date      |  Fälligkeitsdatum                                            |  ja       
+paid_at            |  datetime  |  Zahlungsdatum, Nullable                                     |  nein     
+stripe_invoice_id  |  string    |  Stripe Invoice ID, Nullable                                 |  nein     
+pdf_url            |  string    |  Link zur PDF-Rechnung, Nullable                             |  nein     
+notes              |  text      |  Interne Notizen, Nullable                                   |  nein     
 
+Collection: webwelle_subscriptions
+Feldname                |  Typ       |  Besonderheiten / Hinweise                                               |  required?
+------------------------+------------+--------------------------------------------------------------------------+-----------
+id                      |  uuid      |  Primary Key, auto-generated                                             |  ja       
+created_at              |  datetime  |  Default: now()                                                          |  ja       
+booking_id              |  uuid      |  Foreign Key zu webwelle_bookings.id, UNIQUE empfohlen (1:1)             |  ja       
+stripe_subscription_id  |  string    |  Stripe Subscription ID, UNIQUE                                          |  ja       
+status                  |  string    |  Enum: active, paused, cancelled, past_due, incomplete; Default: active  |  ja       
+current_period_start    |  datetime  |  Beginn der aktuellen Abrechnungsperiode                                 |  ja       
+current_period_end      |  datetime  |  Ende der aktuellen Abrechnungsperiode                                   |  ja       
+cancelled_at            |  datetime  |  Kündigungsdatum, Nullable                                               |  nein     
+cancel_at_period_end    |  boolean   |  Kündigung zum Periodenende, Default: false                              |  ja       
+next_billing_date       |  datetime  |  Nächster Abrechnungstermin, Nullable                                    |  nein     
+trial_start             |  datetime  |  Start der Testperiode, Nullable                                         |  nein     
+trial_end               |  datetime  |  Ende der Testperiode, Nullable                                          |  nein     
+customer_cancelled      |  boolean   |  Kunde hat gekündigt, Default: false                                     |  ja       
+cancellation_reason     |  text      |  Kündigungsgrund, Nullable                                               |  nein     
 
-### 1. Kunden (customers)
-
-| Feldname         | Typ         | Beschreibung                         |
-|------------------|-------------|--------------------------------------|
-| id               | UUID        | Eindeutige Kunden-ID                 |
-| email            | String      | E-Mail-Adresse                       |
-| password         | String      | Verschlüsseltes Passwort             |
-| name             | String      | Name des Kunden                      |
-| phone            | String      | Telefonnummer                        |
-| registered_at    | DateTime    | Registrierungsdatum                  |
-| status           | String      | Aktiv, Inaktiv, Gesperrt             |
-| contracts        | M2M         | Verknüpfte Verträge                  |
-
-### 2. Verkäufer (sellers)
-
-| Feldname         | Typ         | Beschreibung                         |
-|------------------|-------------|--------------------------------------|
-| id               | UUID        | Eindeutige Verkäufer-ID              |
-| email            | String      | E-Mail-Adresse                       |
-| password         | String      | Verschlüsseltes Passwort             |
-| name             | String      | Name des Verkäufers                  |
-| phone            | String      | Telefonnummer                        |
-| registered_at    | DateTime    | Registrierungsdatum                  |
-| status           | String      | Aktiv, Inaktiv, Gesperrt             |
-| business_doc     | File        | Gewerbeschein                        |
-| id_doc           | File        | Ausweisdokument                      |
-| iban             | String      | IBAN                                 |
-| police_clearance | File        | Führungszeugnis                      |
-| contracts        | M2M         | Verknüpfte Verträge                  |
-
-### 3. Kunden-Rechnungen (customer_invoices)
-
-| Feldname         | Typ         | Beschreibung                         |
-|------------------|-------------|--------------------------------------|
-| id               | UUID        | Rechnungs-ID                         |
-| customer_id      | M2O         | Verknüpfte Kunden-ID                 |
-| order_id         | M2O         | Verknüpfte Bestellung                |
-| amount           | Decimal     | Rechnungsbetrag                      |
-| status           | String      | Offen, Bezahlt, Überfällig           |
-| issued_at        | DateTime    | Ausstellungsdatum                    |
-| pdf              | File        | PDF-Datei der Rechnung               |
-
-### 4. Verkäufer-Rechnungen (seller_invoices)
-
-| Feldname         | Typ         | Beschreibung                         |
-|------------------|-------------|--------------------------------------|
-| id               | UUID        | Rechnungs-ID                         |
-| seller_id        | M2O         | Verknüpfte Verkäufer-ID              |
-| commission_id    | M2O         | Zugehörige Provision                 |
-| amount           | Decimal     | Rechnungsbetrag                      |
-| status           | String      | Offen, Bezahlt, Überfällig           |
-| issued_at        | DateTime    | Ausstellungsdatum                    |
-| pdf              | File        | PDF-Datei der Rechnung               |
-
-### 5. Buchungen (bookings)
-
-| Feldname         | Typ         | Beschreibung                         |
-|------------------|-------------|--------------------------------------|
-| id               | UUID        | Buchungs-ID                          |
-| customer_id      | M2O         | Verknüpfte Kunden-ID                 |
-| product_id       | M2O         | Gebuchtes Produkt                    |
-| seller_id        | M2O         | Optional: zugeordneter Verkäufer     |
-| status           | String      | Offen, Bestätigt, Abgelehnt          |
-| preferred_date   | DateTime    | Wunsch-/Vorschlagstermin             |
-| notes            | Text        | Zusätzliche Infos des Kunden         |
-| created_at       | DateTime    | Buchungsdatum                        |
-
-### 6. Kapazitäten (capacities)
-
-| Feldname         | Typ         | Beschreibung                         |
-|------------------|-------------|--------------------------------------|
-| id               | UUID        | Kapazitäts-ID                        |
-| seller_id        | M2O         | Verkäufer, dem die Kapazität gehört  |
-| date             | Date        | Datum                                |
-| max_bookings     | Integer     | Maximale Buchungen an diesem Tag     |
-| booked           | Integer     | Bereits gebuchte Plätze              |
-
-### 7. Produkte (products)
-
-| Feldname         | Typ         | Beschreibung                         |
-|------------------|-------------|--------------------------------------|
-| id               | UUID        | Produkt-ID                           |
-| name             | String      | Produktname                          |
-| description      | Text        | Beschreibung                         |
-| price            | Decimal     | Preis                                |
-| type             | String      | Einmalzahlung, Abo                   |
-| interval         | String      | Monatlich, Jährlich (bei Abo)        |
-| active           | Boolean     | Produkt aktiv/inaktiv                |
-| promo            | M2M         | Verknüpfte Promotionen               |
-
-### 8. Verträge (contracts)
-
-| Feldname         | Typ         | Beschreibung                         |
-|------------------|-------------|--------------------------------------|
-| id               | UUID        | Vertrags-ID                          |
-| user_id          | M2O         | Kunde oder Verkäufer                 |
-| type             | String      | Kaufvertrag, Verkäufervertrag        |
-| signed_at        | DateTime    | Datum der Unterschrift               |
-| pdf              | File        | Vertrag als PDF                      |
-| status           | String      | Signiert, Offen                      |
-
-### 9. Promotionen (promotions)
-
-| Feldname         | Typ         | Beschreibung                         |
-|------------------|-------------|--------------------------------------|
-| id               | UUID        | Promo-ID                             |
-| code             | String      | Promo-Code                           |
-| discount_type    | String      | Prozentual, Festbetrag               |
-| discount_value   | Decimal     | Rabattwert                           |
-| valid_from       | DateTime    | Gültig ab                            |
-| valid_until      | DateTime    | Gültig bis                           |
-| active           | Boolean     | Aktiv/Inaktiv                        |
-
-
+Collection: webwelle_addon_orders (Nachträgliche Zusatzbuchungen)
+Feldname                |  Typ       |  Besonderheiten / Hinweise                                     |  required?
+------------------------+------------+----------------------------------------------------------------+-----------
+id                      |  uuid      |  Primary Key, auto-generated                                   |  ja       
+created_at              |  datetime  |  Default: now()                                                |  ja       
+booking_id              |  uuid      |  Foreign Key zu webwelle_bookings.id, Zuordnung zur Buchung    |  ja       
+addon_key               |  string    |  z.B. "ai-agent", "online-shop"                                |  ja       
+addon_label             |  string    |  Menschlich lesbarer Name zum Zeitpunkt der Buchung, Nullable  |  nein     
+billing                 |  string    |  Enum: oneTime, monthly                                        |  ja       
+price_id                |  string    |  Stripe Price ID                                               |  ja       
+amount_cents            |  integer   |  Preis in Cent zum Kauf, >0                                    |  ja       
+currency                |  string    |  Default: eur                                                  |  ja       
+checkout_mode           |  string    |  Enum: payment, subscription                                   |  ja       
+status                  |  string    |  Enum: pending, paid, failed, cancelled; Default: pending      |  ja       
+session_id              |  string    |  Stripe Checkout Session ID, UNIQUE, Nullable                  |  nein     
+stripe_invoice_id       |  string    |  Stripe Invoice ID, Nullable                                   |  nein     
+stripe_subscription_id  |  string    |  Stripe Subscription ID, Nullable                              |  nein     
+notes                   |  text      |  Interne Notizen, Nullable                                     |  nein     

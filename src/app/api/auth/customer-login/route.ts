@@ -21,11 +21,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    // HttpOnly Cookie setzen für sichere Token-Speicherung
+    const response = NextResponse.json({
       success: true,
-      user: result.user,
-      token: result.token
+      user: result.user
     });
+
+    response.cookies.set('auth-token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60, // 24 Stunden
+      path: '/'
+    });
+
+    return response;
 
   } catch (error) {
     console.error('Customer Login Fehler:', error);

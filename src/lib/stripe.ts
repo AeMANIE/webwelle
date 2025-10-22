@@ -1,5 +1,8 @@
-// Stripe public key - sollte aus Umgebungsvariablen kommen
-const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_publishable_key_here';
+// Stripe public key - muss aus Umgebungsvariablen kommen
+const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+if (!stripePublishableKey) {
+  throw new Error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY Umgebungsvariable ist nicht gesetzt');
+}
 
 // KEINE Stripe-Imports im initialen Bundle!
 
