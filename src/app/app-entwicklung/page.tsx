@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Header from '../components/Header';
@@ -14,7 +14,6 @@ import {
   Zap, 
   Shield, 
   Users, 
-  ShoppingCart, 
   Calendar,
   ArrowRight,
   Star,
@@ -36,6 +35,11 @@ export default function AppEntwicklungPage() {
   const solutionsRef = useRef<HTMLDivElement>(null);
   const processRef = useRef<HTMLDivElement>(null);
   const faqRef = useRef<HTMLDivElement>(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const toggleFAQ = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
 
   useEffect(() => {
     // Hero Animation
@@ -170,27 +174,22 @@ export default function AppEntwicklungPage() {
 
   const solutions = [
     {
-      icon: <Target className="h-6 w-6" />,
+      icon: Target,
       title: "Business-Apps",
       description: "Für Ihre Prozesse"
     },
     {
-      icon: <Users className="h-6 w-6" />,
+      icon: Users,
       title: "Kunden-Apps",
       description: "Direkter Service & Kundenbindung"
     },
     {
-      icon: <ShoppingCart className="h-6 w-6" />,
-      title: "E-Commerce-Apps",
-      description: "Maximale Umsatzchancen"
-    },
-    {
-      icon: <Calendar className="h-6 w-6" />,
+      icon: Calendar,
       title: "Community-Apps",
       description: "Interaktion und Engagement"
     },
     {
-      icon: <Star className="h-6 w-6" />,
+      icon: Star,
       title: "Branchenlösungen",
       description: "Von Tourismus bis Gesundheit"
     }
@@ -355,21 +354,24 @@ export default function AppEntwicklungPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {solutions.map((solution, index) => (
-              <div key={index} className="group">
-                <div className="bg-card rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border hover:border-primary/50">
-                  <div className="flex justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                    {solution.icon}
+            {solutions.map((solution, index) => {
+              const IconComponent = solution.icon;
+              return (
+                <div key={index} className="group">
+                  <div className="bg-card rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border hover:border-primary/50">
+                    <div className="flex justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <IconComponent className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3 text-center">
+                      {solution.title}
+                    </h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed font-light">
+                      {solution.description}
+                    </p>
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-3 text-center">
-                    {solution.title}
-                  </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed font-light">
-                    {solution.description}
-                  </p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -484,8 +486,8 @@ export default function AppEntwicklungPage() {
       </section>
 
       {/* FAQ Section */}
-      <section ref={faqRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
-        <div className="max-w-4xl mx-auto">
+      <section ref={faqRef} className="py-20 bg-background">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
               FAQ: Häufige Fragen zur App-Entwicklung
@@ -498,41 +500,144 @@ export default function AppEntwicklungPage() {
           <div className="space-y-4">
             {faqs.map((faq, index) => (
               <div key={index} className="bg-card rounded-lg overflow-hidden border border-border">
-                <div className="px-6 py-4">
-                  <h3 className="font-semibold text-foreground pr-4 tracking-wide text-lg">
+                <button
+                  onClick={() => toggleFAQ(index)}
+                  className="w-full px-6 py-4 text-left flex justify-between items-center hover:bg-secondary/50 transition-colors"
+                >
+                  <span className="font-semibold text-foreground pr-4 tracking-wide">
                     {faq.question}
-                  </h3>
-                  <p className="mt-3 text-muted-foreground leading-relaxed font-light">
-                    {faq.answer}
-                  </p>
-                </div>
+                  </span>
+                  <div className="flex-shrink-0">
+                    <svg
+                      className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${
+                        openIndex === index ? 'rotate-180' : ''
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                </button>
+                
+                {openIndex === index && (
+                  <div className="px-6 pb-4">
+                    <p className="text-muted-foreground leading-relaxed font-light">
+                      {faq.answer}
+                    </p>
+                  </div>
+                )}
               </div>
             ))}
+          </div>
+
+          {/* Contact CTA */}
+          <div className="mt-12 text-center">
+            <div className="bg-primary/10 rounded-2xl p-6 sm:p-8 md:p-10 border border-primary/20">
+              <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-4 sm:mb-6">
+                Haben Sie weitere Fragen?
+              </h3>
+              <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-8 px-2 leading-relaxed">
+                Wir beantworten gerne alle Ihre Fragen in einem kostenlosen Erstgespräch.
+              </p>
+              <a
+                href="#cta"
+                className="inline-block bg-primary text-primary-foreground px-6 sm:px-8 md:px-10 py-3 sm:py-4 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-sm sm:text-base md:text-lg whitespace-nowrap"
+              >
+                Kostenloses Gespräch vereinbaren
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-primary">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground mb-6">
-            Jetzt App-Erfolg starten!
-          </h2>
-          <p className="text-xl text-primary-foreground/90 mb-8">
-            Lassen Sie Ihre digitale Vision Wirklichkeit werden:
-          </p>
-          <p className="text-lg text-primary-foreground/80 mb-12">
-            Jetzt unverbindlich Anfrage stellen und gemeinsam App-Geschichte schreiben.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" className="bg-background text-foreground hover:bg-background/90">
-              Unverbindliche Anfrage stellen
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-              Kostenlose Beratung
-            </Button>
+      <section className="py-20 bg-gradient-to-br from-primary to-primary/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="text-3xl md:text-5xl font-extrabold text-primary-foreground mb-6 tracking-tight">
+              Jetzt App-Erfolg starten!
+            </h2>
+            <p className="text-xl md:text-2xl text-primary-foreground/90 mb-12 max-w-4xl mx-auto leading-relaxed font-light">
+              Kostenloses Erstgespräch sichern oder direkt individuelles Festpreis-Angebot anfordern – 
+              einfach, digital und garantiert sicher.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
+              {/* Free Consultation */}
+              <div className="bg-card rounded-2xl p-8 shadow-xl border border-border">
+                <div className="flex justify-center mb-4">
+                  <MessageCircle className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-4 tracking-wide">
+                  Kostenloses Erstgespräch
+                </h3>
+                <p className="text-muted-foreground mb-6 font-light leading-relaxed">
+                  Lassen Sie uns in einem unverbindlichen Gespräch Ihre Ziele und Wünsche besprechen. 
+                  Wir beraten Sie gerne zu den besten Lösungen für Ihr Unternehmen.
+                </p>
+                <ul className="text-left text-muted-foreground space-y-2 mb-6">
+                  <li className="flex items-center">
+                    <span className="text-primary mr-2">✓</span>
+                    Unverbindlich & kostenlos
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-primary mr-2">✓</span>
+                    Individuelle Beratung
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-primary mr-2">✓</span>
+                    Sofort verfügbar
+                  </li>
+                </ul>
+                <a
+                  href="mailto:info@webwelle.com?subject=Kostenloses Erstgespräch"
+                  className="w-full bg-primary text-primary-foreground py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-lg text-center block"
+                >
+                  Gespräch vereinbaren
+                </a>
+              </div>
+
+              {/* Direct Quote */}
+              <div className="bg-card rounded-2xl p-8 shadow-xl border border-border">
+                <div className="flex justify-center mb-4">
+                  <FileText className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-4 tracking-wide">
+                  Individuelles Angebot
+                </h3>
+                <p className="text-muted-foreground mb-6 font-light leading-relaxed">
+                  Erhalten Sie ein detailliertes, transparentes Angebot für Ihre App-Entwicklung. 
+                  Keine versteckten Kosten, faire Preise ab 20.000€.
+                </p>
+                <ul className="text-left text-muted-foreground space-y-2 mb-6">
+                  <li className="flex items-center">
+                    <span className="text-primary mr-2">✓</span>
+                    Transparente Preise
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-primary mr-2">✓</span>
+                    Detaillierte Aufstellung
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-primary mr-2">✓</span>
+                    Schnelle Bearbeitung
+                  </li>
+                </ul>
+                <a
+                  href="mailto:info@webwelle.com?subject=App-Entwicklung Angebot"
+                  className="w-full bg-primary text-primary-foreground py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-lg text-center block"
+                >
+                  Angebot anfordern
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
