@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { gsapConfig } from '@/lib/gsap-config';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ScrollToTop from '../components/ScrollToTop';
@@ -62,9 +63,10 @@ export default function AppEntwicklungPage() {
     const ctx = gsap.context(() => {
       const tween = gsap.to(track, {
         x: () => `-=${totalWidth}`,
-        duration: Math.max(20, totalWidth / 80),
-        ease: 'none',
-        repeat: -1,
+        duration: gsapConfig.marquee.duration(totalWidth),
+        ease: gsapConfig.marquee.ease,
+        repeat: gsapConfig.marquee.repeat,
+        force3D: gsapConfig.marquee.force3D,
       });
 
       // Pause bei Hover
@@ -90,13 +92,10 @@ export default function AppEntwicklungPage() {
     // Hero Animation
     if (heroRef.current) {
       gsap.fromTo(heroRef.current.children, 
-        { y: 50, opacity: 0 },
+        gsapConfig.fadeIn.from,
         { 
-          y: 0, 
-          opacity: 1, 
-          duration: 1,
-          stagger: 0.2,
-          ease: "power3.out"
+          ...gsapConfig.fadeIn.to,
+          stagger: gsapConfig.stagger.duration,
         }
       );
     }
@@ -104,13 +103,10 @@ export default function AppEntwicklungPage() {
     // Features Animation
     if (featuresRef.current) {
       gsap.fromTo(featuresRef.current.children,
-        { y: 100, opacity: 0 },
+        gsapConfig.fadeIn.from,
         {
-          y: 0,
-          opacity: 1,
-          duration: 0.8,
-          stagger: 0.15,
-          ease: "power2.out",
+          ...gsapConfig.fadeIn.to,
+          stagger: gsapConfig.stagger.duration,
           scrollTrigger: {
             trigger: featuresRef.current,
             start: "top 80%",
@@ -124,13 +120,10 @@ export default function AppEntwicklungPage() {
     // Solutions Animation
     if (solutionsRef.current) {
       gsap.fromTo(solutionsRef.current.children,
-        { scale: 0.8, opacity: 0 },
+        gsapConfig.scaleIn.from,
         {
-          scale: 1,
-          opacity: 1,
-          duration: 0.6,
-          stagger: 0.1,
-          ease: "back.out(1.7)",
+          ...gsapConfig.scaleIn.to,
+          stagger: gsapConfig.stagger.duration,
           scrollTrigger: {
             trigger: solutionsRef.current,
             start: "top 70%",
@@ -144,13 +137,10 @@ export default function AppEntwicklungPage() {
     // Process Animation
     if (processRef.current) {
       gsap.fromTo(processRef.current.children,
-        { x: -100, opacity: 0 },
+        gsapConfig.fadeIn.from,
         {
-          x: 0,
-          opacity: 1,
-          duration: 0.8,
-          stagger: 0.2,
-          ease: "power2.out",
+          ...gsapConfig.fadeIn.to,
+          stagger: gsapConfig.stagger.duration,
           scrollTrigger: {
             trigger: processRef.current,
             start: "top 75%",
@@ -164,13 +154,10 @@ export default function AppEntwicklungPage() {
     // FAQ Animation
     if (faqRef.current) {
       gsap.fromTo(faqRef.current.children,
-        { y: 50, opacity: 0 },
+        gsapConfig.fadeIn.from,
         {
-          y: 0,
-          opacity: 1,
-          duration: 0.6,
-          stagger: 0.1,
-          ease: "power2.out",
+          ...gsapConfig.fadeIn.to,
+          stagger: gsapConfig.stagger.duration,
           scrollTrigger: {
             trigger: faqRef.current,
             start: "top 80%",

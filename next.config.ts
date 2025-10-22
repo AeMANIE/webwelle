@@ -32,10 +32,15 @@ const nextConfig: NextConfig = {
     reactRemoveProperties: process.env.NODE_ENV === 'production' ? { properties: ['^data-testid$'] } : false,
   },
   // Bundle splitting optimieren
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     if (!isServer) {
+      // Modern JavaScript target für bessere Performance
+      config.target = ['web', 'es2022'];
+      
       config.optimization.splitChunks = {
         chunks: 'all',
+        minSize: 20000,
+        maxSize: 244000,
         cacheGroups: {
           // Stripe komplett aus Bundle entfernen - nur on-demand laden
           stripe: {
@@ -43,6 +48,20 @@ const nextConfig: NextConfig = {
             name: 'stripe',
             chunks: 'async', // Nur async chunks - nicht im initial bundle
             priority: 20,
+          },
+          // GSAP in separaten Chunk
+          gsap: {
+            test: /[\\/]node_modules[\\/]gsap[\\/]/,
+            name: 'gsap',
+            chunks: 'all',
+            priority: 18,
+          },
+          // React und React-DOM
+          react: {
+            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+            name: 'react',
+            chunks: 'all',
+            priority: 16,
           },
           // CSS in separaten Chunks
           styles: {
@@ -58,9 +77,14 @@ const nextConfig: NextConfig = {
             name: 'vendors',
             chunks: 'all',
             priority: 10,
+            maxSize: 244000,
           },
         },
       };
+      
+      // Tree shaking optimieren
+      config.optimization.usedExports = true;
+      config.optimization.sideEffects = false;
     }
     return config;
   },

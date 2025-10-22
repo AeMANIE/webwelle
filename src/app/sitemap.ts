@@ -4,14 +4,22 @@ export const dynamic = 'force-static'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://webwelle.com'
+  const now = new Date()
   
   return [
     // Hauptseite
     {
       url: baseUrl,
-      lastModified: new Date(),
+      lastModified: now,
       changeFrequency: 'weekly',
       priority: 1,
+    },
+    // App-Entwicklung (neue Seite)
+    {
+      url: `${baseUrl}/app-entwicklung`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.9,
     },
     // Hauptsektionen (Anker-Links)
     {

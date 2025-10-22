@@ -46,6 +46,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://js.stripe.com" />
+        {/* Resource hints für bessere Performance */}
+        <link rel="preload" href="/_next/static/css/app/layout.css" as="style" />
+        <link rel="preload" href="/_next/static/chunks/webpack.js" as="script" />
         {/* Critical CSS inline für bessere Performance - verhindert Render-blocking */}
         <style dangerouslySetInnerHTML={{
           __html: `
