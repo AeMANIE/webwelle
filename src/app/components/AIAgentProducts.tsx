@@ -66,31 +66,11 @@ export default function AIAgentProducts() {
   }
 
   return (
-    <section id="ai-agent-produkte" className="py-20 bg-background">
+    <section id="ai-agent-produkte" className="py-20 bg-background relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Hero Section */}
+        {/* Preis-Toggle */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6 tracking-tight">
-            Automatisieren Sie Ihr Wachstum – mit WebWelle KI-Agenten!
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-4xl mx-auto font-light leading-relaxed mb-8">
-            <strong className="text-primary">WebWelle – Ihre Erfolgswelle im Netz</strong><br />
-            Festpreis-Webdesign und smarte KI-Agenten für digitale Marktführer in Deutschland. Individuell. Transparent. Modern.
-          </p>
-          
-          <div className="bg-primary/10 border border-primary/20 rounded-lg p-6 max-w-3xl mx-auto mb-8">
-            <h2 className="text-2xl font-semibold text-primary mb-3 flex items-center justify-center gap-2">
-              <Bot className="w-6 h-6" />
-              Ihr KI-Agent von WebWelle
-            </h2>
-            <p className="text-lg text-foreground mb-2 font-medium">— Zeit gewinnen. Kunden begeistern. Vorsprung sichern.</p>
-            <p className="text-muted-foreground">
-              Nutzen Sie den entscheidenden Vorsprung: Automatisieren Sie Ihr Business – rund um die Uhr, ohne Zusatzaufwand, perfekt abgestimmt auf Ihre Prozesse und Wachstumsziele.
-            </p>
-          </div>
-          
-          {/* Preis-Toggle */}
-          <div className="flex items-center justify-center space-x-4 mb-8">
+          <div className="flex items-center justify-center space-x-4">
             <span className={`text-sm font-medium ${!isMonthly ? 'text-foreground' : 'text-muted-foreground'}`}>
               Jährlich
             </span>

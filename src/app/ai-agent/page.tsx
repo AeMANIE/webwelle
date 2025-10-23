@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import AIAgentProducts from '../components/AIAgentProducts';
+import AIAgentHero from '../components/AIAgentHero';
 import ScrollToTop from '../components/ScrollToTop';
 import CookieBanner from '../components/CookieBanner';
 
@@ -55,7 +56,8 @@ export default function AIAgentPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main>
+      <main className="relative">
+        <AIAgentHero />
         <AIAgentProducts />
       </main>
       <Footer />
