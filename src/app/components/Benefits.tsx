@@ -15,43 +15,33 @@ export default function Benefits() {
   const benefits = [
     {
       icon: DollarSign,
-      title: "Transparente Festpreise",
-      description: "Keine versteckten Kosten, keine Überraschungen. Sie wissen von Anfang an, was Sie bezahlen."
+      title: "Webdesign aus Kempten (Allgäu)",
+      description: "Lokal verwurzelt, bundesweit erfolgreich – profitieren Sie von unserer Erfahrung in regionalem SEO und modernem Design."
     },
     {
       icon: Calendar,
-      title: "Planungssicherheit",
-      description: "Vom ersten Tag an wissen Sie genau, was Sie bekommen und wann Ihr Projekt fertig ist."
+      title: "Festpreis-Garantie",
+      description: "Volle Kostentransparenz von Anfang an. Keine versteckten Gebühren, keine Überraschungen."
     },
     {
       icon: Zap,
-      title: "Top-Geschwindigkeit",
-      description: "Beste Google-PageSpeed & sichtbar mehr Reichweite durch optimale Performance."
+      title: "Sichtbar auf Google",
+      description: "Jede Website ist technisch SEO-optimiert, blitzschnell und mobil perfekt anpassbar."
     },
     {
       icon: Palette,
-      title: "Modernes Design",
-      description: "Einzigartiges Design passend zum Unternehmen - nicht von der Stange."
+      title: "Individuelles Design",
+      description: "Wir gestalten keine Standardseiten – Ihre Website ist ein Unikat, das Ihre Marke widerspiegelt."
     },
     {
       icon: Wrench,
-      title: "Einfach erweiterbar",
-      description: "Mit Automatisierungen & KI-Lösungen können Sie Ihre Website jederzeit ausbauen."
+      title: "KI & Automatisierung",
+      description: "Nutzen Sie moderne Tools, um Anfragen, Buchungen und Abläufe intelligent zu automatisieren."
     },
     {
       icon: Users,
       title: "Persönliche Betreuung",
-      description: "Klare Ansprechpartner und persönliche Betreuung statt anonyme Support-Hotlines."
-    },
-    {
-      icon: Rocket,
-      title: "Schneller Start",
-      description: "Einfache Abwicklung und schneller Projektstart - keine langen Wartezeiten."
-    },
-    {
-      icon: TrendingUp,
-      title: "Individuell erweiterbar",
-      description: "Leistungen jederzeit individuell erweiterbar - wachsen Sie mit Ihren Bedürfnissen."
+      description: "Direkter Ansprechpartner statt Hotline – transparente Kommunikation auf Augenhöhe."
     }
   ];
 
@@ -73,14 +63,27 @@ export default function Benefits() {
     const ctx = gsap.context(() => {
       const tween = gsap.to(track, {
         x: () => `-=${totalWidth}`,
-        duration: Math.max(20, totalWidth / 80),
+        duration: Math.max(15, totalWidth / 100), // Schneller und kürzere Pause
         ease: 'none',
         repeat: -1,
+        repeatDelay: 0, // Keine Pause zwischen Wiederholungen
       });
 
-      // Pause bei Hover
-      track.addEventListener('mouseenter', () => tween.pause());
-      track.addEventListener('mouseleave', () => tween.resume());
+      // Pause bei Hover (nur auf Desktop)
+      const handleMouseEnter = () => {
+        if (window.innerWidth >= 768) { // Nur auf Desktop pausieren
+          tween.pause();
+        }
+      };
+      
+      const handleMouseLeave = () => {
+        if (window.innerWidth >= 768) { // Nur auf Desktop fortsetzen
+          tween.resume();
+        }
+      };
+
+      track.addEventListener('mouseenter', handleMouseEnter);
+      track.addEventListener('mouseleave', handleMouseLeave);
 
       // Pause, wenn Bereich nicht im Viewport
       ScrollTrigger.create({
@@ -92,6 +95,27 @@ export default function Benefits() {
         onLeave: () => tween.pause(),
         onLeaveBack: () => tween.pause(),
       });
+
+      // Auf Mobile: Automatisch fortsetzen nach kurzer Pause
+      const handleResize = () => {
+        if (window.innerWidth < 768) {
+          // Auf Mobile nach 3 Sekunden automatisch fortsetzen
+          setTimeout(() => {
+            if (tween.paused()) {
+              tween.resume();
+            }
+          }, 3000);
+        }
+      };
+
+      window.addEventListener('resize', handleResize);
+      
+      // Cleanup
+      return () => {
+        track.removeEventListener('mouseenter', handleMouseEnter);
+        track.removeEventListener('mouseleave', handleMouseLeave);
+        window.removeEventListener('resize', handleResize);
+      };
     }, trackRef);
 
     return () => ctx.revert();
@@ -106,10 +130,10 @@ export default function Benefits() {
             <Zap className="h-3.5 w-3.5 text-yellow-500" /> Unsere Vorteile
           </span>
           <h2 className="mt-4 text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
-            Darum WebWelle
+            Webdesign, das Mehrwert bringt – sichtbar, schnell und bezahlbar
           </h2>
           <p className="mt-3 text-base md:text-lg text-gray-600 max-w-3xl mx-auto font-light leading-relaxed">
-            Wir setzen auf Transparenz, Qualität und persönliche Betreuung. Entdecken Sie, was uns unterscheidet.
+            Ihre Vorteile mit WebWelle
           </p>
         </div>
 

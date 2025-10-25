@@ -6,11 +6,22 @@ export default function CTA() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h2 className="text-3xl md:text-5xl font-extrabold text-primary-foreground mb-6 tracking-tight">
-            Starten Sie Ihre Erfolgswelle jetzt!
+            Lokal stark, bundesweit sichtbar
           </h2>
-          <p className="text-xl md:text-2xl text-primary-foreground/90 mb-12 max-w-4xl mx-auto leading-relaxed font-light">
-            Kostenloses Erstgespräch sichern oder direkt individuelles Festpreis-Angebot anfordern – 
-            einfach, digital und garantiert sicher.
+          <p className="text-xl md:text-2xl text-primary-foreground/90 mb-4 max-w-4xl mx-auto leading-relaxed font-light">
+            WebWelle – Ihre Webdesign-Agentur aus Kempten (Allgäu).
+          </p>
+          <p className="text-lg md:text-xl text-primary-foreground/90 mb-4 max-w-4xl mx-auto leading-relaxed font-light">
+            Unsere Websites sind technisch, psychologisch und visuell auf Ergebniserfolg ausgelegt.
+          </p>
+          <p className="text-base md:text-lg text-primary-foreground/90 mb-4 max-w-4xl mx-auto leading-relaxed font-light">
+            Wir verbinden Designästhetik, Verkaufspsychologie und SEO-Intelligenz, damit Sie online gefunden und gebucht werden.
+          </p>
+          <p className="text-lg md:text-xl text-primary-foreground font-semibold mb-12 max-w-4xl mx-auto">
+            Ihr Unternehmen verdient Online-Sichtbarkeit.
+          </p>
+          <p className="text-lg md:text-xl text-primary-foreground/90 mb-12 max-w-4xl mx-auto leading-relaxed font-light">
+            Jetzt kostenloses Erstgespräch sichern und erleben, wie aus Besuchern neue Kunden werden.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">

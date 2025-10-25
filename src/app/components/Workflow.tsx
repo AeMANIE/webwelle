@@ -44,12 +44,23 @@ export default function Workflow() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
-            So einfach geht's
+            Webdesign mit Strategie und messbarer Wirkung
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed">
-            Von der ersten Idee bis zum erfolgreichen Launch - unser bewährter Prozess 
-            macht die Zusammenarbeit einfach und transparent.
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed mb-4">
+            Webdesign ist bei uns mehr als Ästhetik – es ist Unternehmenspsychologie.
           </p>
+          <p className="text-lg text-muted-foreground max-w-4xl mx-auto font-light leading-relaxed mb-4">
+            Wir entwickeln Websites, die Vertrauen wecken, Emotionen ansprechen und gezielt Handlungsimpulse auslösen.
+          </p>
+          <p className="text-base text-primary font-semibold max-w-3xl mx-auto">
+            Unser Fokus liegt auf:
+          </p>
+          <div className="text-base text-muted-foreground max-w-3xl mx-auto mt-2">
+            <p>SEO & Performance: Google Core Web Vitals, technische Optimierung und lokale Auffindbarkeit.</p>
+            <p>• Neuromarketing-Effekten: Farb- und Designpsychologie steigern Klickbereitschaft und Anfragen.</p>
+            <p>• Conversion-Design: Jeder Button, jede Headline und jedes Bild folgt einer klaren Nutzerintention.</p>
+            <p className="text-primary font-semibold mt-2">Ihr Nutzen: Mehr Sichtbarkeit, mehr Reichweite, mehr Kundenkontakt.</p>
+          </div>
         </div>
 
         {/* Desktop Timeline */}

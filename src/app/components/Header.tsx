@@ -50,25 +50,19 @@ export default function Header() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
             <Link href={{ pathname: '/', hash: 'produkte' }} className="text-foreground hover:text-primary transition-colors font-medium">
-              Produkte
+              Webdesign-Pakete
             </Link>
             <Link href="/ai-agent" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
-              KI-Agenten
+              KI & Automatisierung
             </Link>
             <Link href="/app-entwicklung" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
               App-Entwicklung
             </Link>
             <Link href={{ pathname: '/', hash: 'vorteile' }} className="text-foreground hover:text-primary transition-colors font-medium">
-              Vorteile
+              Warum WebWelle
             </Link>
             <Link href={{ pathname: '/', hash: 'leistungen' }} className="text-foreground hover:text-primary transition-colors font-medium">
-              Leistungen
-            </Link>
-            <Link href={{ pathname: '/', hash: 'arbeitsweise' }} className="text-foreground hover:text-primary transition-colors font-medium">
-              Arbeitsweise
-            </Link>
-            <Link href={{ pathname: '/', hash: 'kontakt' }} className="text-foreground hover:text-primary transition-colors font-medium">
-              Kontakt
+              Lösungen
             </Link>
             <Link href="/customer" className="text-primary hover:text-primary/80 transition-colors font-medium border border-primary px-3 py-1 rounded-md flex items-center space-x-1">
               <LogIn className="w-4 h-4" />
@@ -112,10 +106,10 @@ export default function Header() {
                   }
                 }}
               >
-                Produkte
+                Webdesign-Pakete
               </Link>
               <Link href="/ai-agent" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
-                KI-Agenten
+                KI & Automatisierung
               </Link>
               <Link href="/app-entwicklung" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
                 App-Entwicklung
@@ -134,7 +128,7 @@ export default function Header() {
                   }
                 }}
               >
-                Vorteile
+                Warum WebWelle
               </Link>
               <Link 
                 href="/#leistungen" 
@@ -150,39 +144,7 @@ export default function Header() {
                   }
                 }}
               >
-                Leistungen
-              </Link>
-              <Link 
-                href="/#arbeitsweise" 
-                className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  closeMenu();
-                  const element = document.getElementById('arbeitsweise');
-                  if (element) {
-                    const headerHeight = 80;
-                    const elementPosition = element.offsetTop - headerHeight;
-                    window.scrollTo({ top: elementPosition, behavior: 'smooth' });
-                  }
-                }}
-              >
-                Arbeitsweise
-              </Link>
-              <Link 
-                href="/#kontakt" 
-                className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  closeMenu();
-                  const element = document.getElementById('kontakt');
-                  if (element) {
-                    const headerHeight = 80;
-                    const elementPosition = element.offsetTop - headerHeight;
-                    window.scrollTo({ top: elementPosition, behavior: 'smooth' });
-                  }
-                }}
-              >
-                Kontakt
+                Lösungen
               </Link>
               <div className="pt-2 border-t border-border">
                 <Link href="/customer" className="flex items-center justify-center space-x-2 px-3 py-2 text-primary hover:text-primary/80 font-medium border border-primary rounded-md hover:bg-primary/5" onClick={closeMenu}>

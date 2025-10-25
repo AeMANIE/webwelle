@@ -63,15 +63,27 @@ export default function AppEntwicklungPage() {
     const ctx = gsap.context(() => {
       const tween = gsap.to(track, {
         x: () => `-=${totalWidth}`,
-        duration: gsapConfig.marquee.duration(totalWidth),
-        ease: gsapConfig.marquee.ease,
-        repeat: gsapConfig.marquee.repeat,
-        force3D: gsapConfig.marquee.force3D,
+        duration: Math.max(15, totalWidth / 100), // Schneller und kürzere Pause
+        ease: 'none',
+        repeat: -1,
+        repeatDelay: 0, // Keine Pause zwischen Wiederholungen
       });
 
-      // Pause bei Hover
-      track.addEventListener('mouseenter', () => tween.pause());
-      track.addEventListener('mouseleave', () => tween.resume());
+      // Pause bei Hover (nur auf Desktop)
+      const handleMouseEnter = () => {
+        if (window.innerWidth >= 768) { // Nur auf Desktop pausieren
+          tween.pause();
+        }
+      };
+      
+      const handleMouseLeave = () => {
+        if (window.innerWidth >= 768) { // Nur auf Desktop fortsetzen
+          tween.resume();
+        }
+      };
+
+      track.addEventListener('mouseenter', handleMouseEnter);
+      track.addEventListener('mouseleave', handleMouseLeave);
 
       // Pause, wenn Bereich nicht im Viewport
       ScrollTrigger.create({
@@ -83,6 +95,27 @@ export default function AppEntwicklungPage() {
         onLeave: () => tween.pause(),
         onLeaveBack: () => tween.pause(),
       });
+
+      // Auf Mobile: Automatisch fortsetzen nach kurzer Pause
+      const handleResize = () => {
+        if (window.innerWidth < 768) {
+          // Auf Mobile nach 3 Sekunden automatisch fortsetzen
+          setTimeout(() => {
+            if (tween.paused()) {
+              tween.resume();
+            }
+          }, 3000);
+        }
+      };
+
+      window.addEventListener('resize', handleResize);
+      
+      // Cleanup
+      return () => {
+        track.removeEventListener('mouseenter', handleMouseEnter);
+        track.removeEventListener('mouseleave', handleMouseLeave);
+        window.removeEventListener('resize', handleResize);
+      };
     }, featuresTrackRef);
 
     return () => ctx.revert();

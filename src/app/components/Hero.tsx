@@ -134,11 +134,10 @@ export default function Hero() {
           {/* Text mit halbtransparentem Hintergrund - Mobile optimiert */}
           <div className="bg-background/80 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-8 mb-6 md:mb-8 max-w-5xl mx-auto border border-border">
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-extrabold text-foreground mb-4 md:mb-6 leading-tight tracking-tight">
-              Ihre Website. Ihr Wachstum. Ihr Vorteil.
+              Webdesign Kempten (Allgäu) – Websites, die Kunden gewinnen
             </h1>
             <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-muted-foreground leading-relaxed font-light">
-              Webdesign, das Kunden gewinnt – mit garantierter Performance und festen Preisen. 
-              Erleben Sie, wie digitale Lösungen Ihre Sichtbarkeit steigern.
+              Moderne Websites, die nicht nur schön aussehen, sondern sichtbar verkaufen.
             </p>
           </div>
           
@@ -147,20 +146,23 @@ export default function Hero() {
               WebWelle – Ihre Erfolgswelle
             </h2>
             <p className="text-sm md:text-lg text-muted-foreground mb-4 md:mb-6 font-medium">
-              Festpreis-Webdesign, das messbar wirkt. Individuell. Transparent. Modern.
+              WebWelle entwickelt leistungsstarke, suchmaschinenoptimierte Websites für Selbstständige und Unternehmen aus dem Allgäu – mit Festpreis, garantierter Performance und persönlicher Betreuung.
+            </p>
+            <p className="text-sm md:text-base text-muted-foreground mb-4 md:mb-6 font-light">
+              Ihre Website wird zu Ihrem zuverlässigsten Verkäufer – 24 Stunden am Tag.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
               <a
                 href="#cta"
                 className="bg-primary text-primary-foreground px-6 md:px-8 py-3 md:py-4 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-sm md:text-lg text-center"
               >
-                Jetzt Festpreis-Angebot sichern!
+                Jetzt Erfolgswelle starten
               </a>
               <a
                 href="#produkte"
                 className="border-2 border-primary text-primary px-6 md:px-8 py-3 md:py-4 rounded-lg hover:bg-primary/10 transition-colors font-semibold text-sm md:text-lg text-center"
               >
-                Produkte entdecken
+                Webdesign-Pakete entdecken
               </a>
             </div>
           </div>

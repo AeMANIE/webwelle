@@ -18,10 +18,16 @@ export default function Products() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
-            Websites nach Maß – Drei Pakete für jeden Bedarf
+            Webdesign-Pakete mit Festwert
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed mb-8">
-            Wählen Sie das perfekte Paket für Ihre Bedürfnisse. Alle Preise inkl. Domain, Hosting & Support.
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed mb-4">
+            Ihre Website wird zu Ihrem zuverlässigsten Verkäufer
+          </p>
+          <p className="text-lg text-primary font-semibold mb-8">
+            „Webdesign ist Unternehmenspsychologie" → Expert Authority.
+          </p>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed mb-8">
+            Drei Erfolgspakete – maßgeschneidert für jedes Unternehmensstadium.
           </p>
           
           {/* Preis-Toggle */}
@@ -56,9 +62,9 @@ export default function Products() {
               <h3 className="text-2xl font-bold text-foreground mb-2 tracking-wide">
                 StarterWelle
               </h3>
-              <p className="text-sm text-primary font-semibold mb-2">One-Page Website</p>
+              <p className="text-sm text-primary font-semibold mb-2">– Ihr schneller Online‑Start.</p>
               <p className="text-muted-foreground mb-4 font-light leading-relaxed">
-                Ihr digitaler Auftritt auf den Punkt gebracht. Ideal als Landingpage für Kampagnen oder als professionelles Unternehmensprofil.
+                Ideal für kleine Unternehmen, Gründer oder Kampagnen.
               </p>
             </div>
 
@@ -122,9 +128,9 @@ export default function Products() {
               <h3 className="text-2xl font-bold text-foreground mb-2 tracking-wide">
                 BusinessWelle
               </h3>
-              <p className="text-sm text-primary font-semibold mb-2">Unternehmenswebsite (bis 3 Seiten)</p>
+              <p className="text-sm text-primary font-semibold mb-2">– Beliebt bei Wachstumsunternehmen.</p>
               <p className="text-muted-foreground mb-4 font-light leading-relaxed">
-                Ihr professioneller Online-Auftritt für wachsende Unternehmen. Drei optimal strukturierte Seiten sorgen für klare Botschaften und maximale Sichtbarkeit.
+                Perfekt für wachsende Unternehmen – SEO-Basis, modernes Branding und Animationen.
               </p>
             </div>
 
@@ -205,9 +211,9 @@ export default function Products() {
               <h3 className="text-2xl font-bold text-foreground mb-2 tracking-wide">
                 ErfolgsWelle
               </h3>
-              <p className="text-sm text-primary font-semibold mb-2">Premium-Unternehmenswebsite (bis 5 Seiten)</p>
+              <p className="text-sm text-primary font-semibold mb-2">– Digitale Exzellenz für Marktführer.</p>
               <p className="text-muted-foreground mb-4 font-light leading-relaxed">
-                Der nächste Level für Ihren Markenauftritt. Maßgeschneiderte Premium-Website für ambitionierte Unternehmen, die ihr Wachstum beschleunigen möchten.
+                Für ambitionierte Unternehmer, die digital skalieren wollen – volle SEO-Strategie, KI-Integration & Performance-Auswertung.
               </p>
             </div>
 

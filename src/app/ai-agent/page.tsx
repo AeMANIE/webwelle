@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import AIAgentProducts from '../components/AIAgentProducts';
 import AIAgentHero from '../components/AIAgentHero';
+import AIAgentFAQ from '../components/AIAgentFAQ';
 import ScrollToTop from '../components/ScrollToTop';
 import CookieBanner from '../components/CookieBanner';
 
@@ -59,6 +60,7 @@ export default function AIAgentPage() {
       <main className="relative">
         <AIAgentHero />
         <AIAgentProducts />
+        <AIAgentFAQ />
       </main>
       <Footer />
       <ScrollToTop />

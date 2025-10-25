@@ -1,0 +1,231 @@
+import { Metadata } from 'next';
+import Link from 'next/link';
+import { Calendar, User, ArrowRight, Tag } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: "Blog & Insights | WebWelle – Webdesign Kempten (Allgäu)",
+  description: "Lokale SEO-Artikel und Webdesign-Insights aus Kempten. Tipps für digitale Sichtbarkeit im Allgäu und Bayern.",
+  keywords: "Webdesign Blog Kempten, SEO Tipps Allgäu, Digitale Sichtbarkeit Bayern, Webdesign Trends",
+};
+
+const blogPosts = [
+  {
+    id: 1,
+    title: "Top 5 Unternehmenswebsites im Allgäu – Was macht sie erfolgreich?",
+    excerpt: "Eine Analyse der besten Unternehmenswebsites in Kempten und dem Allgäu. Welche Design- und SEO-Strategien führen zu mehr Sichtbarkeit und Kunden?",
+    content: "In diesem Artikel analysieren wir die erfolgreichsten Unternehmenswebsites in unserer Region. Von lokalen Handwerksbetrieben bis hin zu innovativen Start-ups – wir zeigen Ihnen, welche Elemente eine Website zum Erfolg führen...",
+    author: "SEO-Team WebWelle",
+    date: "2025-01-15",
+    readTime: "8 Min",
+    tags: ["Lokales SEO", "Webdesign", "Allgäu", "Unternehmenswebsites"],
+    featured: true
+  },
+  {
+    id: 2,
+    title: "Wie Allgäuer Firmen 2025 online sichtbarer werden",
+    excerpt: "Praktische Tipps für lokale Unternehmen: Von Google My Business bis hin zu lokalen Keywords – so steigern Sie Ihre Online-Sichtbarkeit in Kempten und Umgebung.",
+    content: "Die digitale Landschaft verändert sich rasant. Für Unternehmen im Allgäu bedeutet das neue Chancen, aber auch neue Herausforderungen. In diesem Guide zeigen wir Ihnen, wie Sie 2025 online sichtbarer werden...",
+    author: "SEO-Team WebWelle",
+    date: "2025-01-10",
+    readTime: "12 Min",
+    tags: ["Lokales SEO", "Google My Business", "Online Marketing", "Kempten"],
+    featured: true
+  },
+  {
+    id: 3,
+    title: "Webdesign-Trends 2025: Was Unternehmen im Allgäu wissen müssen",
+    excerpt: "Von KI-Integration bis hin zu Performance-Optimierung – die wichtigsten Webdesign-Trends für 2025 und wie sie Ihrem Unternehmen helfen können.",
+    content: "Das Jahr 2025 bringt spannende Entwicklungen im Webdesign mit sich. Besonders für Unternehmen in unserer Region ergeben sich neue Möglichkeiten, sich online von der Konkurrenz abzuheben...",
+    author: "SEO-Team WebWelle",
+    date: "2025-01-05",
+    readTime: "10 Min",
+    tags: ["Webdesign Trends", "KI", "Performance", "2025"],
+    featured: false
+  },
+  {
+    id: 4,
+    title: "SEO für Handwerksbetriebe: So werden Sie in Kempten gefunden",
+    excerpt: "Spezielle SEO-Strategien für Handwerker und Dienstleister im Allgäu. Von lokalen Keywords bis hin zu Google My Business Optimierung.",
+    content: "Handwerksbetriebe haben besondere Anforderungen an ihre Online-Präsenz. In diesem Artikel zeigen wir Ihnen, wie Sie als Handwerker in Kempten und dem Allgäu online gefunden werden...",
+    author: "SEO-Team WebWelle",
+    date: "2024-12-28",
+    readTime: "15 Min",
+    tags: ["Handwerk", "Lokales SEO", "Google My Business", "Kempten"],
+    featured: false
+  },
+  {
+    id: 5,
+    title: "E-Commerce im Allgäu: Online-Shops erfolgreich aufbauen",
+    excerpt: "Tipps für den Aufbau eines erfolgreichen Online-Shops in der Region. Von der technischen Umsetzung bis hin zum lokalen Marketing.",
+    content: "Der Online-Handel wächst auch in ländlichen Regionen wie dem Allgäu. Wir zeigen Ihnen, wie Sie einen erfolgreichen Online-Shop aufbauen und dabei die Besonderheiten unserer Region nutzen...",
+    author: "SEO-Team WebWelle",
+    date: "2024-12-20",
+    readTime: "18 Min",
+    tags: ["E-Commerce", "Online-Shop", "Allgäu", "Marketing"],
+    featured: false
+  }
+];
+
+export default function BlogPage() {
+  const featuredPosts = blogPosts.filter(post => post.featured);
+  const regularPosts = blogPosts.filter(post => !post.featured);
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-primary/10 to-primary/5 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+              Blog & Insights
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Lokale SEO-Artikel und Webdesign-Insights aus Kempten. 
+              Tipps für digitale Sichtbarkeit im Allgäu und Bayern.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <span className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium">
+                Webdesign Kempten
+              </span>
+              <span className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium">
+                Lokales SEO
+              </span>
+              <span className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium">
+                Allgäu
+              </span>
+              <span className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium">
+                Bayern
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Featured Posts */}
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-foreground mb-8 text-center">
+            Featured Artikel
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {featuredPosts.map((post) => (
+              <article key={post.id} className="bg-card rounded-2xl p-8 shadow-lg border border-border hover:shadow-xl transition-shadow">
+                <div className="flex items-center gap-2 mb-4">
+                  <Tag className="w-4 h-4 text-primary" />
+                  <span className="text-primary font-semibold text-sm">Featured</span>
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-4 leading-tight">
+                  {post.title}
+                </h3>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  {post.excerpt}
+                </p>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <User className="w-4 h-4" />
+                      <span>{post.author}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      <span>{new Date(post.date).toLocaleDateString('de-DE')}</span>
+                    </div>
+                    <span>{post.readTime} Lesezeit</span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {post.tags.map((tag, index) => (
+                    <span key={index} className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <Link 
+                  href={`/blog/${post.id}`}
+                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-semibold transition-colors"
+                >
+                  Artikel lesen
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Regular Posts */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-foreground mb-8 text-center">
+            Weitere Artikel
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {regularPosts.map((post) => (
+              <article key={post.id} className="bg-card rounded-xl p-6 shadow-md border border-border hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-bold text-foreground mb-3 leading-tight">
+                  {post.title}
+                </h3>
+                <p className="text-muted-foreground mb-4 leading-relaxed text-sm">
+                  {post.excerpt}
+                </p>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      <span>{post.author}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      <span>{new Date(post.date).toLocaleDateString('de-DE')}</span>
+                    </div>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{post.readTime}</span>
+                </div>
+                <div className="flex flex-wrap gap-1 mb-4">
+                  {post.tags.slice(0, 2).map((tag, index) => (
+                    <span key={index} className="bg-primary/10 text-primary px-2 py-1 rounded text-xs">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <Link 
+                  href={`/blog/${post.id}`}
+                  className="inline-flex items-center gap-1 text-primary hover:text-primary/80 font-medium text-sm transition-colors"
+                >
+                  Lesen
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-gradient-to-r from-primary to-primary/80">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold text-primary-foreground mb-4">
+            Brauchen Sie Hilfe bei Ihrer Online-Sichtbarkeit?
+          </h2>
+          <p className="text-xl text-primary-foreground/90 mb-8">
+            Unser SEO-Team aus Kempten hilft Ihnen dabei, online gefunden zu werden.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link 
+              href="/#cta"
+              className="bg-primary-foreground text-primary px-8 py-3 rounded-lg font-semibold hover:bg-primary-foreground/90 transition-colors"
+            >
+              Kostenloses Erstgespräch
+            </Link>
+            <Link 
+              href="/#produkte"
+              className="border-2 border-primary-foreground text-primary-foreground px-8 py-3 rounded-lg font-semibold hover:bg-primary-foreground/10 transition-colors"
+            >
+              Webdesign-Pakete
+            </Link>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

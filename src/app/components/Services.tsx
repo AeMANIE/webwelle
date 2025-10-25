@@ -5,42 +5,42 @@ export default function Services() {
     {
       icon: Palette,
       title: "Individuelles Webdesign",
-      description: "Maßgeschneiderte Designs, die Ihre Marke perfekt repräsentieren und Ihre Zielgruppe ansprechen."
+      description: "Maßgeschneiderte Website, die Ihr Unternehmen authentisch präsentiert – keine Baukastenlösung."
     },
     {
       icon: Smartphone,
       title: "Responsive Design",
-      description: "Optimiert für alle Geräte - von Desktop bis Smartphone. Perfekte Darstellung überall."
+      description: "Optimiert für Smartphone, Tablet und Desktop – modernes, barrierearmes UI für alle Geräte."
     },
     {
       icon: Search,
-      title: "Performance-Optimierung & SEO",
-      description: "Höchste Geschwindigkeit und beste Suchmaschinenoptimierung für maximale Sichtbarkeit."
+      title: "SEO & Performance-Optimierung",
+      description: "Schnelle Ladezeiten und hohe Google-Bewertung durch strukturierte, keywordbasierte Inhalte."
     },
     {
       icon: ShoppingCart,
       title: "E-Commerce & Online-Shops",
-      description: "Professionelle Online-Shops mit sicheren Zahlungssystemen und benutzerfreundlicher Bedienung."
+      description: "Individuelle Online-Shop-Lösungen mit intuitiver Benutzerführung, klarer Kaufpsychologie und sicheren Zahlungen."
     },
     {
       icon: Bot,
-      title: "Automatisierte Workflows & KI",
-      description: "Intelligente Automatisierungen und KI-Anwendungen für effizientere Geschäftsprozesse."
+      title: "Automatisierte Workflows & KI-Lösungen",
+      description: "Von Terminbuchung bis Lead-Mail – digitale Prozesse, die Zeit sparen und Umsatz steigern."
     },
     {
       icon: Target,
-      title: "Branding & Logoentwicklung",
-      description: "Komplette Markenentwicklung inklusive Logo, Corporate Design und Markenidentität."
+      title: "Branding & Corporate Design",
+      description: "Logoentwicklung, Farb- und Typografie-Systeme, CI-Handbuch und digitales Brand Management."
     },
     {
       icon: Server,
-      title: "Hosting, Wartung & Support",
-      description: "Zuverlässiges Hosting, regelmäßige Updates und persönlicher Support für Ihre Website."
+      title: "Hosting & Wartung",
+      description: "Sichere, DSGVO-konforme Server in Deutschland mit Monitoring, Updates und regelmäßigen Backups."
     },
     {
       icon: FileText,
-      title: "Content-Erstellung & Marketing",
-      description: "Professionelle Texte, Bilder und Marketing-Inhalte für Ihre digitale Präsenz."
+      title: "Content & Werbetexte",
+      description: "Professionelle Texte, die verkaufen – emotional, SEO-stark und psychologisch fundiert."
     }
   ];
 
@@ -52,8 +52,8 @@ export default function Services() {
             Leistungen im Überblick
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed">
-            Von der ersten Idee bis zum erfolgreichen Launch - wir begleiten Sie durch 
-            den gesamten Prozess der digitalen Transformation.
+            Als erfahrene Webdesign-Agentur in Kempten entwickeln wir Websites, die nicht nur gut aussehen, sondern auf Google sichtbar sind.  
+            Mit Fokus auf Ladezeit, Nutzererlebnis und lokale Auffindbarkeit bringen wir Ihr Unternehmen im Allgäu digital nach vorne.
           </p>
         </div>
 
@@ -82,7 +82,7 @@ export default function Services() {
         <div className="mt-16">
           <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl p-8 border border-primary/20">
             <h3 className="text-2xl font-bold text-foreground mb-6 text-center">
-              Unser ganzheitlicher Ansatz
+              Unser Prozess – zuverlässig bis zur Live-Schaltung
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="text-center">
@@ -91,7 +91,7 @@ export default function Services() {
                 </div>
                 <h4 className="font-semibold text-foreground mb-2">Analyse & Strategie</h4>
                 <p className="text-muted-foreground text-sm">
-                  Wir analysieren Ihre Ziele und entwickeln eine maßgeschneiderte Strategie.
+                  Wir identifizieren Chancen in Ihrer Branche und definieren konkrete Ziele.
                 </p>
               </div>
               <div className="text-center">
@@ -100,16 +100,16 @@ export default function Services() {
                 </div>
                 <h4 className="font-semibold text-foreground mb-2">Design & Entwicklung</h4>
                 <p className="text-muted-foreground text-sm">
-                  Professionelle Umsetzung mit modernsten Technologien und höchster Qualität.
+                  Ihr Design wird individuell umgesetzt, technisch optimiert und SEO-konform strukturiert.
                 </p>
               </div>
               <div className="text-center">
                 <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
                   3
                 </div>
-                <h4 className="font-semibold text-foreground mb-2">Launch & Optimierung</h4>
+                <h4 className="font-semibold text-foreground mb-2">Launch & Betreuung</h4>
                 <p className="text-muted-foreground text-sm">
-                  Erfolgreicher Start mit kontinuierlicher Optimierung und Support.
+                  Nach dem Go-Live optimieren wir Ihre Website kontinuierlich – für Performance und Ranking.
                 </p>
               </div>
             </div>
@@ -125,7 +125,7 @@ export default function Services() {
             href="#cta"
             className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-lg"
           >
-            Kostenlose Beratung anfragen
+            Jetzt Erfolgswelle starten
           </a>
         </div>
       </div>

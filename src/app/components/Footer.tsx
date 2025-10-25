@@ -31,16 +31,19 @@ export default function Footer() {
             </div>
             <div className="mb-6">
               <p className="text-muted-foreground mb-2 font-light">
-                <span className="font-semibold">Standort:</span> Allgäu | Kempten | Bayern
+                <span className="font-semibold">Name:</span> WebWelle
               </p>
               <p className="text-muted-foreground mb-2 font-light">
-                <span className="font-semibold">Aktivität:</span> Bundesweit aktiv
+                <span className="font-semibold">Adresse:</span> Kempten/Allgäu, Bayern, deutschlandweit aktiv
               </p>
-              <p className="text-muted-foreground font-light">
+              <p className="text-muted-foreground mb-2 font-light">
                 <span className="font-semibold">E-Mail:</span> 
                 <a href="mailto:info@webwelle.com" className="text-primary hover:text-primary/80 ml-1 transition-colors">
                   info@webwelle.com
                 </a>
+              </p>
+              <p className="text-muted-foreground text-sm font-light mt-4">
+                <span className="font-semibold">Text verfasst von:</span> SEO-Team WebWelle
               </p>
             </div>
             <div className="flex space-x-4">
@@ -82,6 +85,7 @@ export default function Footer() {
               <li><Link href={{ pathname: '/', hash: 'leistungen' }} className="text-muted-foreground hover:text-primary transition-colors font-light">Hosting & Support</Link></li>
               <li><Link href="/ai-agent" className="text-muted-foreground hover:text-primary transition-colors font-light">KI-Agenten</Link></li>
               <li><Link href="/app-entwicklung" className="text-muted-foreground hover:text-primary transition-colors font-light">App-Entwicklung</Link></li>
+              <li><Link href="/blog" className="text-muted-foreground hover:text-primary transition-colors font-light">Blog & Insights</Link></li>
             </ul>
           </div>
 
@@ -106,9 +110,19 @@ export default function Footer() {
             </p>
             <div className="flex items-center space-x-6 mt-4 md:mt-0">
               <span className="text-muted-foreground text-sm">Made with ❤️ in Allgäu</span>
-              <div className="flex items-center space-x-2">
-                <span className="text-muted-foreground text-sm">SSL</span>
-                <div className="w-2 h-2 bg-primary rounded-full"></div>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <span className="text-muted-foreground text-sm">SSL</span>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-muted-foreground text-sm">DSGVO</span>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-muted-foreground text-sm">Sicher</span>
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                </div>
               </div>
             </div>
           </div>
