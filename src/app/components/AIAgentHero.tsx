@@ -6,7 +6,7 @@ import CanvaAnimation from './CanvaAnimation';
 
 export default function AIAgentHero() {
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden">
+    <section className="relative h-screen flex items-center justify-center overflow-hidden min-h-[600px] sm:min-h-[700px] md:min-h-screen">
       {/* Canva Animation Background */}
       <CanvaAnimation />
       
@@ -14,7 +14,7 @@ export default function AIAgentHero() {
       <div className="absolute inset-0 bg-black/20 z-10" />
       
       {/* Content Container */}
-      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-8 sm:py-12 md:py-16">
         {/* Glassmorphism Text Window */}
         <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-3xl p-8 md:p-12 shadow-2xl max-w-5xl mx-auto">
           {/* Header */}

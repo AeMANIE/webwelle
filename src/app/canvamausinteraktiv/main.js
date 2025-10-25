@@ -15,7 +15,6 @@ let canvas;
 let ctx;
 let circles;
 let origin;
-let targetOrigin;
 let tick;
 let mouseX = 0;
 let mouseY = 0;
@@ -45,7 +44,6 @@ function setup() {
     
     circles = [];
     origin = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.5 };
-    targetOrigin = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.5 };
     tick = 0;
     
     resize();
@@ -91,16 +89,21 @@ function draw() {
     ctx.a.clearRect(0, 0, canvas.a.width, canvas.a.height);
     ctx.b.clearRect(0, 0, canvas.b.width, canvas.b.height);
     
-    // Update origin position - follow mouse or use automatic movement
+    // Update origin position - SIMPLE LOGIC
     if (isMouseActive) {
-        // Smooth interpolation to mouse position
-        const lerpFactor = 0.1;
-        origin.x += (targetOrigin.x - origin.x) * lerpFactor;
-        origin.y += (targetOrigin.y - origin.y) * lerpFactor;
+        // Follow mouse
+        const lerpFactor = 0.15;
+        origin.x += (mouseX - origin.x) * lerpFactor;
+        origin.y += (mouseY - origin.y) * lerpFactor;
     } else {
-        // Automatic movement when mouse is not active
-        origin.x = window.innerWidth * 0.5 + cos(tick * 0.025) * window.innerWidth * 0.25;
-        origin.y = window.innerHeight * 0.5 + sin(tick * 0.05) * window.innerHeight * 0.125;
+        // ALWAYS dance - no conditions, no time checks, nothing!
+        const centerX = window.innerWidth * 0.5;
+        const centerY = window.innerHeight * 0.5;
+        const danceRadiusX = window.innerWidth * 0.25;
+        const danceRadiusY = window.innerHeight * 0.125;
+        
+        origin.x = centerX + cos(tick * 0.025) * danceRadiusX;
+        origin.y = centerY + sin(tick * 0.05) * danceRadiusY;
     }
     
     // Add new circle
@@ -128,24 +131,33 @@ function draw() {
     window.requestAnimationFrame(draw);
 }
 
-// Mouse event handlers
+// Mouse and touch event handlers
 function handleMouseMove(e) {
     mouseX = e.clientX;
     mouseY = e.clientY;
-    targetOrigin.x = mouseX;
-    targetOrigin.y = mouseY;
     isMouseActive = true;
 }
 
 function handleMouseLeave() {
     isMouseActive = false;
-    // Return to center when mouse leaves
-    targetOrigin.x = window.innerWidth * 0.5;
-    targetOrigin.y = window.innerHeight * 0.5;
 }
 
 function handleMouseEnter() {
     isMouseActive = true;
+}
+
+// Touch event handlers
+function handleTouchMove(e) {
+    e.preventDefault();
+    if (e.touches.length > 0) {
+        mouseX = e.touches[0].clientX;
+        mouseY = e.touches[0].clientY;
+        isMouseActive = true;
+    }
+}
+
+function handleTouchEnd() {
+    isMouseActive = false;
 }
 
 // Event listeners
@@ -154,3 +166,5 @@ window.addEventListener("resize", resize);
 window.addEventListener("mousemove", handleMouseMove);
 window.addEventListener("mouseleave", handleMouseLeave);
 window.addEventListener("mouseenter", handleMouseEnter);
+window.addEventListener("touchmove", handleTouchMove, { passive: false });
+window.addEventListener("touchend", handleTouchEnd);

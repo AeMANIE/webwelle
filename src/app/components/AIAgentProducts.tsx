@@ -15,7 +15,7 @@ export default function AIAgentProducts() {
   // Verhindere Hydration-Fehler durch Client-Side-Rendering
   if (!isClient) {
     return (
-      <section id="ai-agent-produkte" className="py-20 bg-background">
+      <section id="ai-agent-produkte" className="py-12 sm:py-16 md:py-20 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6 tracking-tight">
@@ -66,7 +66,7 @@ export default function AIAgentProducts() {
   }
 
   return (
-    <section id="ai-agent-produkte" className="py-20 bg-background relative z-10">
+    <section id="ai-agent-produkte" className="py-12 sm:py-16 md:py-20 bg-background relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Preis-Toggle */}
         <div className="text-center mb-16">

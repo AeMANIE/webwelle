@@ -14,6 +14,8 @@ export default function robots(): MetadataRoute.Robots {
         '/verify-email',
         '/reset-password',
         '/forgot-password',
+        '/canva/',
+        '/canvamausinteraktiv/',
       ],
     },
     sitemap: 'https://webwelle.com/sitemap.xml',
