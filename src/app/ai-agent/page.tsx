@@ -3,6 +3,8 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import AIAgentProducts from '../components/AIAgentProducts';
 import AIAgentHero from '../components/AIAgentHero';
+import AIAgentDemo from '../components/AIAgentDemo';
+import AIAgentTestimonials from '../components/AIAgentTestimonials';
 import AIAgentFAQ from '../components/AIAgentFAQ';
 import ScrollToTop from '../components/ScrollToTop';
 import CookieBanner from '../components/CookieBanner';
@@ -59,7 +61,9 @@ export default function AIAgentPage() {
       <Header />
       <main className="relative">
         <AIAgentHero />
+        <AIAgentDemo />
         <AIAgentProducts />
+        <AIAgentTestimonials />
         <AIAgentFAQ />
       </main>
       <Footer />
