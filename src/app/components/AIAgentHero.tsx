@@ -1,6 +1,6 @@
 'use client';
 
-import { Bot, Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import CanvaAnimation from './CanvaAnimation';
 
@@ -23,40 +23,32 @@ export default function AIAgentHero() {
           <div className="mb-8">
             <div className="inline-flex items-center gap-2 bg-primary/20 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-6">
               <Sparkles className="w-4 h-4" />
-              KI-Agenten für digitale Marktführer
+              KI-Agenten aus dem Allgäu
             </div>
             
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight leading-tight">
-              Automatisieren Sie Ihr{' '}
+              Mehr Kunden,{' '}
               <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                Wachstum
+                weniger Aufwand
               </span>
-              <br />
-              mit WebWelle KI-Agenten!
             </h1>
             
             <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto font-light leading-relaxed mb-8">
-              <strong className="text-primary font-semibold">WebWelle – Ihre Erfolgswelle im Netz</strong>
-              <br />
-              Festpreis-Webdesign und smarte KI-Agenten für digitale Marktführer in Deutschland. 
+              Viele Unternehmer verlieren täglich wertvolle Zeit mit wiederkehrenden Aufgaben.
               <span className="block mt-2 text-lg text-white/80">
-                Individuell. Transparent. Modern.
+                Die Lösung: Ihr persönlicher KI-Agent von WebWelle, entwickelt in Kempten (Allgäu).
               </span>
             </p>
           </div>
 
           {/* Feature Box */}
           <div className="backdrop-blur-sm bg-white/5 border border-white/10 rounded-2xl p-6 mb-8">
-            <h2 className="text-2xl font-semibold text-white mb-4 flex items-center justify-center gap-3">
-              <Bot className="w-7 h-7 text-primary" />
-              Ihr KI-Agent von WebWelle
-            </h2>
-            <p className="text-lg text-white/90 mb-3 font-medium">
-              — Zeit gewinnen. Kunden begeistern. Vorsprung sichern.
+            <p className="text-lg text-white/90 font-medium mb-4">
+              Er automatisiert Routineprozesse, beantwortet Kundenanfragen sofort und sorgt für messbares Wachstum – 
+              <span className="text-primary font-semibold"> 24 Stunden am Tag, 365 Tage im Jahr.</span>
             </p>
-            <p className="text-white/80 leading-relaxed">
-              Nutzen Sie den entscheidenden Vorsprung: Automatisieren Sie Ihr Business – rund um die Uhr, 
-              ohne Zusatzaufwand, perfekt abgestimmt auf Ihre Prozesse und Wachstumsziele.
+            <p className="text-white/80 leading-relaxed font-light italic">
+              "Automatisieren Sie Ihr Wachstum – einfach, sicher und individuell."
             </p>
           </div>
 
@@ -66,14 +58,14 @@ export default function AIAgentHero() {
               href="/buchung/flowwelle"
               className="group bg-primary hover:bg-primary/90 text-primary-foreground py-4 px-8 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl flex items-center justify-center gap-2"
             >
-              Wellenstart beginnen
+              Jetzt unverbindliches Beratungsgespräch sichern
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
-              href="#ai-agent-produkte"
+              href="#ai-explanation"
               className="group bg-white/10 hover:bg-white/20 text-white py-4 px-8 rounded-xl font-semibold text-lg transition-all duration-300 backdrop-blur-sm border border-white/20 flex items-center justify-center gap-2"
             >
-              Pakete entdecken
+              Mehr erfahren
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
