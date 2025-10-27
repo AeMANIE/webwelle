@@ -66,7 +66,7 @@ export default function AIAgentProducts() {
   }
 
   return (
-    <section id="ai-agent-produkte" className="py-12 sm:py-16 md:py-20 bg-background relative z-30">
+    <section id="ai-agent-produkte" className="py-12 sm:py-16 md:py-20 bg-background relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Preis-Toggle */}
         <div className="text-center mb-16">

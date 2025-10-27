@@ -6,7 +6,7 @@ import CanvaAnimation from './CanvaAnimation';
 
 export default function AIAgentHero() {
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden min-h-[600px] sm:min-h-[700px] md:min-h-screen isolate">
+    <section className="relative flex items-center justify-center overflow-hidden h-auto min-h-[500px] sm:h-screen sm:min-h-[700px] md:h-screen isolate py-12">
       {/* Canva Animation Background */}
       <div className="absolute inset-0 overflow-hidden">
         <CanvaAnimation />
