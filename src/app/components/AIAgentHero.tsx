@@ -6,12 +6,14 @@ import CanvaAnimation from './CanvaAnimation';
 
 export default function AIAgentHero() {
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden min-h-[600px] sm:min-h-[700px] md:min-h-screen">
+    <section className="relative h-screen flex items-center justify-center overflow-hidden min-h-[600px] sm:min-h-[700px] md:min-h-screen isolate">
       {/* Canva Animation Background */}
-      <CanvaAnimation />
+      <div className="absolute inset-0 overflow-hidden">
+        <CanvaAnimation />
+      </div>
       
       {/* Overlay for better text readability */}
-      <div className="absolute inset-0 bg-black/20 z-10" />
+      <div className="absolute inset-0 bg-black/20" style={{ zIndex: 10 }} />
       
       {/* Content Container */}
       <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-8 sm:py-12 md:py-16">

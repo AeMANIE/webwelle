@@ -151,7 +151,7 @@ export default function CanvaAnimation() {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full z-0"
+      className="absolute inset-0 w-full h-full"
       style={{ background: 'black' }}
     />
   );
