@@ -82,8 +82,30 @@ export default function AppEntwicklungClient() {
         }
       };
 
+      // Touch-Events für Mobile
+      let touchTimeout: NodeJS.Timeout | null = null;
+      
+      const handleTouchStart = () => {
+        tween.pause();
+        // Clear existing timeout if any
+        if (touchTimeout) {
+          clearTimeout(touchTimeout);
+        }
+      };
+
+      const handleTouchEnd = () => {
+        // Automatisch nach 3 Sekunden wieder starten
+        touchTimeout = setTimeout(() => {
+          if (tween.paused()) {
+            tween.resume();
+          }
+        }, 3000);
+      };
+
       track.addEventListener('mouseenter', handleMouseEnter);
       track.addEventListener('mouseleave', handleMouseLeave);
+      track.addEventListener('touchstart', handleTouchStart);
+      track.addEventListener('touchend', handleTouchEnd);
 
       // Pause, wenn Bereich nicht im Viewport
       ScrollTrigger.create({
@@ -114,7 +136,12 @@ export default function AppEntwicklungClient() {
       return () => {
         track.removeEventListener('mouseenter', handleMouseEnter);
         track.removeEventListener('mouseleave', handleMouseLeave);
+        track.removeEventListener('touchstart', handleTouchStart);
+        track.removeEventListener('touchend', handleTouchEnd);
         window.removeEventListener('resize', handleResize);
+        if (touchTimeout) {
+          clearTimeout(touchTimeout);
+        }
       };
     }, featuresTrackRef);
 
