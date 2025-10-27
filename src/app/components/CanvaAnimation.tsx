@@ -19,6 +19,9 @@ export default function CanvaAnimation() {
         let gridWidth = 0;
         let gridHeight = 0;
         let cellSize = 20; // Abstand zwischen Punkten
+        let mouseX = 0;
+        let mouseY = 0;
+        let isInteracting = false;
         const dots: Array<{ x: number; y: number; phase: number; intensity: number }> = [];
 
         const resize = () => {
@@ -67,8 +70,23 @@ export default function CanvaAnimation() {
                 const wave3 = sin(tickRef.current * 0.008 + gridY * 0.2 + dot.phase) * 0.2;
                 const wave4 = sin(tickRef.current * 0.012 + (gridX + gridY) * 0.15 + dot.phase) * 0.15;
                 
-                // Intensität basierend auf Wellen
+                // Basis-Intensität basierend auf Wellen
                 let intensity = 0.3 + wave1 + wave2 + wave3 + wave4;
+                
+                // Interaktions-Effekt (Maus/Touch)
+                if (isInteracting) {
+                    const dx = x - mouseX;
+                    const dy = y - mouseY;
+                    const distanceToMouse = Math.sqrt(dx * dx + dy * dy);
+                    const maxDistance = 150;
+                    
+                    if (distanceToMouse < maxDistance) {
+                        // Welleneffekt von Maus-Position aus
+                        const rippleEffect = (1 - distanceToMouse / maxDistance) * 0.5;
+                        intensity += rippleEffect;
+                    }
+                }
+                
                 intensity = Math.max(0, Math.min(1, intensity));
                 
                 dot.intensity = intensity;
@@ -100,14 +118,46 @@ export default function CanvaAnimation() {
             animationRef.current = requestAnimationFrame(draw);
         };
 
+        // Event handlers für Interaktion
+        const handleMouseMove = (e: MouseEvent) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            isInteracting = true;
+        };
+
+        const handleMouseLeave = () => {
+            isInteracting = false;
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length > 0) {
+                mouseX = e.touches[0].clientX;
+                mouseY = e.touches[0].clientY;
+                isInteracting = true;
+            }
+        };
+
+        const handleTouchEnd = () => {
+            isInteracting = false;
+        };
+
         draw();
 
+        // Event listeners
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mouseleave', handleMouseLeave);
+        canvas.addEventListener('touchmove', handleTouchMove);
+        canvas.addEventListener('touchend', handleTouchEnd);
         window.addEventListener('resize', resize);
 
         return () => {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
+            canvas.removeEventListener('mousemove', handleMouseMove);
+            canvas.removeEventListener('mouseleave', handleMouseLeave);
+            canvas.removeEventListener('touchmove', handleTouchMove);
+            canvas.removeEventListener('touchend', handleTouchEnd);
             window.removeEventListener('resize', resize);
         };
     }, []);

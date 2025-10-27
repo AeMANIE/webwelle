@@ -8,11 +8,20 @@ let tick = 0;
 let gridWidth = 0;
 let gridHeight = 0;
 let cellSize = 20;
+let mouseX = 0;
+let mouseY = 0;
+let isInteracting = false;
 let dots = [];
 
 function init() {
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
+    
+    // Setze Event Listeners
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
+    canvas.addEventListener('touchmove', handleTouchMove);
+    canvas.addEventListener('touchend', handleTouchEnd);
     
     resize();
     animate();
@@ -62,8 +71,23 @@ function animate() {
         const wave3 = sin(tick * 0.008 + gridY * 0.2 + dot.phase) * 0.2;
         const wave4 = sin(tick * 0.012 + (gridX + gridY) * 0.15 + dot.phase) * 0.15;
         
-        // Intensität basierend auf Wellen
+        // Basis-Intensität basierend auf Wellen
         let intensity = 0.3 + wave1 + wave2 + wave3 + wave4;
+        
+        // Interaktions-Effekt (Maus/Touch)
+        if (isInteracting) {
+            const dx = x - mouseX;
+            const dy = y - mouseY;
+            const distanceToMouse = sqrt(dx * dx + dy * dy);
+            const maxDistance = 150;
+            
+            if (distanceToMouse < maxDistance) {
+                // Welleneffekt von Maus-Position aus
+                const rippleEffect = (1 - distanceToMouse / maxDistance) * 0.5;
+                intensity += rippleEffect;
+            }
+        }
+        
         intensity = Math.max(0, Math.min(1, intensity));
         
         dot.intensity = intensity;
@@ -93,6 +117,29 @@ function animate() {
     });
     
     requestAnimationFrame(animate);
+}
+
+// Event handlers für Interaktion
+function handleMouseMove(e) {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    isInteracting = true;
+}
+
+function handleMouseLeave() {
+    isInteracting = false;
+}
+
+function handleTouchMove(e) {
+    if (e.touches.length > 0) {
+        mouseX = e.touches[0].clientX;
+        mouseY = e.touches[0].clientY;
+        isInteracting = true;
+    }
+}
+
+function handleTouchEnd() {
+    isInteracting = false;
 }
 
 // Event Listeners
