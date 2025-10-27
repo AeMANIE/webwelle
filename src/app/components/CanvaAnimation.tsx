@@ -19,8 +19,8 @@ export default function CanvaAnimation() {
 
         let centerX = 0;
         let centerY = 0;
-        let mouseX = 0;
-        let mouseY = 0;
+        const mouseX = 0;
+        const mouseY = 0;
         const explosions: any[] = [];
         const particles: any[] = [];
 
@@ -39,9 +39,9 @@ export default function CanvaAnimation() {
                 this.maxLife = 60;
                 this.particles = [];
                 
-                // Erstelle viele Partikel für die Explosion
-                for (let i = 0; i < 50; i++) {
-                    const angle = (i / 50) * TAU;
+                // Erstelle weniger Partikel für bessere Performance
+                for (let i = 0; i < 30; i++) {
+                    const angle = (i / 30) * TAU;
                     const speed = random() * 5 + 2;
                     this.particles.push({
                         x: 0,
@@ -166,9 +166,9 @@ export default function CanvaAnimation() {
             centerY = canvas.height / 2;
         };
 
-        // Initialize particles
+        // Initialize particles - reduziert für Performance
         resize();
-        for (let i = 0; i < 1500; i++) {
+        for (let i = 0; i < 800; i++) {
             particles.push(new Particle(canvas));
         }
 
@@ -236,19 +236,19 @@ export default function CanvaAnimation() {
                 }
             }
             
-            // Draw central energy beam - reduzierte Wellen
+            // Draw central energy beam - 2-3 Wellen, weniger Punkte
             ctx.beginPath();
             ctx.lineWidth = 4;
             
-            const segments = 150;
+            const segments = 80; // Reduziert für bessere Performance
             const amplitude = 120;
-            // 2-3 Wellen entlang der Säule
+            // 2-3 Wellen entlang der Säule (PI * 6 = 3 Wellen)
             for (let i = 0; i < segments; i++) {
                 const progress = i / segments;
-                const x = centerX + sin(progress * PI * 2.5 + tickRef.current * 0.02) * amplitude * (progress * 0.3 + 0.5);
+                const x = centerX + sin(progress * PI * 6 + tickRef.current * 0.015) * amplitude * (progress * 0.3 + 0.5);
                 const y = centerY + (progress - 0.5) * 2 * centerY;
-                const hue = 260 + sin(tickRef.current * 0.03 + i * 0.15) * 25;
-                const alpha = abs(sin((tickRef.current + i * 8) * 0.03)) * 0.3 + 0.7;
+                const hue = 260 + sin(tickRef.current * 0.03 + i * 0.2) * 25;
+                const alpha = abs(sin((tickRef.current + i * 10) * 0.03)) * 0.3 + 0.7;
                 
                 ctx.strokeStyle = `hsla(${hue}, 100%, 70%, ${alpha})`;
                 

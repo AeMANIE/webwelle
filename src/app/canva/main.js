@@ -21,9 +21,9 @@ class Explosion {
         this.maxLife = 60;
         this.particles = [];
         
-        // Erstelle viele Partikel für die Explosion
-        for (let i = 0; i < 50; i++) {
-            const angle = (i / 50) * TAU;
+        // Erstelle weniger Partikel für bessere Performance
+        for (let i = 0; i < 30; i++) {
+            const angle = (i / 30) * TAU;
             const speed = random() * 5 + 2;
             this.particles.push({
                 x: 0,
@@ -138,8 +138,8 @@ function init() {
     
     resize();
     
-    // Create particles
-    for (let i = 0; i < 1500; i++) {
+    // Create particles - reduziert für Performance
+    for (let i = 0; i < 800; i++) {
         particles.push(new Particle());
     }
     
@@ -202,19 +202,19 @@ function animate() {
         }
     }
     
-    // Draw central energy beam - reduzierte Wellen
+    // Draw central energy beam - 2-3 Wellen, weniger Punkte
     ctx.beginPath();
     ctx.lineWidth = 4;
     
-    const segments = 150;
+    const segments = 80; // Reduziert für bessere Performance
     const amplitude = 120;
-    // 2-3 Wellen entlang der Säule
+    // 2-3 Wellen entlang der Säule (PI * 6 = 3 Wellen)
     for (let i = 0; i < segments; i++) {
         const progress = i / segments;
-        const x = centerX + sin(progress * PI * 2.5 + tick * 0.02) * amplitude * (progress * 0.3 + 0.5);
+        const x = centerX + sin(progress * PI * 6 + tick * 0.015) * amplitude * (progress * 0.3 + 0.5);
         const y = centerY + (progress - 0.5) * 2 * centerY;
-        const hue = 260 + sin(tick * 0.03 + i * 0.15) * 25;
-        const alpha = abs(sin((tick + i * 8) * 0.03)) * 0.3 + 0.7;
+        const hue = 260 + sin(tick * 0.03 + i * 0.2) * 25;
+        const alpha = abs(sin((tick + i * 10) * 0.03)) * 0.3 + 0.7;
         
         ctx.strokeStyle = `hsla(${hue}, 100%, 70%, ${alpha})`;
         
