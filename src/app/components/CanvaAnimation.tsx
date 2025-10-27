@@ -2,19 +2,12 @@
 
 import { useEffect, useRef } from 'react';
 
-const { PI, cos, sin, abs } = Math;
-
-const HALF_PI = 0.5 * PI;
-const TAU = 2 * PI;
-
-const fadeInOut = (t: number, m: number) => {
-    const hm = 0.5 * m;
-    return abs((t + hm) % m - hm) / hm;
-};
+const { PI, sin, cos, random } = Math;
 
 export default function CanvaAnimation() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animationRef = useRef<number | null>(null);
+    const tickRef = useRef(0);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -23,136 +16,157 @@ export default function CanvaAnimation() {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        const circles: Array<{
-            position: { x: number; y: number };
-            hue: number;
-            size: number;
-            ttl: number;
-            life: number;
-            destroy: boolean;
-            update: () => void;
-            draw: () => void;
-        }> = [];
-        let origin = { x: 0, y: 0 };
-        let targetOrigin = { x: 0, y: 0 };
-        let tick = 0;
+        let gridWidth = 0;
+        let gridHeight = 0;
+        let cellSize = 20; // Abstand zwischen Punkten
         let mouseX = 0;
         let mouseY = 0;
-        let isMouseActive = false;
+        let isInteracting = false;
+        const dots: Array<{ x: number; y: number; phase: number; intensity: number }> = [];
 
         const resize = () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            gridWidth = Math.ceil(canvas.width / cellSize);
+            gridHeight = Math.ceil(canvas.height / cellSize);
+            
+            // Erstelle Raster von Punkten
+            dots.length = 0;
+            for (let y = 0; y < gridHeight; y++) {
+                for (let x = 0; x < gridWidth; x++) {
+                    dots.push({
+                        x: x * cellSize,
+                        y: y * cellSize,
+                        phase: random() * PI * 2,
+                        intensity: 0
+                    });
+                }
+            }
         };
 
-        const getCircle = (x: number, y: number, tick: number) => {
-            return {
-                position: { x, y },
-                hue: -tick * 0.5,
-                size: 2,
-                ttl: 200,
-                life: 0,
-                destroy: false,
-                
-                update() {
-                    this.life++;
-                    this.destroy = this.life > this.ttl;
-                    this.size *= 1.035;
-                },
-                
-                draw() {
-                    this.update();
-                    ctx.beginPath();
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = `hsla(${this.hue}, 100%, 50%, ${fadeInOut(this.life, this.ttl)})`;
-                    ctx.arc(this.position.x, this.position.y, this.size, 0, TAU);
-                    ctx.stroke();
-                    ctx.closePath();
-                }
-            };
-        };
+        resize();
 
         const draw = () => {
-            tick++;
+            tickRef.current++;
             
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Update origin position - follow mouse or use automatic movement
-            if (isMouseActive) {
-                // Smooth interpolation to mouse position
-                const lerpFactor = 0.1;
-                origin.x += (targetOrigin.x - origin.x) * lerpFactor;
-                origin.y += (targetOrigin.y - origin.y) * lerpFactor;
-            } else {
-                // Automatic movement when mouse is not active
-                origin.x = window.innerWidth * 0.5 + cos(tick * 0.025) * window.innerWidth * 0.25;
-                origin.y = window.innerHeight * 0.5 + sin(tick * 0.05) * window.innerHeight * 0.125;
-            }
-            
-            // Add new circle
-            circles.push(getCircle(origin.x, origin.y, tick));
-            
-            // Draw and update circles
-            for (let i = circles.length - 1; i >= 0; i--) {
-                circles[i].draw();
-                if (circles[i].destroy) {
-                    circles.splice(i, 1);
+            // Clear canvas mit leichtem Fade für Trail-Effekt
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw dots
+            dots.forEach((dot, index) => {
+                const x = dot.x;
+                const y = dot.y;
+                
+                // Berechne Grid-Position für Wave-Muster
+                const gridX = index % gridWidth;
+                const gridY = Math.floor(index / gridWidth);
+                
+                // Wave-Muster: Mehrere überlagerte Wellen für komplexeres Muster
+                const dist = Math.sqrt(Math.pow(gridX - gridWidth/2, 2) + Math.pow(gridY - gridHeight/2, 2));
+                
+                const wave1 = sin(tickRef.current * 0.01 + dist * 0.1 + dot.phase) * 0.3;
+                const wave2 = sin(tickRef.current * 0.015 + gridX * 0.2 + dot.phase) * 0.2;
+                const wave3 = sin(tickRef.current * 0.008 + gridY * 0.2 + dot.phase) * 0.2;
+                const wave4 = sin(tickRef.current * 0.012 + (gridX + gridY) * 0.15 + dot.phase) * 0.15;
+                
+                // Basis-Intensität basierend auf Wellen
+                let intensity = 0.3 + wave1 + wave2 + wave3 + wave4;
+                
+                // Interaktions-Effekt (Maus/Touch)
+                if (isInteracting) {
+                    const dx = x - mouseX;
+                    const dy = y - mouseY;
+                    const distanceToMouse = Math.sqrt(dx * dx + dy * dy);
+                    const maxDistance = 150;
+                    
+                    if (distanceToMouse < maxDistance) {
+                        // Welleneffekt von Maus-Position aus
+                        const rippleEffect = (1 - distanceToMouse / maxDistance) * 0.5;
+                        intensity += rippleEffect;
+                    }
                 }
-            }
+                
+                intensity = Math.max(0, Math.min(1, intensity));
+                
+                dot.intensity = intensity;
+                
+                // Zeichne Punkt nur wenn Intensität hoch genug
+                if (intensity > 0.1) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, 2 * intensity, 0, PI * 2);
+                    
+                    // Blaue Farbe (Cyan-Blau)
+                    const hue = 190 + Math.sin(intensity * PI) * 10; // 180-200 = Cyan-Blau
+                    const saturation = 80 + intensity * 20;
+                    const lightness = 50 + intensity * 30;
+                    const alpha = intensity;
+                    
+                    ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
+                    ctx.fill();
+                    
+                    // Zusätzlicher Glow für stärkere Punkte
+                    if (intensity > 0.6) {
+                        ctx.beginPath();
+                        ctx.arc(x, y, 4 * intensity, 0, PI * 2);
+                        ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness + 10}%, ${alpha * 0.3})`;
+                        ctx.fill();
+                    }
+                }
+            });
             
             animationRef.current = requestAnimationFrame(draw);
         };
 
-        // Mouse event handlers
+        // Event handlers für Interaktion
         const handleMouseMove = (e: MouseEvent) => {
             mouseX = e.clientX;
             mouseY = e.clientY;
-            targetOrigin.x = mouseX;
-            targetOrigin.y = mouseY;
-            isMouseActive = true;
+            isInteracting = true;
         };
 
         const handleMouseLeave = () => {
-            isMouseActive = false;
-            // Return to center when mouse leaves
-            targetOrigin.x = window.innerWidth * 0.5;
-            targetOrigin.y = window.innerHeight * 0.5;
+            isInteracting = false;
         };
 
-        const handleMouseEnter = () => {
-            isMouseActive = true;
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length > 0) {
+                mouseX = e.touches[0].clientX;
+                mouseY = e.touches[0].clientY;
+                isInteracting = true;
+            }
         };
 
-        // Initialize
-        origin = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.5 };
-        targetOrigin = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.5 };
-        resize();
+        const handleTouchEnd = () => {
+            isInteracting = false;
+        };
+
         draw();
 
         // Event listeners
-        window.addEventListener("resize", resize);
-        window.addEventListener("mousemove", handleMouseMove);
-        window.addEventListener("mouseleave", handleMouseLeave);
-        window.addEventListener("mouseenter", handleMouseEnter);
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mouseleave', handleMouseLeave);
+        canvas.addEventListener('touchmove', handleTouchMove);
+        canvas.addEventListener('touchend', handleTouchEnd);
+        window.addEventListener('resize', resize);
 
-        // Cleanup
         return () => {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
-            window.removeEventListener("resize", resize);
-            window.removeEventListener("mousemove", handleMouseMove);
-            window.removeEventListener("mouseleave", handleMouseLeave);
-            window.removeEventListener("mouseenter", handleMouseEnter);
+            canvas.removeEventListener('mousemove', handleMouseMove);
+            canvas.removeEventListener('mouseleave', handleMouseLeave);
+            canvas.removeEventListener('touchmove', handleTouchMove);
+            canvas.removeEventListener('touchend', handleTouchEnd);
+            window.removeEventListener('resize', resize);
         };
     }, []);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 w-full h-full"
-      style={{ background: 'black' }}
-    />
-  );
+    return (
+        <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-full"
+            style={{ background: 'black' }}
+        />
+    );
 }

@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import AIAgentProducts from '../components/AIAgentProducts';
 import AIAgentHero from '../components/AIAgentHero';
+import AIAgentExplanation from '../components/AIAgentExplanation';
 import AIAgentDemo from '../components/AIAgentDemo';
+import AIAgentProducts from '../components/AIAgentProducts';
 import AIAgentTestimonials from '../components/AIAgentTestimonials';
+import AIAgentWhy from '../components/AIAgentWhy';
 import AIAgentFAQ from '../components/AIAgentFAQ';
 import ScrollToTop from '../components/ScrollToTop';
 import CookieBanner from '../components/CookieBanner';
@@ -61,9 +63,15 @@ export default function AIAgentPage() {
       <Header />
       <main className="relative">
         <AIAgentHero />
+        <div id="ai-explanation">
+          <AIAgentExplanation />
+        </div>
         <AIAgentDemo />
-        <AIAgentProducts />
+        <div id="ai-agent-produkte">
+          <AIAgentProducts />
+        </div>
         <AIAgentTestimonials />
+        <AIAgentWhy />
         <AIAgentFAQ />
       </main>
       <Footer />

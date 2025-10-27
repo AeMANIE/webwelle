@@ -82,8 +82,50 @@ export default function Benefits() {
         }
       };
 
+      // Touch-Events für Mobile mit Swipe-Funktionalität
+      let touchTimeout: NodeJS.Timeout | null = null;
+      let touchStartX = 0;
+      let currentX = 0;
+      let isDragging = false;
+      
+      const handleTouchStart = (e: TouchEvent) => {
+        tween.pause();
+        touchStartX = e.touches[0].clientX;
+        currentX = gsap.getProperty(track, "x") as number || 0;
+        isDragging = true;
+        
+        // Clear existing timeout if any
+        if (touchTimeout) {
+          clearTimeout(touchTimeout);
+        }
+      };
+
+      const handleTouchMove = (e: TouchEvent) => {
+        if (!isDragging) return;
+        
+        const touchCurrentX = e.touches[0].clientX;
+        const diff = touchCurrentX - touchStartX;
+        
+        // Update position
+        gsap.set(track, { x: currentX + diff });
+      };
+
+      const handleTouchEnd = () => {
+        isDragging = false;
+        
+        // Automatisch nach 3 Sekunden wieder starten
+        touchTimeout = setTimeout(() => {
+          if (tween.paused()) {
+            tween.resume();
+          }
+        }, 3000);
+      };
+
       track.addEventListener('mouseenter', handleMouseEnter);
       track.addEventListener('mouseleave', handleMouseLeave);
+      track.addEventListener('touchstart', handleTouchStart);
+      track.addEventListener('touchmove', handleTouchMove);
+      track.addEventListener('touchend', handleTouchEnd);
 
       // Pause, wenn Bereich nicht im Viewport
       ScrollTrigger.create({
@@ -114,7 +156,13 @@ export default function Benefits() {
       return () => {
         track.removeEventListener('mouseenter', handleMouseEnter);
         track.removeEventListener('mouseleave', handleMouseLeave);
+        track.removeEventListener('touchstart', handleTouchStart);
+        track.removeEventListener('touchmove', handleTouchMove);
+        track.removeEventListener('touchend', handleTouchEnd);
         window.removeEventListener('resize', handleResize);
+        if (touchTimeout) {
+          clearTimeout(touchTimeout);
+        }
       };
     }, trackRef);
 
