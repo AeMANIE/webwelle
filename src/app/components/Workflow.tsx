@@ -1,4 +1,5 @@
 import { Package, MessageCircle, FileText, Rocket, Target, Clock, Eye, CheckCircle } from 'lucide-react';
+import WorkflowCanvasAnimation from './WorkflowCanvasAnimation';
 
 export default function Workflow() {
   const steps = [
@@ -40,26 +41,48 @@ export default function Workflow() {
   ];
 
   return (
-    <section id="arbeitsweise" className="py-20 bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
-            Webdesign mit Strategie und messbarer Wirkung
-          </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed mb-4">
-            Webdesign ist bei uns mehr als Ästhetik – es ist Unternehmenspsychologie.
-          </p>
-          <p className="text-lg text-muted-foreground max-w-4xl mx-auto font-light leading-relaxed mb-4">
-            Wir entwickeln Websites, die Vertrauen wecken, Emotionen ansprechen und gezielt Handlungsimpulse auslösen.
-          </p>
-          <p className="text-base text-primary font-semibold max-w-3xl mx-auto">
-            Unser Fokus liegt auf:
-          </p>
-          <div className="text-base text-muted-foreground max-w-3xl mx-auto mt-2">
-            <p>SEO & Performance: Google Core Web Vitals, technische Optimierung und lokale Auffindbarkeit.</p>
-            <p>• Neuromarketing-Effekten: Farb- und Designpsychologie steigern Klickbereitschaft und Anfragen.</p>
-            <p>• Conversion-Design: Jeder Button, jede Headline und jedes Bild folgt einer klaren Nutzerintention.</p>
-            <p className="text-primary font-semibold mt-2">Ihr Nutzen: Mehr Sichtbarkeit, mehr Reichweite, mehr Kundenkontakt.</p>
+    <section id="arbeitsweise" className="relative py-20 bg-background overflow-hidden">
+      {/* Canvas Animation Background */}
+      <div className="absolute inset-0">
+        <WorkflowCanvasAnimation />
+      </div>
+      
+      {/* Overlay for better readability */}
+      <div className="absolute inset-0 bg-background/70" style={{ zIndex: 1 }} />
+      
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Glassmorphism Text Windows */}
+        <div className="mb-16 space-y-8">
+          {/* First Window */}
+          <div className="bg-card/60 rounded-2xl p-8 shadow-lg border border-border rounded-3xl p-8 md:p-12 shadow-2xl max-w-5xl mx-auto">
+            <div className="text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6 tracking-tight">
+                Webdesign mit Strategie und messbarer Wirkung
+              </h2>
+              <p className="text-xl text-white/90 max-w-3xl mx-auto font-light leading-relaxed mb-4">
+                Webdesign ist bei uns mehr als Ästhetik – es ist Unternehmenspsychologie.
+              </p>
+              <p className="text-lg text-white/90 max-w-4xl mx-auto font-light leading-relaxed">
+                Wir entwickeln Websites, die Vertrauen wecken, Emotionen ansprechen und gezielt Handlungsimpulse auslösen.
+              </p>
+            </div>
+          </div>
+
+          {/* Second Window */}
+          <div className="bg-card/50 rounded-2xl p-8 shadow-lg border border-border rounded-3xl p-8 md:p-12 shadow-2xl max-w-5xl mx-auto">
+            <div className="text-center">
+              <p className="text-base text-primary font-semibold mb-4">
+                Unser Fokus liegt auf:
+              </p>
+              <div className="text-base text-white/90 space-y-3">
+                <p>SEO & Performance: Google Core Web Vitals, technische Optimierung und lokale Auffindbarkeit.</p>
+                <p>• Neuromarketing-Effekten: Farb- und Designpsychologie steigern Klickbereitschaft und Anfragen.</p>
+                <p>• Conversion-Design: Jeder Button, jede Headline und jedes Bild folgt einer klaren Nutzerintention.</p>
+                <p className="text-primary font-semibold mt-4">
+                  Ihr Nutzen: Mehr Sichtbarkeit, mehr Reichweite, mehr Kundenkontakt.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 

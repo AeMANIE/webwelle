@@ -1,358 +1,160 @@
 "use strict";
 
-const { PI, cos, sin, abs, sqrt } = Math;
-
-const HALF_PI = 0.5 * PI;
-const TAU = 2 * PI;
-
-const fadeInOut = (t, m) => {
-    let hm = 0.5 * m;
-    return abs((t + hm) % m - hm) / hm;
-};
-
-const lerp = (a, b, t) => a + (b - a) * t;
+const { PI, sin, cos, random, sqrt } = Math;
 
 let canvas;
 let ctx;
-let waves = [];
-let particles = [];
-let tick;
-let centerX, centerY;
+let tick = 0;
+let gridWidth = 0;
+let gridHeight = 0;
+let cellSize = 20;
+let mouseX = 0;
+let mouseY = 0;
+let isInteracting = false;
+let dots = [];
 
-// Wellen-Klasse für verschiedene Wellenmuster
-class Wave {
-    constructor(amplitude, frequency, speed, phase, color, thickness) {
-        this.amplitude = amplitude;
-        this.frequency = frequency;
-        this.speed = speed;
-        this.phase = phase;
-        this.color = color;
-        this.thickness = thickness;
-        this.alpha = 0.8;
-    }
-
-    getY(x, time) {
-        return this.amplitude * sin(this.frequency * x + this.speed * time + this.phase);
-    }
-
-    draw(time, startX, endX, yOffset) {
-        ctx.a.beginPath();
-        ctx.a.strokeStyle = `hsla(${this.color}, 100%, 60%, ${this.alpha})`;
-        ctx.a.lineWidth = this.thickness;
-        
-        const steps = 100;
-        const stepSize = (endX - startX) / steps;
-        
-        for (let i = 0; i <= steps; i++) {
-            const x = startX + i * stepSize;
-            const y = centerY + yOffset + this.getY(x, time);
-            
-            if (i === 0) {
-                ctx.a.moveTo(x, y);
-            } else {
-                ctx.a.lineTo(x, y);
-            }
-        }
-        
-        ctx.a.stroke();
-    }
-}
-
-// Partikel-Klasse für Wellen-Effekte
-class WaveParticle {
-    constructor(x, y, waveIndex, speed, size, hue, life) {
-        this.x = x;
-        this.y = y;
-        this.waveIndex = waveIndex;
-        this.speed = speed;
-        this.size = size;
-        this.hue = hue;
-        this.life = life;
-        this.maxLife = life;
-        this.alpha = 1;
-        this.trail = [];
-        this.maxTrailLength = 6;
-        this.waveOffset = Math.random() * TAU;
-    }
-
-    update(waves) {
-        // Wellen-Bewegung folgen
-        if (waves[this.waveIndex]) {
-            const wave = waves[this.waveIndex];
-            this.x += this.speed;
-            this.y = centerY + wave.getY(this.x, tick * 0.01) + this.waveOffset;
-        }
-        
-        // Trail hinzufügen
-        this.trail.push({ x: this.x, y: this.y, alpha: this.alpha });
-        if (this.trail.length > this.maxTrailLength) {
-            this.trail.shift();
-        }
-        
-        // Life und Alpha
-        this.life--;
-        this.alpha = this.life / this.maxLife;
-        
-        // Größe pulsieren
-        this.size *= 1.01;
-        
-        return this.life > 0 && this.x < window.innerWidth + 100;
-    }
-
-    draw() {
-        // Trail zeichnen
-        for (let i = 0; i < this.trail.length - 1; i++) {
-            const point = this.trail[i];
-            const nextPoint = this.trail[i + 1];
-            const trailAlpha = (i / this.trail.length) * this.alpha * 0.7;
-            
-            ctx.a.beginPath();
-            ctx.a.strokeStyle = `hsla(${this.hue}, 100%, 70%, ${trailAlpha})`;
-            ctx.a.lineWidth = 2;
-            ctx.a.moveTo(point.x, point.y);
-            ctx.a.lineTo(nextPoint.x, nextPoint.y);
-            ctx.a.stroke();
-        }
-        
-        // Hauptpartikel
-        ctx.a.beginPath();
-        ctx.a.fillStyle = `hsla(${this.hue}, 100%, 80%, ${this.alpha})`;
-        ctx.a.arc(this.x, this.y, this.size, 0, TAU);
-        ctx.a.fill();
-        
-        // Glow-Effekt
-        ctx.a.beginPath();
-        ctx.a.fillStyle = `hsla(${this.hue}, 100%, 60%, ${this.alpha * 0.4})`;
-        ctx.a.arc(this.x, this.y, this.size * 1.5, 0, TAU);
-        ctx.a.fill();
-    }
-}
-
-// Wellen-Kreise für zusätzliche Effekte
-class WaveCircle {
-    constructor(radius, waveCount, amplitude, speed, hue) {
-        this.radius = radius;
-        this.waveCount = waveCount;
-        this.amplitude = amplitude;
-        this.speed = speed;
-        this.hue = hue;
-        this.alpha = 0.6;
-        this.rotation = 0;
-    }
-
-    update() {
-        this.rotation += this.speed;
-        this.alpha = 0.4 + 0.4 * sin(tick * 0.02);
-    }
-
-    draw() {
-        const points = [];
-        const steps = 64;
-        
-        for (let i = 0; i < steps; i++) {
-            const angle = (i / steps) * TAU + this.rotation;
-            const waveOffset = this.amplitude * sin(this.waveCount * angle + tick * 0.01);
-            const x = centerX + cos(angle) * (this.radius + waveOffset);
-            const y = centerY + sin(angle) * (this.radius + waveOffset);
-            points.push({ x, y });
-        }
-        
-        // Wellen-Kreis zeichnen
-        ctx.a.beginPath();
-        ctx.a.strokeStyle = `hsla(${this.hue}, 100%, 70%, ${this.alpha})`;
-        ctx.a.lineWidth = 3;
-        
-        for (let i = 0; i < points.length; i++) {
-            const point = points[i];
-            if (i === 0) {
-                ctx.a.moveTo(point.x, point.y);
-            } else {
-                ctx.a.lineTo(point.x, point.y);
-            }
-        }
-        ctx.a.closePath();
-        ctx.a.stroke();
-        
-        // Innere Wellen
-        ctx.a.beginPath();
-        ctx.a.strokeStyle = `hsla(${this.hue}, 100%, 80%, ${this.alpha * 0.6})`;
-        ctx.a.lineWidth = 1;
-        
-        for (let i = 0; i < points.length; i++) {
-            const point = points[i];
-            const nextPoint = points[(i + 1) % points.length];
-            const midX = (point.x + nextPoint.x) / 2;
-            const midY = (point.y + nextPoint.y) / 2;
-            const innerRadius = this.radius * 0.7;
-            const innerX = centerX + cos(atan2(midY - centerY, midX - centerX)) * innerRadius;
-            const innerY = centerY + sin(atan2(midY - centerY, midX - centerX)) * innerRadius;
-            
-            if (i === 0) {
-                ctx.a.moveTo(innerX, innerY);
-            } else {
-                ctx.a.lineTo(innerX, innerY);
-            }
-        }
-        ctx.a.closePath();
-        ctx.a.stroke();
-    }
-}
-
-function setup() {
-    canvas = {
-        a: document.createElement('canvas'),
-        b: document.createElement('canvas')
-    };
+function init() {
+    canvas = document.getElementById('canvas');
+    ctx = canvas.getContext('2d');
     
-    ctx = {
-        a: canvas.a.getContext('2d'),
-        b: canvas.b.getContext('2d')
-    };
+    const container = document.getElementById('container');
     
-    canvas.b.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: black;
-    `;
-    
-    document.body.appendChild(canvas.b);
-    
-    waves = [];
-    particles = [];
-    tick = 0;
-    
-    // Verschiedene Wellen erstellen
-    createWaves();
+    // Setze Event Listeners auf Container für Touch-Unterstützung
+    if (container) {
+        container.addEventListener('mousemove', handleMouseMove);
+        container.addEventListener('mouseleave', handleMouseLeave);
+        container.addEventListener('touchmove', handleTouchMove, { passive: true });
+        container.addEventListener('touchend', handleTouchEnd);
+    }
     
     resize();
-    draw();
-}
-
-function createWaves() {
-    // Hauptwellen
-    waves.push(new Wave(80, 0.02, 0.03, 0, 0, 4));        // Rot
-    waves.push(new Wave(60, 0.03, 0.02, HALF_PI, 60, 3)); // Gelb
-    waves.push(new Wave(40, 0.04, 0.04, PI, 120, 2));     // Grün
-    waves.push(new Wave(100, 0.015, 0.025, 1.5 * PI, 180, 5)); // Cyan
-    waves.push(new Wave(30, 0.05, 0.035, 0.5 * PI, 240, 2));   // Blau
-    waves.push(new Wave(70, 0.025, 0.015, 0.75 * PI, 300, 3)); // Magenta
+    animate();
 }
 
 function resize() {
-    canvas.a.width = canvas.b.width = window.innerWidth;
-    canvas.a.height = canvas.b.height = window.innerHeight;
-    centerX = window.innerWidth * 0.5;
-    centerY = window.innerHeight * 0.5;
-}
-
-function createWaveParticle() {
-    if (tick % 3 === 0) {
-        const waveIndex = Math.floor(Math.random() * waves.length);
-        const wave = waves[waveIndex];
-        const x = -50;
-        const y = centerY + wave.getY(x, tick * 0.01);
-        const hue = wave.color + (Math.random() - 0.5) * 30;
-        
-        particles.push(new WaveParticle(
-            x,
-            y,
-            waveIndex,
-            2 + Math.random() * 3,
-            2 + Math.random() * 4,
-            hue,
-            200 + Math.random() * 150
-        ));
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gridWidth = Math.ceil(canvas.width / cellSize);
+    gridHeight = Math.ceil(canvas.height / cellSize);
+    
+    // Erstelle Raster von Punkten
+    dots = [];
+    for (let y = 0; y < gridHeight; y++) {
+        for (let x = 0; x < gridWidth; x++) {
+            dots.push({
+                x: x * cellSize,
+                y: y * cellSize,
+                phase: random() * PI * 2,
+                intensity: 0
+            });
+        }
     }
 }
 
-function createWaveCircle() {
-    if (tick % 120 === 0) {
-        const radius = 150 + Math.random() * 200;
-        const waveCount = 3 + Math.floor(Math.random() * 4);
-        const amplitude = 20 + Math.random() * 40;
-        const hue = (tick * 0.2) % 360;
-        
-        particles.push(new WaveCircle(radius, waveCount, amplitude, 0.01, hue));
-    }
-}
-
-function draw() {
+function animate() {
     tick++;
     
-    // Clear canvases
-    ctx.a.clearRect(0, 0, canvas.a.width, canvas.a.height);
-    ctx.b.clearRect(0, 0, canvas.b.width, canvas.b.height);
-    
-    // Center bewegen sich sanft
-    centerX = window.innerWidth * 0.5 + sin(tick * 0.005) * 30;
-    centerY = window.innerHeight * 0.5 + cos(tick * 0.008) * 20;
-    
-    // Wellen zeichnen
-    const time = tick * 0.01;
-    const startX = -100;
-    const endX = window.innerWidth + 100;
-    
-    for (let i = 0; i < waves.length; i++) {
-        const wave = waves[i];
-        const yOffset = (i - waves.length / 2) * 40;
-        wave.draw(time, startX, endX, yOffset);
-    }
-    
-    // Neue Partikel erstellen
-    createWaveParticle();
-    createWaveCircle();
-    
-    // Partikel aktualisieren und zeichnen
-    for (let i = particles.length - 1; i >= 0; i--) {
-        if (particles[i].update) {
-            if (particles[i].update(waves)) {
-                particles[i].draw();
-            } else {
-                particles.splice(i, 1);
-            }
-        } else {
-            // WaveCircle hat kein update, nur draw
-            particles[i].draw();
-        }
-    }
-    
-    // Verbindungslinien zwischen Wellen
-    for (let i = 0; i < waves.length - 1; i++) {
-        const steps = 50;
-        const stepSize = (endX - startX) / steps;
+    // Clear canvas mit leichtem Fade
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw dots
+    dots.forEach((dot, index) => {
+        const x = dot.x;
+        const y = dot.y;
         
-        for (let j = 0; j <= steps; j += 5) {
-            const x = startX + j * stepSize;
-            const y1 = centerY + waves[i].getY(x, time) + (i - waves.length / 2) * 40;
-            const y2 = centerY + waves[i + 1].getY(x, time) + ((i + 1) - waves.length / 2) * 40;
+        // Berechne Grid-Position für Wave-Muster
+        const gridX = index % gridWidth;
+        const gridY = Math.floor(index / gridWidth);
+        
+        // Wave-Muster: Mehrere überlagerte Wellen
+        const dist = sqrt(Math.pow(gridX - gridWidth/2, 2) + Math.pow(gridY - gridHeight/2, 2));
+        
+        const wave1 = sin(tick * 0.01 + dist * 0.1 + dot.phase) * 0.3;
+        const wave2 = sin(tick * 0.015 + gridX * 0.2 + dot.phase) * 0.2;
+        const wave3 = sin(tick * 0.008 + gridY * 0.2 + dot.phase) * 0.2;
+        const wave4 = sin(tick * 0.012 + (gridX + gridY) * 0.15 + dot.phase) * 0.15;
+        
+        // Basis-Intensität basierend auf Wellen
+        let intensity = 0.3 + wave1 + wave2 + wave3 + wave4;
+        
+        // Interaktions-Effekt (Maus/Touch)
+        if (isInteracting) {
+            const dx = x - mouseX;
+            const dy = y - mouseY;
+            const distanceToMouse = sqrt(dx * dx + dy * dy);
+            const maxDistance = 200;
             
-            const alpha = 0.3 * (1 - j / steps);
-            ctx.a.beginPath();
-            ctx.a.strokeStyle = `hsla(${(waves[i].color + waves[i + 1].color) / 2}, 100%, 60%, ${alpha})`;
-            ctx.a.lineWidth = 1;
-            ctx.a.moveTo(x, y1);
-            ctx.a.lineTo(x, y2);
-            ctx.a.stroke();
+            if (distanceToMouse < maxDistance) {
+                // Stärkerer Welleneffekt von Maus-Position aus
+                const rippleEffect = (1 - distanceToMouse / maxDistance) * 1.0;
+                intensity += rippleEffect;
+                
+                // Zusätzlicher Glow-Effekt direkt am Cursor
+                if (distanceToMouse < 80) {
+                    intensity += 0.3;
+                }
+            }
         }
-    }
+        
+        intensity = Math.max(0, Math.min(1, intensity));
+        
+        dot.intensity = intensity;
+        
+        // Zeichne Punkt nur wenn Intensität hoch genug
+        if (intensity > 0.1) {
+            ctx.beginPath();
+            ctx.arc(x, y, 2 * intensity, 0, PI * 2);
+            
+            // Blaue Farbe (Cyan-Blau)
+            const hue = 190 + sin(intensity * PI) * 10;
+            const saturation = 80 + intensity * 20;
+            const lightness = 50 + intensity * 30;
+            const alpha = intensity;
+            
+            ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
+            ctx.fill();
+            
+            // Zusätzlicher Glow für stärkere Punkte
+            if (intensity > 0.6) {
+                ctx.beginPath();
+                ctx.arc(x, y, 4 * intensity, 0, PI * 2);
+                ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness + 10}%, ${alpha * 0.3})`;
+                ctx.fill();
+            }
+        }
+    });
     
-    // Blur und Farbeffekte
-    ctx.b.save();
-    ctx.b.filter = "blur(2px) saturate(180%) contrast(110%)";
-    ctx.b.drawImage(canvas.a, 0, 0, canvas.b.width, canvas.b.height);
-    ctx.b.restore();
-    
-    // Original auf top
-    ctx.b.save();
-    ctx.b.drawImage(canvas.a, 0, 0, canvas.b.width, canvas.b.height);
-    ctx.b.restore();
-    
-    window.requestAnimationFrame(draw);
+    requestAnimationFrame(animate);
 }
 
-// Event listeners
-window.addEventListener("load", setup);
-window.addEventListener("resize", resize);
+// Event handlers für Interaktion
+function handleMouseMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
+    isInteracting = true;
+}
+
+function handleMouseLeave() {
+    isInteracting = false;
+}
+
+function handleTouchMove(e) {
+    if (e.touches.length > 0) {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.touches[0].clientX - rect.left;
+        mouseY = e.touches[0].clientY - rect.top;
+        isInteracting = true;
+    }
+}
+
+function handleTouchEnd() {
+    isInteracting = false;
+}
+
+// Event Listeners
+window.addEventListener('resize', resize);
+
+// Start
+document.addEventListener('DOMContentLoaded', init);
