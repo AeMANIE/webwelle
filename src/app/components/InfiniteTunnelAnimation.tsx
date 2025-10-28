@@ -92,13 +92,6 @@ export default function InfiniteTunnelAnimation() {
             const ctxBElement = ctxB.current;
             if (!ctxAElement || !ctxBElement) return;
 
-            // Performance: Nur alle 2 Frames zeichnen auf mobilen Geräten
-            const isMobile = window.innerWidth < 768;
-            if (isMobile && tick.current % 2 !== 0) {
-                animationRef.current = requestAnimationFrame(draw);
-                return;
-            }
-
             // Clear canvases
             ctxAElement.clearRect(0, 0, canvasAElement.width, canvasAElement.height);
             ctxBElement.clearRect(0, 0, canvasBElement.width, canvasBElement.height);
