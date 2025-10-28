@@ -3,18 +3,40 @@
 import { Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { useState, useEffect } from 'react';
 
 const InfiniteTunnelAnimation = dynamic(() => import('./InfiniteTunnelAnimation'), {
   ssr: false,
   loading: () => <div className="absolute inset-0 bg-background" />
 });
 
+const InfiniteTunnelAnimationMobile = dynamic(() => import('./InfiniteTunnelAnimation_2622x1206'), {
+  ssr: false,
+  loading: () => <div className="absolute inset-0 bg-background" />
+});
+
 export default function AIAgentHero() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   return (
     <section className="relative flex items-center justify-center overflow-hidden h-auto min-h-[500px] sm:h-screen sm:min-h-[700px] md:h-screen isolate py-12">
-      {/* Infinite Tunnel Animation Background */}
+      {/* Infinite Tunnel Animation Background - Responsive */}
       <div className="absolute inset-0 overflow-hidden">
-        <InfiniteTunnelAnimation />
+        {isMobile ? (
+          <InfiniteTunnelAnimationMobile />
+        ) : (
+          <InfiniteTunnelAnimation />
+        )}
       </div>
       
       {/* Overlay for better text readability */}

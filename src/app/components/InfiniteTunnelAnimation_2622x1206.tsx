@@ -22,9 +22,9 @@ interface Circle {
     draw(ctx: CanvasRenderingContext2D): void;
 }
 
-// Feste Zielgröße für das Display 1206 x 2622 (Höhe x Breite)
-const TARGET_HEIGHT = 1206;
-const TARGET_WIDTH = 2622;
+// Feste Zielgröße für das Display 2622 x 1206 (Höhe x Breite)
+const TARGET_HEIGHT = 2622;
+const TARGET_WIDTH = 1206;
 
 export default function InfiniteTunnelAnimation_2622x1206() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -96,6 +96,13 @@ export default function InfiniteTunnelAnimation_2622x1206() {
             const ctxAElement = ctxA.current;
             const ctxBElement = ctxB.current;
             if (!ctxAElement || !ctxBElement) return;
+
+            // Performance: Nur alle 2 Frames zeichnen auf mobilen Geräten
+            const isMobile = window.innerWidth < 768;
+            if (isMobile && tick.current % 2 !== 0) {
+                animationRef.current = requestAnimationFrame(draw);
+                return;
+            }
 
             // Clear canvases (feste Größe)
             ctxAElement.clearRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
@@ -214,16 +221,14 @@ export default function InfiniteTunnelAnimation_2622x1206() {
     }, []);
 
     // Aspect Ratio berechnen
-    const aspectRatio = TARGET_WIDTH / TARGET_HEIGHT; // 2622 / 1206 = 2.175
+    const aspectRatio = TARGET_WIDTH / TARGET_HEIGHT; // 1206 / 2622 = 0.46
 
     return (
         <div
             ref={containerRef}
-            className="relative w-full"
+            className="absolute inset-0 w-full h-full"
             style={{ 
                 aspectRatio: `${aspectRatio}`,
-                maxWidth: '100%',
-                maxHeight: '100vh',
                 overflow: 'hidden'
             }}
         >

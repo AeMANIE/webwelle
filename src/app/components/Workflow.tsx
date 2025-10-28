@@ -2,13 +2,31 @@
 
 import { Package, MessageCircle, FileText, Rocket, Target, Clock, Eye, CheckCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { useState, useEffect } from 'react';
 
-const CanvaAnimation_2622x1206 = dynamic(() => import('./CanvaAnimation_2622x1206'), {
+const CanvaAnimation = dynamic(() => import('./CanvaAnimation'), {
+  ssr: false,
+  loading: () => <div className="absolute inset-0 bg-background" />
+});
+
+const CanvaAnimationMobile = dynamic(() => import('./CanvaAnimation_2622x1206'), {
   ssr: false,
   loading: () => <div className="absolute inset-0 bg-background" />
 });
 
 export default function Workflow() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const steps = [
     {
       number: "1",
@@ -49,8 +67,12 @@ export default function Workflow() {
 
   return (
     <section id="arbeitsweise" className="py-20 bg-background relative overflow-hidden">
-      {/* Canva Animation Hintergrund */}
-      <CanvaAnimation_2622x1206 withOverlay={false} />
+      {/* Canva Animation Hintergrund - Responsive */}
+      {isMobile ? (
+        <CanvaAnimationMobile withOverlay={false} />
+      ) : (
+        <CanvaAnimation withOverlay={false} />
+      )}
       
       {/* Content mit z-index für Lesbarkeit */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">

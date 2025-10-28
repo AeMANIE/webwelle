@@ -63,6 +63,13 @@ export default function CanvaAnimation_2622x1206({ withOverlay = true }: CanvaAn
             ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.fillRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
 
+            // Performance: Nur alle 2 Frames zeichnen auf mobilen Geräten
+            const isMobile = window.innerWidth < 768;
+            if (isMobile && tickRef.current % 2 !== 0) {
+                animationRef.current = requestAnimationFrame(draw);
+                return;
+            }
+
             // Draw dots
             dots.forEach((dot, index) => {
                 const x = dot.x;
@@ -108,8 +115,8 @@ export default function CanvaAnimation_2622x1206({ withOverlay = true }: CanvaAn
 
                 // Zeichne Punkt nur wenn Intensität hoch genug
                 if (intensity > 0.1) {
-                    ctx.beginPath();
-                    ctx.arc(x, y, 2 * intensity, 0, PI * 2);
+                    // Quadrat-Größe basierend auf Intensität
+                    const size = 2 * intensity;
 
                     // Dunkelblau-Grau statt hellblau
                     const hue = 210; // Blau statt Cyan-Blau
@@ -118,14 +125,13 @@ export default function CanvaAnimation_2622x1206({ withOverlay = true }: CanvaAn
                     const alpha = intensity * 0.8; // Etwas weniger transparent
 
                     ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
-                    ctx.fill();
+                    ctx.fillRect(x - size / 2, y - size / 2, size, size);
 
                     // Zusätzlicher Glow für stärkere Punkte - Dunkelblau-Grau
                     if (intensity > 0.6) {
-                        ctx.beginPath();
-                        ctx.arc(x, y, 4 * intensity, 0, PI * 2);
+                        const glowSize = 4 * intensity;
                         ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness + 3}%, ${alpha * 0.25})`;
-                        ctx.fill();
+                        ctx.fillRect(x - glowSize / 2, y - glowSize / 2, glowSize, glowSize);
                     }
                 }
             });
@@ -187,11 +193,8 @@ export default function CanvaAnimation_2622x1206({ withOverlay = true }: CanvaAn
     return (
         <div
             ref={containerRef}
-            className="relative w-full"
+            className="absolute inset-0 w-full h-full"
             style={{ 
-                aspectRatio: `${aspectRatio}`,
-                maxWidth: '100%',
-                maxHeight: '100%',
                 overflow: 'hidden'
             }}
         >

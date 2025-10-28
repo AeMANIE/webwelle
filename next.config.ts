@@ -58,11 +58,11 @@ const nextConfig: NextConfig = {
             chunks: 'async', // Nur async chunks - nicht im initial bundle
             priority: 20,
           },
-          // GSAP in separaten Chunk
+          // GSAP in separaten Chunk - nur async laden
           gsap: {
             test: /[\\/]node_modules[\\/]gsap[\\/]/,
             name: 'gsap',
-            chunks: 'all',
+            chunks: 'async', // Nur async - nicht im initial bundle
             priority: 18,
           },
           // React und React-DOM
