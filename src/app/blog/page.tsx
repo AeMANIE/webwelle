@@ -1,6 +1,9 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { Calendar, User, ArrowRight, Tag } from 'lucide-react';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import ScrollToTop from '../components/ScrollToTop';
 
 export const metadata: Metadata = {
   title: "Blog & Insights | WebWelle – Webdesign Kempten (Allgäu)",
@@ -72,7 +75,8 @@ export default function BlogPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      <Header />
+      {/* Page Header */}
       <div className="bg-gradient-to-r from-primary/10 to-primary/5 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
@@ -226,6 +230,8 @@ export default function BlogPage() {
           </div>
         </div>
       </section>
+      <Footer />
+      <ScrollToTop />
     </div>
   );
 }

@@ -5,28 +5,59 @@ import { Zap, DollarSign, Palette } from 'lucide-react';
 
 export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
   const [playCount, setPlayCount] = useState(0);
   const [, setIsMobile] = useState(false);
-  const [videoSrc, setVideoSrc] = useState("/Aa.mp4");
+  const [videoSrc, setVideoSrc] = useState<string | null>(null); // Lazy load - startet mit null
+  const [isVisible, setIsVisible] = useState(false);
+  const [showFallbackImage, setShowFallbackImage] = useState(false);
+  const [fallbackImageSrc, setFallbackImageSrc] = useState('');
 
+  // Intersection Observer für Lazy Loading
   useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        });
+      },
+      {
+        threshold: 0.1, // Lade wenn 10% sichtbar
+        rootMargin: '50px' // Bereits vor dem Viewport laden
+      }
+    );
+
+    observer.observe(section);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  // Setze Video-SRC nur wenn visible
+  useEffect(() => {
+    if (!isVisible) return;
+
     // Prüfe ob es sich um ein mobiles Gerät handelt
     const checkMobile = () => {
       const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      console.log('Mobile check:', { 
-        width: window.innerWidth, 
-        userAgent: navigator.userAgent, 
-        isMobile: isMobileDevice 
-      });
       setIsMobile(isMobileDevice);
       setVideoSrc(isMobileDevice ? "/Aa90.mp4" : "/Aa.mp4");
+      // Setze auch Fallback-Bild basierend auf Gerät
+      setFallbackImageSrc(isMobileDevice ? "/wellehandy.jpg" : "/welle.jpg");
     };
     
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  }, [isVisible]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -58,6 +89,8 @@ export default function Hero() {
       console.error('Video error:', e);
       console.error('Video src:', video.src);
       console.error('Video currentSrc:', video.currentSrc);
+      // Zeige Fallback-Bild wenn Video nicht laden kann
+      setShowFallbackImage(true);
     };
 
     const handleLoadedMetadata = () => {
@@ -92,39 +125,43 @@ export default function Hero() {
 
 
   return (
-    <section className="relative py-16 md:py-32 overflow-hidden min-h-screen flex items-center">
-      {/* Video Hintergrund - Chrome kompatibel */}
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover z-0"
-        style={{
-          objectPosition: 'center center',
-          minWidth: '100%',
-          minHeight: '100%',
-          width: '100%',
-          height: '100%'
-        }}
-        preload="metadata"
-        controls={false}
-      >
-        <source src={videoSrc} type="video/mp4" />
-        Ihr Browser unterstützt das Video-Element nicht.
-      </video>
+    <section ref={sectionRef} className="relative py-16 md:py-32 overflow-hidden min-h-screen flex items-center">
+      {/* Video Hintergrund - Chrome kompatibel - Lazy Loaded */}
+      {videoSrc && (
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          style={{
+            objectPosition: 'center center',
+            minWidth: '100%',
+            minHeight: '100%',
+            width: '100%',
+            height: '100%'
+          }}
+          preload="metadata"
+          controls={false}
+        >
+          <source src={videoSrc || undefined} type="video/mp4" />
+          Ihr Browser unterstützt das Video-Element nicht.
+        </video>
+      )}
       
       
-      {/* Fallback Hintergrund Bild */}
-      <div 
-        className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat z-0"
-        style={{
-          backgroundImage: '',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }}
-      ></div>
+      {/* Fallback Hintergrund Bild - Nur wenn Video nicht lädt */}
+      {showFallbackImage && fallbackImageSrc && (
+        <div 
+          className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat z-0"
+          style={{
+            backgroundImage: `url(${fallbackImageSrc})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        ></div>
+      )}
       
       {/* Overlay für bessere Lesbarkeit - nur unter den Texten */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 z-10"></div>

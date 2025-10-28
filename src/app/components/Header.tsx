@@ -48,8 +48,8 @@ export default function Header() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            <Link href={{ pathname: '/', hash: 'produkte' }} className="text-foreground hover:text-primary transition-colors font-medium">
+          <nav className="hidden md:flex space-x-6">
+            <Link href={{ pathname: '/', hash: 'vorteile' }} className="text-foreground hover:text-primary transition-colors font-medium">
               Webdesign-Pakete
             </Link>
             <Link href="/ai-agent" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
@@ -58,11 +58,8 @@ export default function Header() {
             <Link href="/app-entwicklung" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
               App-Entwicklung
             </Link>
-            <Link href={{ pathname: '/', hash: 'vorteile' }} className="text-foreground hover:text-primary transition-colors font-medium">
-              Warum WebWelle
-            </Link>
-            <Link href={{ pathname: '/', hash: 'leistungen' }} className="text-foreground hover:text-primary transition-colors font-medium">
-              Lösungen
+            <Link href="/blog" className="text-foreground hover:text-primary transition-colors font-medium">
+              Blog
             </Link>
             <Link href="/customer" className="text-primary hover:text-primary/80 transition-colors font-medium border border-primary px-3 py-1 rounded-md flex items-center space-x-1">
               <LogIn className="w-4 h-4" />
@@ -93,12 +90,12 @@ export default function Header() {
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-card rounded-lg mt-2 border border-border shadow-lg">
               <Link 
-                href="/#produkte" 
+                href="/#vorteile" 
                 className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
                 onClick={(e) => {
                   e.preventDefault();
                   closeMenu();
-                  const element = document.getElementById('produkte');
+                  const element = document.getElementById('vorteile');
                   if (element) {
                     const headerHeight = 80;
                     const elementPosition = element.offsetTop - headerHeight;
@@ -114,37 +111,8 @@ export default function Header() {
               <Link href="/app-entwicklung" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
                 App-Entwicklung
               </Link>
-              <Link 
-                href="/#vorteile" 
-                className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  closeMenu();
-                  const element = document.getElementById('vorteile');
-                  if (element) {
-                    const headerHeight = 80;
-                    const elementPosition = element.offsetTop - headerHeight;
-                    window.scrollTo({ top: elementPosition, behavior: 'smooth' });
-                  }
-                }}
-              >
-                Warum WebWelle
-              </Link>
-              <Link 
-                href="/#leistungen" 
-                className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  closeMenu();
-                  const element = document.getElementById('leistungen');
-                  if (element) {
-                    const headerHeight = 80;
-                    const elementPosition = element.offsetTop - headerHeight;
-                    window.scrollTo({ top: elementPosition, behavior: 'smooth' });
-                  }
-                }}
-              >
-                Lösungen
+              <Link href="/blog" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
+                Blog
               </Link>
               <div className="pt-2 border-t border-border">
                 <Link href="/customer" className="flex items-center justify-center space-x-2 px-3 py-2 text-primary hover:text-primary/80 font-medium border border-primary rounded-md hover:bg-primary/5" onClick={closeMenu}>

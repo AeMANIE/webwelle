@@ -1,4 +1,12 @@
+'use client';
+
 import { Package, MessageCircle, FileText, Rocket, Target, Clock, Eye, CheckCircle } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const CanvaAnimation = dynamic(() => import('./CanvaAnimation'), {
+  ssr: false,
+  loading: () => <div className="absolute inset-0 bg-background" />
+});
 
 export default function Workflow() {
   const steps = [
@@ -40,26 +48,39 @@ export default function Workflow() {
   ];
 
   return (
-    <section id="arbeitsweise" className="py-20 bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
-            Webdesign mit Strategie und messbarer Wirkung
-          </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed mb-4">
-            Webdesign ist bei uns mehr als Ästhetik – es ist Unternehmenspsychologie.
-          </p>
-          <p className="text-lg text-muted-foreground max-w-4xl mx-auto font-light leading-relaxed mb-4">
-            Wir entwickeln Websites, die Vertrauen wecken, Emotionen ansprechen und gezielt Handlungsimpulse auslösen.
-          </p>
-          <p className="text-base text-primary font-semibold max-w-3xl mx-auto">
-            Unser Fokus liegt auf:
-          </p>
-          <div className="text-base text-muted-foreground max-w-3xl mx-auto mt-2">
-            <p>SEO & Performance: Google Core Web Vitals, technische Optimierung und lokale Auffindbarkeit.</p>
-            <p>• Neuromarketing-Effekten: Farb- und Designpsychologie steigern Klickbereitschaft und Anfragen.</p>
-            <p>• Conversion-Design: Jeder Button, jede Headline und jedes Bild folgt einer klaren Nutzerintention.</p>
-            <p className="text-primary font-semibold mt-2">Ihr Nutzen: Mehr Sichtbarkeit, mehr Reichweite, mehr Kundenkontakt.</p>
+    <section id="arbeitsweise" className="py-20 bg-background relative overflow-hidden">
+      {/* Canva Animation Hintergrund */}
+      <CanvaAnimation />
+      
+      {/* Content mit z-index für Lesbarkeit */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Glassmorphism Window 1 - Einleitung */}
+        <div className="mb-8">
+          <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
+              Webdesign mit Strategie und messbarer Wirkung
+            </h2>
+            <p className="text-xl text-foreground max-w-3xl mx-auto font-light leading-relaxed mb-4">
+              Webdesign ist bei uns mehr als Ästhetik – es ist Unternehmenspsychologie.
+            </p>
+            <p className="text-lg text-foreground max-w-4xl mx-auto font-light leading-relaxed">
+              Wir entwickeln Websites, die Vertrauen wecken, Emotionen ansprechen und gezielt Handlungsimpulse auslösen.
+            </p>
+          </div>
+        </div>
+
+        {/* Glassmorphism Window 2 - Fokus & Nutzen */}
+        <div className="mb-16">
+          <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl max-w-4xl mx-auto">
+            <p className="text-base text-primary font-semibold mb-4 text-center">
+              Unser Fokus liegt auf:
+            </p>
+            <div className="text-base text-foreground max-w-3xl mx-auto space-y-3">
+              <p className="text-center md:text-left">SEO & Performance: Google Core Web Vitals, technische Optimierung und lokale Auffindbarkeit.</p>
+              <p className="text-center md:text-left">• Neuromarketing-Effekten: Farb- und Designpsychologie steigern Klickbereitschaft und Anfragen.</p>
+              <p className="text-center md:text-left">• Conversion-Design: Jeder Button, jede Headline und jedes Bild folgt einer klaren Nutzerintention.</p>
+              <p className="text-primary font-semibold mt-6 text-center md:text-left">Ihr Nutzen: Mehr Sichtbarkeit, mehr Reichweite, mehr Kundenkontakt.</p>
+            </div>
           </div>
         </div>
 
@@ -102,7 +123,7 @@ export default function Workflow() {
         <div className="hidden lg:block xl:hidden">
           <div className="grid grid-cols-2 gap-8">
             {steps.map((step, index) => (
-              <div key={index} className="bg-card rounded-xl p-6 border border-border">
+              <div key={index} className="bg-card/60 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-lg relative z-10">
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0">
                     <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold">
@@ -132,7 +153,7 @@ export default function Workflow() {
         {/* Mobile Timeline */}
         <div className="lg:hidden space-y-6">
           {steps.map((step, index) => (
-            <div key={index} className="bg-card rounded-xl p-6 border border-border">
+            <div key={index} className="bg-card/60 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-lg relative z-10">
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
                   <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold">
@@ -160,7 +181,7 @@ export default function Workflow() {
 
         {/* Benefits of our process */}
         <div className="mt-16">
-          <div className="bg-card/50 rounded-2xl p-8 shadow-lg border border-border">
+          <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl max-w-5xl mx-auto">
             <h3 className="text-2xl font-bold text-foreground mb-6 text-center">
               Warum unser Prozess funktioniert
             </h3>
@@ -170,7 +191,7 @@ export default function Workflow() {
                   <Clock className="w-6 h-6 text-primary" />
                 </div>
                 <h4 className="font-semibold text-foreground mb-2">Zeit sparen</h4>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-foreground text-sm">
                   Klare Struktur und bewährte Abläufe sorgen für effiziente Projektabwicklung.
                 </p>
               </div>
@@ -179,7 +200,7 @@ export default function Workflow() {
                   <Eye className="w-6 h-6 text-primary" />
                 </div>
                 <h4 className="font-semibold text-foreground mb-2">Transparenz</h4>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-foreground text-sm">
                   Sie wissen immer, wo Ihr Projekt steht und was als nächstes passiert.
                 </p>
               </div>
@@ -188,7 +209,7 @@ export default function Workflow() {
                   <CheckCircle className="w-6 h-6 text-primary" />
                 </div>
                 <h4 className="font-semibold text-foreground mb-2">Qualität</h4>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-foreground text-sm">
                   Jeder Schritt wird sorgfältig geplant und umgesetzt für optimale Ergebnisse.
                 </p>
               </div>

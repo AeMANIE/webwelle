@@ -5,7 +5,6 @@ import AIAgentHero from '../components/AIAgentHero';
 import AIAgentExplanation from '../components/AIAgentExplanation';
 import AIAgentDemo from '../components/AIAgentDemo';
 import AIAgentProducts from '../components/AIAgentProducts';
-import AIAgentTestimonials from '../components/AIAgentTestimonials';
 import AIAgentWhy from '../components/AIAgentWhy';
 import AIAgentFAQ from '../components/AIAgentFAQ';
 import ScrollToTop from '../components/ScrollToTop';
@@ -70,7 +69,6 @@ export default function AIAgentPage() {
         <div id="ai-agent-produkte">
           <AIAgentProducts />
         </div>
-        <AIAgentTestimonials />
         <AIAgentWhy />
         <AIAgentFAQ />
       </main>

@@ -2,14 +2,19 @@
 
 import { Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import CanvaAnimation from './CanvaAnimation';
+import dynamic from 'next/dynamic';
+
+const InfiniteTunnelAnimation = dynamic(() => import('./InfiniteTunnelAnimation'), {
+  ssr: false,
+  loading: () => <div className="absolute inset-0 bg-background" />
+});
 
 export default function AIAgentHero() {
   return (
     <section className="relative flex items-center justify-center overflow-hidden h-auto min-h-[500px] sm:h-screen sm:min-h-[700px] md:h-screen isolate py-12">
-      {/* Canva Animation Background */}
+      {/* Infinite Tunnel Animation Background */}
       <div className="absolute inset-0 overflow-hidden">
-        <CanvaAnimation />
+        <InfiniteTunnelAnimation />
       </div>
       
       {/* Overlay for better text readability */}

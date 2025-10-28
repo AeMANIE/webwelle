@@ -4,8 +4,13 @@ import { useEffect, useRef } from 'react';
 
 const { PI, sin, cos, random } = Math;
 
-export default function CanvaAnimation() {
+interface CanvaAnimationProps {
+    withOverlay?: boolean;
+}
+
+export default function CanvaAnimation({ withOverlay = true }: CanvaAnimationProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const animationRef = useRef<number | null>(null);
     const tickRef = useRef(0);
 
@@ -18,7 +23,7 @@ export default function CanvaAnimation() {
 
         let gridWidth = 0;
         let gridHeight = 0;
-        let cellSize = 20; // Abstand zwischen Punkten
+        const cellSize = 20; // Abstand zwischen Punkten
         let mouseX = 0;
         let mouseY = 0;
         let isInteracting = false;
@@ -78,12 +83,17 @@ export default function CanvaAnimation() {
                     const dx = x - mouseX;
                     const dy = y - mouseY;
                     const distanceToMouse = Math.sqrt(dx * dx + dy * dy);
-                    const maxDistance = 150;
+                    const maxDistance = 200;
                     
                     if (distanceToMouse < maxDistance) {
-                        // Welleneffekt von Maus-Position aus
-                        const rippleEffect = (1 - distanceToMouse / maxDistance) * 0.5;
+                        // Stärkerer Welleneffekt von Maus-Position aus
+                        const rippleEffect = (1 - distanceToMouse / maxDistance) * 1.0;
                         intensity += rippleEffect;
+                        
+                        // Zusätzlicher Glow-Effekt direkt am Cursor
+                        if (distanceToMouse < 80) {
+                            intensity += 0.3;
+                        }
                     }
                 }
                 
@@ -120,8 +130,9 @@ export default function CanvaAnimation() {
 
         // Event handlers für Interaktion
         const handleMouseMove = (e: MouseEvent) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
             isInteracting = true;
         };
 
@@ -131,8 +142,9 @@ export default function CanvaAnimation() {
 
         const handleTouchMove = (e: TouchEvent) => {
             if (e.touches.length > 0) {
-                mouseX = e.touches[0].clientX;
-                mouseY = e.touches[0].clientY;
+                const rect = canvas.getBoundingClientRect();
+                mouseX = e.touches[0].clientX - rect.left;
+                mouseY = e.touches[0].clientY - rect.top;
                 isInteracting = true;
             }
         };
@@ -143,30 +155,41 @@ export default function CanvaAnimation() {
 
         draw();
 
-        // Event listeners
-        canvas.addEventListener('mousemove', handleMouseMove);
-        canvas.addEventListener('mouseleave', handleMouseLeave);
-        canvas.addEventListener('touchmove', handleTouchMove);
-        canvas.addEventListener('touchend', handleTouchEnd);
+        const container = containerRef.current;
+        if (!container) return;
+
+        // Event listeners auf Container für bessere Touch-Unterstützung
+        container.addEventListener('mousemove', handleMouseMove);
+        container.addEventListener('mouseleave', handleMouseLeave);
+        container.addEventListener('touchmove', handleTouchMove, { passive: true });
+        container.addEventListener('touchend', handleTouchEnd);
         window.addEventListener('resize', resize);
 
         return () => {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
-            canvas.removeEventListener('mousemove', handleMouseMove);
-            canvas.removeEventListener('mouseleave', handleMouseLeave);
-            canvas.removeEventListener('touchmove', handleTouchMove);
-            canvas.removeEventListener('touchend', handleTouchEnd);
+            if (container) {
+                container.removeEventListener('mousemove', handleMouseMove);
+                container.removeEventListener('mouseleave', handleMouseLeave);
+                container.removeEventListener('touchmove', handleTouchMove);
+                container.removeEventListener('touchend', handleTouchEnd);
+            }
             window.removeEventListener('resize', resize);
         };
     }, []);
 
     return (
-        <canvas
-            ref={canvasRef}
-            className="absolute inset-0 w-full h-full"
-            style={{ background: 'black' }}
-        />
+        <div ref={containerRef} className="absolute inset-0 w-full h-full">
+            <canvas
+                ref={canvasRef}
+                className="absolute inset-0 w-full h-full"
+                style={{ background: 'transparent', pointerEvents: 'none' }}
+            />
+            {/* Semi-transparentes Overlay für bessere Lesbarkeit - nur wenn withOverlay true ist */}
+            {withOverlay && (
+                <div className="absolute inset-0 bg-background/60 backdrop-blur-sm z-[1]" style={{ pointerEvents: 'none' }} />
+            )}
+        </div>
     );
 }

@@ -17,11 +17,15 @@ function init() {
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
     
-    // Setze Event Listeners
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseleave', handleMouseLeave);
-    canvas.addEventListener('touchmove', handleTouchMove);
-    canvas.addEventListener('touchend', handleTouchEnd);
+    const container = document.getElementById('container');
+    
+    // Setze Event Listeners auf Container für Touch-Unterstützung
+    if (container) {
+        container.addEventListener('mousemove', handleMouseMove);
+        container.addEventListener('mouseleave', handleMouseLeave);
+        container.addEventListener('touchmove', handleTouchMove, { passive: true });
+        container.addEventListener('touchend', handleTouchEnd);
+    }
     
     resize();
     animate();
@@ -79,12 +83,17 @@ function animate() {
             const dx = x - mouseX;
             const dy = y - mouseY;
             const distanceToMouse = sqrt(dx * dx + dy * dy);
-            const maxDistance = 150;
+            const maxDistance = 200;
             
             if (distanceToMouse < maxDistance) {
-                // Welleneffekt von Maus-Position aus
-                const rippleEffect = (1 - distanceToMouse / maxDistance) * 0.5;
+                // Stärkerer Welleneffekt von Maus-Position aus
+                const rippleEffect = (1 - distanceToMouse / maxDistance) * 1.0;
                 intensity += rippleEffect;
+                
+                // Zusätzlicher Glow-Effekt direkt am Cursor
+                if (distanceToMouse < 80) {
+                    intensity += 0.3;
+                }
             }
         }
         
@@ -121,8 +130,9 @@ function animate() {
 
 // Event handlers für Interaktion
 function handleMouseMove(e) {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
+    const rect = canvas.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
     isInteracting = true;
 }
 
@@ -132,8 +142,9 @@ function handleMouseLeave() {
 
 function handleTouchMove(e) {
     if (e.touches.length > 0) {
-        mouseX = e.touches[0].clientX;
-        mouseY = e.touches[0].clientY;
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.touches[0].clientX - rect.left;
+        mouseY = e.touches[0].clientY - rect.top;
         isInteracting = true;
     }
 }
