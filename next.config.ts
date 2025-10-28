@@ -39,13 +39,12 @@ const nextConfig: NextConfig = {
       // Modern JavaScript target für bessere Performance
       config.target = ['web', 'es2022'];
       
-      // Build Performance Optimierungen
-      config.cache = {
-        type: 'filesystem',
-        buildDependencies: {
-          config: [__filename],
-        },
-      };
+      // Build Performance Optimierungen - Cache nur in Production
+      if (!dev) {
+        config.cache = {
+          type: 'filesystem',
+        };
+      }
       
       config.optimization.splitChunks = {
         chunks: 'all',
