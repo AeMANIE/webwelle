@@ -48,8 +48,28 @@ export default function Header() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex space-x-6">
-            <Link href={{ pathname: '/', hash: 'vorteile' }} className="text-foreground hover:text-primary transition-colors font-medium">
+          <nav className="hidden md:flex space-x-6">
+            <Link 
+              href="/#vorteile" 
+              className="text-foreground hover:text-primary transition-colors font-medium"
+              onClick={(e) => {
+                e.preventDefault();
+                
+                // Wenn wir nicht auf der Homepage sind, navigiere dorthin
+                if (window.location.pathname !== '/') {
+                  window.location.href = '/#vorteile';
+                  return;
+                }
+                
+                // Wenn wir auf der Homepage sind, scrolle zum Abschnitt
+                const element = document.getElementById('vorteile');
+                if (element) {
+                  const headerHeight = 80;
+                  const elementPosition = element.offsetTop - headerHeight;
+                  window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+                }
+              }}
+            >
               Webdesign-Pakete
             </Link>
             <Link href="/ai-agent" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
@@ -69,7 +89,7 @@ export default function Header() {
 
 
           {/* Mobile Menu Button */}
-          <div className="lg:hidden">
+          <div className="md:hidden">
             <button
               onClick={toggleMenu}
               className="text-foreground hover:text-primary focus:outline-none focus:text-primary p-2"
@@ -87,7 +107,7 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="lg:hidden">
+          <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-card rounded-lg mt-2 border border-border shadow-lg">
               <Link 
                 href="/#vorteile" 
@@ -95,6 +115,14 @@ export default function Header() {
                 onClick={(e) => {
                   e.preventDefault();
                   closeMenu();
+                  
+                  // Wenn wir nicht auf der Homepage sind, navigiere dorthin
+                  if (window.location.pathname !== '/') {
+                    window.location.href = '/#vorteile';
+                    return;
+                  }
+                  
+                  // Wenn wir auf der Homepage sind, scrolle zum Abschnitt
                   const element = document.getElementById('vorteile');
                   if (element) {
                     const headerHeight = 80;
