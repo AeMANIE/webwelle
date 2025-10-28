@@ -191,156 +191,206 @@ export default function Benefits() {
     return () => ctx.revert();
   }, [isMounted]);
 
-  // Performance Bars Animation
+  // Performance Bars Animation - Optimiert für bessere Performance
   useLayoutEffect(() => {
     if (!isMounted || hasAnimatedRef.current) return;
 
-    const ctx = gsap.context(() => {
-      // Performance Bar Animation
-      if (performanceRef.current && performanceScoreRef.current) {
-        gsap.fromTo(performanceRef.current, 
-          { width: '0%' },
-          {
-            width: '96%',
-            duration: 2.5,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: performanceRef.current,
-              start: 'top 80%',
-              end: 'bottom 20%',
-              toggleActions: 'play none none none', // Kein reverse!
-            },
-            onComplete: () => {
-              hasAnimatedRef.current = true;
+    // Verwende requestAnimationFrame für bessere Performance
+    const animateBars = () => {
+      const ctx = gsap.context(() => {
+        // Performance Bar Animation - mit will-change für GPU-Beschleunigung
+        if (performanceRef.current && performanceScoreRef.current) {
+          performanceRef.current.style.willChange = 'width';
+          performanceScoreRef.current.style.willChange = 'contents';
+          
+          gsap.fromTo(performanceRef.current,
+            { width: '0%' },
+            {
+              width: '96%',
+              duration: 2.5,
+              ease: 'power2.out',
+              scrollTrigger: {
+                trigger: performanceRef.current,
+                start: 'top 80%',
+                end: 'bottom 20%',
+                toggleActions: 'play none none none',
+                onRefresh: () => {
+                  // Verhindere Reflows während der Animation
+                  performanceRef.current!.style.transform = 'translateZ(0)';
+                }
+              },
+              onComplete: () => {
+                hasAnimatedRef.current = true;
+                performanceRef.current!.style.willChange = 'auto';
+              }
             }
-          }
-        );
+          );
 
-        // Performance Score Animation
-        gsap.fromTo(performanceScoreRef.current, 
-          { innerText: 0 },
-          {
-            innerText: 96,
-            duration: 2.5,
-            ease: 'power2.out',
-            snap: { innerText: 1 },
-            scrollTrigger: {
-              trigger: performanceRef.current,
-              start: 'top 80%',
-              end: 'bottom 20%',
-              toggleActions: 'play none none none' // Kein reverse!
+          // Performance Score Animation
+          gsap.fromTo(performanceScoreRef.current,
+            { innerText: 0 },
+            {
+              innerText: 96,
+              duration: 2.5,
+              ease: 'power2.out',
+              snap: { innerText: 1 },
+              scrollTrigger: {
+                trigger: performanceRef.current,
+                start: 'top 80%',
+                end: 'bottom 20%',
+                toggleActions: 'play none none none'
+              },
+              onComplete: () => {
+                performanceScoreRef.current!.style.willChange = 'auto';
+              }
             }
-          }
-        );
-      }
+          );
+        }
 
-      // Accessibility Bar Animation
-      if (accessibilityRef.current && accessibilityScoreRef.current) {
-        gsap.fromTo(accessibilityRef.current, 
-          { width: '0%' },
-          {
-            width: '98%',
-            duration: 2.5,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: accessibilityRef.current,
-              start: 'top 80%',
-              end: 'bottom 20%',
-              toggleActions: 'play none none none' // Kein reverse!
+        // Accessibility Bar Animation
+        if (accessibilityRef.current && accessibilityScoreRef.current) {
+          accessibilityRef.current.style.willChange = 'width';
+          accessibilityScoreRef.current.style.willChange = 'contents';
+          
+          gsap.fromTo(accessibilityRef.current,
+            { width: '0%' },
+            {
+              width: '98%',
+              duration: 2.5,
+              ease: 'power2.out',
+              scrollTrigger: {
+                trigger: accessibilityRef.current,
+                start: 'top 80%',
+                end: 'bottom 20%',
+                toggleActions: 'play none none none',
+                onRefresh: () => {
+                  accessibilityRef.current!.style.transform = 'translateZ(0)';
+                }
+              },
+              onComplete: () => {
+                accessibilityRef.current!.style.willChange = 'auto';
+              }
             }
-          }
-        );
+          );
 
-        // Accessibility Score Animation
-        gsap.fromTo(accessibilityScoreRef.current, 
-          { innerText: 0 },
-          {
-            innerText: 98,
-            duration: 2.5,
-            ease: 'power2.out',
-            snap: { innerText: 1 },
-            scrollTrigger: {
-              trigger: accessibilityRef.current,
-              start: 'top 80%',
-              end: 'bottom 20%',
-              toggleActions: 'play none none none' // Kein reverse!
+          gsap.fromTo(accessibilityScoreRef.current,
+            { innerText: 0 },
+            {
+              innerText: 98,
+              duration: 2.5,
+              ease: 'power2.out',
+              snap: { innerText: 1 },
+              scrollTrigger: {
+                trigger: accessibilityRef.current,
+                start: 'top 80%',
+                end: 'bottom 20%',
+                toggleActions: 'play none none none'
+              },
+              onComplete: () => {
+                accessibilityScoreRef.current!.style.willChange = 'auto';
+              }
             }
-          }
-        );
-      }
+          );
+        }
 
-      // Best Practices Bar Animation
-      if (bestPracticesRef.current && bestPracticesScoreRef.current) {
-        gsap.fromTo(bestPracticesRef.current, 
-          { width: '0%' },
-          {
-            width: '100%',
-            duration: 2.5,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: bestPracticesRef.current,
-              start: 'top 80%',
-              end: 'bottom 20%',
-              toggleActions: 'play none none none' // Kein reverse!
+        // Best Practices Bar Animation
+        if (bestPracticesRef.current && bestPracticesScoreRef.current) {
+          bestPracticesRef.current.style.willChange = 'width';
+          bestPracticesScoreRef.current.style.willChange = 'contents';
+          
+          gsap.fromTo(bestPracticesRef.current,
+            { width: '0%' },
+            {
+              width: '100%',
+              duration: 2.5,
+              ease: 'power2.out',
+              scrollTrigger: {
+                trigger: bestPracticesRef.current,
+                start: 'top 80%',
+                end: 'bottom 20%',
+                toggleActions: 'play none none none',
+                onRefresh: () => {
+                  bestPracticesRef.current!.style.transform = 'translateZ(0)';
+                }
+              },
+              onComplete: () => {
+                bestPracticesRef.current!.style.willChange = 'auto';
+              }
             }
-          }
-        );
+          );
 
-        // Best Practices Score Animation
-        gsap.fromTo(bestPracticesScoreRef.current, 
-          { innerText: 0 },
-          {
-            innerText: 100,
-            duration: 2.5,
-            ease: 'power2.out',
-            snap: { innerText: 1 },
-            scrollTrigger: {
-              trigger: bestPracticesRef.current,
-              start: 'top 80%',
-              end: 'bottom 20%',
-              toggleActions: 'play none none none' // Kein reverse!
+          gsap.fromTo(bestPracticesScoreRef.current,
+            { innerText: 0 },
+            {
+              innerText: 100,
+              duration: 2.5,
+              ease: 'power2.out',
+              snap: { innerText: 1 },
+              scrollTrigger: {
+                trigger: bestPracticesRef.current,
+                start: 'top 80%',
+                end: 'bottom 20%',
+                toggleActions: 'play none none none'
+              },
+              onComplete: () => {
+                bestPracticesScoreRef.current!.style.willChange = 'auto';
+              }
             }
-          }
-        );
-      }
+          );
+        }
 
-      // SEO Bar Animation
-      if (seoRef.current && seoScoreRef.current) {
-        gsap.fromTo(seoRef.current, 
-          { width: '0%' },
-          {
-            width: '100%',
-            duration: 2.5,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: seoRef.current,
-              start: 'top 80%',
-              end: 'bottom 20%',
-              toggleActions: 'play none none none' // Kein reverse!
+        // SEO Bar Animation
+        if (seoRef.current && seoScoreRef.current) {
+          seoRef.current.style.willChange = 'width';
+          seoScoreRef.current.style.willChange = 'contents';
+          
+          gsap.fromTo(seoRef.current,
+            { width: '0%' },
+            {
+              width: '100%',
+              duration: 2.5,
+              ease: 'power2.out',
+              scrollTrigger: {
+                trigger: seoRef.current,
+                start: 'top 80%',
+                end: 'bottom 20%',
+                toggleActions: 'play none none none',
+                onRefresh: () => {
+                  seoRef.current!.style.transform = 'translateZ(0)';
+                }
+              },
+              onComplete: () => {
+                seoRef.current!.style.willChange = 'auto';
+              }
             }
-          }
-        );
+          );
 
-        // SEO Score Animation
-        gsap.fromTo(seoScoreRef.current, 
-          { innerText: 0 },
-          {
-            innerText: 100,
-            duration: 2.5,
-            ease: 'power2.out',
-            snap: { innerText: 1 },
-            scrollTrigger: {
-              trigger: seoRef.current,
-              start: 'top 80%',
-              end: 'bottom 20%',
-              toggleActions: 'play none none none' // Kein reverse!
+          gsap.fromTo(seoScoreRef.current,
+            { innerText: 0 },
+            {
+              innerText: 100,
+              duration: 2.5,
+              ease: 'power2.out',
+              snap: { innerText: 1 },
+              scrollTrigger: {
+                trigger: seoRef.current,
+                start: 'top 80%',
+                end: 'bottom 20%',
+                toggleActions: 'play none none none'
+              },
+              onComplete: () => {
+                seoScoreRef.current!.style.willChange = 'auto';
+              }
             }
-          }
-        );
-      }
-    });
+          );
+        }
+      });
 
-    return () => ctx.revert();
+      return () => ctx.revert();
+    };
+
+    // Verwende requestAnimationFrame für bessere Performance
+    requestAnimationFrame(animateBars);
   }, [isMounted]);
 
   // shadcn-ähnlicher Stil: Karte, Badge, Button

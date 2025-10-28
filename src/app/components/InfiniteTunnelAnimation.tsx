@@ -50,155 +50,194 @@ export default function InfiniteTunnelAnimation() {
         
         if (!ctxA.current || !ctxB.current) return;
 
+        // Mobile Detection mit Performance-Optimierung
+        const isMobile = window.innerWidth < 768;
+        const isLowEndDevice = navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4;
+        
+        // Performance-Level basierend auf Gerät
+        const performanceLevel = isMobile ? (isLowEndDevice ? 'low' : 'medium') : 'high';
+        const frameSkip = performanceLevel === 'low' ? 2 : performanceLevel === 'medium' ? 1 : 0;
+        const maxCircles = performanceLevel === 'low' ? 15 : performanceLevel === 'medium' ? 25 : 40;
+
         const resize = () => {
-            canvasAElement.width = window.innerWidth;
-            canvasAElement.height = window.innerHeight;
-            canvasBElement.width = window.innerWidth;
-            canvasBElement.height = window.innerHeight;
+            requestAnimationFrame(() => {
+                const rect = container.getBoundingClientRect();
+                canvasAElement.width = rect.width;
+                canvasAElement.height = rect.height;
+                canvasBElement.width = rect.width;
+                canvasBElement.height = rect.height;
+                
+                origin.current = {
+                    x: rect.width * 0.5,
+                    y: rect.height * 0.5
+                };
+            });
         };
 
-        const getCircle = (x: number, y: number, tickValue: number): Circle => {
-            const circle: Circle = {
-                position: { x, y },
-                hue: -tickValue * 0.5,
-                size: 2,
-                ttl: 200,
+        resize();
+
+        const createCircle = (): Circle => {
+            const hue = 210; // Dunkelblau-Grau
+            const size = performanceLevel === 'low' ? 2 : performanceLevel === 'medium' ? 3 : 4;
+            const ttl = performanceLevel === 'low' ? 60 : performanceLevel === 'medium' ? 80 : 100;
+            
+            return {
+                position: { x: origin.current.x, y: origin.current.y },
+                hue,
+                size,
+                ttl,
                 life: 0,
                 destroy: false,
-                
                 update() {
                     this.life++;
-                    this.destroy = this.life > this.ttl;
-                    this.size *= 1.035;
+                    
+                    if (this.life >= this.ttl) {
+                        this.destroy = true;
+                        return;
+                    }
+                    
+                    const progress = this.life / this.ttl;
+                    const lerpFactor = performanceLevel === 'low' ? 0.05 : performanceLevel === 'medium' ? 0.08 : 0.1;
+                    
+                    // Reduzierte Berechnungen für bessere Performance
+                    const danceRadiusX = performanceLevel === 'low' ? 20 : performanceLevel === 'medium' ? 30 : 40;
+                    const danceRadiusY = performanceLevel === 'low' ? 15 : performanceLevel === 'medium' ? 25 : 35;
+                    const danceSpeed = performanceLevel === 'low' ? 0.02 : performanceLevel === 'medium' ? 0.03 : 0.04;
+                    
+                    const targetX = isMouseActive.current ? 
+                        mouseX.current : 
+                        origin.current.x + cos(tick.current * danceSpeed) * danceRadiusX;
+                    const targetY = isMouseActive.current ? 
+                        mouseY.current : 
+                        origin.current.y + sin(tick.current * danceSpeed) * danceRadiusY;
+                    
+                    this.position.x += (targetX - this.position.x) * lerpFactor;
+                    this.position.y += (targetY - this.position.y) * lerpFactor;
                 },
-                
-                draw(ctx: CanvasRenderingContext2D) {
-                    this.update();
+                draw(ctx) {
+                    const progress = this.life / this.ttl;
+                    const alpha = fadeInOut(progress, 1) * 0.7;
+                    
+                    ctx.strokeStyle = `hsla(${this.hue}, 20%, 22%, ${alpha})`;
+                    ctx.lineWidth = this.size;
                     ctx.beginPath();
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = `hsla(${this.hue}, 100%, 50%, ${fadeInOut(this.life, this.ttl)})`;
-                    ctx.arc(this.position.x, this.position.y, this.size, 0, TAU);
+                    ctx.arc(this.position.x, this.position.y, this.size * 2, 0, TAU);
                     ctx.stroke();
-                    ctx.closePath();
                 }
             };
-            return circle;
         };
 
         const draw = () => {
             tick.current++;
             
-            const ctxAElement = ctxA.current;
-            const ctxBElement = ctxB.current;
-            if (!ctxAElement || !ctxBElement) return;
+            // Frame-Skipping für bessere Performance auf mobilen Geräten
+            if (frameSkip > 0 && tick.current % (frameSkip + 1) !== 0) {
+                animationRef.current = requestAnimationFrame(draw);
+                return;
+            }
+
+            if (!ctxA.current || !ctxB.current) return;
 
             // Clear canvases
-            ctxAElement.clearRect(0, 0, canvasAElement.width, canvasAElement.height);
-            ctxBElement.clearRect(0, 0, canvasBElement.width, canvasBElement.height);
-            
-            // Update origin position
-            if (isMouseActive.current) {
-                // Follow mouse
-                const lerpFactor = 0.15;
-                origin.current.x += (mouseX.current - origin.current.x) * lerpFactor;
-                origin.current.y += (mouseY.current - origin.current.y) * lerpFactor;
-            } else {
-                // ALWAYS dance
-                const centerX = window.innerWidth * 0.5;
-                const centerY = window.innerHeight * 0.5;
-                const danceRadiusX = window.innerWidth * 0.25;
-                const danceRadiusY = window.innerHeight * 0.125;
-                
-                origin.current.x = centerX + cos(tick.current * 0.025) * danceRadiusX;
-                origin.current.y = centerY + sin(tick.current * 0.05) * danceRadiusY;
-            }
-            
-            // Add new circle
-            circles.current.push(getCircle(origin.current.x, origin.current.y, tick.current));
-            
-            // Draw and update circles
-            for (let i = circles.current.length - 1; i >= 0; i--) {
-                circles.current[i].draw(ctxAElement);
-                if (circles.current[i].destroy) {
-                    circles.current.splice(i, 1);
+            ctxA.current.clearRect(0, 0, canvasAElement.width, canvasAElement.height);
+            ctxB.current.clearRect(0, 0, canvasBElement.width, canvasBElement.height);
+
+            // Update and draw circles
+            circles.current.forEach(circle => {
+                circle.update();
+                if (!circle.destroy) {
+                    circle.draw(ctxA.current!);
                 }
+            });
+
+            // Remove destroyed circles
+            circles.current = circles.current.filter(circle => !circle.destroy);
+
+            // Add new circles
+            if (tick.current % (performanceLevel === 'low' ? 8 : performanceLevel === 'medium' ? 6 : 4) === 0 && 
+                circles.current.length < maxCircles) {
+                circles.current.push(createCircle());
             }
-            
-            // Apply blur and color effects
-            ctxBElement.save();
-            ctxBElement.filter = "blur(5px) saturate(200%) contrast(200%)";
-            ctxBElement.drawImage(canvasAElement, 0, 0, canvasBElement.width, canvasBElement.height);
-            ctxBElement.restore();
-            
-            // Draw original image on top
-            ctxBElement.save();
-            ctxBElement.drawImage(canvasAElement, 0, 0, canvasBElement.width, canvasBElement.height);
-            ctxBElement.restore();
-            
+
+            // Apply blur effect to canvas B
+            ctxB.current.filter = performanceLevel === 'low' ? 
+                "blur(2px) saturate(110%) contrast(140%)" : 
+                performanceLevel === 'medium' ? 
+                "blur(3px) saturate(120%) contrast(150%)" : 
+                "blur(3px) saturate(120%) contrast(150%)";
+            ctxB.current.drawImage(canvasAElement, 0, 0);
+            ctxB.current.filter = 'none';
+
             animationRef.current = requestAnimationFrame(draw);
         };
 
-        // Event handlers
         const handleMouseMove = (e: MouseEvent) => {
-            mouseX.current = e.clientX;
-            mouseY.current = e.clientY;
+            const rect = canvasAElement.getBoundingClientRect();
+            mouseX.current = e.clientX - rect.left;
+            mouseY.current = e.clientY - rect.top;
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            e.preventDefault();
+            const rect = canvasAElement.getBoundingClientRect();
+            const touch = e.touches[0];
+            mouseX.current = touch.clientX - rect.left;
+            mouseY.current = touch.clientY - rect.top;
+        };
+
+        const handleMouseDown = () => {
             isMouseActive.current = true;
+        };
+
+        const handleMouseUp = () => {
+            isMouseActive.current = false;
         };
 
         const handleMouseLeave = () => {
             isMouseActive.current = false;
         };
 
-        const handleTouchMove = (e: TouchEvent) => {
-            e.preventDefault();
-            if (e.touches.length > 0) {
-                mouseX.current = e.touches[0].clientX;
-                mouseY.current = e.touches[0].clientY;
-                isMouseActive.current = true;
-            }
-        };
+        // Event Listeners mit Passiv-Option für bessere Performance
+        window.addEventListener('resize', resize, { passive: true });
+        canvasAElement.addEventListener('mousemove', handleMouseMove, { passive: true });
+        canvasAElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+        canvasAElement.addEventListener('mousedown', handleMouseDown, { passive: true });
+        canvasAElement.addEventListener('mouseup', handleMouseUp, { passive: true });
+        canvasAElement.addEventListener('mouseleave', handleMouseLeave, { passive: true });
 
-        const handleTouchEnd = () => {
-            isMouseActive.current = false;
-        };
-
-        // Initialize
-        origin.current = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.5 };
-        resize();
         draw();
-
-        // Add event listeners
-        container.addEventListener('mousemove', handleMouseMove);
-        container.addEventListener('mouseleave', handleMouseLeave);
-        container.addEventListener('touchmove', handleTouchMove, { passive: false });
-        container.addEventListener('touchend', handleTouchEnd);
-        window.addEventListener('resize', resize);
 
         return () => {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
-            container.removeEventListener('mousemove', handleMouseMove);
-            container.removeEventListener('mouseleave', handleMouseLeave);
-            container.removeEventListener('touchmove', handleTouchMove);
-            container.removeEventListener('touchend', handleTouchEnd);
             window.removeEventListener('resize', resize);
+            canvasAElement.removeEventListener('mousemove', handleMouseMove);
+            canvasAElement.removeEventListener('touchmove', handleTouchMove);
+            canvasAElement.removeEventListener('mousedown', handleMouseDown);
+            canvasAElement.removeEventListener('mouseup', handleMouseUp);
+            canvasAElement.removeEventListener('mouseleave', handleMouseLeave);
         };
     }, []);
 
     return (
-        <div ref={containerRef} className="absolute inset-0 w-full h-full">
-            <canvas
-                ref={canvasB}
-                className="absolute inset-0 w-full h-full"
-                style={{ background: 'transparent', pointerEvents: 'none' }}
-            />
+        <div ref={containerRef} className="relative w-full h-full">
             <canvas
                 ref={canvasA}
                 className="absolute inset-0 w-full h-full"
-                style={{ background: 'transparent', pointerEvents: 'none' }}
+                style={{ 
+                    background: 'transparent',
+                    willChange: 'transform' // GPU-Beschleunigung
+                }}
+            />
+            <canvas
+                ref={canvasB}
+                className="absolute inset-0 w-full h-full"
+                style={{ 
+                    background: 'transparent',
+                    willChange: 'transform' // GPU-Beschleunigung
+                }}
             />
         </div>
     );
 }
-
