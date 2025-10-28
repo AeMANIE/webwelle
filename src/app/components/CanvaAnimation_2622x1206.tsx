@@ -111,20 +111,20 @@ export default function CanvaAnimation_2622x1206({ withOverlay = true }: CanvaAn
                     ctx.beginPath();
                     ctx.arc(x, y, 2 * intensity, 0, PI * 2);
 
-                    // Blaue Farbe (Cyan-Blau)
-                    const hue = 190 + Math.sin(intensity * PI) * 10; // 180-200 = Cyan-Blau
-                    const saturation = 80 + intensity * 20;
-                    const lightness = 50 + intensity * 30;
-                    const alpha = intensity;
+                    // Dunkelblau-Grau statt hellblau
+                    const hue = 210; // Blau statt Cyan-Blau
+                    const saturation = 25 + intensity * 15; // Niedrigere Sättigung (25-40%)
+                    const lightness = 20 + intensity * 15; // Dunkler (20-35%)
+                    const alpha = intensity * 0.8; // Etwas weniger transparent
 
                     ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
                     ctx.fill();
 
-                    // Zusätzlicher Glow für stärkere Punkte
+                    // Zusätzlicher Glow für stärkere Punkte - Dunkelblau-Grau
                     if (intensity > 0.6) {
                         ctx.beginPath();
                         ctx.arc(x, y, 4 * intensity, 0, PI * 2);
-                        ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness + 10}%, ${alpha * 0.3})`;
+                        ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness + 3}%, ${alpha * 0.25})`;
                         ctx.fill();
                     }
                 }
@@ -133,11 +133,13 @@ export default function CanvaAnimation_2622x1206({ withOverlay = true }: CanvaAn
             animationRef.current = requestAnimationFrame(draw);
         };
 
-        // Event handlers für Interaktion
+        // Event handlers für Interaktion - Koordinaten auf Canvas-Größe skalieren
         const handleMouseMove = (e: MouseEvent) => {
             const rect = container.getBoundingClientRect();
-            mouseX = e.clientX - rect.left;
-            mouseY = e.clientY - rect.top;
+            const relativeX = (e.clientX - rect.left) / rect.width;
+            const relativeY = (e.clientY - rect.top) / rect.height;
+            mouseX = relativeX * TARGET_WIDTH;
+            mouseY = relativeY * TARGET_HEIGHT;
             isInteracting = true;
         };
 
@@ -148,8 +150,10 @@ export default function CanvaAnimation_2622x1206({ withOverlay = true }: CanvaAn
         const handleTouchMove = (e: TouchEvent) => {
             if (e.touches.length > 0) {
                 const rect = container.getBoundingClientRect();
-                mouseX = e.touches[0].clientX - rect.left;
-                mouseY = e.touches[0].clientY - rect.top;
+                const relativeX = (e.touches[0].clientX - rect.left) / rect.width;
+                const relativeY = (e.touches[0].clientY - rect.top) / rect.height;
+                mouseX = relativeX * TARGET_WIDTH;
+                mouseY = relativeY * TARGET_HEIGHT;
                 isInteracting = true;
             }
         };
@@ -185,9 +189,6 @@ export default function CanvaAnimation_2622x1206({ withOverlay = true }: CanvaAn
             ref={containerRef}
             className="absolute inset-0 w-full h-full"
             style={{ 
-                aspectRatio: `${aspectRatio}`,
-                maxWidth: '100%',
-                maxHeight: '100%',
                 overflow: 'hidden'
             }}
         >

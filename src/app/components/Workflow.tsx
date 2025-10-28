@@ -3,7 +3,7 @@
 import { Package, MessageCircle, FileText, Rocket, Target, Clock, Eye, CheckCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-const CanvaAnimation = dynamic(() => import('./CanvaAnimation'), {
+const CanvaAnimation_2622x1206 = dynamic(() => import('./CanvaAnimation_2622x1206'), {
   ssr: false,
   loading: () => <div className="absolute inset-0 bg-background" />
 });
@@ -50,7 +50,7 @@ export default function Workflow() {
   return (
     <section id="arbeitsweise" className="py-20 bg-background relative overflow-hidden">
       {/* Canva Animation Hintergrund */}
-      <CanvaAnimation withOverlay={false} />
+      <CanvaAnimation_2622x1206 withOverlay={false} />
       
       {/* Content mit z-index für Lesbarkeit */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">

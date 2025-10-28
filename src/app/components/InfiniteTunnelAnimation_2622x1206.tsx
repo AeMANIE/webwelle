@@ -146,12 +146,14 @@ export default function InfiniteTunnelAnimation_2622x1206() {
         origin.current = { x: TARGET_WIDTH * 0.5, y: TARGET_HEIGHT * 0.5 };
         draw();
 
-        // Events (innerhalb der festen Fläche)
+        // Events (innerhalb der festen Fläche) - Koordinaten auf Canvas-Größe skalieren
         const handleMouseMove = (e: MouseEvent) => {
+            if (!isMouseActive.current) return; // Nur wenn aktiv geklickt
             const rect = (container as HTMLDivElement).getBoundingClientRect();
-            mouseX.current = e.clientX - rect.left;
-            mouseY.current = e.clientY - rect.top;
-            isMouseActive.current = true;
+            const relativeX = (e.clientX - rect.left) / rect.width;
+            const relativeY = (e.clientY - rect.top) / rect.height;
+            mouseX.current = relativeX * TARGET_WIDTH;
+            mouseY.current = relativeY * TARGET_HEIGHT;
         };
 
         const handleMouseLeave = () => {
@@ -160,11 +162,13 @@ export default function InfiniteTunnelAnimation_2622x1206() {
 
         const handleTouchMove = (e: TouchEvent) => {
             e.preventDefault();
+            if (!isMouseActive.current) return; // Nur wenn aktiv getippt
             if (e.touches.length > 0) {
                 const rect = (container as HTMLDivElement).getBoundingClientRect();
-                mouseX.current = e.touches[0].clientX - rect.left;
-                mouseY.current = e.touches[0].clientY - rect.top;
-                isMouseActive.current = true;
+                const relativeX = (e.touches[0].clientX - rect.left) / rect.width;
+                const relativeY = (e.touches[0].clientY - rect.top) / rect.height;
+                mouseX.current = relativeX * TARGET_WIDTH;
+                mouseY.current = relativeY * TARGET_HEIGHT;
             }
         };
 
@@ -172,8 +176,26 @@ export default function InfiniteTunnelAnimation_2622x1206() {
             isMouseActive.current = false;
         };
 
+        // Click/Touch start handler
+        const handleMouseDown = (e: MouseEvent) => {
+            isMouseActive.current = true;
+            handleMouseMove(e);
+        };
+
+        const handleMouseUp = () => {
+            isMouseActive.current = false;
+        };
+
+        const handleTouchStart = (e: TouchEvent) => {
+            isMouseActive.current = true;
+            handleTouchMove(e);
+        };
+
+        container.addEventListener('mousedown', handleMouseDown);
+        container.addEventListener('mouseup', handleMouseUp);
         container.addEventListener('mousemove', handleMouseMove);
         container.addEventListener('mouseleave', handleMouseLeave);
+        container.addEventListener('touchstart', handleTouchStart, { passive: false });
         container.addEventListener('touchmove', handleTouchMove, { passive: false });
         container.addEventListener('touchend', handleTouchEnd);
 
@@ -181,8 +203,11 @@ export default function InfiniteTunnelAnimation_2622x1206() {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
+            container.removeEventListener('mousedown', handleMouseDown);
+            container.removeEventListener('mouseup', handleMouseUp);
             container.removeEventListener('mousemove', handleMouseMove);
             container.removeEventListener('mouseleave', handleMouseLeave);
+            container.removeEventListener('touchstart', handleTouchStart);
             container.removeEventListener('touchmove', handleTouchMove);
             container.removeEventListener('touchend', handleTouchEnd);
         };

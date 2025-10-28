@@ -22,7 +22,11 @@ interface Circle {
     draw(ctx: CanvasRenderingContext2D): void;
 }
 
-export default function InfiniteTunnelAnimation() {
+// Feste Zielgröße für das Display 1206 x 2622 (Höhe x Breite)
+const TARGET_HEIGHT = 1206;
+const TARGET_WIDTH = 2622;
+
+export default function InfiniteTunnelAnimation_2622x1206() {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasA = useRef<HTMLCanvasElement>(null);
     const canvasB = useRef<HTMLCanvasElement>(null);
@@ -31,7 +35,7 @@ export default function InfiniteTunnelAnimation() {
     const animationRef = useRef<number | null>(null);
     
     const circles = useRef<Array<Circle>>([]);
-    const origin = useRef({ x: 0, y: 0 });
+    const origin = useRef({ x: TARGET_WIDTH * 0.5, y: TARGET_HEIGHT * 0.5 });
     const tick = useRef(0);
     const mouseX = useRef(0);
     const mouseY = useRef(0);
@@ -50,11 +54,12 @@ export default function InfiniteTunnelAnimation() {
         
         if (!ctxA.current || !ctxB.current) return;
 
-        const resize = () => {
-            canvasAElement.width = window.innerWidth;
-            canvasAElement.height = window.innerHeight;
-            canvasBElement.width = window.innerWidth;
-            canvasBElement.height = window.innerHeight;
+        // Feste Größe setzen (kein window-Resize, nur initial)
+        const setFixedSize = () => {
+            canvasAElement.width = TARGET_WIDTH;
+            canvasAElement.height = TARGET_HEIGHT;
+            canvasBElement.width = TARGET_WIDTH;
+            canvasBElement.height = TARGET_HEIGHT;
         };
 
         const getCircle = (x: number, y: number, tickValue: number): Circle => {
@@ -92,22 +97,21 @@ export default function InfiniteTunnelAnimation() {
             const ctxBElement = ctxB.current;
             if (!ctxAElement || !ctxBElement) return;
 
-            // Clear canvases
-            ctxAElement.clearRect(0, 0, canvasAElement.width, canvasAElement.height);
-            ctxBElement.clearRect(0, 0, canvasBElement.width, canvasBElement.height);
+            // Clear canvases (feste Größe)
+            ctxAElement.clearRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+            ctxBElement.clearRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
             
             // Update origin position
             if (isMouseActive.current) {
-                // Follow mouse
                 const lerpFactor = 0.15;
                 origin.current.x += (mouseX.current - origin.current.x) * lerpFactor;
                 origin.current.y += (mouseY.current - origin.current.y) * lerpFactor;
             } else {
-                // ALWAYS dance
-                const centerX = window.innerWidth * 0.5;
-                const centerY = window.innerHeight * 0.5;
-                const danceRadiusX = window.innerWidth * 0.25;
-                const danceRadiusY = window.innerHeight * 0.125;
+                // Tanzende Bewegung bei fester Größe
+                const centerX = TARGET_WIDTH * 0.5;
+                const centerY = TARGET_HEIGHT * 0.5;
+                const danceRadiusX = TARGET_WIDTH * 0.25;
+                const danceRadiusY = TARGET_HEIGHT * 0.125;
                 
                 origin.current.x = centerX + cos(tick.current * 0.025) * danceRadiusX;
                 origin.current.y = centerY + sin(tick.current * 0.05) * danceRadiusY;
@@ -124,25 +128,32 @@ export default function InfiniteTunnelAnimation() {
                 }
             }
             
-            // Apply blur and color effects
+            // Post-Effekte
             ctxBElement.save();
             ctxBElement.filter = "blur(5px) saturate(200%) contrast(200%)";
-            ctxBElement.drawImage(canvasAElement, 0, 0, canvasBElement.width, canvasBElement.height);
+            ctxBElement.drawImage(canvasAElement, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
             ctxBElement.restore();
             
-            // Draw original image on top
             ctxBElement.save();
-            ctxBElement.drawImage(canvasAElement, 0, 0, canvasBElement.width, canvasBElement.height);
+            ctxBElement.drawImage(canvasAElement, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
             ctxBElement.restore();
             
             animationRef.current = requestAnimationFrame(draw);
         };
 
-        // Event handlers
+        // Initialize
+        setFixedSize();
+        origin.current = { x: TARGET_WIDTH * 0.5, y: TARGET_HEIGHT * 0.5 };
+        draw();
+
+        // Events (innerhalb der festen Fläche) - Koordinaten auf Canvas-Größe skalieren
         const handleMouseMove = (e: MouseEvent) => {
-            mouseX.current = e.clientX;
-            mouseY.current = e.clientY;
-            isMouseActive.current = true;
+            if (!isMouseActive.current) return; // Nur wenn aktiv geklickt
+            const rect = (container as HTMLDivElement).getBoundingClientRect();
+            const relativeX = (e.clientX - rect.left) / rect.width;
+            const relativeY = (e.clientY - rect.top) / rect.height;
+            mouseX.current = relativeX * TARGET_WIDTH;
+            mouseY.current = relativeY * TARGET_HEIGHT;
         };
 
         const handleMouseLeave = () => {
@@ -151,10 +162,13 @@ export default function InfiniteTunnelAnimation() {
 
         const handleTouchMove = (e: TouchEvent) => {
             e.preventDefault();
+            if (!isMouseActive.current) return; // Nur wenn aktiv getippt
             if (e.touches.length > 0) {
-                mouseX.current = e.touches[0].clientX;
-                mouseY.current = e.touches[0].clientY;
-                isMouseActive.current = true;
+                const rect = (container as HTMLDivElement).getBoundingClientRect();
+                const relativeX = (e.touches[0].clientX - rect.left) / rect.width;
+                const relativeY = (e.touches[0].clientY - rect.top) / rect.height;
+                mouseX.current = relativeX * TARGET_WIDTH;
+                mouseY.current = relativeY * TARGET_HEIGHT;
             }
         };
 
@@ -162,43 +176,69 @@ export default function InfiniteTunnelAnimation() {
             isMouseActive.current = false;
         };
 
-        // Initialize
-        origin.current = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.5 };
-        resize();
-        draw();
+        // Click/Touch start handler
+        const handleMouseDown = (e: MouseEvent) => {
+            isMouseActive.current = true;
+            handleMouseMove(e);
+        };
 
-        // Add event listeners
+        const handleMouseUp = () => {
+            isMouseActive.current = false;
+        };
+
+        const handleTouchStart = (e: TouchEvent) => {
+            isMouseActive.current = true;
+            handleTouchMove(e);
+        };
+
+        container.addEventListener('mousedown', handleMouseDown);
+        container.addEventListener('mouseup', handleMouseUp);
         container.addEventListener('mousemove', handleMouseMove);
         container.addEventListener('mouseleave', handleMouseLeave);
+        container.addEventListener('touchstart', handleTouchStart, { passive: false });
         container.addEventListener('touchmove', handleTouchMove, { passive: false });
         container.addEventListener('touchend', handleTouchEnd);
-        window.addEventListener('resize', resize);
 
         return () => {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
+            container.removeEventListener('mousedown', handleMouseDown);
+            container.removeEventListener('mouseup', handleMouseUp);
             container.removeEventListener('mousemove', handleMouseMove);
             container.removeEventListener('mouseleave', handleMouseLeave);
+            container.removeEventListener('touchstart', handleTouchStart);
             container.removeEventListener('touchmove', handleTouchMove);
             container.removeEventListener('touchend', handleTouchEnd);
-            window.removeEventListener('resize', resize);
         };
     }, []);
 
+    // Aspect Ratio berechnen
+    const aspectRatio = TARGET_WIDTH / TARGET_HEIGHT; // 2622 / 1206 = 2.175
+
     return (
-        <div ref={containerRef} className="absolute inset-0 w-full h-full">
+        <div
+            ref={containerRef}
+            className="relative w-full"
+            style={{ 
+                aspectRatio: `${aspectRatio}`,
+                maxWidth: '100%',
+                maxHeight: '100vh',
+                overflow: 'hidden'
+            }}
+        >
             <canvas
                 ref={canvasB}
-                className="absolute inset-0 w-full h-full"
-                style={{ background: 'transparent', pointerEvents: 'none' }}
+                className="absolute inset-0"
+                style={{ width: '100%', height: '100%', background: 'transparent', pointerEvents: 'none' }}
             />
             <canvas
                 ref={canvasA}
-                className="absolute inset-0 w-full h-full"
-                style={{ background: 'transparent', pointerEvents: 'none' }}
+                className="absolute inset-0"
+                style={{ width: '100%', height: '100%', background: 'transparent', pointerEvents: 'none' }}
             />
         </div>
     );
 }
+
 

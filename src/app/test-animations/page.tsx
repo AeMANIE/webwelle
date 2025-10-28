@@ -47,9 +47,9 @@ export default function TestAnimationsPage() {
       </div>
 
       {/* Animation Container */}
-      <div className="relative overflow-hidden bg-black">
-        <div className="flex justify-center items-center min-h-[calc(100vh-120px)]">
-          <div className="relative border-2 border-primary/20 rounded-lg overflow-hidden">
+      <div className="relative bg-black">
+        <div className="flex justify-center items-center min-h-[calc(100vh-120px)] p-4">
+          <div className="relative w-full max-w-[90vw] border-2 border-primary/20 rounded-lg" style={{ maxHeight: '80vh' }}>
             {activeAnimation === 'canva' && (
               <CanvaAnimation_2622x1206 withOverlay={false} />
             )}
@@ -58,7 +58,7 @@ export default function TestAnimationsPage() {
             )}
             
             {/* Overlay mit Größen-Info */}
-            <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded text-sm font-mono">
+            <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded text-sm font-mono z-10 pointer-events-none">
               1206 × 2622 (H×B)
             </div>
           </div>
