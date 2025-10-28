@@ -19,6 +19,7 @@ export default function Benefits() {
   const accessibilityScoreRef = useRef<HTMLDivElement>(null);
   const bestPracticesScoreRef = useRef<HTMLDivElement>(null);
   const seoScoreRef = useRef<HTMLDivElement>(null);
+  const hasAnimatedRef = useRef(false);
 
   const benefits = [
     {
@@ -53,7 +54,20 @@ export default function Benefits() {
     }
   ];
 
-  useEffect(() => setIsMounted(true), []);
+  useEffect(() => {
+    setIsMounted(true);
+    
+    // Reset Animation State wenn Seite verlassen wird
+    const handleBeforeUnload = () => {
+      hasAnimatedRef.current = false;
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   // Auto-Scroll Marquee mit GSAP und ScrollTrigger Pause bei Hover/Sichtbarkeit
   useLayoutEffect(() => {
@@ -179,7 +193,7 @@ export default function Benefits() {
 
   // Performance Bars Animation
   useLayoutEffect(() => {
-    if (!isMounted) return;
+    if (!isMounted || hasAnimatedRef.current) return;
 
     const ctx = gsap.context(() => {
       // Performance Bar Animation
@@ -194,7 +208,10 @@ export default function Benefits() {
               trigger: performanceRef.current,
               start: 'top 80%',
               end: 'bottom 20%',
-              toggleActions: 'play none none reverse'
+              toggleActions: 'play none none none', // Kein reverse!
+            },
+            onComplete: () => {
+              hasAnimatedRef.current = true;
             }
           }
         );
@@ -211,7 +228,7 @@ export default function Benefits() {
               trigger: performanceRef.current,
               start: 'top 80%',
               end: 'bottom 20%',
-              toggleActions: 'play none none reverse'
+              toggleActions: 'play none none none' // Kein reverse!
             }
           }
         );
@@ -229,7 +246,7 @@ export default function Benefits() {
               trigger: accessibilityRef.current,
               start: 'top 80%',
               end: 'bottom 20%',
-              toggleActions: 'play none none reverse'
+              toggleActions: 'play none none none' // Kein reverse!
             }
           }
         );
@@ -246,7 +263,7 @@ export default function Benefits() {
               trigger: accessibilityRef.current,
               start: 'top 80%',
               end: 'bottom 20%',
-              toggleActions: 'play none none reverse'
+              toggleActions: 'play none none none' // Kein reverse!
             }
           }
         );
@@ -264,7 +281,7 @@ export default function Benefits() {
               trigger: bestPracticesRef.current,
               start: 'top 80%',
               end: 'bottom 20%',
-              toggleActions: 'play none none reverse'
+              toggleActions: 'play none none none' // Kein reverse!
             }
           }
         );
@@ -281,7 +298,7 @@ export default function Benefits() {
               trigger: bestPracticesRef.current,
               start: 'top 80%',
               end: 'bottom 20%',
-              toggleActions: 'play none none reverse'
+              toggleActions: 'play none none none' // Kein reverse!
             }
           }
         );
@@ -299,7 +316,7 @@ export default function Benefits() {
               trigger: seoRef.current,
               start: 'top 80%',
               end: 'bottom 20%',
-              toggleActions: 'play none none reverse'
+              toggleActions: 'play none none none' // Kein reverse!
             }
           }
         );
@@ -316,7 +333,7 @@ export default function Benefits() {
               trigger: seoRef.current,
               start: 'top 80%',
               end: 'bottom 20%',
-              toggleActions: 'play none none reverse'
+              toggleActions: 'play none none none' // Kein reverse!
             }
           }
         );

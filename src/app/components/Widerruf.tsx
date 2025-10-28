@@ -54,7 +54,7 @@ export default function Widerruf() {
                 <ul className="list-disc list-inside space-y-2">
                   <li>Minecraft (Game Panel) VPS (mit Ausnahme von Upgrades)</li>
                   <li>KVM VPS (mit Ausnahme von Upgrades)</li>
-                  <li>WordPress Addons</li>
+                  <li>React/Next.js Addons</li>
                   <li>Dark Web Monitor</li>
                 </ul>
               </div>

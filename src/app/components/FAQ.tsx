@@ -15,7 +15,7 @@ export default function FAQ() {
       answer: "Die Entwicklungszeit hängt vom gewählten Paket ab: StarterWelle (Onepage): 2–3 Wochen, BusinessWelle: 3–4 Wochen, ErfolgsWelle: 4–6 Wochen. Mit unserer Blitz-Welle-Option schalten wir Ihre Website in nur 2 Wochen live – perfekt für zeitkritische Kampagnen oder kurzfristige Projekte. Alle Projekte durchlaufen dabei unseren bewährten Qualitätsprozess: Analyse, individuelles Design, Entwicklung und Testing."
     },
     {
-      question: "Nutzt WebWelle Baukasten-Systeme wie WordPress oder Wix?",
+      question: "Nutzt WebWelle Baukasten-Systeme wie Wix oder andere Standard-Lösungen?",
       answer: "Nein! Unsere Webseiten sind 100% individuell programmiert – keine Standard-Baukästen, sondern hochwertige Lösungen mit React-Technologie und höchster Performance. Ihre Vorteile: Blitzschnelle Ladezeiten (Google PageSpeed 90+), maximale Flexibilität für individuelle Funktionen, skalierbar und zukunftssicher, keine Limitierungen durch Baukasten-Vorlagen, optimal für SEO und moderne Webtechnologien. Mit React entwickeln wir Websites, die nicht nur gut aussehen, sondern auch technisch auf höchstem Niveau arbeiten."
     },
     {

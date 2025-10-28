@@ -225,7 +225,7 @@ export default function AdminPage() {
                     <div>
                       <h4 className="font-semibold text-foreground mb-2">Paket</h4>
                       <p className="text-muted-foreground">
-                        {booking.package_type === 'nextjs' ? 'React/Next.js Website' : 'WordPress Website'} - 
+                        React/Next.js Website - 
                         {booking.is_monthly ? ' Monatlich' : ' Einmalzahlung'}
                       </p>
                     </div>

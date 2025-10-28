@@ -3,7 +3,7 @@
 import { Package, MessageCircle, FileText, Rocket, Target, Clock, Eye, CheckCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-const CanvaAnimation = dynamic(() => import('./CanvaAnimation'), {
+const WorkflowAnimation = dynamic(() => import('./WorkflowAnimation'), {
   ssr: false,
   loading: () => <div className="absolute inset-0 bg-background" />
 });
@@ -14,8 +14,8 @@ export default function Workflow() {
     {
       number: "1",
       title: "Wunschpaket wählen",
-      description: "Next.js oder WordPress",
-      details: "Wählen Sie zwischen unserem Premium Next.js-Paket für maximale Performance oder dem klassischen WordPress-Paket für einen schnellen Start.",
+      description: "React/Next.js Premium",
+      details: "Wählen Sie unser Premium React/Next.js-Paket für maximale Performance, moderne Technologie und zukunftssichere Entwicklung.",
       icon: Package
     },
     {
@@ -50,8 +50,8 @@ export default function Workflow() {
 
   return (
     <section id="arbeitsweise" className="py-20 bg-background relative overflow-hidden">
-      {/* Canva Animation Hintergrund */}
-      <CanvaAnimation withOverlay={false} />
+      {/* Workflow Animation Hintergrund */}
+      <WorkflowAnimation withOverlay={false} />
       
       {/* Content mit z-index für Lesbarkeit */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
