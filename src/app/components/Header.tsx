@@ -111,37 +111,8 @@ export default function Header() {
               <Link href="/app-entwicklung" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
                 App-Entwicklung
               </Link>
-              <Link 
-                href="/#vorteile" 
-                className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  closeMenu();
-                  const element = document.getElementById('vorteile');
-                  if (element) {
-                    const headerHeight = 80;
-                    const elementPosition = element.offsetTop - headerHeight;
-                    window.scrollTo({ top: elementPosition, behavior: 'smooth' });
-                  }
-                }}
-              >
-                Warum WebWelle
-              </Link>
-              <Link 
-                href="/#leistungen" 
-                className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  closeMenu();
-                  const element = document.getElementById('leistungen');
-                  if (element) {
-                    const headerHeight = 80;
-                    const elementPosition = element.offsetTop - headerHeight;
-                    window.scrollTo({ top: elementPosition, behavior: 'smooth' });
-                  }
-                }}
-              >
-                Lösungen
+              <Link href="/blog" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
+                Blog
               </Link>
               <div className="pt-2 border-t border-border">
                 <Link href="/customer" className="flex items-center justify-center space-x-2 px-3 py-2 text-primary hover:text-primary/80 font-medium border border-primary rounded-md hover:bg-primary/5" onClick={closeMenu}>
