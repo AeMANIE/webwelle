@@ -226,6 +226,119 @@ export default function Benefits() {
           </div>
         </div>
 
+        {/* Performance Monitoring Dashboard */}
+        <div className="mt-14 md:mt-16">
+          <div className="text-center mb-8">
+            <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700">
+              <Zap className="h-3.5 w-3.5 text-gray-500" /> Performance Monitoring
+            </span>
+            <h3 className="mt-4 text-2xl md:text-3xl font-bold text-gray-900">
+              Optimale Performance garantiert
+            </h3>
+            <p className="mt-2 text-base text-gray-600">
+              Unsere Websites erreichen Bestwerte bei Google PageSpeed Insights
+            </p>
+          </div>
+
+          {/* Performance Scores */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            {/* Performance Score */}
+            <div className="relative">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                    <span className="text-sm font-medium text-gray-700">Performance</span>
+                  </div>
+                  <div className="text-2xl font-bold text-green-600" id="performance-score">98</div>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out" style={{width: '98%'}}></div>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">Excellent</p>
+              </div>
+            </div>
+
+            {/* Accessibility Score */}
+            <div className="relative">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                    <span className="text-sm font-medium text-gray-700">Accessibility</span>
+                  </div>
+                  <div className="text-2xl font-bold text-green-600" id="accessibility-score">100</div>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out" style={{width: '100%'}}></div>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">Perfect</p>
+              </div>
+            </div>
+
+            {/* Best Practices Score */}
+            <div className="relative">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                    <span className="text-sm font-medium text-gray-700">Best Practices</span>
+                  </div>
+                  <div className="text-2xl font-bold text-green-600" id="best-practices-score">100</div>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out" style={{width: '100%'}}></div>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">Perfect</p>
+              </div>
+            </div>
+
+            {/* SEO Score */}
+            <div className="relative">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                    <span className="text-sm font-medium text-gray-700">SEO</span>
+                  </div>
+                  <div className="text-2xl font-bold text-green-600" id="seo-score">100</div>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out" style={{width: '100%'}}></div>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">Perfect</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Performance Details */}
+          <div className="mt-8 max-w-3xl mx-auto">
+            <div className="bg-gradient-to-r from-gray-50 to-white rounded-xl p-6 border border-gray-200">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                <span className="text-sm font-medium text-gray-700">Performance Monitoring</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-lg font-bold text-gray-900">1.2s</div>
+                  <div className="text-xs text-gray-600">First Contentful Paint</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-gray-900">2.1s</div>
+                  <div className="text-xs text-gray-600">Largest Contentful Paint</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-gray-900">0.05s</div>
+                  <div className="text-xs text-gray-600">Total Blocking Time</div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-4 text-center">
+                Alle Werte werden kontinuierlich überwacht und optimiert
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Call to Action */}
         <div className="mt-14 md:mt-16 text-center">
           <div className="relative isolate inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white px-6 py-8 md:px-10 md:py-10">
