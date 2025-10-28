@@ -1,12 +1,6 @@
 'use client';
 
 import { Package, MessageCircle, FileText, Rocket, Target, Clock, Eye, CheckCircle } from 'lucide-react';
-import dynamic from 'next/dynamic';
-
-const WorkflowAnimation = dynamic(() => import('./WorkflowAnimation'), {
-  ssr: false,
-  loading: () => <div className="absolute inset-0 bg-background" />
-});
 
 export default function Workflow() {
 
@@ -49,12 +43,9 @@ export default function Workflow() {
   ];
 
   return (
-    <section id="arbeitsweise" className="py-20 bg-background relative overflow-hidden">
-      {/* Workflow Animation Hintergrund */}
-      <WorkflowAnimation withOverlay={false} />
-      
-      {/* Content mit z-index für Lesbarkeit */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <section id="arbeitsweise" className="py-20 bg-background">
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Glassmorphism Window 1 - Einleitung */}
         <div className="mb-8">
           <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl max-w-4xl mx-auto text-center">
