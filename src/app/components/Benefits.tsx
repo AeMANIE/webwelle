@@ -206,7 +206,7 @@ export default function Benefits() {
           gsap.fromTo(performanceRef.current,
             { width: '0%' },
             {
-              width: '96%',
+              width: '92%',
               duration: 2.5,
               ease: 'power2.out',
               scrollTrigger: {
@@ -230,7 +230,7 @@ export default function Benefits() {
           gsap.fromTo(performanceScoreRef.current,
             { innerText: 0 },
             {
-              innerText: 96,
+              innerText: 92,
               duration: 2.5,
               ease: 'power2.out',
               snap: { innerText: 1 },
@@ -255,7 +255,7 @@ export default function Benefits() {
           gsap.fromTo(accessibilityRef.current,
             { width: '0%' },
             {
-              width: '98%',
+              width: '95%',
               duration: 2.5,
               ease: 'power2.out',
               scrollTrigger: {
@@ -276,7 +276,7 @@ export default function Benefits() {
           gsap.fromTo(accessibilityScoreRef.current,
             { innerText: 0 },
             {
-              innerText: 98,
+              innerText: 95,
               duration: 2.5,
               ease: 'power2.out',
               snap: { innerText: 1 },
