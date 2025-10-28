@@ -11,6 +11,14 @@ export default function Benefits() {
   const [isMounted, setIsMounted] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const performanceRef = useRef<HTMLDivElement>(null);
+  const accessibilityRef = useRef<HTMLDivElement>(null);
+  const bestPracticesRef = useRef<HTMLDivElement>(null);
+  const seoRef = useRef<HTMLDivElement>(null);
+  const performanceScoreRef = useRef<HTMLDivElement>(null);
+  const accessibilityScoreRef = useRef<HTMLDivElement>(null);
+  const bestPracticesScoreRef = useRef<HTMLDivElement>(null);
+  const seoScoreRef = useRef<HTMLDivElement>(null);
 
   const benefits = [
     {
@@ -169,6 +177,155 @@ export default function Benefits() {
     return () => ctx.revert();
   }, [isMounted]);
 
+  // Performance Bars Animation
+  useLayoutEffect(() => {
+    if (!isMounted) return;
+
+    const ctx = gsap.context(() => {
+      // Performance Bar Animation
+      if (performanceRef.current && performanceScoreRef.current) {
+        gsap.fromTo(performanceRef.current, 
+          { width: '0%' },
+          {
+            width: '96%',
+            duration: 2.5,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: performanceRef.current,
+              start: 'top 80%',
+              end: 'bottom 20%',
+              toggleActions: 'play none none reverse'
+            }
+          }
+        );
+
+        // Performance Score Animation
+        gsap.fromTo(performanceScoreRef.current, 
+          { innerText: 0 },
+          {
+            innerText: 96,
+            duration: 2.5,
+            ease: 'power2.out',
+            snap: { innerText: 1 },
+            scrollTrigger: {
+              trigger: performanceRef.current,
+              start: 'top 80%',
+              end: 'bottom 20%',
+              toggleActions: 'play none none reverse'
+            }
+          }
+        );
+      }
+
+      // Accessibility Bar Animation
+      if (accessibilityRef.current && accessibilityScoreRef.current) {
+        gsap.fromTo(accessibilityRef.current, 
+          { width: '0%' },
+          {
+            width: '98%',
+            duration: 2.5,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: accessibilityRef.current,
+              start: 'top 80%',
+              end: 'bottom 20%',
+              toggleActions: 'play none none reverse'
+            }
+          }
+        );
+
+        // Accessibility Score Animation
+        gsap.fromTo(accessibilityScoreRef.current, 
+          { innerText: 0 },
+          {
+            innerText: 98,
+            duration: 2.5,
+            ease: 'power2.out',
+            snap: { innerText: 1 },
+            scrollTrigger: {
+              trigger: accessibilityRef.current,
+              start: 'top 80%',
+              end: 'bottom 20%',
+              toggleActions: 'play none none reverse'
+            }
+          }
+        );
+      }
+
+      // Best Practices Bar Animation
+      if (bestPracticesRef.current && bestPracticesScoreRef.current) {
+        gsap.fromTo(bestPracticesRef.current, 
+          { width: '0%' },
+          {
+            width: '100%',
+            duration: 2.5,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: bestPracticesRef.current,
+              start: 'top 80%',
+              end: 'bottom 20%',
+              toggleActions: 'play none none reverse'
+            }
+          }
+        );
+
+        // Best Practices Score Animation
+        gsap.fromTo(bestPracticesScoreRef.current, 
+          { innerText: 0 },
+          {
+            innerText: 100,
+            duration: 2.5,
+            ease: 'power2.out',
+            snap: { innerText: 1 },
+            scrollTrigger: {
+              trigger: bestPracticesRef.current,
+              start: 'top 80%',
+              end: 'bottom 20%',
+              toggleActions: 'play none none reverse'
+            }
+          }
+        );
+      }
+
+      // SEO Bar Animation
+      if (seoRef.current && seoScoreRef.current) {
+        gsap.fromTo(seoRef.current, 
+          { width: '0%' },
+          {
+            width: '100%',
+            duration: 2.5,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: seoRef.current,
+              start: 'top 80%',
+              end: 'bottom 20%',
+              toggleActions: 'play none none reverse'
+            }
+          }
+        );
+
+        // SEO Score Animation
+        gsap.fromTo(seoScoreRef.current, 
+          { innerText: 0 },
+          {
+            innerText: 100,
+            duration: 2.5,
+            ease: 'power2.out',
+            snap: { innerText: 1 },
+            scrollTrigger: {
+              trigger: seoRef.current,
+              start: 'top 80%',
+              end: 'bottom 20%',
+              toggleActions: 'play none none reverse'
+            }
+          }
+        );
+      }
+    });
+
+    return () => ctx.revert();
+  }, [isMounted]);
+
   // shadcn-ähnlicher Stil: Karte, Badge, Button
   return (
     <section id="vorteile" className="py-20 bg-white">
@@ -229,8 +386,8 @@ export default function Benefits() {
         {/* Performance Monitoring Dashboard */}
         <div className="mt-14 md:mt-16">
           <div className="text-center mb-8">
-            <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700">
-              <Zap className="h-3.5 w-3.5 text-gray-500" /> Performance Monitoring
+            <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-1 text-xs font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-200">
+              <Zap className="h-3.5 w-3.5 text-white" /> Performance Monitoring
             </span>
             <h3 className="mt-4 text-2xl md:text-3xl font-bold text-gray-900">
               Optimale Performance garantiert
@@ -250,10 +407,10 @@ export default function Benefits() {
                     <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
                     <span className="text-sm font-medium text-gray-700">Performance</span>
                   </div>
-                  <div className="text-2xl font-bold text-green-600" id="performance-score">98</div>
+                  <div className="text-2xl font-bold text-green-600" ref={performanceScoreRef}>0</div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out" style={{width: '98%'}}></div>
+                  <div ref={performanceRef} className="bg-green-500 h-2 rounded-full"></div>
                 </div>
                 <p className="text-xs text-gray-600 mt-2">Excellent</p>
               </div>
@@ -267,10 +424,10 @@ export default function Benefits() {
                     <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
                     <span className="text-sm font-medium text-gray-700">Accessibility</span>
                   </div>
-                  <div className="text-2xl font-bold text-green-600" id="accessibility-score">100</div>
+                  <div className="text-2xl font-bold text-green-600" ref={accessibilityScoreRef}>0</div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out" style={{width: '100%'}}></div>
+                  <div ref={accessibilityRef} className="bg-green-500 h-2 rounded-full"></div>
                 </div>
                 <p className="text-xs text-gray-600 mt-2">Perfect</p>
               </div>
@@ -284,10 +441,10 @@ export default function Benefits() {
                     <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
                     <span className="text-sm font-medium text-gray-700">Best Practices</span>
                   </div>
-                  <div className="text-2xl font-bold text-green-600" id="best-practices-score">100</div>
+                  <div className="text-2xl font-bold text-green-600" ref={bestPracticesScoreRef}>0</div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out" style={{width: '100%'}}></div>
+                  <div ref={bestPracticesRef} className="bg-green-500 h-2 rounded-full"></div>
                 </div>
                 <p className="text-xs text-gray-600 mt-2">Perfect</p>
               </div>
@@ -301,10 +458,10 @@ export default function Benefits() {
                     <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
                     <span className="text-sm font-medium text-gray-700">SEO</span>
                   </div>
-                  <div className="text-2xl font-bold text-green-600" id="seo-score">100</div>
+                  <div className="text-2xl font-bold text-green-600" ref={seoScoreRef}>0</div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out" style={{width: '100%'}}></div>
+                  <div ref={seoRef} className="bg-green-500 h-2 rounded-full"></div>
                 </div>
                 <p className="text-xs text-gray-600 mt-2">Perfect</p>
               </div>
