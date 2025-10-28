@@ -48,7 +48,7 @@ export default function Header() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-6">
+          <nav className="hidden lg:flex space-x-6">
             <Link href={{ pathname: '/', hash: 'vorteile' }} className="text-foreground hover:text-primary transition-colors font-medium">
               Webdesign-Pakete
             </Link>
@@ -69,7 +69,7 @@ export default function Header() {
 
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <button
               onClick={toggleMenu}
               className="text-foreground hover:text-primary focus:outline-none focus:text-primary p-2"
@@ -87,15 +87,15 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-card rounded-lg mt-2 border border-border shadow-lg">
               <Link 
-                href="/#produkte" 
+                href="/#vorteile" 
                 className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
                 onClick={(e) => {
                   e.preventDefault();
                   closeMenu();
-                  const element = document.getElementById('produkte');
+                  const element = document.getElementById('vorteile');
                   if (element) {
                     const headerHeight = 80;
                     const elementPosition = element.offsetTop - headerHeight;
