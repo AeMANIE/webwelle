@@ -78,8 +78,8 @@ export default function InfiniteTunnelAnimation() {
 
         const createCircle = (): Circle => {
             const hue = 210; // Dunkelblau-Grau
-            const size = performanceLevel === 'low' ? 2 : performanceLevel === 'medium' ? 3 : 4;
-            const ttl = performanceLevel === 'low' ? 60 : performanceLevel === 'medium' ? 80 : 100;
+            const size = performanceLevel === 'low' ? 3 : performanceLevel === 'medium' ? 4 : 5;
+            const ttl = performanceLevel === 'low' ? 80 : performanceLevel === 'medium' ? 100 : 120;
             
             return {
                 position: { x: origin.current.x, y: origin.current.y },
@@ -116,9 +116,9 @@ export default function InfiniteTunnelAnimation() {
                 },
                 draw(ctx) {
                     const progress = this.life / this.ttl;
-                    const alpha = fadeInOut(progress, 1) * 0.7;
+                    const alpha = fadeInOut(progress, 1) * 0.9;
                     
-                    ctx.strokeStyle = `hsla(${this.hue}, 20%, 22%, ${alpha})`;
+                    ctx.strokeStyle = `hsla(${this.hue}, 30%, 35%, ${alpha})`;
                     ctx.lineWidth = this.size;
                     ctx.beginPath();
                     ctx.arc(this.position.x, this.position.y, this.size * 2, 0, TAU);

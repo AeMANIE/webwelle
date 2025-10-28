@@ -76,8 +76,8 @@ export default function WorkflowAnimation({ withOverlay = true }: WorkflowAnimat
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             // Optimierte Wellen-Berechnung
-            const waveSpeed = 0.002; // Langsamere Wellen für sanftere Animation
-            const waveComplexity = performanceLevel === 'low' ? 0.3 : performanceLevel === 'medium' ? 0.5 : 0.7;
+            const waveSpeed = 0.003; // Etwas schnellere Wellen für bessere Sichtbarkeit
+            const waveComplexity = performanceLevel === 'low' ? 0.5 : performanceLevel === 'medium' ? 0.7 : 0.9;
             
             dots.forEach(dot => {
                 const distance = isInteracting ? 
@@ -87,19 +87,19 @@ export default function WorkflowAnimation({ withOverlay = true }: WorkflowAnimat
                 const wave = sin(dot.phase + tickRef.current * waveSpeed) * waveComplexity;
                 const mouseEffect = isInteracting ? Math.max(0, 1 - distance / 200) : 0;
                 
-                dot.intensity = Math.min(1, wave * 0.4 + mouseEffect * 0.6);
+                dot.intensity = Math.min(1, wave * 0.6 + mouseEffect * 0.8);
                 
-                if (dot.intensity > 0.05) {
-                    // Optimierte Farbberechnung
+                if (dot.intensity > 0.02) {
+                    // Optimierte Farbberechnung - sichtbarer aber immer noch subtil
                     const hue = 200; // Dunkelblau-Grau
-                    const saturation = Math.min(20 + dot.intensity * 8, 28);
-                    const lightness = Math.min(12 + dot.intensity * 15, 27);
-                    const alpha = dot.intensity * 0.6;
+                    const saturation = Math.min(25 + dot.intensity * 12, 35);
+                    const lightness = Math.min(18 + dot.intensity * 20, 38);
+                    const alpha = dot.intensity * 0.8;
                     
                     ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
                     
                     // Zeichne Quadrat statt Kreis für bessere Performance
-                    const size = 1.5 + dot.intensity * 2.5;
+                    const size = 2 + dot.intensity * 3;
                     ctx.fillRect(dot.x - size/2, dot.y - size/2, size, size);
                 }
             });
