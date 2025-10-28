@@ -20,6 +20,8 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react', '@stripe/stripe-js'],
     // Modern bundling
     esmExternals: true,
+    // Build Performance Optimierungen
+    webpackBuildWorker: true,
   },
   // Optimierte Server-Komponenten
   serverExternalPackages: ['pg'],
@@ -36,6 +38,14 @@ const nextConfig: NextConfig = {
     if (!isServer) {
       // Modern JavaScript target für bessere Performance
       config.target = ['web', 'es2022'];
+      
+      // Build Performance Optimierungen
+      config.cache = {
+        type: 'filesystem',
+        buildDependencies: {
+          config: [__filename],
+        },
+      };
       
       config.optimization.splitChunks = {
         chunks: 'all',
@@ -86,6 +96,9 @@ const nextConfig: NextConfig = {
       if (!dev) {
         config.optimization.usedExports = true;
         config.optimization.sideEffects = false;
+        // Build Performance: Parallele Module-Verarbeitung
+        config.optimization.moduleIds = 'deterministic';
+        config.optimization.chunkIds = 'deterministic';
       }
     }
     return config;

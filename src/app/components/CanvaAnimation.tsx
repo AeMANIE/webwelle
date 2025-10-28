@@ -21,9 +21,16 @@ export default function CanvaAnimation({ withOverlay = true }: CanvaAnimationPro
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
+        // Mobile Performance Optimierung
+        const isMobile = window.innerWidth < 768;
+        const isLowEndDevice = navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4;
+        
+        // Anpassung der Performance basierend auf Gerät
+        const performanceLevel = isMobile || isLowEndDevice ? 'low' : 'high';
+        
         let gridWidth = 0;
         let gridHeight = 0;
-        const cellSize = 20; // Abstand zwischen Punkten
+        const cellSize = performanceLevel === 'low' ? 30 : 20; // Größere Abstände auf Mobile
         let mouseX = 0;
         let mouseY = 0;
         let isInteracting = false;
@@ -58,8 +65,12 @@ export default function CanvaAnimation({ withOverlay = true }: CanvaAnimationPro
             ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            // Mobile: Reduzierte Anzahl von Punkten pro Frame
+            const maxDotsPerFrame = performanceLevel === 'low' ? Math.min(dots.length, 200) : dots.length;
+            const dotsToProcess = dots.slice(0, maxDotsPerFrame);
+
             // Draw dots
-            dots.forEach((dot, index) => {
+            dotsToProcess.forEach((dot, index) => {
                 const x = dot.x;
                 const y = dot.y;
                 
@@ -70,29 +81,31 @@ export default function CanvaAnimation({ withOverlay = true }: CanvaAnimationPro
                 // Wave-Muster: Mehrere überlagerte Wellen für komplexeres Muster
                 const dist = Math.sqrt(Math.pow(gridX - gridWidth/2, 2) + Math.pow(gridY - gridHeight/2, 2));
                 
-                const wave1 = sin(tickRef.current * 0.01 + dist * 0.1 + dot.phase) * 0.3;
-                const wave2 = sin(tickRef.current * 0.015 + gridX * 0.2 + dot.phase) * 0.2;
-                const wave3 = sin(tickRef.current * 0.008 + gridY * 0.2 + dot.phase) * 0.2;
-                const wave4 = sin(tickRef.current * 0.012 + (gridX + gridY) * 0.15 + dot.phase) * 0.15;
+                // Mobile: Reduzierte Wave-Komplexität
+                const waveSpeed = performanceLevel === 'low' ? 0.005 : 0.01;
+                const wave1 = sin(tickRef.current * waveSpeed + dist * 0.1 + dot.phase) * 0.3;
+                const wave2 = sin(tickRef.current * (waveSpeed * 1.5) + gridX * 0.2 + dot.phase) * 0.2;
+                const wave3 = performanceLevel === 'low' ? 0 : sin(tickRef.current * (waveSpeed * 0.8) + gridY * 0.2 + dot.phase) * 0.2;
+                const wave4 = performanceLevel === 'low' ? 0 : sin(tickRef.current * (waveSpeed * 1.2) + (gridX + gridY) * 0.15 + dot.phase) * 0.15;
                 
                 // Basis-Intensität basierend auf Wellen
                 let intensity = 0.3 + wave1 + wave2 + wave3 + wave4;
                 
-                // Interaktions-Effekt (Maus/Touch)
+                // Interaktions-Effekt (Maus/Touch) - reduziert auf Mobile
                 if (isInteracting) {
                     const dx = x - mouseX;
                     const dy = y - mouseY;
                     const distanceToMouse = Math.sqrt(dx * dx + dy * dy);
-                    const maxDistance = 200;
+                    const maxDistance = performanceLevel === 'low' ? 150 : 200;
                     
                     if (distanceToMouse < maxDistance) {
                         // Stärkerer Welleneffekt von Maus-Position aus
-                        const rippleEffect = (1 - distanceToMouse / maxDistance) * 1.0;
+                        const rippleEffect = (1 - distanceToMouse / maxDistance) * (performanceLevel === 'low' ? 0.7 : 1.0);
                         intensity += rippleEffect;
                         
                         // Zusätzlicher Glow-Effekt direkt am Cursor
-                        if (distanceToMouse < 80) {
-                            intensity += 0.3;
+                        if (distanceToMouse < (performanceLevel === 'low' ? 60 : 80)) {
+                            intensity += performanceLevel === 'low' ? 0.2 : 0.3;
                         }
                     }
                 }
@@ -104,7 +117,8 @@ export default function CanvaAnimation({ withOverlay = true }: CanvaAnimationPro
                 // Zeichne Punkt nur wenn Intensität hoch genug
                 if (intensity > 0.1) {
                     ctx.beginPath();
-                    ctx.arc(x, y, 2 * intensity, 0, PI * 2);
+                    const radius = performanceLevel === 'low' ? 1.5 * intensity : 2 * intensity;
+                    ctx.arc(x, y, radius, 0, PI * 2);
                     
                     // Blaue Farbe (Cyan-Blau)
                     const hue = 190 + Math.sin(intensity * PI) * 10; // 180-200 = Cyan-Blau
@@ -115,8 +129,8 @@ export default function CanvaAnimation({ withOverlay = true }: CanvaAnimationPro
                     ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
                     ctx.fill();
                     
-                    // Zusätzlicher Glow für stärkere Punkte
-                    if (intensity > 0.6) {
+                    // Zusätzlicher Glow für stärkere Punkte - reduziert auf Mobile
+                    if (intensity > 0.6 && performanceLevel === 'high') {
                         ctx.beginPath();
                         ctx.arc(x, y, 4 * intensity, 0, PI * 2);
                         ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness + 10}%, ${alpha * 0.3})`;
@@ -125,7 +139,13 @@ export default function CanvaAnimation({ withOverlay = true }: CanvaAnimationPro
                 }
             });
             
-            animationRef.current = requestAnimationFrame(draw);
+            // Mobile: Reduzierte Framerate
+            const targetFPS = performanceLevel === 'low' ? 30 : 60;
+            const frameDelay = 1000 / targetFPS;
+            
+            setTimeout(() => {
+                animationRef.current = requestAnimationFrame(draw);
+            }, frameDelay);
         };
 
         // Event handlers für Interaktion

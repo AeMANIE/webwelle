@@ -50,6 +50,11 @@ export default function InfiniteTunnelAnimation() {
         
         if (!ctxA.current || !ctxB.current) return;
 
+        // Mobile Performance Optimierung
+        const isMobile = window.innerWidth < 768;
+        const isLowEndDevice = navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4;
+        const performanceLevel = isMobile || isLowEndDevice ? 'low' : 'high';
+
         const resize = () => {
             canvasAElement.width = window.innerWidth;
             canvasAElement.height = window.innerHeight;
@@ -60,22 +65,22 @@ export default function InfiniteTunnelAnimation() {
         const getCircle = (x: number, y: number, tickValue: number): Circle => {
             const circle: Circle = {
                 position: { x, y },
-                hue: -tickValue * 0.5,
-                size: 2,
-                ttl: 200,
+                hue: -tickValue * (performanceLevel === 'low' ? 0.3 : 0.5),
+                size: performanceLevel === 'low' ? 1.5 : 2,
+                ttl: performanceLevel === 'low' ? 150 : 200,
                 life: 0,
                 destroy: false,
                 
                 update() {
                     this.life++;
                     this.destroy = this.life > this.ttl;
-                    this.size *= 1.035;
+                    this.size *= performanceLevel === 'low' ? 1.025 : 1.035;
                 },
                 
                 draw(ctx: CanvasRenderingContext2D) {
                     this.update();
                     ctx.beginPath();
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = performanceLevel === 'low' ? 1.5 : 2;
                     ctx.strokeStyle = `hsla(${this.hue}, 100%, 50%, ${fadeInOut(this.life, this.ttl)})`;
                     ctx.arc(this.position.x, this.position.y, this.size, 0, TAU);
                     ctx.stroke();
@@ -99,22 +104,31 @@ export default function InfiniteTunnelAnimation() {
             // Update origin position
             if (isMouseActive.current) {
                 // Follow mouse
-                const lerpFactor = 0.15;
+                const lerpFactor = performanceLevel === 'low' ? 0.1 : 0.15;
                 origin.current.x += (mouseX.current - origin.current.x) * lerpFactor;
                 origin.current.y += (mouseY.current - origin.current.y) * lerpFactor;
             } else {
-                // ALWAYS dance
+                // ALWAYS dance - reduziert auf Mobile
                 const centerX = window.innerWidth * 0.5;
                 const centerY = window.innerHeight * 0.5;
-                const danceRadiusX = window.innerWidth * 0.25;
-                const danceRadiusY = window.innerHeight * 0.125;
+                const danceRadiusX = window.innerWidth * (performanceLevel === 'low' ? 0.2 : 0.25);
+                const danceRadiusY = window.innerHeight * (performanceLevel === 'low' ? 0.1 : 0.125);
                 
-                origin.current.x = centerX + cos(tick.current * 0.025) * danceRadiusX;
-                origin.current.y = centerY + sin(tick.current * 0.05) * danceRadiusY;
+                const danceSpeed = performanceLevel === 'low' ? 0.015 : 0.025;
+                origin.current.x = centerX + cos(tick.current * danceSpeed) * danceRadiusX;
+                origin.current.y = centerY + sin(tick.current * (danceSpeed * 2)) * danceRadiusY;
             }
             
-            // Add new circle
-            circles.current.push(getCircle(origin.current.x, origin.current.y, tick.current));
+            // Add new circle - reduziert auf Mobile
+            if (tick.current % (performanceLevel === 'low' ? 3 : 2) === 0) {
+                circles.current.push(getCircle(origin.current.x, origin.current.y, tick.current));
+            }
+            
+            // Mobile: Begrenzte Anzahl von Kreisen
+            const maxCircles = performanceLevel === 'low' ? 50 : 100;
+            if (circles.current.length > maxCircles) {
+                circles.current = circles.current.slice(-maxCircles);
+            }
             
             // Draw and update circles
             for (let i = circles.current.length - 1; i >= 0; i--) {
@@ -124,18 +138,32 @@ export default function InfiniteTunnelAnimation() {
                 }
             }
             
-            // Apply blur and color effects
-            ctxBElement.save();
-            ctxBElement.filter = "blur(5px) saturate(200%) contrast(200%)";
-            ctxBElement.drawImage(canvasAElement, 0, 0, canvasBElement.width, canvasBElement.height);
-            ctxBElement.restore();
+            // Apply blur and color effects - reduziert auf Mobile
+            if (performanceLevel === 'high') {
+                ctxBElement.save();
+                ctxBElement.filter = "blur(5px) saturate(200%) contrast(200%)";
+                ctxBElement.drawImage(canvasAElement, 0, 0, canvasBElement.width, canvasBElement.height);
+                ctxBElement.restore();
+                
+                // Draw original image on top
+                ctxBElement.save();
+                ctxBElement.drawImage(canvasAElement, 0, 0, canvasBElement.width, canvasBElement.height);
+                ctxBElement.restore();
+            } else {
+                // Mobile: Einfacherer Effekt
+                ctxBElement.save();
+                ctxBElement.filter = "blur(3px) saturate(150%)";
+                ctxBElement.drawImage(canvasAElement, 0, 0, canvasBElement.width, canvasBElement.height);
+                ctxBElement.restore();
+            }
             
-            // Draw original image on top
-            ctxBElement.save();
-            ctxBElement.drawImage(canvasAElement, 0, 0, canvasBElement.width, canvasBElement.height);
-            ctxBElement.restore();
+            // Mobile: Reduzierte Framerate
+            const targetFPS = performanceLevel === 'low' ? 30 : 60;
+            const frameDelay = 1000 / targetFPS;
             
-            animationRef.current = requestAnimationFrame(draw);
+            setTimeout(() => {
+                animationRef.current = requestAnimationFrame(draw);
+            }, frameDelay);
         };
 
         // Event handlers

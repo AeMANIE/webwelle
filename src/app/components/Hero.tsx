@@ -48,9 +48,17 @@ export default function Hero() {
     const checkMobile = () => {
       const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       setIsMobile(isMobileDevice);
-      setVideoSrc(isMobileDevice ? "/Aa90.mp4" : "/Aa.mp4");
-      // Setze auch Fallback-Bild basierend auf Gerät
-      setFallbackImageSrc(isMobileDevice ? "/wellehandy.jpg" : "/welle.jpg");
+      
+      // Mobile: Verwende Fallback-Bild statt Video für bessere Performance
+      if (isMobileDevice) {
+        setShowFallbackImage(true);
+        setFallbackImageSrc("/wellehandy.jpg");
+        setVideoSrc(null); // Kein Video auf Mobile
+      } else {
+        setVideoSrc("/Aa.mp4");
+        setFallbackImageSrc("/welle.jpg");
+        setShowFallbackImage(false);
+      }
     };
     
     checkMobile();
