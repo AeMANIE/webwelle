@@ -298,12 +298,15 @@ export default function InfiniteTunnelAnimation() {
         resize();
         draw();
 
+        // Snapshot current handlers to avoid ref changes in cleanup
+        const handlers = { ...eventHandlers.current };
+
         // Add event listeners
-        container.addEventListener('mousemove', eventHandlers.current.mouseMove);
-        container.addEventListener('mouseleave', eventHandlers.current.mouseLeave);
-        container.addEventListener('touchmove', eventHandlers.current.touchMove, { passive: false });
-        container.addEventListener('touchend', eventHandlers.current.touchEnd);
-        window.addEventListener('resize', eventHandlers.current.resize);
+        container.addEventListener('mousemove', handlers.mouseMove!);
+        container.addEventListener('mouseleave', handlers.mouseLeave!);
+        container.addEventListener('touchmove', handlers.touchMove!, { passive: false });
+        container.addEventListener('touchend', handlers.touchEnd!);
+        window.addEventListener('resize', handlers.resize!);
 
         // Intersection Observer für Visibility Caching
         const observer = new IntersectionObserver(
@@ -321,21 +324,11 @@ export default function InfiniteTunnelAnimation() {
             }
             
             // Cleanup event listeners
-            if (eventHandlers.current.mouseMove) {
-                container.removeEventListener('mousemove', eventHandlers.current.mouseMove);
-            }
-            if (eventHandlers.current.mouseLeave) {
-                container.removeEventListener('mouseleave', eventHandlers.current.mouseLeave);
-            }
-            if (eventHandlers.current.touchMove) {
-                container.removeEventListener('touchmove', eventHandlers.current.touchMove);
-            }
-            if (eventHandlers.current.touchEnd) {
-                container.removeEventListener('touchend', eventHandlers.current.touchEnd);
-            }
-            if (eventHandlers.current.resize) {
-                window.removeEventListener('resize', eventHandlers.current.resize);
-            }
+            if (handlers.mouseMove) container.removeEventListener('mousemove', handlers.mouseMove);
+            if (handlers.mouseLeave) container.removeEventListener('mouseleave', handlers.mouseLeave);
+            if (handlers.touchMove) container.removeEventListener('touchmove', handlers.touchMove);
+            if (handlers.touchEnd) container.removeEventListener('touchend', handlers.touchEnd);
+            if (handlers.resize) window.removeEventListener('resize', handlers.resize);
             
             observer.disconnect();
         };

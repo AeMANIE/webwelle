@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { directus, isDirectusAvailable } from '@/lib/directus';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Prüfe ob Directus verfügbar ist
     if (!isDirectusAvailable()) {

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { DollarSign, Calendar, Zap, Palette, Wrench, Users, Rocket, TrendingUp } from 'lucide-react';
+import Link from 'next/link';
+import { DollarSign, Calendar, Zap, Palette, Wrench, Users } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -559,6 +560,14 @@ export default function Benefits() {
               <p className="text-xs text-gray-500 mt-4 text-center">
                 Alle Werte werden kontinuierlich überwacht und optimiert
               </p>
+            </div>
+            <div className="mt-6 flex justify-center">
+              <Link
+                href="/blog/pageinsight"
+                className="inline-flex items-center gap-2 rounded-xl border border-orange-500 bg-white/80 px-5 py-2.5 text-sm md:text-base font-semibold text-gray-900 shadow-sm transition-all hover:bg-white hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                Zum Artikel: PageSpeed-Score {'>'} 90 – warum er zählt
+              </Link>
             </div>
           </div>
         </div>

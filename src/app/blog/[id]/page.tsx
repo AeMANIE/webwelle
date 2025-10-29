@@ -47,7 +47,7 @@ const blogPost = {
   featured: true
 };
 
-export default function BlogPostPage({ params }: { params: Promise<{ id: string }> }) {
+export default function BlogPostPage(_props: { params: Promise<{ id: string }> }) {
   return (
     <div className="min-h-screen bg-background">
       <Header />

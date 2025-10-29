@@ -11,7 +11,20 @@ export const metadata: Metadata = {
   keywords: "Webdesign Blog Kempten, SEO Tipps Allgäu, Digitale Sichtbarkeit Bayern, Webdesign Trends",
 };
 
-const blogPosts = [
+type BlogPost = {
+  id: number;
+  title: string;
+  excerpt: string;
+  content: string;
+  author: string;
+  date: string;
+  readTime: string;
+  tags: string[];
+  featured: boolean;
+  slug?: string;
+};
+
+const blogPosts: BlogPost[] = [
   {
     id: 1,
     title: "Top 5 Unternehmenswebsites im Allgäu – Was macht sie erfolgreich?",
@@ -66,6 +79,18 @@ const blogPosts = [
     readTime: "18 Min",
     tags: ["E-Commerce", "Online-Shop", "Allgäu", "Marketing"],
     featured: false
+  },
+  {
+    id: 6,
+    slug: "pageinsight",
+    title: "Warum ein PageSpeed Insights Score über 90 für Unternehmen in Kempten und dem Allgäu unverzichtbar ist",
+    excerpt: "Warum ein Score + 90 heute Standard ist: bessere Sichtbarkeit, mehr Vertrauen, höhere Conversion – besonders für lokale Unternehmen in Kempten & Allgäu.",
+    content: "Ein praxisnaher Leitfaden zu PageSpeed, Core Web Vitals, Helpful Content und Local SEO – mit konkreten Vorteilen für Unternehmen in Kempten und dem Allgäu.",
+    author: "SEO-Team WebWelle",
+    date: "2025-01-29",
+    readTime: "15 Min",
+    tags: ["PageSpeed", "Performance", "Core Web Vitals", "Allgäu", "Kempten"],
+    featured: true
   }
 ];
 
@@ -113,7 +138,11 @@ export default function BlogPage() {
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {featuredPosts.map((post) => (
-              <article key={post.id} className="bg-card rounded-2xl p-8 shadow-lg border border-border hover:shadow-xl transition-shadow">
+              <Link
+                key={post.id}
+                href={`/blog/${post.slug ?? post.id}`}
+                className="block bg-card rounded-2xl p-8 shadow-lg border border-border hover:shadow-xl transition-shadow focus:outline-none focus:ring-2 focus:ring-primary"
+              >
                 <div className="flex items-center gap-2 mb-4">
                   <Tag className="w-4 h-4 text-primary" />
                   <span className="text-primary font-semibold text-sm">Featured</span>
@@ -137,21 +166,20 @@ export default function BlogPage() {
                     <span>{post.readTime} Lesezeit</span>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {post.tags.map((tag, index) => (
-                    <span key={index} className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium">
-                      {tag}
-                    </span>
-                  ))}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    {post.tags.map((tag, index) => (
+                      <span key={index} className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <span className="inline-flex items-center gap-2 text-primary font-semibold">
+                    Artikel lesen
+                    <ArrowRight className="w-4 h-4" />
+                  </span>
                 </div>
-                <Link 
-                  href={`/blog/${post.id}`}
-                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-semibold transition-colors"
-                >
-                  Artikel lesen
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </article>
+              </Link>
             ))}
           </div>
         </div>
@@ -165,7 +193,11 @@ export default function BlogPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {regularPosts.map((post) => (
-              <article key={post.id} className="bg-card rounded-xl p-6 shadow-md border border-border hover:shadow-lg transition-shadow">
+              <Link
+                key={post.id}
+                href={`/blog/${post.slug ?? post.id}`}
+                className="block bg-card rounded-xl p-6 shadow-md border border-border hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-primary"
+              >
                 <h3 className="text-xl font-bold text-foreground mb-3 leading-tight">
                   {post.title}
                 </h3>
@@ -185,21 +217,20 @@ export default function BlogPage() {
                   </div>
                   <span className="text-xs text-muted-foreground">{post.readTime}</span>
                 </div>
-                <div className="flex flex-wrap gap-1 mb-4">
-                  {post.tags.slice(0, 2).map((tag, index) => (
-                    <span key={index} className="bg-primary/10 text-primary px-2 py-1 rounded text-xs">
-                      {tag}
-                    </span>
-                  ))}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-1">
+                    {post.tags.slice(0, 2).map((tag, index) => (
+                      <span key={index} className="bg-primary/10 text-primary px-2 py-1 rounded text-xs">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-primary font-medium text-sm">
+                    Lesen
+                    <ArrowRight className="w-3 h-3" />
+                  </span>
                 </div>
-                <Link 
-                  href={`/blog/${post.id}`}
-                  className="inline-flex items-center gap-1 text-primary hover:text-primary/80 font-medium text-sm transition-colors"
-                >
-                  Lesen
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
-              </article>
+              </Link>
             ))}
           </div>
         </div>

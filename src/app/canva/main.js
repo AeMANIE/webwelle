@@ -1,6 +1,6 @@
 "use strict";
 
-const { PI, sin, cos, random, sqrt } = Math;
+const { PI, sin, random, sqrt } = Math;
 
 let canvas;
 let ctx;

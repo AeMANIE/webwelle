@@ -2,9 +2,7 @@
 
 const { PI, cos, sin, abs } = Math;
 
-const HALF_PI = 0.5 * PI;
 const TAU = 2 * PI;
-const TO_RAD = PI / 180;
 
 const fadeInOut = (t, m) => {
     let hm = 0.5 * m;
