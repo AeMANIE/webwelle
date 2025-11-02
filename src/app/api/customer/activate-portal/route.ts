@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Passwort validieren
-    const passwordValidation = validatePassword(password);
+    const passwordValidation = await validatePassword(password);
     if (!passwordValidation.isValid) {
       return NextResponse.json(
         { success: false, error: passwordValidation.feedback.join(', ') || 'Passwort erfüllt nicht die Anforderungen' },

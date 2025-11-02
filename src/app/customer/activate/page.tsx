@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
-import { validatePassword } from '@/lib/password';
+// validatePassword wird über API Route aufgerufen (spart Bundle-Size)
 
 function ActivateContent() {
   const searchParams = useSearchParams();
@@ -56,9 +56,21 @@ function ActivateContent() {
       return;
     }
     
-    const validation = validatePassword(password);
-    if (!validation.isValid) {
-      setError(validation.feedback.join(', ') || 'Passwort erfüllt nicht die Anforderungen');
+    // Passwort über API validieren (spart Bundle-Size, da zxcvbn groß ist)
+    try {
+      const validationResponse = await fetch('/api/validate-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const validationData = await validationResponse.json();
+      
+      if (!validationData.isValid) {
+        setError(validationData.feedback?.join(', ') || 'Passwort erfüllt nicht die Anforderungen');
+        return;
+      }
+    } catch (validationError) {
+      setError('Fehler bei der Passwort-Validierung');
       return;
     }
     

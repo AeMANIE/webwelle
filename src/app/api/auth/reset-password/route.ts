@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     }
 
     // Passwort-Stärke prüfen
-    const passwordValidation = validatePassword(newPassword);
+    const passwordValidation = await validatePassword(newPassword);
     if (!passwordValidation.isValid) {
       return NextResponse.json(
         { 

@@ -12,7 +12,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const validation = validatePassword(password);
+    const validation = await validatePassword(password);
     
     return NextResponse.json({
       success: true,

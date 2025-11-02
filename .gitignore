@@ -10,7 +10,7 @@ node_modules/
 /.next/
 /out/
 /info/
-
+/project_plan.md/
 
 # Production
 /build

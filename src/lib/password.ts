@@ -1,4 +1,17 @@
-import zxcvbn from 'zxcvbn';
+// zxcvbn lazy loaden - ist sehr groß (~200KB), wird nur bei Passwort-Validierung benötigt
+type ZxcvbnFunction = (password: string) => {
+  score: number;
+  feedback: { warning?: string; suggestions: string[] };
+};
+let zxcvbnLib: ZxcvbnFunction | null = null;
+
+async function loadZxcvbn(): Promise<ZxcvbnFunction> {
+  if (zxcvbnLib) return zxcvbnLib;
+  const zxcvbnModule = await import('zxcvbn');
+  // zxcvbn hat kein default export, ist direkt die Funktion
+  zxcvbnLib = zxcvbnModule.default || zxcvbnModule as unknown as ZxcvbnFunction;
+  return zxcvbnLib;
+}
 
 export interface PasswordValidation {
   isValid: boolean;
@@ -7,8 +20,9 @@ export interface PasswordValidation {
   suggestions: string[];
 }
 
-// Passwort-Stärke validieren
-export function validatePassword(password: string): PasswordValidation {
+// Passwort-Stärke validieren (async, da zxcvbn lazy geladen wird)
+export async function validatePassword(password: string): Promise<PasswordValidation> {
+  const zxcvbn = await loadZxcvbn();
   const result = zxcvbn(password);
   
   const feedback: string[] = [];

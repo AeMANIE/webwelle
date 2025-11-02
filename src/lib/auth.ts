@@ -272,8 +272,8 @@ export async function customerLogin2FA(email: string, tan: string): Promise<{ us
 }
 
 // Passwort-Validierung für Registrierung
-export function validateCustomerPassword(password: string): { isValid: boolean; feedback: string[]; suggestions: string[] } {
-  const validation = validatePassword(password);
+export async function validateCustomerPassword(password: string): Promise<{ isValid: boolean; feedback: string[]; suggestions: string[] }> {
+  const validation = await validatePassword(password);
   return {
     isValid: validation.isValid,
     feedback: validation.feedback,

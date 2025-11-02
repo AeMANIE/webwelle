@@ -3,10 +3,25 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { DollarSign, Calendar, Zap, Palette, Wrench, Users } from 'lucide-react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-gsap.registerPlugin(ScrollTrigger);
+// Lazy load GSAP - wird nur für Animationen benötigt (spart ~180KB initial)
+let gsapLoaded = false;
+let gsap: typeof import('gsap').default;
+let ScrollTrigger: typeof import('gsap/ScrollTrigger').ScrollTrigger;
+
+async function loadGSAP() {
+  if (gsapLoaded) return;
+  
+  const [{ default: gsapLib }, { ScrollTrigger: ScrollTriggerLib }] = await Promise.all([
+    import('gsap'),
+    import('gsap/ScrollTrigger')
+  ]);
+  
+  gsap = gsapLib;
+  ScrollTrigger = ScrollTriggerLib;
+  gsap.registerPlugin(ScrollTrigger);
+  gsapLoaded = true;
+}
 
 export default function Benefits() {
   const [isMounted, setIsMounted] = useState(false);
@@ -72,28 +87,32 @@ export default function Benefits() {
 
   // Auto-Scroll Marquee mit GSAP und ScrollTrigger Pause bei Hover/Sichtbarkeit
   useLayoutEffect(() => {
-    if (!trackRef.current) return;
+    if (!trackRef.current || !isMounted) return;
     const track = trackRef.current;
 
-    // Dupliziere Slides für nahtlose Schleife
-    const slides = Array.from(track.querySelectorAll<HTMLElement>('[data-slide]'));
-    if (slides.length === 0) return;
+    // Lade GSAP asynchron (spart initial bundle size)
+    loadGSAP().then(() => {
+      // Dupliziere Slides für nahtlose Schleife
+      const slides = Array.from(track.querySelectorAll<HTMLElement>('[data-slide]'));
+      if (slides.length === 0) return;
 
-    // Verwende requestAnimationFrame um Forced Reflow zu vermeiden
-    // Batch alle DOM reads zusammen
-    let ctx: gsap.Context | null = null;
-    
-    requestAnimationFrame(() => {
-      const totalWidth = slides.reduce((acc, el) => {
-        // getBoundingClientRect() ist besser als offsetWidth für Reflow-Performance
-        return acc + el.getBoundingClientRect().width;
-      }, 0);
-      const containerWidth = containerRef.current?.getBoundingClientRect().width || 0;
+      // Verwende requestAnimationFrame um Forced Reflow zu vermeiden
+      // Batch alle DOM reads zusammen
+      let ctx: ReturnType<typeof gsap.context> | null = null;
       
-      // Falls Inhalt schmaler als Viewport, nicht animieren
-      if (totalWidth <= containerWidth) return;
+      requestAnimationFrame(() => {
+        const totalWidth = slides.reduce((acc, el) => {
+          // getBoundingClientRect() ist besser als offsetWidth für Reflow-Performance
+          return acc + el.getBoundingClientRect().width;
+        }, 0);
+        const containerWidth = containerRef.current?.getBoundingClientRect().width || 0;
+        
+        // Falls Inhalt schmaler als Viewport, nicht animieren
+        if (totalWidth <= containerWidth) return;
 
-      ctx = gsap.context(() => {
+        if (!gsap) return;
+
+        ctx = gsap.context(() => {
       const tween = gsap.to(track, {
         x: () => `-=${totalWidth}`,
         duration: Math.max(15, totalWidth / 100), // Schneller und kürzere Pause
@@ -190,23 +209,26 @@ export default function Benefits() {
 
       window.addEventListener('resize', handleResize, { passive: true });
       
-      // Cleanup
+      // Cleanup innerhalb von gsap.context
       return () => {
-        track.removeEventListener('mouseenter', handleMouseEnter);
-        track.removeEventListener('mouseleave', handleMouseLeave);
-        track.removeEventListener('touchstart', handleTouchStart);
-        track.removeEventListener('touchmove', handleTouchMove);
-        track.removeEventListener('touchend', handleTouchEnd);
         window.removeEventListener('resize', handleResize);
-        if (touchTimeout) {
-          clearTimeout(touchTimeout);
+        if (resizeTimeout) {
+          clearTimeout(resizeTimeout);
         }
       };
-    }, trackRef);
-    }); // Ende requestAnimationFrame
+      }, trackRef);
+      }); // Ende requestAnimationFrame
+      
+      // Cleanup für GSAP Context (wird nach Promise ausgeführt)
+      return () => {
+        if (ctx) {
+          ctx.revert();
+        }
+      };
+    }); // Ende loadGSAP
 
     return () => {
-      if (ctx) ctx.revert();
+      // Cleanup wird in loadGSAP Promise gemacht
     };
   }, [isMounted]);
 
@@ -214,9 +236,14 @@ export default function Benefits() {
   useLayoutEffect(() => {
     if (!isMounted || hasAnimatedRef.current) return;
 
-    // Verwende requestAnimationFrame für bessere Performance
-    const animateBars = () => {
-      const ctx = gsap.context(() => {
+    let ctx: ReturnType<typeof gsap.context> | null = null;
+
+    // Lade GSAP und animiere dann
+    loadGSAP().then(() => {
+      if (!gsap || hasAnimatedRef.current) return;
+
+      // Verwende requestAnimationFrame für bessere Performance
+      ctx = gsap.context(() => {
         // Performance Bar Animation - mit will-change für GPU-Beschleunigung
         if (performanceRef.current && performanceScoreRef.current) {
           performanceRef.current.style.willChange = 'width';
@@ -404,12 +431,14 @@ export default function Benefits() {
           );
         }
       });
+    });
 
-      return () => ctx.revert();
+    // Cleanup
+    return () => {
+      if (ctx) {
+        ctx.revert();
+      }
     };
-
-    // Verwende requestAnimationFrame für bessere Performance
-    requestAnimationFrame(animateBars);
   }, [isMounted]);
 
   // shadcn-ähnlicher Stil: Karte, Badge, Button
