@@ -79,11 +79,21 @@ export default function Benefits() {
     const slides = Array.from(track.querySelectorAll<HTMLElement>('[data-slide]'));
     if (slides.length === 0) return;
 
-    const totalWidth = slides.reduce((acc, el) => acc + el.offsetWidth, 0);
-    // Falls Inhalt schmaler als Viewport, nicht animieren
-    if (totalWidth <= (containerRef.current?.offsetWidth || 0)) return;
+    // Verwende requestAnimationFrame um Forced Reflow zu vermeiden
+    // Batch alle DOM reads zusammen
+    let ctx: gsap.Context | null = null;
+    
+    requestAnimationFrame(() => {
+      const totalWidth = slides.reduce((acc, el) => {
+        // getBoundingClientRect() ist besser als offsetWidth für Reflow-Performance
+        return acc + el.getBoundingClientRect().width;
+      }, 0);
+      const containerWidth = containerRef.current?.getBoundingClientRect().width || 0;
+      
+      // Falls Inhalt schmaler als Viewport, nicht animieren
+      if (totalWidth <= containerWidth) return;
 
-    const ctx = gsap.context(() => {
+      ctx = gsap.context(() => {
       const tween = gsap.to(track, {
         x: () => `-=${totalWidth}`,
         duration: Math.max(15, totalWidth / 100), // Schneller und kürzere Pause
@@ -162,18 +172,23 @@ export default function Benefits() {
       });
 
       // Auf Mobile: Automatisch fortsetzen nach kurzer Pause
+      // Debounce resize handler um Forced Reflows zu reduzieren
+      let resizeTimeout: NodeJS.Timeout;
       const handleResize = () => {
-        if (window.innerWidth < 768) {
-          // Auf Mobile nach 3 Sekunden automatisch fortsetzen
-          setTimeout(() => {
-            if (tween.paused()) {
-              tween.resume();
-            }
-          }, 3000);
-        }
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          if (window.innerWidth < 768) {
+            // Auf Mobile nach 3 Sekunden automatisch fortsetzen
+            setTimeout(() => {
+              if (tween.paused()) {
+                tween.resume();
+              }
+            }, 3000);
+          }
+        }, 150); // Debounce 150ms
       };
 
-      window.addEventListener('resize', handleResize);
+      window.addEventListener('resize', handleResize, { passive: true });
       
       // Cleanup
       return () => {
@@ -188,8 +203,11 @@ export default function Benefits() {
         }
       };
     }, trackRef);
+    }); // Ende requestAnimationFrame
 
-    return () => ctx.revert();
+    return () => {
+      if (ctx) ctx.revert();
+    };
   }, [isMounted]);
 
   // Performance Bars Animation - Optimiert für bessere Performance

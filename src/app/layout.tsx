@@ -44,12 +44,13 @@ export default function RootLayout({
         {/* Preload critical resources */}
         <link rel="preload" href="/webwellelogo.svg" as="image" type="image/svg+xml" />
         <link rel="preload" href="/webwellecom-weissihr.svg" as="image" type="image/svg+xml" />
-        {/* DNS prefetch und preconnect für externe Ressourcen */}
+        {/* DNS prefetch und preconnect für externe Ressourcen - optimiert für kritische Ressourcen */}
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="//js.stripe.com" />
+        <link rel="dns-prefetch" href="//fonts.gstatic.com" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://js.stripe.com" />
+        {/* Stripe nur prefetch, nicht preconnect (nicht kritisch für initial load) */}
+        <link rel="dns-prefetch" href="//js.stripe.com" />
         {/* Resource hints für bessere Performance */}
         <link rel="preload" href="/webwellelogo.svg" as="image" type="image/svg+xml" />
         <link rel="preload" href="/webwellecom-weissihr.svg" as="image" type="image/svg+xml" />
@@ -126,7 +127,7 @@ export default function RootLayout({
             }
           `
         }} />
-        {/* CSS wird normal über Next.js geladen - keine asynchronen Scripts */}
+        {/* Resource hints für bessere Performance */}
       </head>
       <body
         className={`${inter.variable} font-sans antialiased`}
