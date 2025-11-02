@@ -235,7 +235,7 @@ async function sendBookingAndActivationEmails(
         selectedAddons: selectedAddons.map(addon => ({
           label: addon.label,
           price: addon.price,
-          billing: addon.billing === 'yearly' ? 'monthly' : (addon.billing === 'monthly' ? 'monthly' : 'oneTime')
+          billing: addon.billing // Behalte original billing (yearly, monthly, oneTime)
         })),
         totalAmount: (session.amount_total || 0) / 100,
         currency: session.currency || 'eur',
