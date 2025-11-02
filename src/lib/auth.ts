@@ -111,7 +111,7 @@ export async function customerLogin(email: string, password: string): Promise<{ 
     const { getCustomerByEmail } = await import('./database');
     const customer = await getCustomerByEmail(email);
     
-    if (!customer) return null;
+    if (!customer || !customer.password_hash) return null;
     
     // Passwort verifizieren
     const isValidPassword = await verifyPasswordUtil(password, customer.password_hash);

@@ -2,7 +2,7 @@ import { Pool } from 'pg';
 import { sanitizeText } from './validation';
 
 // PostgreSQL Verbindung
-const pool = new Pool({
+export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }, // SSL für VPS-Server erforderlich
 });
@@ -187,9 +187,9 @@ export async function getBookingsByEmail(email: string): Promise<BookingData[]> 
 
 // Kunden-Schema (für bestehende customers Tabelle)
 export interface CustomerData {
-  id?: number;
+  id?: string | number;
   email: string;
-  password_hash: string;
+  password_hash?: string;
   name: string;
   phone?: string;
   company_name?: string;
@@ -197,6 +197,8 @@ export interface CustomerData {
   verification_token?: string;
   reset_token?: string;
   reset_token_expires?: Date;
+  portal_activated?: boolean;
+  portal_activated_at?: Date;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -222,21 +224,24 @@ export async function createCustomer(customerData: Omit<CustomerData, 'id' | 'cr
     const query = `
       INSERT INTO customers (
         email, password_hash, name, phone, company_name, is_verified,
-        verification_token, reset_token, reset_token_expires
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        verification_token, reset_token, reset_token_expires,
+        portal_activated, portal_activated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `;
     
     const values = [
       customerData.email,
-      customerData.password_hash,
+      customerData.password_hash || null,
       customerData.name,
       customerData.phone || null,
       customerData.company_name || null,
       customerData.is_verified,
       customerData.verification_token || null,
       customerData.reset_token || null,
-      customerData.reset_token_expires || null
+      customerData.reset_token_expires || null,
+      customerData.portal_activated || false,
+      customerData.portal_activated_at || null
     ];
     
     const result = await client.query(query, values);
@@ -293,6 +298,16 @@ export async function updateCustomer(email: string, updates: Partial<CustomerDat
     if (updates.reset_token_expires !== undefined) {
       fields.push(`reset_token_expires = $${paramCount++}`);
       values.push(updates.reset_token_expires);
+    }
+    
+    if (updates.portal_activated !== undefined) {
+      fields.push(`portal_activated = $${paramCount++}`);
+      values.push(updates.portal_activated);
+    }
+    
+    if (updates.portal_activated_at !== undefined) {
+      fields.push(`portal_activated_at = $${paramCount++}`);
+      values.push(updates.portal_activated_at);
     }
     
     if (fields.length === 0) {
@@ -378,21 +393,23 @@ export async function createTables(): Promise<void> {
   const client = await pool.connect();
   
   try {
-    // Kunden-Tabelle (falls noch nicht vorhanden)
+    // Kunden-Tabelle (falls noch nicht vorhanden) - erweitert um Portal-Felder
     const createCustomersTableQuery = `
       CREATE TABLE IF NOT EXISTS customers (
-        id SERIAL PRIMARY KEY,
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         email VARCHAR(255) UNIQUE NOT NULL,
-        password_hash VARCHAR(255) NOT NULL,
-        name VARCHAR(255) NOT NULL,
+        password_hash VARCHAR(255),
+        name VARCHAR(255),
         phone VARCHAR(50),
         company_name VARCHAR(255),
         is_verified BOOLEAN DEFAULT false,
         verification_token VARCHAR(255),
         reset_token VARCHAR(255),
         reset_token_expires TIMESTAMP,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        portal_activated BOOLEAN DEFAULT false,
+        portal_activated_at TIMESTAMP,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
     `;
     
@@ -408,10 +425,35 @@ export async function createTables(): Promise<void> {
       );
     `;
     
+    // Customer Portal Tokens Tabelle (für Portal-Aktivierung)
+    const createPortalTokensTableQuery = `
+      CREATE TABLE IF NOT EXISTS customer_portal_tokens (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        customer_email VARCHAR(255) NOT NULL,
+        token VARCHAR(255) UNIQUE NOT NULL,
+        expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+        used_at TIMESTAMP WITH TIME ZONE,
+        booking_id UUID,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_portal_tokens_email ON customer_portal_tokens(customer_email);
+      CREATE INDEX IF NOT EXISTS idx_portal_tokens_token ON customer_portal_tokens(token);
+      CREATE INDEX IF NOT EXISTS idx_portal_tokens_expires ON customer_portal_tokens(expires_at);
+    `;
+    
+    // Erweitere customers Tabelle um Portal-Felder (falls noch nicht vorhanden)
+    const alterCustomersTableQuery = `
+      ALTER TABLE customers 
+      ADD COLUMN IF NOT EXISTS portal_activated BOOLEAN DEFAULT false,
+      ADD COLUMN IF NOT EXISTS portal_activated_at TIMESTAMP;
+    `;
+    
     await client.query(createCustomersTableQuery);
     await client.query(createResetTokensTableQuery);
+    await client.query(createPortalTokensTableQuery);
+    await client.query(alterCustomersTableQuery);
     
-    console.log('✅ Zusätzliche Tabellen (customers, reset_tokens) erstellt/überprüft');
+    console.log('✅ Zusätzliche Tabellen (customers, reset_tokens, customer_portal_tokens) erstellt/überprüft');
   } finally {
     client.release();
   }

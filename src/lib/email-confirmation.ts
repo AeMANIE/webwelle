@@ -9,7 +9,7 @@ interface BookingConfirmationData {
   selectedAddons: Array<{
     label: string;
     price: string;
-    billing: 'oneTime' | 'monthly';
+    billing: 'oneTime' | 'monthly' | 'yearly';
   }>;
   totalAmount: number;
   currency: string;
@@ -29,7 +29,7 @@ export async function sendBookingConfirmation(data: BookingConfirmationData) {
           <li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span style="color: #374151;">${addon.label}</span>
-              <span style="color: #3b82f6; font-weight: 600;">${addon.price} ${addon.billing === 'monthly' ? 'mtl.' : ''}</span>
+              <span style="color: #3b82f6; font-weight: 600;">${addon.price} ${addon.billing === 'monthly' ? 'mtl.' : addon.billing === 'yearly' ? 'jährlich' : ''}</span>
             </div>
           </li>
         `).join('')}
@@ -156,7 +156,7 @@ BUCHUNGSDETAILS:
 - Preis: ${packagePrice}
 - Buchungs-ID: ${sessionId}
 
-${selectedAddons.length > 0 ? 'ZUSATZOPTIONEN:\n' + selectedAddons.map(addon => `- ${addon.label}: ${addon.price} ${addon.billing === 'monthly' ? 'mtl.' : ''}`).join('\n') + '\n' : ''}
+${selectedAddons.length > 0 ? 'ZUSATZOPTIONEN:\n' + selectedAddons.map(addon => `- ${addon.label}: ${addon.price} ${addon.billing === 'monthly' ? 'mtl.' : addon.billing === 'yearly' ? 'jährlich' : ''}`).join('\n') + '\n' : ''}
 
 GESAMTBETRAG: ${totalAmount.toFixed(2)} ${currency.toUpperCase()}
 

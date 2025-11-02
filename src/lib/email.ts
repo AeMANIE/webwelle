@@ -4,15 +4,35 @@ export function generateTAN(): string {
 }
 
 // E-Mail-Transporter konfigurieren (dynamisch importieren)
+// SMTP-Konfiguration für Hostinger (fest im Code, nur User/Passwort aus ENV)
 async function getTransporter() {
   const nodemailer = await import('nodemailer');
+  
+  // Hostinger SMTP-Konfiguration (fest im Code)
+  // Hostname: smtp.hostinger.com
+  // Port: 465
+  // SSL/TLS: ja (secure: true)
+  const SMTP_CONFIG = {
+    host: 'smtp.hostinger.com',
+    port: 465,
+    secure: true, // SSL/TLS für Port 465
+  };
+  
+  // Nur User und Passwort aus Environment-Variablen
+  const smtpUser = process.env.EMAIL_SMTP_USER;
+  const smtpPassword = process.env.EMAIL_SMTP_PASSWORD;
+  
+  if (!smtpUser || !smtpPassword) {
+    throw new Error('EMAIL_SMTP_USER und EMAIL_SMTP_PASSWORD müssen in .env.local gesetzt sein');
+  }
+  
   return nodemailer.createTransport({
-    host: process.env.EMAIL_SMTP_HOST || 'smtp.hostinger.com',
-    port: parseInt(process.env.EMAIL_SMTP_PORT || '465'),
-    secure: process.env.EMAIL_SMTP_SECURE === 'true',
+    host: SMTP_CONFIG.host,
+    port: SMTP_CONFIG.port,
+    secure: SMTP_CONFIG.secure,
     auth: {
-      user: process.env.EMAIL_SMTP_USER || 'info@webwelle.com',
-      pass: process.env.EMAIL_SMTP_PASSWORD || 'your-email-password'
+      user: smtpUser,
+      pass: smtpPassword
     }
   });
 }

@@ -28,7 +28,10 @@ export async function POST(request: NextRequest) {
     const headersList = await headers();
     const signature = headersList.get('stripe-signature');
 
+    console.log('🔔 Stripe Webhook empfangen');
+
     if (!signature) {
+      console.error('❌ Keine Stripe-Signatur gefunden');
       return NextResponse.json({ error: 'Keine Stripe-Signatur gefunden' }, { status: 400 });
     }
 
@@ -36,14 +39,16 @@ export async function POST(request: NextRequest) {
 
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      console.log(`✅ Webhook Event verifiziert: ${event.type}`);
     } catch (err) {
-      console.error('Webhook-Signatur-Verifikation fehlgeschlagen:', err);
+      console.error('❌ Webhook-Signatur-Verifikation fehlgeschlagen:', err);
       return NextResponse.json({ error: 'Ungültige Signatur' }, { status: 400 });
     }
 
     // Verarbeite verschiedene Event-Typen
     switch (event.type) {
       case 'checkout.session.completed':
+        console.log(`📦 Processing checkout.session.completed für Session: ${(event.data.object as Stripe.Checkout.Session).id}`);
         await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
         break;
       
@@ -169,9 +174,122 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
       await saveBooking(bookingData);
       console.log('✅ Buchung erfolgreich in Datenbank gespeichert');
+      
+      // Bestellbestätigung und Portal-Aktivierung E-Mails senden
+      if (session.customer_email) {
+        console.log(`📧 Versuche E-Mails zu senden an: ${session.customer_email}`);
+        await sendBookingAndActivationEmails(session, metadata, bookingData);
+      } else {
+        console.warn('⚠️ Keine customer_email in Session gefunden, E-Mails werden nicht gesendet');
+      }
     }
   } catch (error) {
     console.error('❌ Fehler beim Speichern der Buchung:', error);
+  }
+}
+
+// Bestellbestätigung und Portal-Aktivierungs-E-Mails senden
+async function sendBookingAndActivationEmails(
+  session: Stripe.Checkout.Session,
+  metadata: Stripe.Metadata,
+  bookingData: { session_id: string; customer_email?: string; customer_name?: string }
+) {
+  const { getRedisClient } = await import('@/lib/redis');
+  const { sendBookingConfirmation } = await import('@/lib/email-confirmation');
+  const { sendPortalActivationEmail } = await import('@/lib/email-portal-activation');
+  const { generateActivationToken, saveActivationToken } = await import('@/lib/portal-activation');
+  const { getPackageDisplayName, extractAddonsFromMetadata } = await import('@/lib/email-helpers');
+  
+  const redis = getRedisClient();
+  const emailSentKey = `email_sent:${session.id}`;
+  
+  console.log(`📧 sendBookingAndActivationEmails aufgerufen für Session: ${session.id}`);
+  console.log(`📧 E-Mail-Konfiguration prüfen: EMAIL_SMTP_USER=${process.env.EMAIL_SMTP_USER ? '✅ gesetzt' : '❌ fehlt'}, EMAIL_SMTP_PASSWORD=${process.env.EMAIL_SMTP_PASSWORD ? '✅ gesetzt' : '❌ fehlt'}`);
+  
+  try {
+    // Prüfe ob E-Mail bereits gesendet wurde (verhindert Duplikate)
+    if (redis && (await redis.status) === 'ready') {
+      const emailAlreadySent = await redis.get(emailSentKey);
+      if (emailAlreadySent) {
+        console.log('⚠️ E-Mail wurde bereits gesendet für Session:', session.id);
+        return;
+      }
+    }
+    
+    const customerEmail = session.customer_email!;
+    const customerName = metadata.customerName || bookingData.customer_name || customerEmail.split('@')[0];
+    const packageName = getPackageDisplayName(metadata.packageType || '', metadata.packageCategory);
+    const packagePrice = metadata.packagePriceDisplay || `${(session.amount_total || 0) / 100} €`;
+    const selectedAddons = extractAddonsFromMetadata(metadata, session);
+    const isMonthly = metadata.isMonthly === 'true' || !!session.subscription;
+    
+    // 1. Bestellbestätigung senden (für alle Pakettypen)
+    try {
+      console.log(`📧 Versende Bestellbestätigung an: ${customerEmail}`);
+      const emailResult = await sendBookingConfirmation({
+        customerName,
+        customerEmail,
+        packageName,
+        packagePrice,
+        isMonthly,
+        selectedAddons: selectedAddons.map(addon => ({
+          label: addon.label,
+          price: addon.price,
+          billing: addon.billing === 'yearly' ? 'monthly' : (addon.billing === 'monthly' ? 'monthly' : 'oneTime')
+        })),
+        totalAmount: (session.amount_total || 0) / 100,
+        currency: session.currency || 'eur',
+        sessionId: session.id,
+      });
+      
+      if (emailResult.success) {
+        console.log(`✅ Bestellbestätigung erfolgreich gesendet an ${customerEmail}`);
+      } else {
+        console.error(`❌ Bestellbestätigung fehlgeschlagen: ${emailResult.error || 'Unbekannter Fehler'}`);
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Senden der Bestellbestätigung:', error);
+      // Weiter mit Portal-Aktivierung auch wenn Bestätigung fehlschlägt
+    }
+    
+    // 2. Portal-Aktivierungs-Token generieren und senden (nur für Webdesign-Pakete mit Formular)
+    const isKIPackage = metadata.packageCategory === 'ki-automation';
+    const isAIVoicePackage = metadata.packageCategory === 'ai-voice';
+    const isSimplifiedCheckout = isKIPackage || isAIVoicePackage;
+    
+    // Portal-Aktivierung nur für Webdesign-Pakete (mit vollständigem Formular)
+    if (!isSimplifiedCheckout) {
+      try {
+        const activationToken = generateActivationToken();
+        
+        // Token in Datenbank speichern
+        await saveActivationToken(
+          customerEmail,
+          activationToken,
+          bookingData.session_id
+        );
+        
+        // Portal-Aktivierungs-E-Mail senden
+        await sendPortalActivationEmail({
+          customerName,
+          customerEmail,
+          activationToken,
+        });
+        
+        console.log(`✅ Portal-Aktivierungs-E-Mail gesendet an ${customerEmail}`);
+      } catch (error) {
+        console.error('❌ Fehler beim Senden der Portal-Aktivierungs-E-Mail:', error);
+        // Nicht kritisch - kann später manuell gesendet werden
+      }
+    }
+    
+    // Markiere E-Mail als gesendet (24h TTL)
+    if (redis && (await redis.status) === 'ready') {
+      await redis.setex(emailSentKey, 86400, '1'); // 24 Stunden
+    }
+  } catch (error) {
+    console.error('❌ Fehler beim Senden der E-Mails:', error);
+    // Nicht kritisch - kann später manuell gesendet werden
   }
 }
 
