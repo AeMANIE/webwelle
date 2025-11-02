@@ -6,12 +6,16 @@ import nodemailer from 'nodemailer';
  * Testet die Verbindung zum SMTP-Server
  */
 export async function GET() {
-  // Sicherheit: Nur in Development oder mit API-Key
-  if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_DEBUG_ROUTES) {
-    return NextResponse.json({
-      status: 'error',
-      message: 'Debug-Route nur in Development verfügbar'
-    }, { status: 403 });
+  // Sicherheit: Nur in Development oder mit ALLOW_DEBUG_ROUTES Flag
+  // In Production muss ALLOW_DEBUG_ROUTES=true in .env gesetzt sein
+  if (process.env.NODE_ENV === 'production') {
+    const allowDebug = process.env.ALLOW_DEBUG_ROUTES === 'true';
+    if (!allowDebug) {
+      return NextResponse.json({
+        status: 'error',
+        message: 'Debug-Route nur mit ALLOW_DEBUG_ROUTES=true verfügbar'
+      }, { status: 403 });
+    }
   }
 
   try {

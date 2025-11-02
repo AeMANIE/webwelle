@@ -8,12 +8,17 @@ import { generateActivationToken, saveActivationToken } from '@/lib/portal-activ
  * Simuliert eine Bestellung und sendet E-Mails
  */
 export async function POST(request: NextRequest) {
-  // Sicherheit: Nur in Development oder mit API-Key
-  if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_DEBUG_ROUTES) {
-    return NextResponse.json({
-      status: 'error',
-      message: 'Test-Route nur in Development verfügbar'
-    }, { status: 403 });
+  // Sicherheit: Nur in Development oder mit ALLOW_DEBUG_ROUTES Flag
+  // In Production muss ALLOW_DEBUG_ROUTES=true in .env gesetzt sein
+  if (process.env.NODE_ENV === 'production') {
+    const allowDebug = process.env.ALLOW_DEBUG_ROUTES === 'true';
+    if (!allowDebug) {
+      console.warn('⚠️ Test-Route blockiert: ALLOW_DEBUG_ROUTES nicht gesetzt');
+      return NextResponse.json({
+        status: 'error',
+        message: 'Test-Route nur mit ALLOW_DEBUG_ROUTES=true verfügbar'
+      }, { status: 403 });
+    }
   }
 
   try {
