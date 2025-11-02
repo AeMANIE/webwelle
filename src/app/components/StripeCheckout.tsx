@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { createCheckoutSession, loadStripeOnDemand } from '@/lib/stripe';
 
 interface StripeCheckoutProps {
-  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle';
+  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle'; // Nur Webdesign-Pakete
   isMonthly: boolean;
   customerEmail: string;
   customerName: string;

@@ -78,6 +78,7 @@ export default function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-4 text-foreground">Leistungen</h4>
             <ul className="space-y-2">
+              <li><Link href="/ai-voice" className="text-muted-foreground hover:text-primary transition-colors font-light">Telefonassistent AI</Link></li>
               <li><Link href={{ pathname: '/', hash: 'produkte' }} className="text-muted-foreground hover:text-primary transition-colors font-light">Webdesign</Link></li>
               <li><Link href={{ pathname: '/', hash: 'produkte' }} className="text-muted-foreground hover:text-primary transition-colors font-light">E-Commerce</Link></li>
               <li><Link href={{ pathname: '/', hash: 'leistungen' }} className="text-muted-foreground hover:text-primary transition-colors font-light">SEO & Performance</Link></li>

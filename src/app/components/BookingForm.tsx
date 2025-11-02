@@ -6,7 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import StripeCheckout from './StripeCheckout';
 
 interface BookingFormProps {
-  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle';
+  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle'; // Nur Webdesign-Pakete
   packageName: string;
   packageDescription: string;
   features?: string[];
@@ -14,7 +14,7 @@ interface BookingFormProps {
   yearlyPrice?: number;
 }
 
-type ZusatzZahlungType = 'oneTime' | 'monthly';
+type ZusatzZahlungType = 'oneTime' | 'monthly' | 'yearly';
 
 interface BookingFormData {
   // Allgemeine Informationen
@@ -142,6 +142,41 @@ export default function BookingForm({ packageType, packageName, packageDescripti
         return { ...prev, zusatzzahlung: nextZahlung };
       });
     }
+    // Bei monatlichem Hauptpaket: Setze automatisch auf monthly wenn Add-on mit monthly-Option gewählt wird
+    if (checked && field === 'zusatzfunktionen' && isMonthly) {
+      setFormData((prev) => {
+        const nextZahlung = { ...prev.zusatzzahlung };
+        // Wenn Add-on monthly unterstützt, setze auf monthly
+        // (oneTime Add-ons werden nicht automatisch gesetzt)
+        const option = [
+          { value: 'terminbuchung', supportsMonthly: true },
+          { value: 'online-shop', supportsMonthly: true },
+          { value: 'mitglieder-welle', supportsMonthly: true },
+          { value: 'lieferdienst', supportsMonthly: true },
+        ].find(opt => opt.value === value);
+        if (option && option.supportsMonthly) {
+          nextZahlung[value] = 'monthly';
+        }
+        return { ...prev, zusatzzahlung: nextZahlung };
+      });
+    }
+    // Bei jährlichem Hauptpaket: Setze automatisch auf yearly wenn Add-on mit yearly-Option gewählt wird
+    if (checked && field === 'zusatzfunktionen' && !isMonthly) {
+      setFormData((prev) => {
+        const nextZahlung = { ...prev.zusatzzahlung };
+        // Wenn Add-on yearly unterstützt, setze auf yearly
+        const option = [
+          { value: 'terminbuchung', supportsYearly: true },
+          { value: 'online-shop', supportsYearly: true },
+          { value: 'mitglieder-welle', supportsYearly: true },
+          { value: 'lieferdienst', supportsYearly: true },
+        ].find(opt => opt.value === value);
+        if (option && option.supportsYearly) {
+          nextZahlung[value] = 'yearly';
+        }
+        return { ...prev, zusatzzahlung: nextZahlung };
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -173,12 +208,6 @@ export default function BookingForm({ packageType, packageName, packageDescripti
         return { monthly: '139 € mtl.', yearly: '1.520 € jährlich' };
       case 'erfolgswelle':
         return { monthly: '278 € mtl.', yearly: '3.289 € jährlich' };
-      case 'flowwelle':
-        return { monthly: '99 € mtl.', yearly: '990 € jährlich' };
-      case 'powerwelle':
-        return { monthly: '179 € mtl.', yearly: '1.790 € jährlich' };
-      case 'meisterwelle':
-        return { monthly: '249 € mtl.', yearly: '2.490 € jährlich' };
       default:
         return { monthly: '', yearly: '' };
     }
@@ -356,18 +385,28 @@ export default function BookingForm({ packageType, packageName, packageDescripti
             {[
               { value: 'blitz-welle', label: 'Blitz-Welle: Online in 2 Wochen', price: '249,99 €', supportsMonthly: false },
               { value: 'logo-welle', label: 'LogoWelle: Exklusives Logo-Design', price: '299 €', supportsMonthly: false },
-              { value: 'terminbuchung', label: 'Terminbuchungs-System: Online-Terminbuchung für Ihre Kunden', price: '1.599 €', monthlyPrice: '145,99 € mtl', supportsMonthly: true },
-              { value: 'online-shop', label: 'Online-Shop: Mit integriertem Warenkorb (bis zu 10 Produkte)', price: '2.999 €', monthlyPrice: '274,99 € mtl', supportsMonthly: true },
-              { value: 'mitglieder-welle', label: 'MitgliederWelle: Mitgliederbereich inkl. Admin-Funktionen', price: '2.399 €', monthlyPrice: '219,99 € mtl', supportsMonthly: true },
+              { value: 'terminbuchung', label: 'Terminbuchungs-System: Online-Terminbuchung für Ihre Kunden', monthlyPrice: '145,99 € mtl', yearlyPrice: '1.599 € jährlich', supportsMonthly: true, supportsYearly: true },
+              { value: 'online-shop', label: 'Online-Shop: Mit integriertem Warenkorb (bis zu 10 Produkte)', monthlyPrice: '274,99 € mtl', yearlyPrice: '2.999 € jährlich', supportsMonthly: true, supportsYearly: true },
+              { value: 'mitglieder-welle', label: 'MitgliederWelle: Mitgliederbereich inkl. Admin-Funktionen', monthlyPrice: '219,99 € mtl', yearlyPrice: '2.399 € jährlich', supportsMonthly: true, supportsYearly: true },
               { value: 'foto-welle-5', label: 'FotoWelle: Profi-Fotopaket (5 Fotos)', price: '575 €', supportsMonthly: false },
               { value: 'foto-welle-10', label: 'FotoWelle: Profi-Fotopaket (10 Fotos)', price: '999 €', supportsMonthly: false },
               { value: 'foto-welle-20', label: 'FotoWelle: Profi-Fotopaket (20 Fotos)', price: '1.750 €', supportsMonthly: false },
-              { value: 'lieferdienst', label: 'Lieferdienst: Integration eines eigenen Lieferdienstes', price: '2.999 €', monthlyPrice: '279,99 € mtl', supportsMonthly: true },
+              { value: 'lieferdienst', label: 'Lieferdienst: Integration eines eigenen Lieferdienstes', monthlyPrice: '279,99 € mtl', yearlyPrice: '2.999 € jährlich', supportsMonthly: true, supportsYearly: true },
               { value: 'google-my-business', label: 'Google My Business Komplettservice: Listung, Pflege und Optimierung', price: '399 €', supportsMonthly: false },
               { value: 'visitenkarten', label: 'Visitenkarten-Paket – Ihr Unternehmen professionell in Szene gesetzt', price: '100 €', supportsMonthly: false }
-            ].map((option) => {
+            ]
+            // Filtere Add-ons basierend auf Hauptpaket-Intervall
+            .filter((option) => {
+              if (isMonthly) {
+                // Bei monatlichem Hauptpaket: Zeige nur Add-ons mit monthly-Option ODER oneTime Add-ons
+                return option.supportsMonthly || (!option.supportsMonthly && !option.supportsYearly);
+              } else {
+                // Bei jährlichem Hauptpaket: Zeige nur Add-ons mit yearly-Option ODER oneTime Add-ons
+                return option.supportsYearly || (!option.supportsMonthly && !option.supportsYearly);
+              }
+            })
+            .map((option) => {
               const checked = formData.zusatzfunktionen.includes(option.value);
-              const zahlung = formData.zusatzzahlung?.[option.value] as (ZusatzZahlungType | undefined);
               return (
                 <div key={option.value} className="p-3 border border-border rounded-lg hover:bg-primary/5 transition-colors">
                   <label className="flex items-start">
@@ -379,30 +418,37 @@ export default function BookingForm({ packageType, packageName, packageDescripti
                     />
                     <div className="flex-1">
                       <span className="text-foreground font-medium">{option.label}</span>
-                      <div className="text-primary font-semibold text-sm mt-1">{option.price}{option.supportsMonthly && option.monthlyPrice ? `  oder ${option.monthlyPrice}` : ''}</div>
+                      {/* Preis-Anzeige basierend auf Hauptpaket und verfügbaren Optionen */}
+                      <div className="text-primary font-semibold text-sm mt-1">
+                        {isMonthly && option.supportsMonthly && option.monthlyPrice
+                          ? option.monthlyPrice
+                          : !isMonthly && option.supportsYearly && option.yearlyPrice
+                          ? option.yearlyPrice
+                          : option.price}
+                      </div>
                     </div>
                   </label>
-                  {checked && option.supportsMonthly && (
+                  {/* Bei monatlichem Hauptpaket: Zeige NUR Add-ons mit monthly-Option (mit monthly Auswahl) */}
+                  {checked && isMonthly && option.supportsMonthly && option.monthlyPrice && (
                     <div className="mt-2 pl-7">
-                      <div className="inline-flex items-center gap-4 text-sm">
-                        <label className="inline-flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name={`zahlung-${option.value}`}
-                            checked={zahlung !== 'monthly'}
-                            onChange={() => setFormData((prev) => ({ ...prev, zusatzzahlung: { ...prev.zusatzzahlung, [option.value]: 'oneTime' } }))}
-                          />
-                          <span className="text-foreground">Einmalig</span>
-                        </label>
-                        <label className="inline-flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name={`zahlung-${option.value}`}
-                            checked={zahlung === 'monthly'}
-                            onChange={() => setFormData((prev) => ({ ...prev, zusatzzahlung: { ...prev.zusatzzahlung, [option.value]: 'monthly' } }))}
-                          />
-                          <span className="text-foreground">Monatlich</span>
-                        </label>
+                      <div className="text-sm text-foreground">
+                        <span className="font-semibold">Monatlich ({option.monthlyPrice})</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Bei jährlichem Hauptpaket: Zeige NUR Add-ons mit yearly-Option (mit yearly Auswahl) */}
+                  {checked && !isMonthly && option.supportsYearly && option.yearlyPrice && (
+                    <div className="mt-2 pl-7">
+                      <div className="text-sm text-foreground">
+                        <span className="font-semibold">Jährlich ({option.yearlyPrice})</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Einmalige Add-ons (Blitz-Welle, LogoWelle, FotoWelle, etc.) - immer verfügbar */}
+                  {checked && !option.supportsMonthly && !option.supportsYearly && option.price && (
+                    <div className="mt-2 pl-7">
+                      <div className="text-sm text-foreground">
+                        <span className="font-semibold">Einmalig ({option.price})</span>
                       </div>
                     </div>
                   )}
@@ -433,13 +479,13 @@ export default function BookingForm({ packageType, packageName, packageDescripti
             const options = [
               { value: 'blitz-welle', label: 'Blitz-Welle: Online in 2 Wochen', price: '249,99 €', supportsMonthly: false as const },
               { value: 'logo-welle', label: 'LogoWelle: Exklusives Logo-Design', price: '299 €', supportsMonthly: false as const },
-              { value: 'terminbuchung', label: 'Terminbuchungs-System: Online-Terminbuchung für Ihre Kunden', price: '1.599 €', monthlyPrice: '145,99 € mtl', supportsMonthly: true as const },
-              { value: 'online-shop', label: 'Online-Shop: Mit integriertem Warenkorb (bis zu 10 Produkte)', price: '2.999 €', monthlyPrice: '274,99 € mtl', supportsMonthly: true as const },
-              { value: 'mitglieder-welle', label: 'MitgliederWelle: Mitgliederbereich inkl. Admin-Funktionen', price: '2.399 €', monthlyPrice: '219,99 € mtl', supportsMonthly: true as const },
+              { value: 'terminbuchung', label: 'Terminbuchungs-System: Online-Terminbuchung für Ihre Kunden', monthlyPrice: '145,99 € mtl', yearlyPrice: '1.599 € jährlich', supportsMonthly: true as const, supportsYearly: true as const },
+              { value: 'online-shop', label: 'Online-Shop: Mit integriertem Warenkorb (bis zu 10 Produkte)', monthlyPrice: '274,99 € mtl', yearlyPrice: '2.999 € jährlich', supportsMonthly: true as const, supportsYearly: true as const },
+              { value: 'mitglieder-welle', label: 'MitgliederWelle: Mitgliederbereich inkl. Admin-Funktionen', monthlyPrice: '219,99 € mtl', yearlyPrice: '2.399 € jährlich', supportsMonthly: true as const, supportsYearly: true as const },
               { value: 'foto-welle-5', label: 'FotoWelle: Profi-Fotopaket (5 Fotos)', price: '575 €', supportsMonthly: false as const },
               { value: 'foto-welle-10', label: 'FotoWelle: Profi-Fotopaket (10 Fotos)', price: '999 €', supportsMonthly: false as const },
               { value: 'foto-welle-20', label: 'FotoWelle: Profi-Fotopaket (20 Fotos)', price: '1.750 €', supportsMonthly: false as const },
-              { value: 'lieferdienst', label: 'Lieferdienst: Integration eines eigenen Lieferdienstes', price: '2.999 €', monthlyPrice: '279,99 € mtl', supportsMonthly: true as const },
+              { value: 'lieferdienst', label: 'Lieferdienst: Integration eines eigenen Lieferdienstes', monthlyPrice: '279,99 € mtl', yearlyPrice: '2.999 € jährlich', supportsMonthly: true as const, supportsYearly: true as const },
               { value: 'google-my-business', label: 'Google My Business Komplettservice: Listung, Pflege und Optimierung', price: '399 €', supportsMonthly: false as const },
               { value: 'visitenkarten', label: 'Visitenkarten-Paket – Ihr Unternehmen professionell in Szene gesetzt', price: '100 €', supportsMonthly: false as const }
             ];
@@ -462,7 +508,25 @@ export default function BookingForm({ packageType, packageName, packageDescripti
               const opt = options.find(o => o.value === key);
               if (!opt) return;
               const zahlung = formData.zusatzzahlung?.[key];
-              const chosen = opt.supportsMonthly && zahlung === 'monthly' && opt.monthlyPrice ? opt.monthlyPrice : opt.price;
+              // Bestimme den Preis basierend auf gewählter Zahlungsart und Hauptpaket
+              let chosen = '';
+              if (isMonthly) {
+                // Bei monatlichem Hauptpaket: monthly-Option wenn vorhanden
+                if (opt.supportsMonthly && zahlung === 'monthly' && opt.monthlyPrice) {
+                  chosen = opt.monthlyPrice;
+                } else if (opt.price) {
+                  // Einmalige Add-ons
+                  chosen = opt.price;
+                }
+              } else {
+                // Bei jährlichem Hauptpaket: yearly-Option wenn vorhanden
+                if (opt.supportsYearly && zahlung === 'yearly' && opt.yearlyPrice) {
+                  chosen = opt.yearlyPrice;
+                } else if (opt.price) {
+                  // Einmalige Add-ons
+                  chosen = opt.price;
+                }
+              }
               cartRows.push({
                 left: (<div className="text-foreground">{opt.label}</div>),
                 right: chosen || '',

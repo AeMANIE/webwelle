@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import BookingForm from '../../components/BookingForm';
+import KICheckout from '../../components/KICheckout';
 import ScrollToTop from '../../components/ScrollToTop';
 import CookieBanner from '../../components/CookieBanner';
 
@@ -68,25 +68,21 @@ export default function FlowWelleBookingPage() {
               </p>
             </div>
             
-            <div className="bg-card rounded-2xl p-8 border border-border">
-              <Suspense fallback={<div className="text-center py-8">Lade Buchungsformular...</div>}>
-                <BookingForm 
-                  packageType="flowwelle"
-                  packageName="FlowWelle"
-                  packageDescription="Der smarte Einstieg in die KI-Automatisierung"
-                  features={[
-                    "Bis zu 5 Workflow-Schritte",
-                    "Anfragemanagement & Terminbuchung",
-                    "Einfache Datenübertragung",
-                    "Support über Web, E-Mail und Chat",
-                    "Schnelle, markengerechte Antworten",
-                    "Basis-Analysen"
-                  ]}
-                  monthlyPrice={99}
-                  yearlyPrice={990}
-                />
-              </Suspense>
-            </div>
+            <Suspense fallback={<div className="text-center py-8">Lade Buchungsformular...</div>}>
+              <KICheckout 
+                packageType="flowwelle"
+                packageName="FlowWelle"
+                packageDescription="Der smarte Einstieg in die KI-Automatisierung"
+                features={[
+                  "Bis zu 5 Workflow-Schritte",
+                  "Anfragemanagement & Terminbuchung",
+                  "Einfache Datenübertragung",
+                  "Support über Web, E-Mail und Chat",
+                  "Schnelle, markengerechte Antworten",
+                  "Basis-Analysen"
+                ]}
+              />
+            </Suspense>
           </div>
         </div>
       </main>

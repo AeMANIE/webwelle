@@ -31,7 +31,7 @@ function sanitizeBookingData(bookingData: BookingData): BookingData {
 export interface BookingData {
   id?: string; // UUID statt number
   session_id: string;
-  package_type: 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle';
+  package_type: 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle' | 'minijob' | 'midijob' | 'festangestellt' | 'einrichtungspaket';
   is_monthly: boolean;
   checkout_mode: 'payment' | 'subscription';
   package_price_display: string;

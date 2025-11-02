@@ -23,8 +23,12 @@ export const loadStripeOnDemand = async (): Promise<unknown> => {
   return loadStripe(getStripePublishableKey(), { locale: 'de' });
 };
 
-// Preis-Konfiguration für WebWelle-Pakete
-export const PRICE_CONFIG = {
+// ============================================================================
+// WEBDESIGN-PAKETE KONFIGURATION (StarterWelle, BusinessWelle, ErfolgsWelle)
+// ============================================================================
+// Diese Pakete verwenden das vollständige BookingForm mit allen Feldern
+
+export const WEBDESIGN_PRICE_CONFIG = {
   starterwelle: {
     monthly: {
       priceId: 'price_1SGWPMQoIwTqROaydTqIlX1W', // StarterWelle monatlich (77€)
@@ -44,7 +48,7 @@ export const PRICE_CONFIG = {
       currency: 'eur'
     },
     yearly: {
-      priceId: 'price_1SGWxJQoIwTqROayweTQw8CD', // BusinessWelle jährlich (1.520€)
+      priceId: 'price_1SOzKaQoIwTqROayXgPNT06d', // BusinessWelle jährlich (1.520€) - korrigierte Price ID
       amount: 152000, // 1520€ in Cent
       currency: 'eur'
     }
@@ -56,54 +60,105 @@ export const PRICE_CONFIG = {
       currency: 'eur'
     },
     yearly: {
-      priceId: 'price_1SGX5kQoIwTqROaybEHbhBtv', // ErfolgsWelle jährlich (3.289€)
-      amount: 328900, // 3289€ in Cent
+      priceId: 'price_1SGX5kQoIwTqROaybEHbhBtv', // ErfolgsWelle jährlich (2.999€)
+      amount: 299900, // 2999€ in Cent (korrigiert nach CSV)
       currency: 'eur'
     }
-  },
-  // AI-Agent Pakete
+  }
+} as const;
+
+// ============================================================================
+// KI-AUTOMATISIERUNG-PAKETE KONFIGURATION (FlowWelle, PowerWelle, MeisterWelle)
+// ============================================================================
+// Diese Pakete haben vereinfachtes Checkout - direkt zu Stripe ohne großes Formular
+
+export const KI_PRICE_CONFIG = {
   flowwelle: {
     monthly: {
-      priceId: 'price_flowwelle_monthly', // FlowWelle monatlich (99€) - TODO: Echte Stripe Price ID
+      priceId: 'price_1SOz64QoIwTqROayI5oZs86g', // FlowWelle monatlich (99€)
       amount: 9900, // 99€ in Cent
       currency: 'eur'
     },
     yearly: {
-      priceId: 'price_flowwelle_yearly', // FlowWelle jährlich (990€) - TODO: Echte Stripe Price ID
+      priceId: 'price_1SOz71QoIwTqROaybfQJFcci', // FlowWelle jährlich (990€)
       amount: 99000, // 990€ in Cent
       currency: 'eur'
     }
   },
   powerwelle: {
     monthly: {
-      priceId: 'price_powerwelle_monthly', // PowerWelle monatlich (179€) - TODO: Echte Stripe Price ID
+      priceId: 'price_1SOzFBQoIwTqROay0GxOscBj', // PowerWelle monatlich (179€)
       amount: 17900, // 179€ in Cent
       currency: 'eur'
     },
     yearly: {
-      priceId: 'price_powerwelle_yearly', // PowerWelle jährlich (1.790€) - TODO: Echte Stripe Price ID
+      priceId: 'price_1SOzFqQoIwTqROayV38D0mh5', // PowerWelle jährlich (1.790€)
       amount: 179000, // 1790€ in Cent
       currency: 'eur'
     }
   },
   meisterwelle: {
     monthly: {
-      priceId: 'price_meisterwelle_monthly', // MeisterWelle monatlich (249€) - TODO: Echte Stripe Price ID
+      priceId: 'price_1SOzGcQoIwTqROayR6v5oAkR', // MeisterWelle monatlich (249€)
       amount: 24900, // 249€ in Cent
       currency: 'eur'
     },
     yearly: {
-      priceId: 'price_meisterwelle_yearly', // MeisterWelle jährlich (2.490€) - TODO: Echte Stripe Price ID
+      priceId: 'price_1SOzHBQoIwTqROayL8o75ic7', // MeisterWelle jährlich (2.490€)
       amount: 249000, // 2490€ in Cent
       currency: 'eur'
     }
   }
+} as const;
+
+// ============================================================================
+// AI-VOICE-PAKETE KONFIGURATION (Mini Job, Midi Job, Festangestellt AI-Agent)
+// ============================================================================
+// Diese Pakete sind monatliche Subscriptions, vereinfachtes Checkout
+
+export const AI_VOICE_PRICE_CONFIG = {
+  minijob: {
+    monthly: {
+      priceId: 'price_1SOvxnQoIwTqROaypfI6ff58', // Mini Job AI-Assistent monatlich (399€)
+      amount: 39900, // 399€ in Cent
+      currency: 'eur'
+    }
+  },
+  midijob: {
+    monthly: {
+      priceId: 'price_1SOvyiQoIwTqROaySSNqaqqE', // Midi Job AI-Assistenz monatlich (999€)
+      amount: 99900, // 999€ in Cent
+      currency: 'eur'
+    }
+  },
+  festangestellt: {
+    monthly: {
+      priceId: 'price_1SOvzoQoIwTqROayU9iql5tr', // Festangestellt AI-Agent monatlich (1999€)
+      amount: 199900, // 1999€ in Cent
+      currency: 'eur'
+    }
+  },
+  einrichtungspaket: {
+    oneTime: {
+      priceId: 'price_1SOyytQoIwTqROayNXuZIxWy', // Einrichtungspaket AI Voice (1499€)
+      amount: 149900, // 1499€ in Cent
+      currency: 'eur'
+    }
+  }
+} as const;
+
+// Rückwärtskompatibilität: PRICE_CONFIG für bestehenden Code
+export const PRICE_CONFIG = {
+  ...WEBDESIGN_PRICE_CONFIG,
+  ...KI_PRICE_CONFIG,
+  ...AI_VOICE_PRICE_CONFIG
 };
 
 // Zusatzoptionen (Add-ons) Preis-Konfiguration
 export const ADDON_PRICE_CONFIG: Record<string, {
   oneTime?: { priceId: string };
   monthly?: { priceId: string };
+  yearly?: { priceId: string };
 }> = {
   // Keys müssen mit BookingForm "zusatzfunktionen" übereinstimmen
   'blitz-welle': {
@@ -113,16 +168,16 @@ export const ADDON_PRICE_CONFIG: Record<string, {
     oneTime: { priceId: 'price_1SI2T1QoIwTqROayUnmc8Fjm' }, // 299 €
   },
   terminbuchung: {
-    oneTime: { priceId: 'price_1SI2TuQoIwTqROay124259lI' }, // 1.599 €
     monthly: { priceId: 'price_1SI2WFQoIwTqROayiYbscwip' }, // 145,99 € mntl
+    yearly: { priceId: 'price_1SI2TuQoIwTqROay124259lI' }, // 1.599 € jährlich (war fälschlicherweise als oneTime)
   },
   'online-shop': {
-    oneTime: { priceId: 'price_1SI2YAQoIwTqROayxsJwyBJy' }, // 2.999 €
     monthly: { priceId: 'price_1SI2Z7QoIwTqROay9qWE87Pj' }, // 274,99 € mntl
+    yearly: { priceId: 'price_1SI2YAQoIwTqROayxsJwyBJy' }, // 2.999 € jährlich (war fälschlicherweise als oneTime)
   },
   'mitglieder-welle': {
-    oneTime: { priceId: 'price_1SI2ZsQoIwTqROay53gUCPvq' }, // 2.399 €
     monthly: { priceId: 'price_1SI2akQoIwTqROayxQ1jSUCl' }, // 219,99 € mntl
+    yearly: { priceId: 'price_1SOzMxQoIwTqROayrJt0V0hV' }, // 2.399 € jährlich
   },
   'foto-welle-5': {
     oneTime: { priceId: 'price_1SI2buQoIwTqROayOtScLodL' }, // 575 €
@@ -134,8 +189,8 @@ export const ADDON_PRICE_CONFIG: Record<string, {
     oneTime: { priceId: 'price_1SI2dLQoIwTqROayiKC0lEx3' }, // 1.750 €
   },
   lieferdienst: {
-    oneTime: { priceId: 'price_1SI2eJQoIwTqROayIDtCsqMD' }, // 2.999 €
     monthly: { priceId: 'price_1SI2fVQoIwTqROay2pTT2q2z' }, // 279,99 € mntl
+    yearly: { priceId: 'price_1SI2eJQoIwTqROayIDtCsqMD' }, // 2.999 € jährlich (war fälschlicherweise als oneTime)
   },
   'google-my-business': {
     oneTime: { priceId: 'price_1SI2gKQoIwTqROayF1uuJVCZ' }, // 399 €
@@ -145,9 +200,11 @@ export const ADDON_PRICE_CONFIG: Record<string, {
   },
 };
 
-// Stripe Checkout Session erstellen
-export async function createCheckoutSession(
-  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle',
+// ============================================================================
+// WEBDESIGN-PAKETE: Checkout Session erstellen (mit vollständigem Formular)
+// ============================================================================
+export async function createWebdesignCheckoutSession(
+  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle',
   isMonthly: boolean,
   customerEmail: string,
   customerName: string,
@@ -160,26 +217,94 @@ export async function createCheckoutSession(
       ? (selectedAddonsField as string[])
       : [];
 
-    // Zahlungsart pro Add-on aus dem Formular berücksichtigen, sonst Fallback:
+    // WICHTIG: Stripe Checkout Regeln:
+    // ✅ ERLAUBT: Subscription (monatlich ODER jährlich) + One-time Payment in derselben Session
+    // ❌ NICHT ERLAUBT: Subscription (monatlich) + Subscription (jährlich) in derselben Session
+    // ✅ ERLAUBT: Subscription (jährlich) + Subscription (jährlich) - beide haben dasselbe Intervall!
+    // Daher filtern wir Add-ons nach dem Hauptpaket-Intervall:
+    // - Hauptpaket monthly (subscription) → monthly subscription-Add-ons UND one-time Add-ons erlaubt ✅
+    // - Hauptpaket yearly (subscription) → yearly subscription-Add-ons UND one-time Add-ons erlaubt ✅
+    
     const perAddonPaymentField = (formData as Record<string, unknown>)['zusatzzahlung'];
-    const perAddonPaymentPreference: Record<string, 'oneTime' | 'monthly' | undefined> = (perAddonPaymentField as Record<string, 'oneTime' | 'monthly'>) || {};
+    const perAddonPaymentPreference: Record<string, 'oneTime' | 'monthly' | 'yearly' | undefined> = (perAddonPaymentField as Record<string, 'oneTime' | 'monthly' | 'yearly'>) || {};
+    
+    // Hauptpaket ist immer subscription (monthly oder yearly), nie payment!
+    const mainPackageInterval: 'monthly' | 'yearly' = isMonthly ? 'monthly' : 'yearly';
+    
     let hasRecurringAddons = false;
+    const incompatibleAddons: string[] = [];
+    const compatibleAddons: string[] = [];
+    
     const addOnPriceIds = selectedAddons
       .map((key) => {
         const cfg = ADDON_PRICE_CONFIG[key];
-        if (!cfg) return undefined;
+        if (!cfg) return { key, priceId: undefined, compatible: false };
+        
         const preferred = perAddonPaymentPreference[key];
-        if (preferred === 'monthly') {
+        
+        // Wenn Hauptpaket monthly subscription ist
+        if (mainPackageInterval === 'monthly') {
+          // ✅ Monthly subscription-Add-ons UND One-time Add-ons sind beide erlaubt!
+          // Zuerst prüfe gewünschte Präferenz
+          if (preferred === 'monthly' && cfg.monthly?.priceId) {
+            hasRecurringAddons = true;
+            compatibleAddons.push(key);
+            return { key, priceId: cfg.monthly.priceId, compatible: true };
+          }
+          if (preferred === 'oneTime' && cfg.oneTime?.priceId) {
+            compatibleAddons.push(key);
+            return { key, priceId: cfg.oneTime.priceId, compatible: true };
+          }
+          // Fallback: Versuche monthly subscription zuerst, dann one-time
           if (cfg.monthly?.priceId) {
             hasRecurringAddons = true;
-            return cfg.monthly.priceId;
+            compatibleAddons.push(key);
+            return { key, priceId: cfg.monthly.priceId, compatible: true };
           }
-          return cfg.oneTime?.priceId;
+          if (cfg.oneTime?.priceId) {
+            compatibleAddons.push(key);
+            return { key, priceId: cfg.oneTime.priceId, compatible: true };
+          }
+          // Keine passende Option verfügbar
+          incompatibleAddons.push(key);
+          return { key, priceId: undefined, compatible: false };
         }
-        // default: einmalig
-        return cfg.oneTime?.priceId || cfg.monthly?.priceId;
+        
+        // Wenn Hauptpaket yearly subscription ist
+        // ✅ Yearly subscription-Add-ons UND One-time Add-ons sind beide erlaubt!
+        // (Beide haben dasselbe yearly Intervall - erlaubt!)
+        if (preferred === 'yearly' && cfg.yearly?.priceId) {
+          hasRecurringAddons = true;
+          compatibleAddons.push(key);
+          return { key, priceId: cfg.yearly.priceId, compatible: true };
+        }
+        if (preferred === 'oneTime' && cfg.oneTime?.priceId) {
+          compatibleAddons.push(key);
+          return { key, priceId: cfg.oneTime.priceId, compatible: true };
+        }
+        // Fallback: Versuche yearly subscription zuerst, dann one-time
+        if (cfg.yearly?.priceId) {
+          hasRecurringAddons = true;
+          compatibleAddons.push(key);
+          return { key, priceId: cfg.yearly.priceId, compatible: true };
+        }
+        if (cfg.oneTime?.priceId) {
+          compatibleAddons.push(key);
+          return { key, priceId: cfg.oneTime.priceId, compatible: true };
+        }
+        // Monthly subscription Add-on ist nicht kompatibel mit yearly Hauptpaket
+        incompatibleAddons.push(key);
+        return { key, priceId: undefined, compatible: false };
       })
-      .filter((v): v is string => Boolean(v));
+      .filter((item): item is { key: string; priceId: string; compatible: boolean } => 
+        Boolean(item.priceId) && item.compatible
+      )
+      .map(item => item.priceId);
+    
+    // Warnung bei inkompatiblen Add-ons
+    if (incompatibleAddons.length > 0) {
+      console.warn(`⚠️ Inkompatible Add-ons wurden entfernt (${incompatibleAddons.join(', ')}). Hauptpaket ist subscription (${mainPackageInterval}), diese Add-ons haben keine passende Preis-Option.`);
+    }
 
     const response = await fetch('/api/stripe/create-checkout-session', {
       method: 'POST',
@@ -194,9 +319,10 @@ export async function createCheckoutSession(
         formData,
         hasRecurringAddons,
         addOnPriceIds,
-        priceId: PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].priceId,
-        amount: PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].amount,
-        currency: PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].currency
+        incompatibleAddons: incompatibleAddons.length > 0 ? incompatibleAddons : undefined,
+        priceId: WEBDESIGN_PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].priceId,
+        amount: WEBDESIGN_PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].amount,
+        currency: WEBDESIGN_PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].currency
       }),
     });
 
@@ -216,4 +342,117 @@ export async function createCheckoutSession(
   }
 }
 
-// Diese Funktion wird nicht mehr benötigt - Stripe wird on-demand geladen
+// ============================================================================
+// KI-AUTOMATISIERUNG-PAKETE: Vereinfachte Checkout Session (direkt zu Stripe)
+// ============================================================================
+export async function createKICheckoutSession(
+  packageType: 'flowwelle' | 'powerwelle' | 'meisterwelle',
+  isMonthly: boolean,
+  customerEmail?: string,
+  customerName?: string
+): Promise<string> {
+  try {
+    const response = await fetch('/api/stripe/create-ki-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        packageType,
+        isMonthly,
+        customerEmail,
+        customerName,
+        priceId: KI_PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].priceId,
+        amount: KI_PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].amount,
+        currency: KI_PRICE_CONFIG[packageType][isMonthly ? 'monthly' : 'yearly'].currency
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('API Fehler:', errorData);
+      throw new Error(errorData.details || errorData.error || 'Fehler beim Erstellen der Checkout-Session');
+    }
+
+    const { sessionId } = await response.json();
+    return sessionId;
+  } catch (error) {
+    console.error('Fehler beim Erstellen der KI-Stripe-Session:', error);
+    throw error;
+  }
+}
+
+// ============================================================================
+// AI-VOICE-PAKETE: Vereinfachte Checkout Session (direkt zu Stripe)
+// ============================================================================
+export async function createAIVoiceCheckoutSession(
+  packageType: 'minijob' | 'midijob' | 'festangestellt' | 'einrichtungspaket',
+  customerEmail?: string,
+  customerName?: string,
+  addEinrichtungspaket?: boolean // Wenn true, wird das Einrichtungspaket als Add-on hinzugefügt
+): Promise<string> {
+  try {
+    // Prüfe ob es das Einrichtungspaket ist (einmalig)
+    const isEinrichtungspaket = packageType === 'einrichtungspaket';
+    
+    // Wenn es ein Hauptpaket ist, kann optional das Einrichtungspaket als Add-on hinzugefügt werden
+    const addonPriceIds: string[] = [];
+    if (addEinrichtungspaket && !isEinrichtungspaket && AI_VOICE_PRICE_CONFIG.einrichtungspaket.oneTime?.priceId) {
+      addonPriceIds.push(AI_VOICE_PRICE_CONFIG.einrichtungspaket.oneTime.priceId);
+    }
+
+    const priceId = isEinrichtungspaket
+      ? AI_VOICE_PRICE_CONFIG.einrichtungspaket.oneTime!.priceId
+      : AI_VOICE_PRICE_CONFIG[packageType as 'minijob' | 'midijob' | 'festangestellt'].monthly.priceId;
+    
+    const amount = isEinrichtungspaket
+      ? AI_VOICE_PRICE_CONFIG.einrichtungspaket.oneTime!.amount
+      : AI_VOICE_PRICE_CONFIG[packageType as 'minijob' | 'midijob' | 'festangestellt'].monthly.amount;
+
+    const response = await fetch('/api/stripe/create-ai-voice-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        packageType,
+        customerEmail,
+        customerName,
+        priceId,
+        amount,
+        currency: 'eur',
+        addonPriceIds: addonPriceIds.length > 0 ? addonPriceIds : undefined,
+        isEinrichtungspaket,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('API Fehler:', errorData);
+      throw new Error(errorData.details || errorData.error || 'Fehler beim Erstellen der Checkout-Session');
+    }
+
+    const { sessionId } = await response.json();
+    return sessionId;
+  } catch (error) {
+    console.error('Fehler beim Erstellen der AI-Voice-Stripe-Session:', error);
+    throw error;
+  }
+}
+
+// Rückwärtskompatibilität: Alte Funktion für Webdesign-Pakete
+export async function createCheckoutSession(
+  packageType: 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle',
+  isMonthly: boolean,
+  customerEmail: string,
+  customerName: string,
+  formData: Record<string, unknown>
+) {
+  // Prüfe ob es ein KI-Paket ist
+  if (packageType === 'flowwelle' || packageType === 'powerwelle' || packageType === 'meisterwelle') {
+    return createKICheckoutSession(packageType, isMonthly, customerEmail, customerName);
+  }
+  
+  // Webdesign-Pakete verwenden die vollständige Funktion
+  return createWebdesignCheckoutSession(packageType as 'starterwelle' | 'businesswelle' | 'erfolgswelle', isMonthly, customerEmail, customerName, formData);
+}

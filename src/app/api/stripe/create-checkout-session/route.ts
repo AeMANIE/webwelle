@@ -18,7 +18,7 @@ function getStripeInstance(): Stripe {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Stripe Checkout Session wird erstellt...');
+    console.log('Stripe Checkout Session wird erstellt (Webdesign-Pakete)...');
     
     const stripe = getStripeInstance();
     
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
       formData,
       hasRecurringAddons,
       addOnPriceIds,
+      incompatibleAddons,
       priceId,
       amount,
       currency
@@ -47,13 +48,31 @@ export async function POST(request: NextRequest) {
       currency
     });
 
+    // Validierung: Nur Webdesign-Pakete
+    if (!['starterwelle', 'businesswelle', 'erfolgswelle'].includes(packageType)) {
+      throw new Error(`Ungültiger Paket-Typ: ${packageType}. Diese Route ist nur für Webdesign-Pakete (StarterWelle, BusinessWelle, ErfolgsWelle) vorgesehen.`);
+    }
+
     // Validierung
     if (!priceId) {
       throw new Error('Price ID ist erforderlich');
     }
 
     // Stripe Checkout Session erstellen
+    // ✅ ERLAUBT: Subscription (monthly/yearly) + One-time Payment in derselben Session
+    // ✅ ERLAUBT: Subscription (yearly) + Subscription (yearly) - beide haben dasselbe Intervall
+    // ❌ NICHT ERLAUBT: Subscription (monthly) + Subscription (yearly) in derselben Session
+    // Add-ons wurden bereits gefiltert, um nur kompatible zu enthalten
+    
+    // Warnung bei inkompatiblen Add-ons
+    if (incompatibleAddons && incompatibleAddons.length > 0) {
+      console.warn(`⚠️ Inkompatible Add-ons entfernt: ${incompatibleAddons.join(', ')}`);
+    }
 
+    // WICHTIG: Beide (monthly und yearly) sind Subscriptions, nie Payment!
+    // Yearly Hauptpakete sind auch Subscriptions in Stripe
+    const mainPackageMode = 'subscription' as const;
+    
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'], // Nur Kreditkarte (SEPA muss in Stripe Dashboard aktiviert werden)
       line_items: [
@@ -61,12 +80,12 @@ export async function POST(request: NextRequest) {
           price: priceId, // Hauptpaket
           quantity: 1,
         },
-        // Zusatzoptionen als weitere Positionen
+        // Zusatzoptionen als weitere Positionen (nur kompatible!)
         ...((Array.isArray(addOnPriceIds) ? addOnPriceIds : [])
           .map((addon) => ({ price: addon, quantity: 1 })) as Stripe.Checkout.SessionCreateParams.LineItem[]),
       ],
-      // Wenn irgendein Add-on monatlich ist ODER Hauptpaket auf monthly steht -> subscription
-      mode: (isMonthly || hasRecurringAddons) ? 'subscription' : 'payment',
+      // Mode ist immer subscription (monthly oder yearly)
+      mode: mainPackageMode,
       metadata: {
         packageType,
         isMonthly: isMonthly.toString(),

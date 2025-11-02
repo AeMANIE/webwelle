@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import BookingForm from '../../components/BookingForm';
+import KICheckout from '../../components/KICheckout';
 import ScrollToTop from '../../components/ScrollToTop';
 import CookieBanner from '../../components/CookieBanner';
 
@@ -68,9 +68,8 @@ export default function PowerWelleBookingPage() {
               </p>
             </div>
             
-            <div className="bg-card rounded-2xl p-8 border border-border">
-              <Suspense fallback={<div className="text-center py-8">Lade Buchungsformular...</div>}>
-                <BookingForm 
+            <Suspense fallback={<div className="text-center py-8">Lade Buchungsformular...</div>}>
+              <KICheckout 
                 packageType="powerwelle"
                 packageName="PowerWelle"
                 packageDescription="Für wachsende Unternehmen mit komplexeren Workflows"
@@ -82,11 +81,8 @@ export default function PowerWelleBookingPage() {
                   "Detaillierte Analyse- und Reporting-Funktionen",
                   "Perfekte Integration in Ihre Prozesse"
                 ]}
-                monthlyPrice={179}
-                yearlyPrice={1790}
               />
-              </Suspense>
-            </div>
+            </Suspense>
           </div>
         </div>
       </main>

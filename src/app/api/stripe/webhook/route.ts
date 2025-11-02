@@ -123,25 +123,41 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         functions = [];
       }
       
+      // Prüfe ob es ein KI-Paket oder AI-Voice-Paket ist (vereinfachtes Checkout)
+      const isKIPackage = metadata.packageCategory === 'ki-automation';
+      const isAIVoicePackage = metadata.packageCategory === 'ai-voice';
+      const isSimplifiedCheckout = isKIPackage || isAIVoicePackage;
+      
+      // Für AI-Voice Pakete: isMonthly basierend auf isEinrichtungspaket
+      const isEinrichtungspaket = metadata.isEinrichtungspaket === 'true';
+      const aiVoiceIsMonthly = !isEinrichtungspaket; // Hauptpakete sind monatlich, Einrichtungspaket ist einmalig
+      
+      // Für KI-Pakete und AI-Voice-Pakete: Vereinfachte Datenstruktur
+      // Für Webdesign-Pakete: Vollständige Formular-Daten
       const bookingData = {
         session_id: session.id,
-        package_type: metadata.packageType as 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle',
-        is_monthly: metadata.isMonthly === 'true',
-        checkout_mode: 'payment' as const,
-        package_price_display: metadata.packagePriceDisplay || 'Preis nicht angegeben',
+        package_type: metadata.packageType as 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle' | 'minijob' | 'midijob' | 'festangestellt' | 'einrichtungspaket',
+        is_monthly: isAIVoicePackage ? aiVoiceIsMonthly : (metadata.isMonthly === 'true'),
+        checkout_mode: (isAIVoicePackage 
+          ? (isEinrichtungspaket ? 'payment' : 'subscription')
+          : ((metadata.isMonthly === 'true' || session.subscription) ? 'subscription' : 'payment')
+        ) as 'payment' | 'subscription',
+        package_price_display: metadata.packagePriceDisplay || `${(session.amount_total || 0) / 100} €`,
         currency: 'eur',
         total_amount_cents: session.amount_total || 0,
         customer_name: metadata.customerName || (formData.customerName as string) || undefined,
         customer_email: session.customer_email || (formData.customerEmail as string) || undefined,
-        customer_phone: (formData.customerPhone as string) || undefined,
-        company_name: (formData.companyName as string) || undefined,
-        existing_website: (formData.existingWebsite as string) === 'ja' ? true : false,
-        existing_website_url: (formData.existingWebsiteUrl as string) || undefined,
-        target_group: targetGroup,
-        design_style: (formData.designStyle as string) || undefined,
-        design_reference_url: (formData.designReferenceUrl as string) || undefined,
-        selected_addons: formData.selectedAddons ? JSON.parse(formData.selectedAddons as string) : undefined,
-        message: (formData.message as string) || undefined,
+        customer_phone: isSimplifiedCheckout ? undefined : (formData.customerPhone as string) || undefined,
+        company_name: isSimplifiedCheckout ? undefined : (formData.companyName as string) || undefined,
+        existing_website: isSimplifiedCheckout ? undefined : (formData.existingWebsite as string) === 'ja' ? true : false,
+        existing_website_url: isSimplifiedCheckout ? undefined : (formData.existingWebsiteUrl as string) || undefined,
+        target_group: isSimplifiedCheckout ? undefined : targetGroup,
+        design_style: isSimplifiedCheckout ? undefined : (formData.designStyle as string) || undefined,
+        design_reference_url: isSimplifiedCheckout ? undefined : (formData.designReferenceUrl as string) || undefined,
+        selected_addons: isSimplifiedCheckout 
+          ? (isAIVoicePackage && metadata.addonPriceIds ? JSON.parse(metadata.addonPriceIds as string) : undefined)
+          : (formData.selectedAddons ? JSON.parse(formData.selectedAddons as string) : undefined),
+        message: isSimplifiedCheckout ? undefined : (formData.message as string) || undefined,
         raw_form_data: formData,
         stripe_metadata: metadata,
         stripe_customer_id: session.customer as string || undefined,
