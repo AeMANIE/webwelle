@@ -23,8 +23,19 @@ async function getTransporter() {
   const smtpPassword = process.env.EMAIL_SMTP_PASSWORD;
   
   if (!smtpUser || !smtpPassword) {
+    console.error('❌ E-Mail-Konfiguration fehlt:', {
+      EMAIL_SMTP_USER: smtpUser ? '✅ gesetzt' : '❌ fehlt',
+      EMAIL_SMTP_PASSWORD: smtpPassword ? '✅ gesetzt' : '❌ fehlt'
+    });
     throw new Error('EMAIL_SMTP_USER und EMAIL_SMTP_PASSWORD müssen in .env.local gesetzt sein');
   }
+  
+  console.log('📧 SMTP-Konfiguration:', {
+    host: SMTP_CONFIG.host,
+    port: SMTP_CONFIG.port,
+    secure: SMTP_CONFIG.secure,
+    user: smtpUser
+  });
   
   return nodemailer.createTransport({
     host: SMTP_CONFIG.host,
@@ -282,6 +293,21 @@ export async function sendEmail(options: {
     return true;
   } catch (error) {
     console.error('❌ Fehler beim Senden der E-Mail:', error);
+    if (error instanceof Error) {
+      const smtpError = error as Error & {
+        code?: string;
+        command?: string;
+        response?: string;
+        responseCode?: number;
+      };
+      console.error('❌ Fehler-Details:', {
+        message: error.message,
+        code: smtpError.code,
+        command: smtpError.command,
+        response: smtpError.response,
+        responseCode: smtpError.responseCode,
+      });
+    }
     return false;
   }
 }
