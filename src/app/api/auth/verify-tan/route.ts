@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { customerLogin2FA } from '@/lib/auth';
-import { verifyTAN } from '@/lib/tan';
+import { verifyTAN } from '@/lib/tan-store';
 import { validateEmail, validateTAN } from '@/lib/validation';
 
 export async function POST(request: Request) {
@@ -31,8 +31,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // TAN gegen Store validieren
-    const tanStoreValidation = verifyTAN(email, tan);
+    // TAN gegen Store validieren (Redis)
+    const tanStoreValidation = await verifyTAN(email, tan);
     if (!tanStoreValidation.valid) {
       return NextResponse.json(
         { success: false, error: tanStoreValidation.message },

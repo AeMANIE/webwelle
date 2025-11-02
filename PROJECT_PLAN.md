@@ -61,69 +61,7 @@ Aus `info/prices (1).csv`:
 
 ### 1.4 Implementierungsdetails
 
-#### 1.4.1 Header Integration
-```typescript
-// In Header.tsx - Desktop Navigation (Zeile ~51)
-<nav className="hidden md:flex space-x-6">
-  <Link href="/ai-voice" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
-    AI-Voice
-  </Link>
-  <Link href="/#vorteile" ...>
-    Webdesign-Pakete
-  </Link>
-  // ... rest
-</nav>
 
-// Mobile Navigation (Zeile ~109)
-<Link href="/ai-voice" className="block px-3 py-2 ..." onClick={closeMenu}>
-  AI-Voice
-</Link>
-```
-
-#### 1.4.2 Footer Integration
-```typescript
-// In Footer.tsx - Leistungen Sektion (Zeile ~78)
-<ul className="space-y-2">
-  <li><Link href="/ai-voice" className="...">AI-Voice</Link></li>
-  <li><Link href={{ pathname: '/', hash: 'produkte' }} ...>Webdesign</Link></li>
-  // ... rest
-</ul>
-```
-
-#### 1.4.3 Stripe Konfiguration
-```typescript
-// In src/lib/stripe.ts
-export const AI_VOICE_PRICE_CONFIG = {
-  minijob: {
-    monthly: {
-      priceId: 'price_1SOvxnQoIwTqROaypfI6ff58',
-      amount: 39900, // 399€
-      currency: 'eur'
-    }
-  },
-  midijob: {
-    monthly: {
-      priceId: 'price_1SOvyiQoIwTqROaySSNqaqqE',
-      amount: 99900, // 999€
-      currency: 'eur'
-    }
-  },
-  festangestellt: {
-    monthly: {
-      priceId: 'price_1SOvzoQoIwTqROayU9iql5tr',
-      amount: 199900, // 1999€
-      currency: 'eur'
-    }
-  },
-  einrichtungspaket: {
-    oneTime: {
-      priceId: 'price_1SOyytQoIwTqROayNXuZIxWy',
-      amount: 149900, // 1499€
-      currency: 'eur'
-    }
-  }
-} as const;
-```
 
 #### 1.4.4 AI-Voice Checkout Flow
 - Alle Pakete sind monatliche Subscriptions (außer Einrichtungspaket = einmalig)

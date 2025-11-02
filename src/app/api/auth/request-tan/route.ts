@@ -18,9 +18,9 @@ export async function POST(request: Request) {
     if (result.success) {
       const tan = (result as { tan?: string }).tan;
       
-      // TAN im gemeinsamen Store speichern
+      // TAN im gemeinsamen Store speichern (Redis)
       if (tan) {
-        storeTAN(email, tan);
+        await storeTAN(email, tan);
       }
       
       return NextResponse.json({ 

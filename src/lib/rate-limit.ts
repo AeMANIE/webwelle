@@ -1,10 +1,12 @@
 // Rate-Limiting für API-Endpunkte
+import { getRedisClient, isRedisEnabled, safeRedisOperation, REDIS_KEYS } from './redis';
+
 interface RateLimitEntry {
   count: number;
   resetTime: number;
 }
 
-// In-Memory Store für Rate-Limiting (in Produktion: Redis)
+// In-Memory Store als Fallback (wenn Redis nicht verfügbar)
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
 export interface RateLimitConfig {
@@ -12,44 +14,125 @@ export interface RateLimitConfig {
   maxRequests: number; // Maximale Anfragen pro Zeitfenster
 }
 
-export function rateLimit(config: RateLimitConfig) {
-  return (identifier: string): { allowed: boolean; remaining: number; resetTime: number } => {
-    const now = Date.now();
-    const entry = rateLimitStore.get(identifier);
+// Rate Limit mit Redis (atomar) oder Fallback zu In-Memory
+async function checkRateLimitRedis(
+  identifier: string,
+  config: RateLimitConfig
+): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
+  const redis = getRedisClient();
+  if (!redis || !isRedisEnabled()) {
+    throw new Error('Redis nicht verfügbar');
+  }
 
-    if (!entry || now > entry.resetTime) {
-      // Neuer Eintrag oder Zeitfenster abgelaufen
-      const newEntry: RateLimitEntry = {
-        count: 1,
-        resetTime: now + config.windowMs
-      };
-      rateLimitStore.set(identifier, newEntry);
-      
-      return {
-        allowed: true,
-        remaining: config.maxRequests - 1,
-        resetTime: newEntry.resetTime
-      };
+  const now = Date.now();
+  const key = REDIS_KEYS.rateLimit(identifier);
+  
+  // Atomic Operation: GET und INCR in einem
+  const result = await redis
+    .multi()
+    .get(key)
+    .incr(key)
+    .expire(key, Math.ceil(config.windowMs / 1000))
+    .exec();
+
+  if (!result) {
+    throw new Error('Redis multi/exec fehlgeschlagen');
+  }
+
+  const existingData = result[0][1] as string | null;
+  let count: number;
+  let resetTime: number;
+
+  if (existingData) {
+    // Parse existing entry
+    const entry: RateLimitEntry = JSON.parse(existingData);
+    if (now > entry.resetTime) {
+      // Zeitfenster abgelaufen - neu starten
+      count = 1;
+      resetTime = now + config.windowMs;
+      await redis.setex(key, Math.ceil(config.windowMs / 1000), JSON.stringify({ count, resetTime }));
+    } else {
+      // Bestehendes Zeitfenster verwenden
+      count = parseInt(result[1][1] as string) || entry.count + 1;
+      resetTime = entry.resetTime;
+      // Update entry
+      await redis.setex(
+        key,
+        Math.ceil((resetTime - now) / 1000),
+        JSON.stringify({ count, resetTime })
+      );
     }
+  } else {
+    // Neuer Eintrag
+    count = 1;
+    resetTime = now + config.windowMs;
+    await redis.setex(key, Math.ceil(config.windowMs / 1000), JSON.stringify({ count, resetTime }));
+  }
 
-    if (entry.count >= config.maxRequests) {
-      // Limit erreicht
-      return {
-        allowed: false,
-        remaining: 0,
-        resetTime: entry.resetTime
-      };
-    }
+  if (count > config.maxRequests) {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetTime
+    };
+  }
 
-    // Anfrage zählen
-    entry.count++;
-    rateLimitStore.set(identifier, entry);
+  return {
+    allowed: true,
+    remaining: config.maxRequests - count,
+    resetTime
+  };
+}
 
+// In-Memory Fallback
+function checkRateLimitMemory(
+  identifier: string,
+  config: RateLimitConfig
+): { allowed: boolean; remaining: number; resetTime: number } {
+  const now = Date.now();
+  const entry = rateLimitStore.get(identifier);
+
+  if (!entry || now > entry.resetTime) {
+    // Neuer Eintrag oder Zeitfenster abgelaufen
+    const newEntry: RateLimitEntry = {
+      count: 1,
+      resetTime: now + config.windowMs
+    };
+    rateLimitStore.set(identifier, newEntry);
+    
     return {
       allowed: true,
-      remaining: config.maxRequests - entry.count,
+      remaining: config.maxRequests - 1,
+      resetTime: newEntry.resetTime
+    };
+  }
+
+  if (entry.count >= config.maxRequests) {
+    // Limit erreicht
+    return {
+      allowed: false,
+      remaining: 0,
       resetTime: entry.resetTime
     };
+  }
+
+  // Anfrage zählen
+  entry.count++;
+  rateLimitStore.set(identifier, entry);
+
+  return {
+    allowed: true,
+    remaining: config.maxRequests - entry.count,
+    resetTime: entry.resetTime
+  };
+}
+
+export function rateLimit(config: RateLimitConfig) {
+  return async (identifier: string): Promise<{ allowed: boolean; remaining: number; resetTime: number }> => {
+    return safeRedisOperation(
+      () => checkRateLimitRedis(identifier, config),
+      () => checkRateLimitMemory(identifier, config)
+    );
   };
 }
 
@@ -78,7 +161,7 @@ export function withRateLimit(config: RateLimitConfig) {
                         'unknown';
       
       const rateLimitCheck = rateLimit(config);
-      const result = rateLimitCheck(identifier);
+      const result = await rateLimitCheck(identifier);
       
       if (!result.allowed) {
         return new Response(
