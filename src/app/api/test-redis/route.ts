@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server';
 import { getRedisClient, isRedisEnabled } from '@/lib/redis';
 
 export async function GET() {
+  // Sicherheit: Nur in Development oder mit API-Key
+  if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_REDIS_TEST) {
+    return NextResponse.json({ 
+      status: 'error', 
+      message: 'Test-Route nur in Development verfügbar' 
+    }, { status: 403 });
+  }
   try {
     const client = getRedisClient();
     
