@@ -41,7 +41,7 @@ export default function RootLayout({
   return (
     <html lang="de" data-scroll-behavior="smooth">
       <head>
-        {/* Preload critical resources */}
+        {/* Preload critical resources - nur einmal */}
         <link rel="preload" href="/webwellelogo.svg" as="image" type="image/svg+xml" />
         <link rel="preload" href="/webwellecom-weissihr.svg" as="image" type="image/svg+xml" />
         {/* DNS prefetch und preconnect für externe Ressourcen - optimiert für kritische Ressourcen */}
@@ -51,9 +51,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Stripe nur prefetch, nicht preconnect (nicht kritisch für initial load) */}
         <link rel="dns-prefetch" href="//js.stripe.com" />
-        {/* Resource hints für bessere Performance */}
-        <link rel="preload" href="/webwellelogo.svg" as="image" type="image/svg+xml" />
-        <link rel="preload" href="/webwellecom-weissihr.svg" as="image" type="image/svg+xml" />
         {/* Critical CSS inline für bessere Performance - verhindert Render-blocking */}
         <style dangerouslySetInnerHTML={{
           __html: `
