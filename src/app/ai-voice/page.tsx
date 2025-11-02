@@ -17,9 +17,9 @@ const AIVoiceFAQ = dynamic(() => import('../components/AIVoiceFAQ'), {
 });
 
 export const metadata: Metadata = {
-  title: "Voice AI Telefonassistent als digitaler Mitarbeiter – erledigt Anrufe & Aufgaben, 24/7 erreichbar. Skalierbar, DSGVO-konform, minutengenau. Jetzt testen! | WebWelle",
+  title: "Voice AI Telefonassistent | 24/7 digitaler Mitarbeiter | WebWelle",
   description: "Voice-AI für Unternehmen – Ihr digitaler Telefon-Mitarbeiter. Effizient. Skalierbar. Immer erreichbar. Terminbuchung, Angebotsnachfrage, Lead-Qualifizierung – inbound wie outbound.",
-  keywords: "Voice AI, Telefonassistent, KI am Telefon, digitaler Mitarbeiter, Automatisierung, Terminbuchung, 24/7 erreichbar, DSGVO-konform, WebWelle",
+  keywords: "Voice AI, Telefonassistent, KI am Telefon, digitaler Mitarbeiter, Automatisierung, Terminbuchung, 24/7 erreichbar, DSGVO-konform, WebWelle, AI Voice Assistant, Telefon-Automatisierung",
   authors: [{ name: "WebWelle" }],
   creator: "WebWelle",
   publisher: "WebWelle",
@@ -65,6 +65,96 @@ export const metadata: Metadata = {
 export default function AIVoicePage() {
   return (
     <div className="min-h-screen bg-background">
+      {/* Structured Data (Schema.org) für SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Service",
+            "serviceType": "Voice AI Telefonassistent",
+            "name": "Voice AI Telefonassistent von WebWelle",
+            "description": "Ihr digitaler Telefon-Mitarbeiter erledigt Anrufe & Aufgaben, 24/7 erreichbar. Skalierbar, DSGVO-konform, minutengenau.",
+            "url": "https://webwelle.com/ai-voice",
+            "provider": {
+              "@type": "Organization",
+              "name": "WebWelle",
+              "url": "https://webwelle.com",
+              "logo": "https://webwelle.com/logo.png",
+              "address": {
+                "@type": "PostalAddress",
+                "addressCountry": "DE",
+                "addressLocality": "Kempten",
+                "addressRegion": "Allgäu"
+              }
+            },
+            "areaServed": {
+              "@type": "Country",
+              "name": "Deutschland"
+            },
+            "hasOfferCatalog": {
+              "@type": "OfferCatalog",
+              "name": "Voice AI Pakete",
+              "itemListElement": [
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Mini Job AI-Assistent",
+                    "description": "399 Minuten/Monat für Einsteiger und Einzelunternehmen"
+                  },
+                  "price": "399",
+                  "priceCurrency": "EUR",
+                  "priceSpecification": {
+                    "@type": "UnitPriceSpecification",
+                    "price": "399",
+                    "priceCurrency": "EUR",
+                    "billingIncrement": "P1M"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Midi Job AI-Assistenz",
+                    "description": "999 Minuten/Monat für wachsende Unternehmen und Teams"
+                  },
+                  "price": "999",
+                  "priceCurrency": "EUR",
+                  "priceSpecification": {
+                    "@type": "UnitPriceSpecification",
+                    "price": "999",
+                    "priceCurrency": "EUR",
+                    "billingIncrement": "P1M"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Festangestellt AI-Agent",
+                    "description": "1.999 Minuten/Monat für Vieltelefonierer und Servicezentren"
+                  },
+                  "price": "1999",
+                  "priceCurrency": "EUR",
+                  "priceSpecification": {
+                    "@type": "UnitPriceSpecification",
+                    "price": "1999",
+                    "priceCurrency": "EUR",
+                    "billingIncrement": "P1M"
+                  }
+                }
+              ]
+            },
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": "4.9",
+              "bestRating": "5",
+              "worstRating": "1"
+            }
+          })
+        }}
+      />
       <Header />
       <main>
         {/* Hero Section */}
