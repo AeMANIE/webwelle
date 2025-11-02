@@ -2834,7 +2834,8 @@ export function isCancellable(
 - [ ] Duplikat-Prävention mit Redis (`email_sent:{session_id}`)
 
 **Schritt 7**: Testing
-- [ ] E-Mail-Versand testen (alle Pakettypen)
+- [x] E-Mail-Versand testen (Test-E-Mail erfolgreich empfangen ✅)
+- [ ] E-Mail-Versand nach echter Bestellung testen (Webhook)
 - [ ] Token-Validierung testen (Redis + DB)
 - [ ] Passwort-Setup testen
 - [ ] Login mit neuem Passwort testen
@@ -2956,7 +2957,8 @@ export function isCancellable(
 - [x] FAQ-Bereich ist klappbar (Accordion-Implementierung erstellt)
 
 ### E-Mail-System:
-- [ ] Bestellbestätigung wird gesendet
+- [x] SMTP-Verbindung funktioniert ✅ (Test-E-Mail erfolgreich)
+- [ ] Bestellbestätigung wird nach echter Bestellung gesendet
 - [ ] Aktivierungs-E-Mail wird gesendet
 - [ ] Token ist gültig und funktioniert
 - [ ] Passwort-Setup funktioniert
