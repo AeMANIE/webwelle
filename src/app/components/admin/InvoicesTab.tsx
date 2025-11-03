@@ -16,11 +16,13 @@ interface Invoice {
   pdfUrl: string | null;
   hostedInvoiceUrl: string | null;
   createdAt: string;
+  issuer?: string;
 }
 
 export default function InvoicesTab() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
     (async () => {
@@ -35,10 +37,33 @@ export default function InvoicesTab() {
 
   if (loading) return <div className="text-center py-8">Lade Rechnungen...</div>;
 
+  const filtered = invoices.filter(inv => statusFilter === 'all' ? true : inv.status === statusFilter);
+
+  const exportCsv = () => {
+    const headers = ['invoiceNumber','customerEmail','amount','currency','status','createdAt'];
+    const rows = filtered.map(i => [i.invoiceNumber, i.customerEmail ?? '', i.amount.toFixed(2), i.currency, i.status, i.createdAt]);
+    const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `invoices-${statusFilter}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Rechnungen ({invoices.length})</h2>
+        <div className="flex items-center gap-3">
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 bg-background border border-border rounded">
+            <option value="all">Alle</option>
+            <option value="paid">Bezahlt</option>
+            <option value="open">Offen</option>
+            <option value="void">Ungültig</option>
+            <option value="uncollectible">Uneinbringlich</option>
+          </select>
+          <button onClick={exportCsv} className="px-3 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">CSV Export</button>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
@@ -53,7 +78,7 @@ export default function InvoicesTab() {
             </tr>
           </thead>
           <tbody>
-            {invoices.map(inv => (
+            {filtered.map(inv => (
               <tr key={inv.id} className="border-b border-border hover:bg-card/50">
                 <td className="p-4"><div className="flex items-center gap-2"><FileText className="w-4 h-4 text-primary" /><span className="font-mono text-sm">{inv.invoiceNumber}</span></div></td>
                 <td className="p-4">
@@ -71,12 +96,19 @@ export default function InvoicesTab() {
                     <span className="text-sm">{inv.paidAt ? new Date(inv.paidAt).toLocaleDateString('de-DE') : inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('de-DE') : new Date(inv.createdAt).toLocaleDateString('de-DE')}</span>
                   </div>
                 </td>
+                <td className="p-4 text-sm text-muted-foreground">{inv.issuer || 'stripe'}</td>
                 <td className="p-4">
                   {inv.pdfUrl && (
                     <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors text-sm">
                       <Download className="w-4 h-4" /> PDF
                     </a>
                   )}
+                  <a
+                    href={`/api/admin/invoices/pdf?id=${inv.id}`}
+                    className="inline-flex items-center gap-2 px-3 py-1 border border-primary text-primary rounded hover:bg-primary/10 transition-colors text-sm ml-2"
+                  >
+                    <Download className="w-4 h-4" /> Branded PDF
+                  </a>
                 </td>
               </tr>
             ))}

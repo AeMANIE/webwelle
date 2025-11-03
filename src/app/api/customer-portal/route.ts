@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { directus, isDirectusAvailable } from '@/lib/directus';
+import { getCustomerByEmail } from '@/lib/database';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,6 +17,8 @@ export async function GET(request: NextRequest) {
     }
 
     switch (action) {
+      case 'customer-info':
+        return await getCustomerInfo(email);
       case 'bookings':
         return await getCustomerBookings(email);
       case 'addon-orders':
@@ -169,6 +172,19 @@ async function cancelSubscription(subscriptionId: string, reason?: string) {
   } catch (error) {
     console.error('Fehler beim Kündigen der Subscription:', error);
     return NextResponse.json({ error: 'Fehler beim Kündigen des Abonnements' }, { status: 500 });
+  }
+}
+
+async function getCustomerInfo(email: string) {
+  try {
+    const customer = await getCustomerByEmail(email);
+    return NextResponse.json({
+      customerNumber: customer?.customer_number || null,
+      name: customer?.name || null,
+    });
+  } catch (error) {
+    console.error('Fehler beim Laden der Kundeninformationen:', error);
+    return NextResponse.json({ error: 'Fehler beim Laden der Kundeninformationen' }, { status: 500 });
   }
 }
 

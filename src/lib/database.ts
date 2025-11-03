@@ -193,6 +193,7 @@ export interface CustomerData {
   name: string;
   phone?: string;
   company_name?: string;
+  customer_number?: string; // Eindeutige Kundennummer (WEB-YYYY-NNNNN)
   is_verified: boolean;
   verification_token?: string;
   reset_token?: string;
@@ -216,6 +217,99 @@ export async function getCustomerByEmail(email: string): Promise<CustomerData | 
   }
 }
 
+// Kundennummer generieren (Format: WEB-YYYY-NNNNN)
+export async function generateCustomerNumber(): Promise<string> {
+  const client = await pool.connect();
+  
+  try {
+    const year = new Date().getFullYear();
+    const prefix = `WEB-${year}-`;
+    
+    // Finde die höchste Nummer für das aktuelle Jahr
+    const result = await client.query(
+      `SELECT customer_number FROM customers 
+       WHERE customer_number LIKE $1 
+       ORDER BY customer_number DESC 
+       LIMIT 1`,
+      [`${prefix}%`]
+    );
+    
+    let nextNumber = 1;
+    if (result.rows.length > 0) {
+      const lastNumber = result.rows[0].customer_number;
+      if (lastNumber) {
+        const match = lastNumber.match(/\d+$/);
+        if (match) {
+          nextNumber = parseInt(match[0], 10) + 1;
+        }
+      }
+    }
+    
+    // Format: WEB-YYYY-00001
+    const formattedNumber = `${prefix}${nextNumber.toString().padStart(5, '0')}`;
+    return formattedNumber;
+  } finally {
+    client.release();
+  }
+}
+
+// Kunde mit automatischer Kundennummer erstellen oder zurückgeben
+export async function getOrCreateCustomerWithNumber(
+  email: string,
+  name: string,
+  phone?: string,
+  companyName?: string
+): Promise<CustomerData> {
+  const client = await pool.connect();
+  
+  try {
+    // Prüfe ob Kunde bereits existiert
+    const customer = await getCustomerByEmail(email);
+    
+    if (customer) {
+      // Wenn Kunde existiert aber keine Kundennummer hat, generiere eine
+      if (!customer.customer_number) {
+        const customerNumber = await generateCustomerNumber();
+        await client.query(
+          'UPDATE customers SET customer_number = $1 WHERE email = $2',
+          [customerNumber, email]
+        );
+        const updatedCustomer = await getCustomerByEmail(email);
+        if (updatedCustomer) {
+          return updatedCustomer;
+        }
+      }
+      return customer;
+    }
+    
+    // Neuer Kunde - generiere Kundennummer
+    const customerNumber = await generateCustomerNumber();
+    
+    const query = `
+      INSERT INTO customers (
+        email, name, phone, company_name, is_verified,
+        customer_number, portal_activated
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+    `;
+    
+    const values = [
+      email,
+      name,
+      phone || null,
+      companyName || null,
+      true, // is_verified
+      customerNumber,
+      false // portal_activated
+    ];
+    
+    const result = await client.query(query, values);
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
 // Kunde erstellen
 export async function createCustomer(customerData: Omit<CustomerData, 'id' | 'created_at' | 'updated_at'>): Promise<CustomerData> {
   const client = await pool.connect();
@@ -225,8 +319,8 @@ export async function createCustomer(customerData: Omit<CustomerData, 'id' | 'cr
       INSERT INTO customers (
         email, password_hash, name, phone, company_name, is_verified,
         verification_token, reset_token, reset_token_expires,
-        portal_activated, portal_activated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        portal_activated, portal_activated_at, customer_number
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `;
     
@@ -241,7 +335,8 @@ export async function createCustomer(customerData: Omit<CustomerData, 'id' | 'cr
       customerData.reset_token || null,
       customerData.reset_token_expires || null,
       customerData.portal_activated || false,
-      customerData.portal_activated_at || null
+      customerData.portal_activated_at || null,
+      customerData.customer_number || null
     ];
     
     const result = await client.query(query, values);
@@ -308,6 +403,11 @@ export async function updateCustomer(email: string, updates: Partial<CustomerDat
     if (updates.portal_activated_at !== undefined) {
       fields.push(`portal_activated_at = $${paramCount++}`);
       values.push(updates.portal_activated_at);
+    }
+    
+    if (updates.customer_number !== undefined) {
+      fields.push(`customer_number = $${paramCount++}`);
+      values.push(updates.customer_number);
     }
     
     if (fields.length === 0) {
@@ -441,19 +541,130 @@ export async function createTables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_portal_tokens_expires ON customer_portal_tokens(expires_at);
     `;
     
-    // Erweitere customers Tabelle um Portal-Felder (falls noch nicht vorhanden)
+    // Erweitere customers Tabelle um Portal-Felder und Kundennummer (falls noch nicht vorhanden)
     const alterCustomersTableQuery = `
       ALTER TABLE customers 
       ADD COLUMN IF NOT EXISTS portal_activated BOOLEAN DEFAULT false,
-      ADD COLUMN IF NOT EXISTS portal_activated_at TIMESTAMP;
+      ADD COLUMN IF NOT EXISTS portal_activated_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS customer_number VARCHAR(50) UNIQUE;
+    `;
+    
+    // Rechnungen-Tabelle erstellen
+    const createInvoicesTableQuery = `
+      CREATE TABLE IF NOT EXISTS invoices (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        stripe_invoice_id VARCHAR(255) UNIQUE NOT NULL,
+        invoice_number VARCHAR(255),
+        customer_email VARCHAR(255) NOT NULL,
+        customer_name VARCHAR(255),
+        customer_number VARCHAR(50),
+        amount_cents BIGINT NOT NULL,
+        currency VARCHAR(10) DEFAULT 'EUR',
+        status VARCHAR(50) NOT NULL,
+        paid_at TIMESTAMP WITH TIME ZONE,
+        due_date TIMESTAMP WITH TIME ZONE,
+        pdf_url TEXT,
+        hosted_invoice_url TEXT,
+        issuer VARCHAR(50) DEFAULT 'Stripe',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_invoices_customer_email ON invoices(customer_email);
+      CREATE INDEX IF NOT EXISTS idx_invoices_stripe_id ON invoices(stripe_invoice_id);
+      CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
     `;
     
     await client.query(createCustomersTableQuery);
     await client.query(createResetTokensTableQuery);
     await client.query(createPortalTokensTableQuery);
     await client.query(alterCustomersTableQuery);
+    await client.query(createInvoicesTableQuery);
     
-    console.log('✅ Zusätzliche Tabellen (customers, reset_tokens, customer_portal_tokens) erstellt/überprüft');
+    console.log('✅ Zusätzliche Tabellen (customers, reset_tokens, customer_portal_tokens, invoices) erstellt/überprüft');
+  } finally {
+    client.release();
+  }
+}
+
+// Rechnung-Schema
+export interface InvoiceData {
+  id?: string;
+  stripe_invoice_id: string;
+  invoice_number?: string | null;
+  customer_email: string;
+  customer_name?: string | null;
+  customer_number?: string | null;
+  amount_cents: number;
+  currency: string;
+  status: string;
+  paid_at?: Date | null;
+  due_date?: Date | null;
+  pdf_url?: string | null;
+  hosted_invoice_url?: string | null;
+  issuer?: string;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+// Rechnung speichern
+export async function saveInvoice(invoiceData: InvoiceData): Promise<InvoiceData> {
+  const client = await pool.connect();
+  
+  try {
+    const query = `
+      INSERT INTO invoices (
+        stripe_invoice_id, invoice_number, customer_email, customer_name, customer_number,
+        amount_cents, currency, status, paid_at, due_date, pdf_url, hosted_invoice_url, issuer
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      ON CONFLICT (stripe_invoice_id) 
+      DO UPDATE SET
+        invoice_number = EXCLUDED.invoice_number,
+        customer_email = EXCLUDED.customer_email,
+        customer_name = EXCLUDED.customer_name,
+        customer_number = EXCLUDED.customer_number,
+        amount_cents = EXCLUDED.amount_cents,
+        currency = EXCLUDED.currency,
+        status = EXCLUDED.status,
+        paid_at = EXCLUDED.paid_at,
+        due_date = EXCLUDED.due_date,
+        pdf_url = EXCLUDED.pdf_url,
+        hosted_invoice_url = EXCLUDED.hosted_invoice_url,
+        issuer = EXCLUDED.issuer,
+        updated_at = NOW()
+      RETURNING *
+    `;
+    
+    const values = [
+      invoiceData.stripe_invoice_id,
+      invoiceData.invoice_number || null,
+      invoiceData.customer_email,
+      invoiceData.customer_name || null,
+      invoiceData.customer_number || null,
+      invoiceData.amount_cents,
+      invoiceData.currency || 'EUR',
+      invoiceData.status,
+      invoiceData.paid_at || null,
+      invoiceData.due_date || null,
+      invoiceData.pdf_url || null,
+      invoiceData.hosted_invoice_url || null,
+      invoiceData.issuer || 'Stripe'
+    ];
+    
+    const result = await client.query(query, values);
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+// Rechnungen nach Kunden-E-Mail abrufen
+export async function getInvoicesByCustomerEmail(email: string): Promise<InvoiceData[]> {
+  const client = await pool.connect();
+  
+  try {
+    const query = 'SELECT * FROM invoices WHERE customer_email = $1 ORDER BY created_at DESC';
+    const result = await client.query(query, [email]);
+    return result.rows;
   } finally {
     client.release();
   }

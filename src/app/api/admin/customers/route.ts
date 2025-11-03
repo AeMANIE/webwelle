@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
         c.name,
         c.phone,
         c.company_name,
+        c.customer_number,
         c.portal_activated,
         c.created_at,
         COUNT(DISTINCT b.id) as booking_count,
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
         MAX(b.created_at) as last_booking_date
       FROM customers c
       LEFT JOIN webwelle_bookings b ON b.customer_email = c.email
-      GROUP BY c.id, c.email, c.name, c.phone, c.company_name, c.portal_activated, c.created_at
+      GROUP BY c.id, c.email, c.name, c.phone, c.company_name, c.customer_number, c.portal_activated, c.created_at
       ORDER BY c.created_at DESC
     `;
     const result = await client.query(query);
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
       name: row.name,
       phone: row.phone,
       companyName: row.company_name,
+      customerNumber: row.customer_number,
       portalActivated: row.portal_activated,
       createdAt: row.created_at,
       stats: {

@@ -256,6 +256,7 @@ export async function sendEmail(options: {
   subject: string;
   html: string;
   text?: string;
+  attachments?: Array<{ filename: string; content: Buffer; contentType: string }>;
 }): Promise<boolean> {
   try {
     // Prüfe ob E-Mail-Konfiguration vorhanden ist
@@ -286,6 +287,7 @@ export async function sendEmail(options: {
       subject: options.subject,
       html: options.html,
       text: options.text,
+      attachments: options.attachments,
     };
 
     const result = await transporter.sendMail(mailOptions);

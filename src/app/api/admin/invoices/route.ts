@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
         amount: (inv.amount_paid ?? 0) / 100,
         currency: inv.currency?.toUpperCase(),
         status: inv.status,
+        issuer: 'stripe',
         paidAt: inv.status_transitions?.paid_at ? new Date(inv.status_transitions.paid_at * 1000).toISOString() : null,
         dueDate: inv.due_date ? new Date(inv.due_date * 1000).toISOString() : null,
         pdfUrl: inv.invoice_pdf,

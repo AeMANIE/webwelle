@@ -97,6 +97,23 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         formData: metadata.formData
       });
 
+      // Kunde mit Kundennummer erstellen oder abrufen
+      const { getOrCreateCustomerWithNumber } = await import('@/lib/database');
+      const customerEmail = session.customer_email || session.customer_details?.email || '';
+      const customerName = metadata.customerName || session.customer_details?.name || customerEmail.split('@')[0];
+      const customerPhone = session.customer_details?.phone || metadata.phone || undefined;
+      const companyName = metadata.companyName || session.customer_details?.address?.line1 || undefined;
+      
+      if (customerEmail) {
+        const customer = await getOrCreateCustomerWithNumber(
+          customerEmail,
+          customerName,
+          customerPhone,
+          companyName
+        );
+        console.log(`✅ Kunde ${customerEmail} erstellt/abgerufen mit Kundennummer: ${customer.customer_number || 'wird generiert'}`);
+      }
+
       // Buchung in Datenbank speichern
       const { saveBooking } = await import('@/lib/database');
       
@@ -308,9 +325,124 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice, stripe: St
   console.log('Zahlung erfolgreich:', invoice.id);
   
   try {
-    // Buchung Status auf 'paid' aktualisieren
-    const { updateBookingStatus } = await import('@/lib/database');
+    const { updateBookingStatus, saveInvoice, getCustomerByEmail } = await import('@/lib/database');
+    const { generateInvoicePdf } = await import('@/lib/invoice-pdf');
+    const { sendEmail } = await import('@/lib/email');
     
+    if (!invoice.id) {
+      console.error('❌ Invoice-ID fehlt');
+      return;
+    }
+    
+    // Invoice-Details von Stripe abrufen
+    const inv = await stripe.invoices.retrieve(invoice.id, { expand: ['customer', 'lines.data.price.product'] });
+    
+    const customer = typeof inv.customer === 'object' && inv.customer && !('deleted' in inv.customer && (inv.customer as Stripe.DeletedCustomer).deleted)
+      ? inv.customer as Stripe.Customer
+      : null;
+    
+    const customerEmail = customer?.email || null;
+    const customerName = customer?.name || null;
+    
+    // Kundennummer abrufen
+    let customerNumber: string | null = null;
+    if (customerEmail) {
+      const dbCustomer = await getCustomerByEmail(customerEmail);
+      customerNumber = dbCustomer?.customer_number || null;
+    }
+    
+    // Rechnung in Datenbank speichern
+    await saveInvoice({
+      stripe_invoice_id: String(inv.id),
+      invoice_number: inv.number,
+      customer_email: customerEmail || '',
+      customer_name: customerName,
+      customer_number: customerNumber,
+      amount_cents: inv.amount_paid || inv.amount_due || 0,
+      currency: inv.currency?.toUpperCase() || 'EUR',
+      status: String(inv.status || 'unknown'),
+      paid_at: inv.status_transitions?.paid_at ? new Date(inv.status_transitions.paid_at * 1000) : null,
+      due_date: inv.due_date ? new Date(inv.due_date * 1000) : null,
+      pdf_url: inv.invoice_pdf || null,
+      hosted_invoice_url: inv.hosted_invoice_url || null,
+      issuer: 'Stripe'
+    });
+    console.log('✅ Rechnung in Datenbank gespeichert:', inv.id);
+    
+    // Automatisch gebrandetes PDF generieren und per E-Mail senden
+    if (customerEmail) {
+      try {
+        const items = (inv.lines.data || []).map((l: Stripe.InvoiceLineItem) => {
+          let desc = l.description || 'Position';
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const price = (l as any).price as Stripe.Price | null;
+          const prod = price?.product;
+          if (typeof prod === 'object' && prod && 'name' in prod) {
+            const maybe = prod as { name?: string };
+            if (maybe.name) desc = maybe.name;
+          }
+
+          const unitAmount = (price?.unit_amount ?? 0) / 100;
+          const quantity = l.quantity ?? 1;
+
+          let interval: 'monthly' | 'yearly' | 'oneTime' = 'oneTime';
+          if (price?.recurring?.interval === 'month') interval = 'monthly';
+          if (price?.recurring?.interval === 'year') interval = 'yearly';
+
+          return {
+            description: desc,
+            quantity: quantity,
+            netAmount: unitAmount,
+            interval: interval,
+          };
+        });
+
+        const pdfBuffer = await generateInvoicePdf({
+          invoiceNumber: String(inv.number || inv.id),
+          issueDate: new Date((inv.created ?? Math.floor(Date.now() / 1000)) * 1000),
+          customer: {
+            name: customerName || customerEmail || '',
+            email: customerEmail || '',
+            address: customer ? `${customer.address?.line1 || ''} ${customer.address?.postal_code || ''} ${customer.address?.city || ''}`.trim() || null : null,
+          },
+          items,
+          banking: {
+            companyName: 'AeManie GmbH',
+            addressLine: 'Uhlandstr. 16 – 87437 Kempten',
+            iban: 'DE25 7335 0000 05163187 06',
+            bic: 'BYLADEM1ALG',
+            taxOffice: 'Finanzamt Kempten',
+            taxNumber: '127 121 20418',
+            vatId: 'DE 367002188',
+          },
+          notes: customerNumber ? `Kundennummer: ${customerNumber}` : undefined,
+        });
+
+        await sendEmail({
+          to: customerEmail,
+          subject: `Ihre Rechnung von WebWelle #${inv.number || inv.id}`,
+          html: `
+            <p>Hallo ${customerName || customerEmail},</p>
+            <p>Vielen Dank für Ihre Bestellung bei WebWelle. Im Anhang finden Sie Ihre Rechnung.</p>
+            ${customerNumber ? `<p>Ihre Kundennummer: <strong>${customerNumber}</strong></p>` : ''}
+            <p>Sie können Ihre Rechnungen auch jederzeit in Ihrem Kundenportal einsehen.</p>
+            <p>Mit freundlichen Grüßen,</p>
+            <p>Ihr WebWelle Team</p>
+          `,
+          text: `Hallo ${customerName || customerEmail},\n\nVielen Dank für Ihre Bestellung bei WebWelle. Im Anhang finden Sie Ihre Rechnung.\n${customerNumber ? `Ihre Kundennummer: ${customerNumber}\n` : ''}Sie können Ihre Rechnungen auch jederzeit in Ihrem Kundenportal einsehen.\n\nMit freundlichen Grüßen,\nIhr WebWelle Team`,
+          attachments: [{
+            filename: `Rechnung_${inv.number || inv.id}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          }],
+        });
+        console.log(`✅ Gebrandetes PDF-Rechnung erfolgreich an ${customerEmail} gesendet.`);
+      } catch (emailError) {
+        console.error('❌ Fehler beim Senden der PDF-Rechnung per E-Mail:', emailError);
+      }
+    }
+    
+    // Buchung Status auf 'paid' aktualisieren
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((invoice as any).subscription && typeof (invoice as any).subscription === 'string') {
       // Für Abonnements - Session ID aus Subscription Metadata holen
@@ -328,7 +460,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice, stripe: St
       }
     }
   } catch (error) {
-    console.error('❌ Fehler beim Aktualisieren der Abonnement-Zahlung:', error);
+    console.error('❌ Fehler beim Aktualisieren der Abonnement-Zahlung oder Senden der Rechnung:', error);
   }
 }
 

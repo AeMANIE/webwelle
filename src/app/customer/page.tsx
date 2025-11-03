@@ -59,6 +59,7 @@ export default function CustomerPortal() {
   const [addonOrders, setAddonOrders] = useState<AddonOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [customerNumber, setCustomerNumber] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<CustomerBooking | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -114,13 +115,27 @@ export default function CustomerPortal() {
     }
   }, [user?.email]);
 
+  const fetchCustomerInfo = useCallback(async () => {
+    if (!user?.email) return;
+    try {
+      const response = await fetch(`/api/customer-portal?email=${encodeURIComponent(user.email)}&action=customer-info`);
+      if (response.ok) {
+        const data = await response.json();
+        setCustomerNumber(data.customerNumber || null);
+      }
+    } catch {
+      console.error('Fehler beim Laden der Kundennummer');
+    }
+  }, [user?.email]);
+
   useEffect(() => {
     checkAuth();
     if (user?.email) {
       fetchCustomerBookings();
       fetchAddonOrders();
+      fetchCustomerInfo();
     }
-  }, [checkAuth, user?.email, fetchCustomerBookings, fetchAddonOrders]);
+  }, [checkAuth, user?.email, fetchCustomerBookings, fetchAddonOrders, fetchCustomerInfo]);
 
   const handleLogout = () => {
     document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
@@ -268,6 +283,11 @@ export default function CustomerPortal() {
               <p className="text-muted-foreground">
                 Willkommen, {user.name}
               </p>
+              {customerNumber && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Kundennummer: <span className="font-mono font-semibold text-foreground">{customerNumber}</span>
+                </p>
+              )}
             </div>
             <button
               onClick={handleLogout}
