@@ -9,12 +9,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'E-Mail und Passwort sind erforderlich' }, { status: 400 });
     }
 
+    // Debug-Logging (nur in Development)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🔐 Admin Login Versuch:', {
+        email,
+        passwordLength: password.length,
+        adminEmail: process.env.ADMIN_EMAIL,
+        hashSet: !!process.env.ADMIN_PASSWORD_HASH,
+      });
+    }
+
     const result = await adminLogin(email, password);
     if (!result) {
-      return NextResponse.json({ error: 'Ungültige Zugangsdaten' }, { status: 401 });
+      // Detailliertere Fehlermeldung für Debugging
+      const errorDetails = {
+        emailMatch: email.toLowerCase() === (process.env.ADMIN_EMAIL || '').toLowerCase(),
+        hashSet: !!process.env.ADMIN_PASSWORD_HASH,
+      };
+      console.error('❌ Admin Login fehlgeschlagen:', errorDetails);
+      return NextResponse.json({ 
+        error: 'Ungültige Zugangsdaten',
+        ...(process.env.NODE_ENV !== 'production' ? { debug: errorDetails } : {})
+      }, { status: 401 });
     }
 
     const { token, user } = result;
+    console.log('✅ Admin Login erfolgreich:', user.email);
     const response = NextResponse.json({ success: true, token, user });
     response.headers.append(
       'Set-Cookie',
@@ -22,7 +42,11 @@ export async function POST(request: Request) {
     );
     return response;
   } catch (error) {
-    console.error('Admin Login Fehler:', error);
-    return NextResponse.json({ error: 'Ein Fehler ist aufgetreten' }, { status: 500 });
+    console.error('❌ Admin Login Fehler:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten';
+    return NextResponse.json({ 
+      error: errorMessage,
+      ...(process.env.NODE_ENV !== 'production' ? { stack: error instanceof Error ? error.stack : undefined } : {})
+    }, { status: 500 });
   }
 }
