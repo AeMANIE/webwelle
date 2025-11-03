@@ -122,16 +122,7 @@ export async function POST(request: NextRequest) {
       ],
     };
 
-    // payment_intent_data nur für one-time payments hinzufügen (nicht für subscriptions)
-    if (!isMonthly && !hasRecurringAddons) {
-      sessionConfig.payment_intent_data = {
-        metadata: {
-          packageType,
-          isMonthly: isMonthly.toString(),
-          customerName,
-        },
-      };
-    }
+    // payment_intent_data NICHT setzen, da mode immer 'subscription' ist (monthly/yearly)
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
 
