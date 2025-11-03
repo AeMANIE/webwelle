@@ -112,6 +112,9 @@ Kunden sollen nach dem Kauf automatisch E-Mails erhalten:
 - ✅ Webhook ruft `sendBookingConfirmation()` auf (nur für Webdesign-Pakete mit Formular)
 - ✅ KI-Pakete und AI-Voice-Pakete erhalten Bestätigungs-E-Mails (Webhook aktualisiert)
 - ✅ Duplikat-Prüfung mit Redis (`email_sent:{session_id}`) aktiv
+ - ✅ Fallback im Webhook, falls `session.customer_email` leer ist → nutzt `session.customer_details.email`
+ - ✅ Webhook wirft bei Fehlern keine 500 mehr (Stripe erhält 200; Retries entfallen, Fehler werden geloggt)
+ - ✅ Debug-/Recovery-Routen: `/api/debug-email-status?sessionId=...` und `/api/manual-send-booking-email` (mit `force` zum erneuten Senden)
 
 
 ---
@@ -785,7 +788,7 @@ if (bookingData.customer_email && !isSimplifiedCheckout) {
 - [x] Duplikat-Prävention mit Redis
 
 **Schritt 7**: Testing
-- [ ] E-Mail-Versand testen
+- [ ] E-Mail-Versand testen (ggf. Debug-Route verwenden)
 - [ ] Token-Validierung testen
 - [ ] Passwort-Setup testen
 - [ ] Login mit neuem Passwort testen
