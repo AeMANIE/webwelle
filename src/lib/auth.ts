@@ -80,18 +80,36 @@ export function verifyToken(token: string): User | null {
 
 // Admin-Login
 export async function adminLogin(email: string, password: string): Promise<{ user: User; token: string } | null> {
-  const admin = getAdminUsers().find(u => u.email === email);
+  const adminUsers = getAdminUsers();
+  
+  // Debug-Logging
+  console.log('🔐 Admin Login Versuch:', {
+    email,
+    adminEmailFromEnv: process.env.ADMIN_EMAIL,
+    adminUsersFound: adminUsers.length,
+    adminEmails: adminUsers.map(u => u.email),
+  });
+  
+  // Case-insensitive E-Mail-Vergleich
+  const admin = adminUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
   if (!admin) {
+    console.error('❌ Admin nicht gefunden:', {
+      searchedEmail: email,
+      availableEmails: adminUsers.map(u => u.email),
+    });
     logFailedAuth(`Admin-Login: E-Mail nicht gefunden - ${email}`);
     return null;
   }
   
+  console.log('✅ Admin gefunden, verifiziere Passwort...');
   const isValid = await verifyPassword(password, admin.password!);
   if (!isValid) {
+    console.error('❌ Passwort-Verifikation fehlgeschlagen');
     logFailedAuth(`Admin-Login: Ungültiges Passwort - ${email}`);
     return null;
   }
   
+  console.log('✅ Passwort korrekt, erstelle Token...');
   const user: User = {
     id: admin.id!,
     email: admin.email!,
@@ -101,6 +119,7 @@ export async function adminLogin(email: string, password: string): Promise<{ use
   
   const token = createToken(user);
   logLoginAttempt(email, true);
+  console.log('✅ Admin Login erfolgreich:', user.email);
   return { user, token };
 }
 
