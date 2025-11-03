@@ -31,8 +31,7 @@ export default function AdminLogin() {
       const data = await response.json();
 
       if (response.ok) {
-        // Token in Cookie speichern
-        document.cookie = `auth-token=${data.token}; path=/; max-age=86400; secure; samesite=strict`;
+        // Cookie wird serverseitig gesetzt; hier nur weiterleiten
         router.push('/admin');
       } else {
         setError(data.error || 'Login fehlgeschlagen');

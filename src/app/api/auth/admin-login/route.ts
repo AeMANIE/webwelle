@@ -36,10 +36,14 @@ export async function POST(request: Request) {
     const { token, user } = result;
     console.log('✅ Admin Login erfolgreich:', user.email);
     const response = NextResponse.json({ success: true, token, user });
-    response.headers.append(
-      'Set-Cookie',
-      `auth-token=${token}; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Strict`
-    );
+    // Cookie serverseitig korrekt setzen
+    response.cookies.set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60,
+      path: '/',
+    });
     return response;
   } catch (error) {
     console.error('❌ Admin Login Fehler:', error);
