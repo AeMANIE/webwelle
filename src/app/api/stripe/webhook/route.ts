@@ -175,9 +175,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       await saveBooking(bookingData);
       console.log('✅ Buchung erfolgreich in Datenbank gespeichert');
       
-      // Bestellbestätigung und Portal-Aktivierung E-Mails senden
-      if (session.customer_email) {
-        console.log(`📧 Versuche E-Mails zu senden an: ${session.customer_email}`);
+      // Bestellbestätigung und Portal-Aktivierung E-Mails senden (mit Fallback auf customer_details.email)
+      const fallbackEmail = (session.customer_details as { email?: string } | null)?.email;
+      const effectiveEmail = session.customer_email || fallbackEmail;
+      if (effectiveEmail) {
+        // Falls session.customer_email leer war, setze sie lokal für die Übergabe
+        console.log(`📧 Versuche E-Mails zu senden an: ${effectiveEmail}`);
         try {
           await sendBookingAndActivationEmails(session, metadata, bookingData);
           console.log('✅ E-Mail-Versand erfolgreich abgeschlossen');
@@ -203,8 +206,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       message: error instanceof Error ? error.message : 'Unbekannter Fehler',
       stack: error instanceof Error ? error.stack : undefined
     });
-    // Fehler weiterwerfen, damit Stripe weiß, dass Webhook fehlgeschlagen ist
-    throw error;
+    // Wichtig: Nicht weiterwerfen, damit Stripe 200 erhält und keine dauerhaften Retries entstehen
+    // Fehlerfälle (z. B. E-Mail-Versand) werden separat durch manuelle Routen abgedeckt
   }
 }
 
