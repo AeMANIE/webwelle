@@ -212,7 +212,9 @@ async function sendBookingAndActivationEmails(
       const emailAlreadySent = await redis.get(emailSentKey);
       if (emailAlreadySent) {
         console.log('⚠️ E-Mail wurde bereits gesendet für Session:', session.id);
-        return;
+        console.log('⚠️ Falls die E-Mail fehlt, verwenden Sie die manuelle Route: /api/manual-send-booking-email');
+        console.log('⚠️ Oder prüfen Sie den Status mit: /api/debug-email-status?sessionId=' + session.id);
+        return; // Verhindert Duplikate bei Webhook-Wiederholungen
       }
     }
     
@@ -252,14 +254,20 @@ async function sendBookingAndActivationEmails(
       // Weiter mit Portal-Aktivierung auch wenn Bestätigung fehlschlägt
     }
     
-    // 2. Portal-Aktivierungs-Token generieren und senden (nur für Webdesign-Pakete mit Formular)
+    // 2. Portal-Aktivierungs-Token generieren und senden
+    // Nur für Webdesign-Pakete (mit vollständigem Formular) UND nur beim ERSTKAUF (Kunde noch nicht aktiviert)
     const isKIPackage = metadata.packageCategory === 'ki-automation';
     const isAIVoicePackage = metadata.packageCategory === 'ai-voice';
     const isSimplifiedCheckout = isKIPackage || isAIVoicePackage;
     
-    // Portal-Aktivierung nur für Webdesign-Pakete (mit vollständigem Formular)
     if (!isSimplifiedCheckout) {
       try {
+        // Prüfe, ob Kunde bereits ein aktiviertes Portal hat
+        const { getCustomerByEmail } = await import('@/lib/database');
+        const existingCustomer = await getCustomerByEmail(customerEmail);
+        if (existingCustomer?.portal_activated) {
+          console.log('ℹ️ Kunde hat bereits ein aktiviertes Portal – Aktivierungs-E-Mail wird nicht erneut gesendet.');
+        } else {
         const activationToken = generateActivationToken();
         
         // Token in Datenbank speichern
@@ -276,7 +284,8 @@ async function sendBookingAndActivationEmails(
           activationToken,
         });
         
-        console.log(`✅ Portal-Aktivierungs-E-Mail gesendet an ${customerEmail}`);
+          console.log(`✅ Portal-Aktivierungs-E-Mail gesendet an ${customerEmail}`);
+        }
       } catch (error) {
         console.error('❌ Fehler beim Senden der Portal-Aktivierungs-E-Mail:', error);
         // Nicht kritisch - kann später manuell gesendet werden

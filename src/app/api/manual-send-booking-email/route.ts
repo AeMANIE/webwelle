@@ -19,13 +19,25 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { sessionId } = await request.json();
+    const { sessionId, force = false } = await request.json();
     
     if (!sessionId) {
       return NextResponse.json(
         { success: false, error: 'Session ID ist erforderlich' },
         { status: 400 }
       );
+    }
+
+    // Wenn force=true, lösche Redis-Key um erneutes Senden zu ermöglichen
+    if (force) {
+      const { getRedisClient } = await import('@/lib/redis');
+      const redis = getRedisClient();
+      const emailSentKey = `email_sent:${sessionId}`;
+      
+      if (redis && (await redis.status) === 'ready') {
+        await redis.del(emailSentKey);
+        console.log('🗑️ Redis-Key gelöscht für erneutes Senden:', emailSentKey);
+      }
     }
 
     // Buchung aus Datenbank laden

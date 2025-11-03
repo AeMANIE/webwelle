@@ -110,97 +110,9 @@ Kunden sollen nach dem Kauf automatisch E-Mails erhalten:
 
 **Aktueller Status**:
 - ✅ Webhook ruft `sendBookingConfirmation()` auf (nur für Webdesign-Pakete mit Formular)
-- ❌ KI-Pakete und AI-Voice-Pakete erhalten KEINE Bestätigungs-E-Mail
-- ❌ Keine Duplikat-Prüfung (könnte bei Webhook-Wiederholungen mehrfach senden)
+- ✅ KI-Pakete und AI-Voice-Pakete erhalten Bestätigungs-E-Mails (Webhook aktualisiert)
+- ✅ Duplikat-Prüfung mit Redis (`email_sent:{session_id}`) aktiv
 
-**Schritt 1: E-Mail-Versand für alle Pakettypen sicherstellen**
-
-In `handleCheckoutSessionCompleted()` nach `saveBooking()`:
-
-```typescript
-// Nach saveBooking() - Bestellbestätigung senden
-if (session.customer_email) {
-  // Prüfe ob E-Mail bereits gesendet wurde (verhindert Duplikate)
-  const emailSentKey = `email_sent:${session.id}`;
-  const emailAlreadySent = await redis?.get(emailSentKey);
-  
-  if (!emailAlreadySent) {
-    // Paket-spezifische Daten für E-Mail vorbereiten
-    const packageName = getPackageDisplayName(metadata.packageType, metadata.packageCategory);
-    const packagePrice = metadata.packagePriceDisplay || `${(session.amount_total || 0) / 100} €`;
-    
-    // Add-ons extrahieren
-    const selectedAddons = extractAddonsFromMetadata(metadata, session);
-    
-    await sendBookingConfirmation({
-      customerName: metadata.customerName || session.customer_email.split('@')[0],
-      customerEmail: session.customer_email,
-      packageName,
-      packagePrice,
-      isMonthly: metadata.isMonthly === 'true' || !!session.subscription,
-      selectedAddons,
-      totalAmount: (session.amount_total || 0) / 100,
-      currency: session.currency || 'eur',
-      sessionId: session.id
-    });
-    
-    // Markiere E-Mail als gesendet (24h TTL)
-    await redis?.setex(emailSentKey, 86400, '1');
-  }
-}
-```
-
-**Schritt 2: Helper-Funktionen erstellen**
-
-**Neue Datei**: `src/lib/email-helpers.ts`
-
-```typescript
-// Paket-Display-Namen basierend auf packageType und packageCategory
-export function getPackageDisplayName(
-  packageType: string,
-  packageCategory?: string
-): string {
-  const names: Record<string, string> = {
-    // Webdesign
-    'starterwelle': 'StarterWelle',
-    'businesswelle': 'BusinessWelle',
-    'erfolgswelle': 'ErfolgsWelle',
-    // KI
-    'flowwelle': 'FlowWelle',
-    'powerwelle': 'PowerWelle',
-    'meisterwelle': 'MeisterWelle',
-    // AI-Voice
-    'minijob': 'Mini Job AI-Assistent',
-    'midijob': 'Midi Job AI-Assistenz',
-    'festangestellt': 'Festangestellt AI-Agent',
-    'einrichtungspaket': 'Einrichtungspaket AI Voice'
-  };
-  
-  return names[packageType] || packageType;
-}
-
-// Add-ons aus Metadata extrahieren
-export function extractAddonsFromMetadata(
-  metadata: Stripe.Metadata,
-  session: Stripe.Checkout.Session
-): Array<{ label: string; price: string; billing: 'oneTime' | 'monthly' | 'yearly' }> {
-  // Für Webdesign: selectedAddons aus formData
-  // Für AI-Voice: addonPriceIds aus metadata
-  // Implementierung je nach packageCategory
-}
-```
-
-**Schritt 3: E-Mail-Template anpassen**
-
-**Datei**: `src/lib/email-confirmation.ts` erweitern
-
-- Template unterstützt bereits alle Pakettypen (dynamisch)
-- Muss nur sicherstellen, dass Add-ons korrekt angezeigt werden
-- Unterstützung für yearly billing hinzufügen
-
-**Duplikat-Prävention**:
-- Redis Key: `email_sent:{session_id}` mit 24h TTL
-- Prüfe vor jedem Versand ob Key existiert
 
 ---
 
@@ -850,27 +762,27 @@ if (bookingData.customer_email && !isSimplifiedCheckout) {
 ### 2.4 Implementierungs-Reihenfolge (Phase 2)
 
 **Schritt 1**: Datenbank-Schema erweitern
-- [ ] `customer_portal_tokens` Tabelle erstellen
-- [ ] `customers` Tabelle erweitern
+- [x] `customer_portal_tokens` Tabelle erstellen
+- [x] `customers` Tabelle erweitern
 
 **Schritt 2**: Helper-Library erstellen
-- [ ] `src/lib/portal-activation.ts` - Token-Management
-- [ ] `src/lib/email-helpers.ts` - Paket-Namen, Add-ons extrahieren
+- [x] `src/lib/portal-activation.ts` - Token-Management
+- [x] `src/lib/email-helpers.ts` - Paket-Namen, Add-ons extrahieren
 
 **Schritt 3**: E-Mail-Template
-- [ ] `src/lib/email-portal-activation.ts` - Aktivierungs-E-Mail
+- [x] `src/lib/email-portal-activation.ts` - Aktivierungs-E-Mail
 
 **Schritt 4**: Frontend-Seite
-- [ ] `src/app/customer/activate/page.tsx` - Passwort-Setup
+- [x] `src/app/customer/activate/page.tsx` - Passwort-Setup
 
 **Schritt 5**: API Routes
-- [ ] `src/app/api/customer/validate-activation-token/route.ts`
-- [ ] `src/app/api/customer/activate-portal/route.ts`
+- [x] `src/app/api/customer/validate-activation-token/route.ts`
+- [x] `src/app/api/customer/activate-portal/route.ts`
 
 **Schritt 6**: Webhook erweitern
-- [ ] Bestellbestätigung für alle Pakettypen
-- [ ] Portal-Aktivierungs-E-Mail senden
-- [ ] Duplikat-Prävention mit Redis
+- [x] Bestellbestätigung für alle Pakettypen
+- [x] Portal-Aktivierungs-E-Mail senden (nur bei Erstkauf)
+- [x] Duplikat-Prävention mit Redis
 
 **Schritt 7**: Testing
 - [ ] E-Mail-Versand testen

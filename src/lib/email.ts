@@ -288,8 +288,9 @@ export async function sendEmail(options: {
       text: options.text,
     };
 
-    await transporter.sendMail(mailOptions);
+    const result = await transporter.sendMail(mailOptions);
     console.log('✅ E-Mail erfolgreich gesendet an:', options.to);
+    console.log('✅ Message-ID:', result.messageId);
     return true;
   } catch (error) {
     console.error('❌ Fehler beim Senden der E-Mail:', error);
@@ -307,6 +308,9 @@ export async function sendEmail(options: {
         response: smtpError.response,
         responseCode: smtpError.responseCode,
       });
+      
+      // Wichtig: Fehler auch als Error werfen, damit die aufrufende Funktion es sieht
+      throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
     }
     return false;
   }
