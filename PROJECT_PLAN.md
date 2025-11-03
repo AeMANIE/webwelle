@@ -8,8 +8,8 @@ Dieser Plan beschreibt die detaillierte Umsetzung von 3 großen Features:
 
 ### Status-Zusammenfassung:
 - ✅ **Phase 1 (AI-Voice)**: Vollständig implementiert und getestet
-- ⏳ **Phase 2 (E-Mail-System)**: Bereit zur Umsetzung
-- ⏳ **Phase 3 (Admin-Portal)**: Bereit zur Umsetzung
+- ✅ **Phase 2 (E-Mail-System)**: Implementiert (Tests offen)
+- 🔄 **Phase 3 (Admin-Portal)**: In Arbeit (Tab-Navigation erledigt)
 
 ---
 
@@ -381,384 +381,13 @@ Wichtig: Dieser Link ist 7 Tage gültig.
 Bei Fragen: info@webwelle.com | +49 (0) 123 456 789
 
 © 2024 WebWelle. Alle Rechte vorbehalten.
-  `;
-
-  try {
-    await sendEmail({
-      to: customerEmail,
-      subject,
-      html,
-      text,
-    });
-    
-    console.log(`✅ Portal-Aktivierungs-E-Mail erfolgreich an ${customerEmail} gesendet`);
-    return { success: true };
-  } catch (error) {
-    console.error('❌ Fehler beim Senden der Portal-Aktivierungs-E-Mail:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unbekannter Fehler' 
-    };
-  }
-}
-```
-
-**Schritt 4: Passwort-Setup Seite**
-
-**Neue Datei**: `src/app/customer/activate/page.tsx`
-
-```typescript
-'use client';
-
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Header from '@/app/components/Header';
-import Footer from '@/app/components/Footer';
-import { validatePassword } from '@/lib/validation';
-
-function ActivateContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const token = searchParams.get('token');
   
-  const [loading, setLoading] = useState(true);
-  const [validating, setValidating] = useState(true);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  
-  useEffect(() => {
-    if (!token) {
-      setError('Kein Aktivierungstoken gefunden');
-      setValidating(false);
-      setLoading(false);
-      return;
-    }
-    
-    // Token validieren
-    validateToken();
-  }, [token]);
-  
-  const validateToken = async () => {
-    try {
-      const response = await fetch(`/api/customer/validate-activation-token?token=${token}`);
-      const data = await response.json();
-      
-      if (!data.valid) {
-        setError(data.error || 'Token ungültig oder abgelaufen');
-      }
-    } catch (err) {
-      setError('Fehler beim Validieren des Tokens');
-    } finally {
-      setValidating(false);
-      setLoading(false);
-    }
-  };
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    
-    // Validierung
-    if (password !== confirmPassword) {
-      setError('Passwörter stimmen nicht überein');
-      return;
-    }
-    
-    const validation = validatePassword(password);
-    if (!validation.isValid) {
-      setError(validation.errors.password || 'Passwort erfüllt nicht die Anforderungen');
-      return;
-    }
-    
-    try {
-      const response = await fetch('/api/customer/activate-portal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password }),
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          router.push('/customer/login');
-        }, 3000);
-      } else {
-        setError(data.error || 'Fehler beim Aktivieren');
-      }
-    } catch (err) {
-      setError('Fehler beim Aktivieren des Portals');
-    }
-  };
-  
-  if (loading || validating) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-  
-  if (error && !token) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="py-20">
-          <div className="max-w-md mx-auto px-4">
-            <div className="bg-card rounded-lg p-6 border border-border">
-              <h1 className="text-2xl font-bold text-foreground mb-4">Fehler</h1>
-              <p className="text-muted-foreground">{error}</p>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-  
-  if (success) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="py-20">
-          <div className="max-w-md mx-auto px-4">
-            <div className="bg-card rounded-lg p-6 border border-border text-center">
-              <h1 className="text-2xl font-bold text-foreground mb-4">✅ Aktivierung erfolgreich!</h1>
-              <p className="text-muted-foreground mb-4">
-                Ihr Kundenportal wurde aktiviert. Sie werden zum Login weitergeleitet...
-              </p>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-  
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="py-20">
-        <div className="max-w-md mx-auto px-4">
-          <div className="bg-card rounded-lg p-8 border border-border">
-            <h1 className="text-2xl font-bold text-foreground mb-2">Kundenportal aktivieren</h1>
-            <p className="text-muted-foreground mb-6">
-              Bitte geben Sie ein Passwort für Ihr Kundenportal ein.
-            </p>
-            
-            {error && (
-              <div className="bg-red-500/10 border border-red-500 rounded-lg p-4 mb-6">
-                <p className="text-red-500 text-sm">{error}</p>
-              </div>
-            )}
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Passwort
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground"
-                  required
-                  minLength={8}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Mindestens 8 Zeichen, Groß- und Kleinbuchstaben, Zahlen
-                </p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Passwort bestätigen
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground"
-                  required
-                  minLength={8}
-                />
-              </div>
-              
-              <button
-                type="submit"
-                className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-lg hover:bg-primary/90 transition-colors font-semibold"
-              >
-                Portal aktivieren
-              </button>
-            </form>
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
-  );
-}
-
-export default function ActivatePage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    }>
-      <ActivateContent />
-    </Suspense>
-  );
-}
 ```
 
 **Schritt 5: API Routes für Aktivierung**
 
 **Neue Datei**: `src/app/api/customer/validate-activation-token/route.ts`
 
-```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { validateActivationToken } from '@/lib/portal-activation';
-
-export async function GET(request: NextRequest) {
-  const token = request.nextUrl.searchParams.get('token');
-  
-  if (!token) {
-    return NextResponse.json(
-      { valid: false, error: 'Token fehlt' },
-      { status: 400 }
-    );
-  }
-  
-  try {
-    const result = await validateActivationToken(token);
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('Fehler bei Token-Validierung:', error);
-    return NextResponse.json(
-      { valid: false, error: 'Fehler bei Token-Validierung' },
-      { status: 500 }
-    );
-  }
-}
-```
-
-**Neue Datei**: `src/app/api/customer/activate-portal/route.ts`
-
-```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { validateActivationToken, markTokenAsUsed } from '@/lib/portal-activation';
-import { hashPassword } from '@/lib/password';
-import { getCustomerByEmail, updateCustomer, createCustomer } from '@/lib/database';
-import { validatePassword } from '@/lib/validation';
-
-export async function POST(request: NextRequest) {
-  try {
-    const { token, password } = await request.json();
-    
-    if (!token || !password) {
-      return NextResponse.json(
-        { success: false, error: 'Token und Passwort sind erforderlich' },
-        { status: 400 }
-      );
-    }
-    
-    // Token validieren
-    const tokenValidation = await validateActivationToken(token);
-    if (!tokenValidation.valid) {
-      return NextResponse.json(
-        { success: false, error: tokenValidation.error || 'Token ungültig' },
-        { status: 400 }
-      );
-    }
-    
-    // Passwort validieren
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.isValid) {
-      return NextResponse.json(
-        { success: false, error: passwordValidation.errors.password },
-        { status: 400 }
-      );
-    }
-    
-    // Passwort hashen
-    const passwordHash = await hashPassword(password);
-    
-    // Kunde finden oder erstellen
-    let customer = await getCustomerByEmail(tokenValidation.email!);
-    
-    if (!customer) {
-      // Neuen Kunden erstellen
-      customer = await createCustomer({
-        email: tokenValidation.email!,
-        password_hash: passwordHash,
-        name: tokenValidation.email!.split('@')[0],
-        is_verified: true,
-        portal_activated: true,
-      });
-    } else {
-      // Bestehenden Kunden aktualisieren
-      customer = await updateCustomer(tokenValidation.email!, {
-        password_hash: passwordHash,
-        portal_activated: true,
-        portal_activated_at: new Date(),
-      });
-    }
-    
-    // Token als verwendet markieren
-    await markTokenAsUsed(token);
-    
-    return NextResponse.json({ 
-      success: true,
-      message: 'Portal erfolgreich aktiviert'
-    });
-  } catch (error) {
-    console.error('Fehler bei Portal-Aktivierung:', error);
-    return NextResponse.json(
-      { success: false, error: 'Fehler bei Portal-Aktivierung' },
-      { status: 500 }
-    );
-  }
-}
-```
-
-**Schritt 6: Webhook Integration**
-
-**Datei**: `src/app/api/stripe/webhook/route.ts` erweitern
-
-Nach `saveBooking()` und nach Bestellbestätigung:
-
-```typescript
-// Nach saveBooking() und Bestellbestätigung
-if (bookingData.customer_email && !isSimplifiedCheckout) {
-  // Portal-Aktivierungs-Token generieren und senden
-  try {
-    const { generateActivationToken, saveActivationToken } = await import('@/lib/portal-activation');
-    const { sendPortalActivationEmail } = await import('@/lib/email-portal-activation');
-    
-    const activationToken = generateActivationToken();
-    await saveActivationToken(
-      bookingData.customer_email,
-      activationToken,
-      bookingData.id?.toString()
-    );
-    
-    await sendPortalActivationEmail({
-      customerName: bookingData.customer_name || bookingData.customer_email.split('@')[0],
-      customerEmail: bookingData.customer_email,
-      activationToken,
-    });
-    
-    console.log('✅ Portal-Aktivierungs-E-Mail gesendet');
-  } catch (error) {
-    console.error('❌ Fehler beim Senden der Portal-Aktivierungs-E-Mail:', error);
-    // Nicht kritisch - E-Mail kann später manuell gesendet werden
-  }
-}
-```
 
 ---
 
@@ -2667,18 +2296,18 @@ export function isCancellable(
 ### 3.4 Implementierungs-Reihenfolge (Phase 3)
 
 **Schritt 1**: Tab-Navigation
-- [ ] `AdminTabs.tsx` Component erstellen
-- [ ] `AdminPage` refactoren mit Tabs
+- [x] `AdminTabs.tsx` Component erstellen
+- [x] `AdminPage` refactoren mit Tabs
 
 **Schritt 2**: Kunden-Übersicht
 - [ ] Datenbank-Query für Kunden mit Statistiken
-- [ ] `CustomersTab.tsx` Component
+- [ ] `CustomersTab.tsx` Component (Platzhalter vorhanden)
 - [ ] `/api/admin/customers` API Route
 - [ ] Redis Caching (2-5 Min)
 
 **Schritt 3**: Rechnungen
 - [ ] Stripe Integration für Rechnungen
-- [ ] `InvoicesTab.tsx` Component
+- [ ] `InvoicesTab.tsx` Component (Platzhalter vorhanden)
 - [ ] `/api/admin/invoices` API Route
 - [ ] Redis Caching (5-10 Min)
 
@@ -2687,7 +2316,7 @@ export function isCancellable(
 - [ ] `blog-database.ts` Library
 - [ ] Blog-API Routes (GET, POST, PUT, DELETE)
 - [ ] `BlogEditor.tsx` mit React Quill
-- [ ] `BlogTab.tsx` Component
+- [ ] `BlogTab.tsx` Component (Platzhalter vorhanden)
 
 **Schritt 5**: Blog-Seite dynamisch
 - [ ] `src/app/blog/page.tsx` refactoren
@@ -2723,30 +2352,30 @@ export function isCancellable(
 8. ✅ FAQ-Komponente erstellt - **ERLEDIGT** (`AIVoiceFAQ.tsx` mit klappbarer Accordion-Funktionalität)
 9. ✅ Build erfolgreich getestet - **ERLEDIGT**
 
-### Phase 2: E-Mail-System (DETAILLIERT GEPLANT)
+### Phase 2: E-Mail-System (UMGESETZT – Tests offen)
 
 **Schritt 1**: Datenbank-Schema erweitern
-- [ ] `customer_portal_tokens` Tabelle erstellen
-- [ ] `customers` Tabelle erweitern (password_hash, portal_activated, portal_activated_at)
+- [x] `customer_portal_tokens` Tabelle erstellen
+- [x] `customers` Tabelle erweitern (password_hash, portal_activated, portal_activated_at)
 
 **Schritt 2**: Helper-Library erstellen
-- [ ] `src/lib/portal-activation.ts` - Token-Management (mit Redis-Caching)
-- [ ] `src/lib/email-helpers.ts` - Paket-Namen, Add-ons extrahieren
+- [x] `src/lib/portal-activation.ts` - Token-Management (mit Redis-Caching)
+- [x] `src/lib/email-helpers.ts` - Paket-Namen, Add-ons extrahieren
 
 **Schritt 3**: E-Mail-Template
-- [ ] `src/lib/email-portal-activation.ts` - Aktivierungs-E-Mail mit professionellem Design
+- [x] `src/lib/email-portal-activation.ts` - Aktivierungs-E-Mail mit professionellem Design
 
 **Schritt 4**: Frontend-Seite
-- [ ] `src/app/customer/activate/page.tsx` - Passwort-Setup mit Token-Validierung
+- [x] `src/app/customer/activate/page.tsx` - Passwort-Setup mit Token-Validierung
 
 **Schritt 5**: API Routes
-- [ ] `src/app/api/customer/validate-activation-token/route.ts` - Token validieren
-- [ ] `src/app/api/customer/activate-portal/route.ts` - Portal aktivieren & Passwort speichern
+- [x] `src/app/api/customer/validate-activation-token/route.ts` - Token validieren
+- [x] `src/app/api/customer/activate-portal/route.ts` - Portal aktivieren & Passwort speichern
 
 **Schritt 6**: Webhook erweitern
-- [ ] Bestellbestätigung für ALLE Pakettypen (Webdesign, KI, AI-Voice)
-- [ ] Portal-Aktivierungs-E-Mail senden
-- [ ] Duplikat-Prävention mit Redis (`email_sent:{session_id}`)
+- [x] Bestellbestätigung für ALLE Pakettypen (Webdesign, KI, AI-Voice)
+- [x] Portal-Aktivierungs-E-Mail senden (nur Erstkauf)
+- [x] Duplikat-Prävention mit Redis (`email_sent:{session_id}`) + Fallback `customer_details.email`
 
 **Schritt 7**: Testing
 - [x] E-Mail-Versand testen (Test-E-Mail erfolgreich empfangen ✅)
@@ -2755,21 +2384,21 @@ export function isCancellable(
 - [ ] Passwort-Setup testen
 - [ ] Login mit neuem Passwort testen
 
-### Phase 3: Admin-Portal (DETAILLIERT GEPLANT)
+### Phase 3: Admin-Portal (GESTARTET)
 
 **Schritt 1**: Tab-Navigation
-- [ ] `src/app/components/admin/AdminTabs.tsx` Component erstellen
-- [ ] `src/app/admin/page.tsx` refactoren mit Tab-System
+- [x] `src/app/components/admin/AdminTabs.tsx` Component erstellen
+- [x] `src/app/admin/page.tsx` refactoren mit Tab-System
 
 **Schritt 2**: Kunden-Übersicht
 - [ ] Datenbank-Query für Kunden mit Statistiken (JOIN mit bookings)
-- [ ] `src/app/components/admin/CustomersTab.tsx` Component
+- [ ] `src/app/components/admin/CustomersTab.tsx` Component (Platzhalter vorhanden)
 - [ ] `src/app/api/admin/customers/route.ts` API Route
 - [ ] Redis Caching (5 Min TTL für Kunden-Liste)
 
 **Schritt 3**: Rechnungen
 - [ ] Stripe Integration (`stripe.invoices.list()`)
-- [ ] `src/app/components/admin/InvoicesTab.tsx` Component
+- [ ] `src/app/components/admin/InvoicesTab.tsx` Component (Platzhalter vorhanden)
 - [ ] `src/app/api/admin/invoices/route.ts` API Route
 - [ ] Redis Caching (10 Min TTL für Rechnungen)
 
@@ -2778,7 +2407,7 @@ export function isCancellable(
 - [ ] `src/lib/blog-database.ts` Library (CRUD-Operationen)
 - [ ] Blog-API Routes (GET, POST, PUT, DELETE)
 - [ ] `src/app/components/admin/BlogEditor.tsx` mit React Quill
-- [ ] `src/app/components/admin/BlogTab.tsx` Component
+- [ ] `src/app/components/admin/BlogTab.tsx` Component (Platzhalter vorhanden)
 - [ ] Redis Caching + Cache-Invalidierung bei Änderungen
 
 **Schritt 5**: Blog-Seite dynamisch
