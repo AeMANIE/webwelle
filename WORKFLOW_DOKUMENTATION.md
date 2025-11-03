@@ -1,9 +1,30 @@
 # WebWelle - Workflow-Dokumentation
 ## Vollständige Übersicht aller Prozesse und verwendeten Dateien
-
+Workflow 1: Kunde bucht Paket/Zusatzpaket → Stripe-Zahlung → Bestätigung
+Frontend → Checkout-Session → Webhook → E-Mails → Rechnung
+Alle beteiligten Dateien dokumentiert
+Workflow 2: Admin einloggen → Bestellungen/Rechnungen/Kunden sehen
+Login → Authentifizierung → Dashboard → APIs → DB-Queries
+Workflow 3: Admin schreibt Blog-Post
+Editor → API → Datenbank → Cache-Invalidierung → Public-Seite
+Workflow 4: Kunde loggt ins Portal ein
+Login → TAN-Anforderung → TAN-Verifizierung → Portal-Daten
+Workflow 5: Kunde kündigt Paket
+Kündigung → Directus/Stripe → Webhook
+Zusätzlich dokumentiert:
+Kritische Abhängigkeiten (DB, Redis, SMTP, Stripe, JWT)
+Häufige Fehlerquellen mit Debug-Tipps
+Environment-Variablen-Checkliste
+Vollständige Datei-Übersicht nach Funktion
 ---
 
 ## WORKFLOW 1: Kunde bucht Paket/Zusatzpaket → Stripe-Zahlung → Bestätigung
+
+> Aktueller Befund (Priorität): E-Mails fehlen aktuell bei ALLEN Paket-Bestellungen (nicht nur FlowWelle). Bitte zuerst folgende SOS-Diagnose durchführen:
+> - GET `https://webwelle.com/api/test-smtp-connection` (SMTP-Erreichbarkeit)
+> - GET `https://webwelle.com/api/test-email-simple?to=DEINE@MAIL` (Testmail)
+> - Prüfe im Stripe-Dashboard, ob `checkout.session.completed` Events ankommen (Webhook-Konfiguration/Secret)
+> - Wenn Session-ID bekannt: `GET /api/debug-email-status?session_id=cs_...` (Redis-Dedupe/Status)
 
 ### 1.1 Frontend: Kunde wählt Paket aus
 **Dateien:**
@@ -220,6 +241,15 @@
 
 ## WORKFLOW 2: Admin einloggen → Bestellungen/Rechnungen/Kunden sehen
 
+### 2.0 Schnell-Checkliste (wenn Login scheitert)
+1) POST `https://webwelle.com/api/test-admin-login`
+   - Body: `{ "email":"admin@webwelle.com", "password":"87437Kempten+" }`
+   - Erwartung: `success: true` (oder Felddiagnose, wenn false)
+2) GET `https://webwelle.com/api/debug-admin-auth`
+   - Prüfen: `ADMIN_EMAIL=admin@webwelle.com`, `ADMIN_PASSWORD` ODER `ADMIN_PASSWORD_HASH` ✅, `JWT_SECRET` ✅
+3) Cookies löschen (Browser) und auf exakt `https://webwelle.com/admin/login` neu versuchen
+4) Server-Zeit prüfen (starke Abweichung kann JWT invalidieren)
+
 ### 2.1 Admin-Login
 **Frontend:** `src/app/admin/login/page.tsx`
 
@@ -272,6 +302,15 @@
 3. Frontend speichert Cookie (falls nötig)
 4. Redirect zu `/admin`
 
+### 2.4.1 Fehlerszenarien und Behebung
+- 401 (Unauthorized):
+  - Meist `ADMIN_PASSWORD(_HASH)`/`ADMIN_EMAIL`/`JWT_SECRET` falsch/fehlt.
+  - Siehe 2.0 Schnell-Checkliste Schritt 1-2.
+- 500 (Serverfehler):
+  - Logs prüfen; häufig env-Parsing/JSON-Fehler.
+- Kein Cookie gesetzt:
+  - Production setzt `Secure; SameSite=Strict`; Domain muss exakt stimmen (`webwelle.com`).
+
 ---
 
 ### 2.5 Middleware prüft Admin-Bereich
@@ -296,6 +335,11 @@
 3. Dekodiert JWT (Client-Side)
 4. Zeigt Tabs: Bookings, Customers, Invoices, Blog
 5. Lädt initial: `CustomersTab` (Standard)
+
+### 2.6.1 Middleware-Zugriffsschutz
+**Datei:** `src/middleware.ts`
+- Schützt `/admin/*` (außer `/admin/login`) und `/customer/*` (außer `/customer/login`)
+- Erwartet gültiges `auth-token`-Cookie (JWT, Rolle `admin` bzw. `customer`)
 
 ---
 
