@@ -574,13 +574,38 @@ export async function createTables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
     `;
     
+    // Blog-Posts Tabelle
+    const createBlogPostsTableQuery = `
+      CREATE TABLE IF NOT EXISTS blog_posts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        title VARCHAR(255) NOT NULL,
+        slug VARCHAR(255) UNIQUE NOT NULL,
+        excerpt TEXT,
+        content TEXT NOT NULL,
+        author VARCHAR(255) DEFAULT 'SEO-Team WebWelle',
+        featured_image_url VARCHAR(500),
+        meta_description TEXT,
+        tags TEXT[] DEFAULT ARRAY[]::TEXT[],
+        featured BOOLEAN DEFAULT FALSE,
+        status VARCHAR(20) DEFAULT 'draft',
+        published_at TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        created_by VARCHAR(255)
+      );
+      CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status);
+      CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug);
+      CREATE INDEX IF NOT EXISTS idx_blog_posts_published_at ON blog_posts(published_at);
+    `;
+    
     await client.query(createCustomersTableQuery);
     await client.query(createResetTokensTableQuery);
     await client.query(createPortalTokensTableQuery);
     await client.query(alterCustomersTableQuery);
     await client.query(createInvoicesTableQuery);
+    await client.query(createBlogPostsTableQuery);
     
-    console.log('✅ Zusätzliche Tabellen (customers, reset_tokens, customer_portal_tokens, invoices) erstellt/überprüft');
+    console.log('✅ Zusätzliche Tabellen (customers, reset_tokens, customer_portal_tokens, invoices, blog_posts) erstellt/überprüft');
   } finally {
     client.release();
   }

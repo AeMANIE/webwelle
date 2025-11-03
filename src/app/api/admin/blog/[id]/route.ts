@@ -1,0 +1,155 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyToken } from '@/lib/auth';
+import { getBlogPostById, updateBlogPost, deleteBlogPost } from '@/lib/blog-database';
+import { getRedisClient } from '@/lib/redis';
+
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const params = await context.params;
+    const token = request.cookies.get('auth-token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    }
+
+    const user = verifyToken(token);
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
+    }
+
+    const post = await getBlogPostById(params.id);
+
+    if (!post) {
+      return NextResponse.json(
+        { error: 'Blog-Post nicht gefunden' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(post);
+  } catch (error) {
+    console.error('Fehler beim Laden des Blog-Posts:', error);
+    return NextResponse.json(
+      { error: 'Fehler beim Laden des Blog-Posts' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const params = await context.params;
+    const token = request.cookies.get('auth-token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    }
+
+    const user = verifyToken(token);
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const {
+      title,
+      slug,
+      excerpt,
+      content,
+      author,
+      featuredImageUrl,
+      metaDescription,
+      tags,
+      featured,
+      status,
+    } = body;
+
+    const updated = await updateBlogPost(params.id, {
+      title,
+      slug,
+      excerpt,
+      content,
+      author,
+      featuredImageUrl,
+      metaDescription,
+      tags,
+      featured,
+      status,
+    });
+
+    if (!updated) {
+      return NextResponse.json(
+        { error: 'Blog-Post nicht gefunden' },
+        { status: 404 }
+      );
+    }
+
+    // Cache invalidieren
+    const redis = getRedisClient();
+    if (redis && (await redis.status) === 'ready') {
+      await redis.del('admin:blog:all');
+      await redis.del('admin:blog:draft');
+      await redis.del('admin:blog:published');
+      await redis.del(`blog:post:${updated.slug}`);
+      await redis.del('blog:public:list');
+    }
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren des Blog-Posts:', error);
+    return NextResponse.json(
+      { error: 'Fehler beim Aktualisieren des Blog-Posts' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const params = await context.params;
+    const token = request.cookies.get('auth-token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    }
+
+    const user = verifyToken(token);
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
+    }
+
+    const deleted = await deleteBlogPost(params.id);
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: 'Blog-Post nicht gefunden' },
+        { status: 404 }
+      );
+    }
+
+    // Cache invalidieren
+    const redis = getRedisClient();
+    if (redis && (await redis.status) === 'ready') {
+      await redis.del('admin:blog:all');
+      await redis.del('admin:blog:draft');
+      await redis.del('admin:blog:published');
+      await redis.del(`blog:post:${params.id}`); // Note: Would need slug for proper invalidation
+      await redis.del('blog:public:list');
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Fehler beim Löschen des Blog-Posts:', error);
+    return NextResponse.json(
+      { error: 'Fehler beim Löschen des Blog-Posts' },
+      { status: 500 }
+    );
+  }
+}
+

@@ -4,6 +4,10 @@ import { Calendar, User, ArrowRight, Tag } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ScrollToTop from '../components/ScrollToTop';
+import { getAllBlogPosts } from '@/lib/blog-database';
+import { getRedisClient } from '@/lib/redis';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Blog & Insights | WebWelle – Webdesign Kempten (Allgäu)",
@@ -11,20 +15,32 @@ export const metadata: Metadata = {
   keywords: "Webdesign Blog Kempten, SEO Tipps Allgäu, Digitale Sichtbarkeit Bayern, Webdesign Trends",
 };
 
-type BlogPost = {
-  id: number;
-  title: string;
-  excerpt: string;
-  content: string;
-  author: string;
-  date: string;
-  readTime: string;
-  tags: string[];
-  featured: boolean;
-  slug?: string;
-};
+async function getBlogPosts() {
+  const redis = getRedisClient();
+  let posts;
+  
+  if (redis && (await redis.status) === 'ready') {
+    const cached = await redis.get('blog:public:list');
+    if (cached) {
+      posts = JSON.parse(cached);
+    }
+  }
+  
+  if (!posts) {
+    // Nur veröffentlichte Posts
+    posts = await getAllBlogPosts('published');
+    
+    // Cache speichern (15 Minuten)
+    if (redis && (await redis.status) === 'ready') {
+      await redis.setex('blog:public:list', 900, JSON.stringify(posts));
+    }
+  }
 
-const blogPosts: BlogPost[] = [
+  return posts;
+}
+
+// Fallback zu hardcoded Posts, falls DB leer
+const fallbackBlogPosts = [
   {
     id: 1,
     title: "Top 5 Unternehmenswebsites im Allgäu – Was macht sie erfolgreich?",
@@ -94,9 +110,15 @@ const blogPosts: BlogPost[] = [
   }
 ];
 
-export default function BlogPage() {
-  const featuredPosts = blogPosts.filter(post => post.featured);
-  const regularPosts = blogPosts.filter(post => !post.featured);
+export default async function BlogPage() {
+  const posts = await getBlogPosts();
+  type PostType = { featured: boolean; id?: string; slug?: string; title: string; excerpt?: string | null; author: string; publishedAt?: Date; createdAt: Date; tags?: string[] };
+  const featuredPosts = posts.filter((post: PostType) => post.featured);
+  const regularPosts = posts.filter((post: PostType) => !post.featured);
+  
+  // Fallback zu hardcoded Posts, falls DB leer
+  const displayFeatured: PostType[] = posts.length > 0 ? featuredPosts : fallbackBlogPosts.filter(post => post.featured);
+  const displayRegular: PostType[] = posts.length > 0 ? regularPosts : fallbackBlogPosts.filter(post => !post.featured);
 
   return (
     <div className="min-h-screen bg-background">
@@ -137,10 +159,10 @@ export default function BlogPage() {
             Featured Artikel
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {featuredPosts.map((post) => (
+            {displayFeatured.map((post) => (
               <Link
-                key={post.id}
-                href={`/blog/${post.slug ?? post.id}`}
+                key={post.id || (post as unknown as { id: number }).id}
+                href={`/blog/${post.slug || (post.id || (post as unknown as { id: number }).id)}`}
                 className="block bg-card rounded-2xl p-8 shadow-lg border border-border hover:shadow-xl transition-shadow focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <div className="flex items-center gap-2 mb-4">
@@ -151,7 +173,7 @@ export default function BlogPage() {
                   {post.title}
                 </h3>
                 <p className="text-muted-foreground mb-6 leading-relaxed">
-                  {post.excerpt}
+                  {post.excerpt || ''}
                 </p>
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -161,14 +183,19 @@ export default function BlogPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      <span>{new Date(post.date).toLocaleDateString('de-DE')}</span>
+                      <span>
+                        {(post.publishedAt || post.createdAt)
+                          ? new Date(post.publishedAt || post.createdAt).toLocaleDateString('de-DE')
+                          : (post as unknown as { date?: string }).date 
+                            ? new Date((post as unknown as { date: string }).date).toLocaleDateString('de-DE')
+                            : 'N/A'}
+                      </span>
                     </div>
-                    <span>{post.readTime} Lesezeit</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex flex-wrap gap-2">
-                    {post.tags.map((tag, index) => (
+                    {(post.tags || []).map((tag, index) => (
                       <span key={index} className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium">
                         {tag}
                       </span>
@@ -192,17 +219,17 @@ export default function BlogPage() {
             Weitere Artikel
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {regularPosts.map((post) => (
+            {displayRegular.map((post) => (
               <Link
-                key={post.id}
-                href={`/blog/${post.slug ?? post.id}`}
+                key={post.id || (post as unknown as { id: number }).id}
+                href={`/blog/${post.slug || (post.id || (post as unknown as { id: number }).id)}`}
                 className="block bg-card rounded-xl p-6 shadow-md border border-border hover:shadow-lg transition-shadow focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <h3 className="text-xl font-bold text-foreground mb-3 leading-tight">
                   {post.title}
                 </h3>
                 <p className="text-muted-foreground mb-4 leading-relaxed text-sm">
-                  {post.excerpt}
+                  {post.excerpt || ''}
                 </p>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -212,14 +239,19 @@ export default function BlogPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      <span>{new Date(post.date).toLocaleDateString('de-DE')}</span>
+                      <span>
+                        {(post.publishedAt || post.createdAt)
+                          ? new Date(post.publishedAt || post.createdAt).toLocaleDateString('de-DE')
+                          : (post as unknown as { date?: string }).date 
+                            ? new Date((post as unknown as { date: string }).date).toLocaleDateString('de-DE')
+                            : 'N/A'}
+                      </span>
                     </div>
                   </div>
-                  <span className="text-xs text-muted-foreground">{post.readTime}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex flex-wrap gap-1">
-                    {post.tags.slice(0, 2).map((tag, index) => (
+                    {(post.tags || []).slice(0, 2).map((tag, index) => (
                       <span key={index} className="bg-primary/10 text-primary px-2 py-1 rounded text-xs">
                         {tag}
                       </span>

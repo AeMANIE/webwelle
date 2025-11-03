@@ -74,6 +74,7 @@ export default function InvoicesTab() {
               <th className="text-left p-4 font-semibold text-foreground">Betrag</th>
               <th className="text-left p-4 font-semibold text-foreground">Status</th>
               <th className="text-left p-4 font-semibold text-foreground">Datum</th>
+              <th className="text-left p-4 font-semibold text-foreground">Issuer</th>
               <th className="text-left p-4 font-semibold text-foreground">Aktionen</th>
             </tr>
           </thead>
@@ -96,7 +97,9 @@ export default function InvoicesTab() {
                     <span className="text-sm">{inv.paidAt ? new Date(inv.paidAt).toLocaleDateString('de-DE') : inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('de-DE') : new Date(inv.createdAt).toLocaleDateString('de-DE')}</span>
                   </div>
                 </td>
-                <td className="p-4 text-sm text-muted-foreground">{inv.issuer || 'stripe'}</td>
+                <td className="p-4">
+                  <span className="text-sm text-muted-foreground">{inv.issuer || 'Stripe'}</span>
+                </td>
                 <td className="p-4">
                   {inv.pdfUrl && (
                     <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors text-sm">
