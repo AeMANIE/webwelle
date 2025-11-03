@@ -49,4 +49,37 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Komfort: Cookie auch per GET setzen (einfach via Link im Browser)
+export async function GET(request: NextRequest) {
+  try {
+    if (process.env.ALLOW_DEBUG_ROUTES !== 'true') {
+      return NextResponse.json({ error: 'Debug-Routen sind deaktiviert' }, { status: 403 });
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) {
+      return NextResponse.json({ error: 'ADMIN_EMAIL fehlt' }, { status: 500 });
+    }
+
+    const user = {
+      id: 'admin-1',
+      email: adminEmail.toLowerCase(),
+      role: 'admin' as const,
+      name: 'WebWelle Admin',
+    };
+    const token = createToken(user);
+    const response = NextResponse.redirect(new URL('/admin', request.url));
+    response.cookies.set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60,
+      path: '/',
+    });
+    return response;
+  } catch (error) {
+    return NextResponse.json({ error: 'Interner Fehler' }, { status: 500 });
+  }
+}
+
 
