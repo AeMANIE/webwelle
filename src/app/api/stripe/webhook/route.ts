@@ -277,42 +277,21 @@ async function sendBookingAndActivationEmails(
       // Weiter mit Portal-Aktivierung auch wenn Bestätigung fehlschlägt
     }
     
-    // 2. Portal-Aktivierungs-Token generieren und senden
-    // Nur für Webdesign-Pakete (mit vollständigem Formular) UND nur beim ERSTKAUF (Kunde noch nicht aktiviert)
-    const isKIPackage = metadata.packageCategory === 'ki-automation';
-    const isAIVoicePackage = metadata.packageCategory === 'ai-voice';
-    const isSimplifiedCheckout = isKIPackage || isAIVoicePackage;
-    
-    if (!isSimplifiedCheckout) {
-      try {
-        // Prüfe, ob Kunde bereits ein aktiviertes Portal hat
-        const { getCustomerByEmail } = await import('@/lib/database');
-        const existingCustomer = await getCustomerByEmail(customerEmail);
-        if (existingCustomer?.portal_activated) {
-          console.log('ℹ️ Kunde hat bereits ein aktiviertes Portal – Aktivierungs-E-Mail wird nicht erneut gesendet.');
-        } else {
+    // 2. Portal-Aktivierungs-Token generieren und senden – für ALLE Pakettypen (nur wenn noch kein Portal)
+    try {
+      const { getCustomerByEmail } = await import('@/lib/database');
+      const existingCustomer = await getCustomerByEmail(customerEmail);
+      if (existingCustomer?.portal_activated) {
+        console.log('ℹ️ Kunde hat bereits ein aktiviertes Portal – Aktivierungs-E-Mail wird nicht erneut gesendet.');
+      } else {
         const activationToken = generateActivationToken();
-        
-        // Token in Datenbank speichern
-        await saveActivationToken(
-          customerEmail,
-          activationToken,
-          bookingData.session_id
-        );
-        
-        // Portal-Aktivierungs-E-Mail senden
-        await sendPortalActivationEmail({
-          customerName,
-          customerEmail,
-          activationToken,
-        });
-        
-          console.log(`✅ Portal-Aktivierungs-E-Mail gesendet an ${customerEmail}`);
-        }
-      } catch (error) {
-        console.error('❌ Fehler beim Senden der Portal-Aktivierungs-E-Mail:', error);
-        // Nicht kritisch - kann später manuell gesendet werden
+        await saveActivationToken(customerEmail, activationToken, bookingData.session_id);
+        await sendPortalActivationEmail({ customerName, customerEmail, activationToken });
+        console.log(`✅ Portal-Aktivierungs-E-Mail gesendet an ${customerEmail}`);
       }
+    } catch (error) {
+      console.error('❌ Fehler beim Senden der Portal-Aktivierungs-E-Mail:', error);
+      // Nicht kritisch - kann später manuell gesendet werden
     }
     
     // Markiere E-Mail als gesendet (24h TTL)
