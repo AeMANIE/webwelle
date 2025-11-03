@@ -178,13 +178,33 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       // Bestellbestätigung und Portal-Aktivierung E-Mails senden
       if (session.customer_email) {
         console.log(`📧 Versuche E-Mails zu senden an: ${session.customer_email}`);
-        await sendBookingAndActivationEmails(session, metadata, bookingData);
+        try {
+          await sendBookingAndActivationEmails(session, metadata, bookingData);
+          console.log('✅ E-Mail-Versand erfolgreich abgeschlossen');
+        } catch (emailError) {
+          console.error('❌ Fehler beim Senden der E-Mails:', emailError);
+          // Fehler nicht weiterwerfen - Buchung wurde gespeichert
+          // E-Mail kann später manuell gesendet werden
+        }
       } else {
         console.warn('⚠️ Keine customer_email in Session gefunden, E-Mails werden nicht gesendet');
+        console.warn('⚠️ Session-Details:', {
+          id: session.id,
+          customer: session.customer,
+          customer_details: session.customer_details
+        });
       }
+    } else {
+      console.warn('⚠️ Keine Metadata in Session gefunden');
     }
   } catch (error) {
     console.error('❌ Fehler beim Speichern der Buchung:', error);
+    console.error('❌ Fehler-Details:', {
+      message: error instanceof Error ? error.message : 'Unbekannter Fehler',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    // Fehler weiterwerfen, damit Stripe weiß, dass Webhook fehlgeschlagen ist
+    throw error;
   }
 }
 
@@ -354,13 +374,26 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice, stripe: Strip
 }
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
-  console.log('Abonnement erstellt:', subscription.id);
+  console.log('📦 Abonnement erstellt:', subscription.id);
   
-  // Neues Abonnement erstellt
-  // Hier können Sie:
-  // - Service aktivieren
-  // - Willkommens-E-Mail senden
-  // - Projekt starten
+  try {
+    // Subscription-Metadata prüfen (könnte session_id enthalten)
+    const sessionId = subscription.metadata?.session_id;
+    if (sessionId) {
+      console.log(`📦 Subscription erstellt für Session: ${sessionId}`);
+      // Session-ID kann verwendet werden, um Buchung zu verknüpfen
+    }
+    
+    // Neues Abonnement erstellt
+    // Hier können Sie:
+    // - Service aktivieren
+    // - Willkommens-E-Mail senden
+    // - Projekt starten
+    console.log('✅ Subscription erstellt erfolgreich verarbeitet');
+  } catch (error) {
+    console.error('❌ Fehler beim Verarbeiten der Subscription-Erstellung:', error);
+    // Fehler nicht weiterwerfen, da Subscription bereits erstellt wurde
+  }
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
