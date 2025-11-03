@@ -16,27 +16,44 @@ export const metadata: Metadata = {
 };
 
 async function getBlogPosts() {
-  const redis = getRedisClient();
-  let posts;
-  
-  if (redis && (await redis.status) === 'ready') {
-    const cached = await redis.get('blog:public:list');
-    if (cached) {
-      posts = JSON.parse(cached);
-    }
-  }
-  
-  if (!posts) {
-    // Nur veröffentlichte Posts
-    posts = await getAllBlogPosts('published');
-    
-    // Cache speichern (15 Minuten)
-    if (redis && (await redis.status) === 'ready') {
-      await redis.setex('blog:public:list', 900, JSON.stringify(posts));
-    }
-  }
+  try {
+    const redis = getRedisClient();
+    type PostType = { featured: boolean; id?: string; slug?: string; title: string; excerpt?: string | null; author: string; publishedAt?: Date; createdAt: Date; tags?: string[] };
+    let posts: PostType[] | undefined;
 
-  return posts;
+    try {
+      if (redis && (await redis.status) === 'ready') {
+        const cached = await redis.get('blog:public:list');
+        if (cached) {
+          posts = JSON.parse(cached);
+        }
+      }
+    } catch {
+      // Redis optional – bei Fehler einfach ohne Cache weiter
+    }
+
+    if (!posts) {
+      try {
+        // Nur veröffentlichte Posts
+        posts = await getAllBlogPosts('published');
+      } catch {
+        // DB nicht erreichbar oder Tabelle fehlt → leere Liste
+        posts = [];
+      }
+
+      // Cache speichern (15 Minuten), Fehler ignorieren
+      try {
+        const redis2 = getRedisClient();
+        if (redis2 && (await redis2.status) === 'ready') {
+          await redis2.setex('blog:public:list', 900, JSON.stringify(posts));
+        }
+      } catch {}
+    }
+
+    return posts;
+  } catch {
+    return [];
+  }
 }
 
 // Fallback zu hardcoded Posts, falls DB leer
@@ -112,7 +129,7 @@ const fallbackBlogPosts = [
 
 export default async function BlogPage() {
   const posts = await getBlogPosts();
-  type PostType = { featured: boolean; id?: string; slug?: string; title: string; excerpt?: string | null; author: string; publishedAt?: Date; createdAt: Date; tags?: string[] };
+  type PostType = { featured: boolean; id?: string | number; slug?: string; title: string; excerpt?: string | null; author?: string; publishedAt?: Date | string; createdAt?: Date | string; tags?: string[] };
   const featuredPosts = posts.filter((post: PostType) => post.featured);
   const regularPosts = posts.filter((post: PostType) => !post.featured);
   
@@ -183,13 +200,12 @@ export default async function BlogPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      <span>
-                        {(post.publishedAt || post.createdAt)
-                          ? new Date(post.publishedAt || post.createdAt).toLocaleDateString('de-DE')
-                          : (post as unknown as { date?: string }).date 
-                            ? new Date((post as unknown as { date: string }).date).toLocaleDateString('de-DE')
-                            : 'N/A'}
-                      </span>
+                      <span>{(() => {
+                        const d = (post.publishedAt ?? post.createdAt) as unknown as string | number | Date | undefined;
+                        if (d) return new Date(d as string | number | Date).toLocaleDateString('de-DE');
+                        const legacy = (post as unknown as { date?: string }).date;
+                        return legacy ? new Date(legacy as string).toLocaleDateString('de-DE') : 'N/A';
+                      })()}</span>
                     </div>
                   </div>
                 </div>
@@ -239,13 +255,12 @@ export default async function BlogPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      <span>
-                        {(post.publishedAt || post.createdAt)
-                          ? new Date(post.publishedAt || post.createdAt).toLocaleDateString('de-DE')
-                          : (post as unknown as { date?: string }).date 
-                            ? new Date((post as unknown as { date: string }).date).toLocaleDateString('de-DE')
-                            : 'N/A'}
-                      </span>
+                      <span>{(() => {
+                        const d = (post.publishedAt ?? post.createdAt) as unknown as string | number | Date | undefined;
+                        if (d) return new Date(d as string | number | Date).toLocaleDateString('de-DE');
+                        const legacy = (post as unknown as { date?: string }).date;
+                        return legacy ? new Date(legacy as string).toLocaleDateString('de-DE') : 'N/A';
+                      })()}</span>
                     </div>
                   </div>
                 </div>

@@ -41,21 +41,32 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const redis = getRedisClient();
-  let post;
-  
-  if (redis && (await redis.status) === 'ready') {
-    const cached = await redis.get(`blog:post:${slug}`);
-    if (cached) {
-      post = JSON.parse(cached);
+  type PostType = { status?: string; title: string; excerpt?: string | null; author: string; publishedAt?: Date; createdAt: Date; content: string; tags?: string[]; featured?: boolean } | null;
+  let post: PostType = null;
+  try {
+    const redis = getRedisClient();
+    try {
+      if (redis && (await redis.status) === 'ready') {
+        const cached = await redis.get(`blog:post:${slug}`);
+        if (cached) post = JSON.parse(cached);
+      }
+    } catch {}
+
+    if (!post) {
+      try {
+        post = await getBlogPostBySlug(slug);
+      } catch {
+        post = null;
+      }
+      try {
+        const redis2 = getRedisClient();
+        if (post && redis2 && (await redis2.status) === 'ready') {
+          await redis2.setex(`blog:post:${slug}`, 900, JSON.stringify(post));
+        }
+      } catch {}
     }
-  }
-  
-  if (!post) {
-    post = await getBlogPostBySlug(slug);
-    if (post && redis && (await redis.status) === 'ready') {
-      await redis.setex(`blog:post:${slug}`, 900, JSON.stringify(post));
-    }
+  } catch {
+    post = null;
   }
 
   if (!post || post.status !== 'published') {
