@@ -24,15 +24,24 @@ export interface User {
 // Admin-Benutzer (in Produktion aus Datenbank)
 function getAdminUsers() {
   // Prüfe ob Admin-Konfiguration vorhanden ist (nur zur Laufzeit)
-  if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD_HASH) {
-    throw new Error('ADMIN_EMAIL und ADMIN_PASSWORD_HASH Umgebungsvariablen sind erforderlich');
+  if (!process.env.ADMIN_EMAIL) {
+    throw new Error('ADMIN_EMAIL Umgebungsvariable ist nicht gesetzt');
+  }
+
+  // Erlaube entweder gehashtes Passwort (ADMIN_PASSWORD_HASH) oder Klartext (ADMIN_PASSWORD)
+  const passwordHash = process.env.ADMIN_PASSWORD_HASH;
+  const passwordPlain = process.env.ADMIN_PASSWORD;
+
+  if (!passwordHash && !passwordPlain) {
+    throw new Error('Entweder ADMIN_PASSWORD_HASH oder ADMIN_PASSWORD muss gesetzt sein');
   }
   
   return [
     {
       id: 'admin-1',
       email: process.env.ADMIN_EMAIL,
-      password: process.env.ADMIN_PASSWORD_HASH, // Gehashtes Passwort aus ENV
+      // Speichere, was vorhanden ist. Die Verifizierung erfolgt in adminLogin
+      password: (passwordHash || passwordPlain) as string,
       name: 'WebWelle Admin',
       role: 'admin' as const
     }
@@ -102,7 +111,18 @@ export async function adminLogin(email: string, password: string): Promise<{ use
   }
   
   console.log('✅ Admin gefunden, verifiziere Passwort...');
-  const isValid = await verifyPassword(password, admin.password!);
+  let isValid = false;
+
+  const passwordHash = process.env.ADMIN_PASSWORD_HASH;
+  const passwordPlain = process.env.ADMIN_PASSWORD;
+
+  if (passwordPlain) {
+    // Klartext-Modus (Fallback, auf Wunsch des Betreibers)
+    isValid = password === passwordPlain;
+  } else if (passwordHash) {
+    // Hash-Modus (Standard, sicher)
+    isValid = await verifyPassword(password, passwordHash);
+  }
   if (!isValid) {
     console.error('❌ Passwort-Verifikation fehlgeschlagen');
     logFailedAuth(`Admin-Login: Ungültiges Passwort - ${email}`);
