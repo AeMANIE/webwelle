@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Server-Side Rendering für bessere Performance
   trailingSlash: false,
+  // Standalone output für Docker (reduziert Image-Größe)
+  output: 'standalone',
   images: {
     unoptimized: true,
     // Optimierte Bildformate
