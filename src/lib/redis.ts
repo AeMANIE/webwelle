@@ -150,15 +150,25 @@ export async function safeRedisOperation<T>(
   fallback: () => T
 ): Promise<T> {
   const client = getRedisClient();
+  const enabled = isRedisEnabled();
   
-  if (!client || !isRedisEnabled()) {
+  console.log('🔧 safeRedisOperation:', { 
+    hasClient: !!client, 
+    isEnabled: enabled,
+    clientStatus: client ? (client as Redis).status : 'kein Client'
+  });
+  
+  if (!client || !enabled) {
+    console.log('⚠️ Redis nicht verfügbar, verwende Fallback');
     return fallback();
   }
 
   try {
-    return await operation(client);
+    const result = await operation(client);
+    console.log('✅ Redis Operation erfolgreich');
+    return result;
   } catch (error) {
-    console.error('⚠️ Redis Operation fehlgeschlagen, verwende Fallback:', error);
+    console.error('⚠️ Redis Operation fehlgeschlagen, verwende Fallback:', error instanceof Error ? error.message : error);
     return fallback();
   }
 }

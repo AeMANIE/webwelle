@@ -24,8 +24,8 @@ export async function GET(request: NextRequest, context: unknown) {
       const customer = customerRes.rows[0];
 
       const bookingsRes = await client.query(
-        'SELECT * FROM webwelle_bookings WHERE customer_email = $1 ORDER BY created_at DESC',
-        [customer.email]
+        'SELECT * FROM webwelle_bookings WHERE customer_id = $1 OR customer_email = $2 ORDER BY created_at DESC',
+        [params.id, customer.email]
       );
 
       // Stripe Daten ermitteln
@@ -79,12 +79,41 @@ export async function GET(request: NextRequest, context: unknown) {
         });
       }
 
-      return NextResponse.json({ customer, bookings: bookingsRes.rows, invoices, subscriptions });
+      // Rechnungen aus der Datenbank holen (zusätzlich zu Stripe)
+      const dbInvoicesRes = await client.query(
+        `SELECT 
+          id,
+          invoice_number,
+          stripe_invoice_id,
+          amount_cents,
+          currency,
+          status,
+          paid_at,
+          due_date,
+          pdf_url,
+          hosted_invoice_url,
+          created_at
+         FROM invoices 
+         WHERE customer_id = $1 OR customer_email = $2 
+         ORDER BY created_at DESC`,
+        [params.id, customer.email]
+      );
+      
+      // Kombiniere Stripe-Invoices und DB-Invoices (DB hat Priorität)
+      const allInvoices = [...dbInvoicesRes.rows, ...invoices.filter(inv => 
+        !dbInvoicesRes.rows.some(dbInv => dbInv.stripe_invoice_id === inv.id)
+      )];
+
+      return NextResponse.json({ 
+        customer, 
+        bookings: bookingsRes.rows, 
+        invoices: allInvoices, 
+        subscriptions 
+      });
     } finally {
       client.release();
     }
   } catch (error) {
-    console.error('Fehler bei Kunden-Details:', error);
     return NextResponse.json({ error: 'Fehler bei Kunden-Details' }, { status: 500 });
   }
 }

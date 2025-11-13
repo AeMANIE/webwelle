@@ -1,8 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { validatePassword, verifyPassword as verifyPasswordUtil } from './password';
-import { generateTAN, sendTANEmail } from './email';
-import { verifyTAN, createTAN } from './tan';
 import { logLoginAttempt, logFailedAuth } from './security-logger';
 
 // JWT Secret zur Laufzeit validieren
@@ -239,101 +237,100 @@ export async function customerLogin(email: string, password: string): Promise<{ 
 
 // TAN für 2FA anfordern
 export async function requestTAN(email: string, password: string): Promise<{ success: boolean; message: string; tan?: string }> {
-  // Für Entwicklung: Hardcoded Kunden verwenden
-  const CUSTOMER_USERS = [
-    {
-      id: 'customer-1',
-      email: 'customer1@example.com',
-      password: '$2b$12$iwy8veYiyMqIplZUukl.n.TRd9PAR/ln4zemFfk4xA6i5sxTWky5O',
-      name: 'Max Mustermann',
-      role: 'customer' as const
-    },
-    {
-      id: 'customer-2',
-      email: 'anna@demo-company.de',
-      password: '$2b$12$iwy8veYiyMqIplZUukl.n.TRd9PAR/ln4zemFfk4xA6i5sxTWky5O',
-      name: 'Anna Schmidt',
-      role: 'customer' as const
-    },
-    {
-      id: 'customer-3',
-      email: 'harmonie_556@yahoo.com',
-      password: '$2b$12$iwy8veYiyMqIplZUukl.n.TRd9PAR/ln4zemFfk4xA6i5sxTWky5O',
-      name: 'Harmonie Kunde',
-      role: 'customer' as const
-    }
-  ];
-
-  const customer = CUSTOMER_USERS.find(u => u.email === email);
+  // E-Mail normalisieren (toLowerCase)
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  // Kunde aus Datenbank holen
+  const { getCustomerByEmail } = await import('@/lib/database');
+  const customer = await getCustomerByEmail(normalizedEmail);
+  
   if (!customer) {
     return { success: false, message: 'Ungültige E-Mail-Adresse' };
   }
   
-  const isValidPassword = await verifyPasswordUtil(password, customer.password);
+  // Prüfe ob Kunde ein Passwort hat
+  if (!customer.password_hash) {
+    return { success: false, message: 'Konto noch nicht aktiviert. Bitte setzen Sie zuerst ein Passwort.' };
+  }
+  
+  // Passwort validieren
+  const isValidPassword = await verifyPasswordUtil(password, customer.password_hash);
   if (!isValidPassword) {
     return { success: false, message: 'Ungültiges Passwort' };
   }
   
   // TAN generieren und senden
-  const tan = generateTAN();
-  createTAN(email, tan);
+  const { generateTAN, sendTANEmail } = await import('@/lib/email');
+  const { storeTAN } = await import('@/lib/tan-store');
   
-  const emailSent = await sendTANEmail(email, tan, customer.name);
+  const tan = generateTAN();
+  
+  console.log('🔑 Generiere TAN für:', { 
+    originalEmail: email, 
+    normalizedEmail,
+    customerName: customer.name 
+  });
+  
+  // TAN speichern (mit normalisierter E-Mail)
+  try {
+    await storeTAN(normalizedEmail, tan);
+    console.log('✅ TAN gespeichert für:', normalizedEmail);
+  } catch (storeError) {
+    console.error('❌ Fehler beim Speichern der TAN:', storeError);
+    return { success: false, message: 'Fehler beim Speichern der TAN' };
+  }
+  
+  const emailSent = await sendTANEmail(normalizedEmail, tan, customer.name);
   if (!emailSent) {
     return { success: false, message: 'Fehler beim Senden der E-Mail' };
   }
   
-    return { success: true, message: 'TAN wurde per E-Mail gesendet' };
+  console.log('✅ TAN-E-Mail gesendet an:', normalizedEmail);
+  
+  // Für Entwicklung: TAN zurückgeben (nur wenn nicht in Produktion)
+  return { success: true, message: 'TAN wurde per E-Mail gesendet', tan: process.env.NODE_ENV !== 'production' ? tan : undefined };
 }
 
 // 2FA-Login mit TAN
-export async function customerLogin2FA(email: string, tan: string): Promise<{ user: User; token: string } | null> {
-  console.log('2FA-Login:', { email, tan });
+// WICHTIG: TAN wurde bereits in der API-Route verifiziert, hier nur noch Kunde prüfen
+export async function customerLogin2FA(email: string, _tan: string): Promise<{ user: User; token: string } | null> {
+  // E-Mail normalisieren (toLowerCase)
+  const normalizedEmail = email.toLowerCase().trim();
   
-  // Für Entwicklung: Hardcoded Kunden verwenden
-  const CUSTOMER_USERS = [
-    {
-      id: 'customer-1',
-      email: 'customer1@example.com',
-      name: 'Max Mustermann',
-      role: 'customer' as const
-    },
-    {
-      id: 'customer-2', 
-      email: 'anna@demo-company.de',
-      name: 'Anna Schmidt',
-      role: 'customer' as const
-    },
-    {
-      id: 'customer-3',
-      email: 'harmonie_556@yahoo.com',
-      name: 'Harmonie Kunde',
-      role: 'customer' as const
-    }
-  ];
-
-  const customer = CUSTOMER_USERS.find(u => u.email === email);
+  // Kunde aus Datenbank holen
+  const { getCustomerByEmail } = await import('@/lib/database');
+  let customer;
+  try {
+    customer = await getCustomerByEmail(normalizedEmail);
+  } catch (error) {
+    return null;
+  }
+  
   if (!customer) {
-    console.log('Kunde nicht gefunden:', email);
     return null;
   }
   
-  // TAN gegen Store validieren
-  const tanValidation = verifyTAN(email, tan);
-  if (!tanValidation.valid) {
-    console.log('TAN-Validierung fehlgeschlagen:', tanValidation.message);
+  // Prüfe ob Kunde verifiziert ist (nach Registrierung)
+  if (!customer.is_verified) {
     return null;
   }
+  
+  // Prüfe ob Kunde ein Passwort hat
+  if (!customer.password_hash) {
+    return null;
+  }
+  
+  // TAN wurde bereits in der API-Route verifiziert und gelöscht
+  // Hier nur noch Kunde validieren und Token erstellen
   
   const user: User = {
-    id: customer.id,
+    id: customer.id?.toString() || '',
     email: customer.email,
-    role: customer.role,
-    name: customer.name
+    role: 'customer' as const,
+    name: customer.name || normalizedEmail.split('@')[0]
   };
   
   const token = createToken(user);
-  console.log('2FA-Login erfolgreich:', { user, token: token.substring(0, 20) + '...' });
   return { user, token };
 }
 

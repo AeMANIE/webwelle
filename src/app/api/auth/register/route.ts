@@ -39,27 +39,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // Prüfen ob Kunde bereits existiert (versuche Datenbank, fallback zu hardcoded)
-    let existingCustomer = null;
+    // Prüfen ob Kunde bereits existiert
+    let existingCustomer;
     try {
       existingCustomer = await getCustomerByEmail(email);
-    } catch {
-      console.log('Datenbank nicht verfügbar, verwende hardcoded Kunden-Liste');
-      // Fallback: Hardcoded Kunden prüfen
-      const hardcodedCustomers = [
-        'customer1@example.com',
-        'anna@demo-company.de', 
-        'harmonie_556@yahoo.com'
-      ];
-      
-      if (hardcodedCustomers.includes(email)) {
-        return NextResponse.json(
-          { success: false, error: 'Ein Konto mit dieser E-Mail-Adresse existiert bereits' },
-          { status: 409 }
-        );
-      }
+    } catch (dbError) {
+      // Bei Datenbank-Fehler: Weiter mit Registrierung (kann sein, dass Tabelle noch nicht existiert)
+      existingCustomer = null;
     }
-
+    
     if (existingCustomer) {
       return NextResponse.json(
         { success: false, error: 'Ein Konto mit dieser E-Mail-Adresse existiert bereits' },
@@ -74,7 +62,8 @@ export async function POST(request: Request) {
     const verificationToken = Math.random().toString(36).substring(2, 15) + 
                             Math.random().toString(36).substring(2, 15);
 
-    // Kunde erstellen (versuche Datenbank, fallback zu Simulation)
+    // Kunde in Datenbank erstellen
+    // Nach Registrierung: Kunde ist automatisch verifiziert und kann sich einloggen
     let customer;
     try {
       customer = await createCustomer({
@@ -83,31 +72,44 @@ export async function POST(request: Request) {
         name,
         phone: phone || null,
         company_name: companyName || null,
-        is_verified: false,
-        verification_token: verificationToken
+        is_verified: true, // Automatisch verifiziert nach Registrierung
+        verification_token: verificationToken,
+        portal_activated: true // Portal automatisch aktiviert
       });
-      console.log('Kunde erfolgreich in Datenbank erstellt:', customer.id);
-    } catch {
-      console.log('Datenbank nicht verfügbar, erstelle simulierten Kunden');
-      // Fallback: Simulierten Kunden erstellen
-      customer = {
-        id: Date.now(), // Simulierte ID
-        email,
-        password_hash: passwordHash,
-        name,
-        phone: phone || null,
-        company_name: companyName || null,
-        is_verified: false,
-        verification_token: verificationToken
-      };
+    } catch (createError) {
+      // Detaillierter Fehler für Debugging
+      const errorMsg = createError instanceof Error ? createError.message : 'Unbekannter Fehler';
+      const errorStack = createError instanceof Error ? createError.stack : undefined;
+      console.error('❌ createCustomer Fehler:', {
+        message: errorMsg,
+        stack: errorStack,
+        error: createError
+      });
+      
+      // Wenn Tabelle nicht existiert, gebe hilfreiche Meldung
+      if (errorMsg.includes('does not exist') || errorMsg.includes('relation') || errorMsg.includes('table')) {
+        return NextResponse.json(
+          { success: false, error: 'Datenbank-Tabelle existiert nicht. Bitte kontaktieren Sie den Administrator.' },
+          { status: 500 }
+        );
+      }
+      
+      // SSL/Datenbank-Verbindungsfehler
+      if (errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify') || errorMsg.includes('ECONNREFUSED') || errorMsg.includes('timeout')) {
+        return NextResponse.json(
+          { success: false, error: 'Datenbank-Verbindungsfehler. Bitte versuchen Sie es später erneut.' },
+          { status: 500 }
+        );
+      }
+      
+      throw createError; // Weiterwerfen für allgemeine Fehlerbehandlung
     }
 
-    // Verifikations-E-Mail senden (Simulation)
+    // Verifikations-E-Mail senden (optional, da bereits verifiziert)
     try {
       await sendVerificationEmail(email, name, verificationToken);
-    } catch (emailError) {
-      console.error('Fehler beim Senden der Verifikations-E-Mail:', emailError);
-      // Kunde trotzdem erstellen, aber ohne Verifikation
+    } catch {
+      // E-Mail-Fehler ignorieren, Kunde ist bereits verifiziert
     }
 
     // JWT-Token erstellen
@@ -122,7 +124,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Konto erfolgreich erstellt. Bitte prüfen Sie Ihre E-Mails zur Verifikation.',
+      message: 'Konto erfolgreich erstellt. Sie können sich jetzt anmelden.',
       user: {
         id: customer.id,
         email: customer.email,
@@ -133,9 +135,34 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    console.error('Registrierungs-Fehler:', error);
+    // Detaillierte Fehlerbehandlung
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    console.error('❌ Registrierung Fehler:', {
+      message: errorMessage,
+      stack: errorStack,
+      error: error
+    });
+    
+    // Datenbank-Fehler erkennen
+    if (errorMessage.includes('certificate') || errorMessage.includes('SSL') || errorMessage.includes('TLS') || errorMessage.includes('unable to verify') || errorMessage.includes('ECONNREFUSED') || errorMessage.includes('timeout')) {
+      return NextResponse.json(
+        { success: false, error: 'Datenbank-Verbindungsfehler. Bitte versuchen Sie es später erneut.' },
+        { status: 500 }
+      );
+    }
+    
+    // Duplikat-Fehler erkennen
+    if (errorMessage.includes('duplicate') || errorMessage.includes('unique')) {
+      return NextResponse.json(
+        { success: false, error: 'Ein Konto mit dieser E-Mail-Adresse existiert bereits' },
+        { status: 409 }
+      );
+    }
+    
     return NextResponse.json(
-      { success: false, error: 'Interner Serverfehler' },
+      { success: false, error: 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.' },
       { status: 500 }
     );
   }

@@ -1,10 +1,74 @@
+// WICHTIG: Setze NODE_TLS_REJECT_UNAUTHORIZED für self-signed certificates
+// Dies muss GLOBAL gesetzt werden, BEVOR pg importiert wird
+if (process.env.DATABASE_URL?.includes('sslmode=require') && process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+  console.log('⚠️ NODE_TLS_REJECT_UNAUTHORIZED auf 0 gesetzt für VPS-Datenbank');
+}
+
 import { Pool } from 'pg';
 import { sanitizeText } from './validation';
 
-// PostgreSQL Verbindung
+// PostgreSQL Verbindung mit SSL-Konfiguration für VPS
+const getSSLConfig = () => {
+  const dbUrl = process.env.DATABASE_URL || '';
+  const disableSSL = process.env.DATABASE_DISABLE_SSL === 'true';
+  
+  // Explizite Deaktivierung
+  if (disableSSL) {
+    return false;
+  }
+  
+  // Parse URL für SSL-Parameter
+  try {
+    const url = new URL(dbUrl);
+    const sslMode = url.searchParams.get('sslmode');
+    
+    // Wenn sslmode=disable
+    if (sslMode === 'disable') {
+      return false;
+    }
+    
+    // Für sslmode=require (VPS-Server): SSL mit self-signed certificates erlauben
+    if (sslMode === 'require' || sslMode === 'verify-full' || sslMode === 'prefer') {
+      return { 
+        rejectUnauthorized: false
+      };
+    }
+  } catch (e) {
+    // URL-Parsing fehlgeschlagen
+  }
+  
+  // Für lokale Verbindungen ohne SSL
+  if (dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1')) {
+    return false;
+  }
+  
+  // Für Remote-Verbindungen (VPS): SSL mit self-signed certificates erlauben
+  if (!dbUrl.includes('sslmode=disable')) {
+    return { 
+      rejectUnauthorized: false
+    };
+  }
+  
+  return false;
+};
+
+// SSL-Konfiguration für VPS mit sslmode=require
+const sslConfig = getSSLConfig();
+
+// Für sslmode=require: Stelle sicher, dass rejectUnauthorized false ist
+// WICHTIG: Für VPS mit sslmode=require immer rejectUnauthorized: false setzen
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // SSL für VPS-Server erforderlich
+  ssl: process.env.DATABASE_URL?.includes('sslmode=require') 
+    ? { 
+        rejectUnauthorized: false
+      } 
+    : sslConfig,
+  // Verbindungs-Timeouts
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 20,
 });
 
 // Input-Sanitization für Datenbank-Eingaben
@@ -175,15 +239,74 @@ export async function getAllBookings(): Promise<BookingData[]> {
 }
 
 // Buchungen nach E-Mail abrufen (für Kundenportal)
+// Unterstützt beide Wege: customer_id (wenn registriert) oder customer_email (wenn über Stripe gebucht)
 export async function getBookingsByEmail(email: string): Promise<BookingData[]> {
-  const client = await pool.connect();
+  let client;
+  let connectionError: Error | null = null;
   
   try {
+    client = await pool.connect();
+    // Versuche zuerst mit customer_id (wenn Kunde registriert ist)
+    const customer = await getCustomerByEmail(email);
+    if (customer?.id) {
+      const query = `
+        SELECT * FROM webwelle_bookings 
+        WHERE customer_id = $1 OR customer_email = $2 
+        ORDER BY created_at DESC
+      `;
+      const result = await client.query(query, [customer.id, email]);
+      client.release();
+      return result.rows;
+    }
+    
+    // Fallback: Nur customer_email
     const query = 'SELECT * FROM webwelle_bookings WHERE customer_email = $1 ORDER BY created_at DESC';
     const result = await client.query(query, [email]);
-    return result.rows;
-  } finally {
     client.release();
+    return result.rows;
+  } catch (error) {
+    if (client) client.release();
+    connectionError = error instanceof Error ? error : new Error('Unbekannter Fehler');
+    
+    // SSL-Fallback für VPS
+    if (connectionError.message.includes('certificate') || 
+        connectionError.message.includes('SSL') || 
+        connectionError.message.includes('TLS') ||
+        connectionError.message.includes('unable to verify')) {
+      const { Pool } = await import('pg');
+      const tempPool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 10000,
+      });
+      
+      try {
+        client = await tempPool.connect();
+        const customer = await getCustomerByEmail(email);
+        if (customer?.id) {
+          const query = `
+            SELECT * FROM webwelle_bookings 
+            WHERE customer_id = $1 OR customer_email = $2 
+            ORDER BY created_at DESC
+          `;
+          const result = await client.query(query, [customer.id, email]);
+          client.release();
+          await tempPool.end();
+          return result.rows;
+        }
+        
+        const query = 'SELECT * FROM webwelle_bookings WHERE customer_email = $1 ORDER BY created_at DESC';
+        const result = await client.query(query, [email]);
+        client.release();
+        await tempPool.end();
+        return result.rows;
+      } catch (fallbackError) {
+        if (client) client.release();
+        await tempPool.end();
+        throw fallbackError;
+      }
+    }
+    throw connectionError;
   }
 }
 
@@ -206,22 +329,101 @@ export interface CustomerData {
   updated_at?: Date;
 }
 
-// Kunde nach E-Mail abrufen
+// Kunde nach E-Mail abrufen (mit SSL-Fallback)
 export async function getCustomerByEmail(email: string): Promise<CustomerData | null> {
-  const client = await pool.connect();
+  // E-Mail normalisieren (toLowerCase für konsistente Abfrage)
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  let client;
+  try {
+    client = await pool.connect();
+  } catch (connectionError) {
+    // Bei SSL-Fehler: Erstelle temporären Pool
+    const errorMsg = connectionError instanceof Error ? connectionError.message : '';
+    if (errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify')) {
+      const { Pool: TempPool } = await import('pg');
+      const tempPool = new TempPool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+      });
+      client = await tempPool.connect();
+      
+      try {
+        const query = 'SELECT * FROM customers WHERE LOWER(email) = LOWER($1)';
+        const result = await client.query(query, [normalizedEmail]);
+        client.release();
+        await tempPool.end();
+        return result.rows[0] || null;
+      } catch (error) {
+        if (client) client.release();
+        await tempPool.end();
+        throw error;
+      }
+    }
+    throw connectionError;
+  }
   
   try {
-    const query = 'SELECT * FROM customers WHERE email = $1';
-    const result = await client.query(query, [email]);
+    // Verwende LOWER() für case-insensitive Suche
+    const query = 'SELECT * FROM customers WHERE LOWER(email) = LOWER($1)';
+    const result = await client.query(query, [normalizedEmail]);
     return result.rows[0] || null;
   } finally {
     client.release();
   }
 }
 
-// Kundennummer generieren (Format: WEB-YYYY-NNNNN)
+// Kundennummer generieren (Format: WEB-YYYY-NNNNN) - mit SSL-Fallback
 export async function generateCustomerNumber(): Promise<string> {
-  const client = await pool.connect();
+  let client;
+  try {
+    client = await pool.connect();
+  } catch (connectionError) {
+    // Bei SSL-Fehler: Erstelle temporären Pool
+    const errorMsg = connectionError instanceof Error ? connectionError.message : '';
+    if (errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify')) {
+      const { Pool: TempPool } = await import('pg');
+      const tempPool = new TempPool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+      });
+      client = await tempPool.connect();
+      
+      try {
+        const year = new Date().getFullYear();
+        const prefix = `WEB-${year}-`;
+        
+        const result = await client.query(
+          `SELECT customer_number FROM customers 
+           WHERE customer_number LIKE $1 
+           ORDER BY customer_number DESC 
+           LIMIT 1`,
+          [`${prefix}%`]
+        );
+        
+        let nextNumber = 1;
+        if (result.rows.length > 0) {
+          const lastNumber = result.rows[0].customer_number;
+          if (lastNumber) {
+            const match = lastNumber.match(/\d+$/);
+            if (match) {
+              nextNumber = parseInt(match[0], 10) + 1;
+            }
+          }
+        }
+        
+        const formattedNumber = `${prefix}${nextNumber.toString().padStart(5, '0')}`;
+        client.release();
+        await tempPool.end();
+        return formattedNumber;
+      } catch (error) {
+        if (client) client.release();
+        await tempPool.end();
+        throw error;
+      }
+    }
+    throw connectionError;
+  }
   
   try {
     const year = new Date().getFullYear();
@@ -312,11 +514,94 @@ export async function getOrCreateCustomerWithNumber(
   }
 }
 
-// Kunde erstellen
+// Kunde erstellen (NEUER ANSATZ: Versuche zuerst ohne SSL, dann mit SSL)
 export async function createCustomer(customerData: Omit<CustomerData, 'id' | 'created_at' | 'updated_at'>): Promise<CustomerData> {
-  const client = await pool.connect();
+  // Generiere Kundennummer, wenn nicht vorhanden
+  let customerNumber = customerData.customer_number;
+  if (!customerNumber) {
+    try {
+      customerNumber = await generateCustomerNumber();
+    } catch (error) {
+      // Wenn Kundennummer-Generierung fehlschlägt, weiter ohne
+      console.warn('Kundennummer konnte nicht generiert werden:', error);
+    }
+  }
+  
+  const { Pool } = await import('pg');
+  let client;
+  let tempPool: import('pg').Pool | null = null;
+  
+  // NEUER ANSATZ: Verwende NODE_TLS_REJECT_UNAUTHORIZED=0 Umgebungsvariable
+  // Oder: Parse URL und entferne sslmode Parameter komplett
+  const dbUrl = process.env.DATABASE_URL || '';
+  
+  // Entferne sslmode Parameter komplett aus URL
+  let urlWithoutSSLMode = dbUrl;
+  try {
+    const url = new URL(dbUrl);
+    url.searchParams.delete('sslmode');
+    urlWithoutSSLMode = url.toString();
+  } catch {
+    // Falls URL-Parsing fehlschlägt, verwende Original-URL
+    urlWithoutSSLMode = dbUrl.replace(/\?sslmode=[^&]*/, '').replace(/&sslmode=[^&]*/, '');
+  }
+  
+  // Versuche mit SSL aber rejectUnauthorized: false (Server erzwingt SSL)
+  try {
+    console.log('🔌 Versuche Verbindung mit SSL (rejectUnauthorized: false)...');
+    tempPool = new Pool({
+      connectionString: urlWithoutSSLMode,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10000,
+    });
+    client = await tempPool.connect();
+    console.log('✅ Verbindung erfolgreich');
+  } catch (sslError) {
+    console.error('❌ Verbindungsversuch fehlgeschlagen:', sslError instanceof Error ? sslError.message : 'Unbekannt');
+    
+    // Letzter Versuch: Setze NODE_TLS_REJECT_UNAUTHORIZED temporär auf 0
+    const originalReject = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+    try {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      console.log('🔄 Versuche mit NODE_TLS_REJECT_UNAUTHORIZED=0...');
+      tempPool = new Pool({
+        connectionString: urlWithoutSSLMode,
+        ssl: true, // SSL aktiviert, aber Validierung deaktiviert
+        connectionTimeoutMillis: 10000,
+      });
+      client = await tempPool.connect();
+      console.log('✅ Verbindung mit NODE_TLS_REJECT_UNAUTHORIZED=0 erfolgreich');
+    } catch (lastError) {
+      // Stelle Original-Wert wieder her
+      if (originalReject !== undefined) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalReject;
+      } else {
+        delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+      }
+      console.error('❌ Alle Verbindungsversuche fehlgeschlagen');
+      if (tempPool) await tempPool.end();
+      throw new Error(`Datenbank-Verbindung fehlgeschlagen: ${lastError instanceof Error ? lastError.message : 'Unbekannter Fehler'}`);
+    }
+  }
   
   try {
+    console.log('📋 Prüfe ob customers Tabelle existiert...');
+    // Prüfe zuerst ob Tabelle existiert
+    const tableCheck = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'customers'
+      ) as exists;
+    `);
+    
+    if (!tableCheck.rows[0].exists) {
+      console.error('❌ customers Tabelle existiert nicht');
+      throw new Error('customers Tabelle existiert nicht in der Datenbank');
+    }
+    console.log('✅ customers Tabelle existiert');
+    
+    console.log('💾 Erstelle Kunde in Datenbank...');
     const query = `
       INSERT INTO customers (
         email, password_hash, name, phone, company_name, is_verified,
@@ -338,13 +623,19 @@ export async function createCustomer(customerData: Omit<CustomerData, 'id' | 'cr
       customerData.reset_token_expires || null,
       customerData.portal_activated || false,
       customerData.portal_activated_at || null,
-      customerData.customer_number || null
+      customerNumber || null
     ];
     
     const result = await client.query(query, values);
+    console.log('✅ Kunde erfolgreich erstellt:', result.rows[0]?.email);
     return result.rows[0];
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    console.error('❌ Query-Fehler in createCustomer:', errorMsg);
+    throw error;
   } finally {
-    client.release();
+    if (client) client.release();
+    if (tempPool) await tempPool.end();
   }
 }
 
@@ -707,15 +998,337 @@ export async function saveInvoice(invoiceData: InvoiceData): Promise<InvoiceData
 }
 
 // Rechnungen nach Kunden-E-Mail abrufen
+// Unterstützt beide Wege: customer_id (wenn registriert) oder customer_email (wenn über Stripe gebucht)
 export async function getInvoicesByCustomerEmail(email: string): Promise<InvoiceData[]> {
-  const client = await pool.connect();
+  let client;
+  let connectionError: Error | null = null;
   
   try {
+    client = await pool.connect();
+    // Versuche zuerst mit customer_id (wenn Kunde registriert ist)
+    const customer = await getCustomerByEmail(email);
+    if (customer?.id) {
+      const query = `
+        SELECT * FROM invoices 
+        WHERE customer_id = $1 OR customer_email = $2 
+        ORDER BY created_at DESC
+      `;
+      const result = await client.query(query, [customer.id, email]);
+      client.release();
+      return result.rows;
+    }
+    
+    // Fallback: Nur customer_email
     const query = 'SELECT * FROM invoices WHERE customer_email = $1 ORDER BY created_at DESC';
     const result = await client.query(query, [email]);
-    return result.rows;
-  } finally {
     client.release();
+    return result.rows;
+  } catch (error) {
+    if (client) client.release();
+    connectionError = error instanceof Error ? error : new Error('Unbekannter Fehler');
+    
+    // SSL-Fallback für VPS
+    if (connectionError.message.includes('certificate') || 
+        connectionError.message.includes('SSL') || 
+        connectionError.message.includes('TLS') ||
+        connectionError.message.includes('unable to verify')) {
+      const { Pool } = await import('pg');
+      const tempPool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 10000,
+      });
+      
+      try {
+        client = await tempPool.connect();
+        const customer = await getCustomerByEmail(email);
+        if (customer?.id) {
+          const query = `
+            SELECT * FROM invoices 
+            WHERE customer_id = $1 OR customer_email = $2 
+            ORDER BY created_at DESC
+          `;
+          const result = await client.query(query, [customer.id, email]);
+          client.release();
+          await tempPool.end();
+          return result.rows;
+        }
+        
+        const query = 'SELECT * FROM invoices WHERE customer_email = $1 ORDER BY created_at DESC';
+        const result = await client.query(query, [email]);
+        client.release();
+        await tempPool.end();
+        return result.rows;
+      } catch (fallbackError) {
+        if (client) client.release();
+        await tempPool.end();
+        throw fallbackError;
+      }
+    }
+    throw connectionError;
+  }
+}
+
+// Rechnungen nach Booking-ID abrufen
+interface WebwelleInvoiceRow {
+  id: string;
+  invoice_number: string;
+  amount_cents: number;
+  currency?: string;
+  status: string;
+  paid_at?: Date | null;
+  due_date?: Date | null;
+  pdf_url?: string | null;
+  created_at?: Date;
+  stripe_invoice_id?: string; // booking_id wird als stripe_invoice_id gemappt
+}
+
+interface BookingRow {
+  customer_email?: string;
+  customer_id?: string;
+}
+
+export async function getInvoicesByBookingId(bookingId: string): Promise<InvoiceData[]> {
+  let client;
+  let connectionError: Error | null = null;
+  
+  try {
+    client = await pool.connect();
+    // Prüfe zuerst webwelle_invoices (verknüpft mit booking_id)
+    const webwelleInvoicesQuery = `
+      SELECT 
+        id,
+        invoice_number,
+        amount_cents,
+        currency,
+        status,
+        paid_at,
+        due_date,
+        pdf_url,
+        created_at,
+        booking_id as stripe_invoice_id
+      FROM webwelle_invoices 
+      WHERE booking_id = $1 
+      ORDER BY created_at DESC
+    `;
+    const webwelleResult = await client.query(webwelleInvoicesQuery, [bookingId]);
+    
+    // Dann prüfe invoices (verknüpft mit customer_email oder customer_id)
+    const bookingQuery = 'SELECT customer_email, customer_id FROM webwelle_bookings WHERE id = $1';
+    const bookingResult = await client.query(bookingQuery, [bookingId]);
+    
+    let invoices: InvoiceData[] = [];
+    
+    if (webwelleResult.rows.length > 0) {
+      invoices = webwelleResult.rows.map((row: WebwelleInvoiceRow): InvoiceData => ({
+        id: row.id,
+        invoice_number: row.invoice_number || null,
+        amount_cents: row.amount_cents,
+        currency: row.currency || 'EUR',
+        status: row.status,
+        paid_at: row.paid_at || null,
+        due_date: row.due_date || null,
+        pdf_url: row.pdf_url || null,
+        hosted_invoice_url: null,
+        stripe_invoice_id: row.stripe_invoice_id || '',
+        customer_email: bookingResult.rows[0]?.customer_email || '',
+        customer_id: bookingResult.rows[0]?.customer_id || null,
+        customer_name: null,
+        customer_number: null,
+        issuer: 'WebWelle',
+        created_at: row.created_at,
+        updated_at: row.created_at,
+      }));
+    }
+    
+    // Zusätzlich: Lade Stripe-Invoices (falls vorhanden)
+    if (bookingResult.rows.length > 0) {
+      const booking = bookingResult.rows[0] as BookingRow;
+      let invoicesQuery = 'SELECT * FROM invoices WHERE customer_email = $1';
+      const invoicesParams: (string | null)[] = [booking.customer_email || null];
+      
+      if (booking.customer_id) {
+        invoicesQuery = 'SELECT * FROM invoices WHERE customer_id = $1 OR customer_email = $2';
+        invoicesParams.push(booking.customer_email || null);
+      }
+      
+      invoicesQuery += ' ORDER BY created_at DESC';
+      const invoicesResult = await client.query(invoicesQuery, invoicesParams);
+      
+      // Kombiniere beide Ergebnisse (webwelle_invoices haben Priorität)
+      const existingInvoiceNumbers = new Set(invoices.map(inv => inv.invoice_number));
+      invoicesResult.rows.forEach((row: InvoiceData) => {
+        if (!existingInvoiceNumbers.has(row.invoice_number)) {
+          invoices.push(row);
+        }
+      });
+    }
+    
+    client.release();
+    return invoices;
+  } catch (error) {
+    if (client) client.release();
+    connectionError = error instanceof Error ? error : new Error('Unbekannter Fehler');
+    
+    // SSL-Fallback für VPS
+    if (connectionError.message.includes('certificate') || 
+        connectionError.message.includes('SSL') || 
+        connectionError.message.includes('TLS') ||
+        connectionError.message.includes('unable to verify')) {
+      const { Pool } = await import('pg');
+      const tempPool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 10000,
+      });
+      
+      try {
+        client = await tempPool.connect();
+        const webwelleInvoicesQuery = `
+          SELECT 
+            id,
+            invoice_number,
+            amount_cents,
+            currency,
+            status,
+            paid_at,
+            due_date,
+            pdf_url,
+            created_at,
+            booking_id as stripe_invoice_id
+          FROM webwelle_invoices 
+          WHERE booking_id = $1 
+          ORDER BY created_at DESC
+        `;
+        const webwelleResult = await client.query(webwelleInvoicesQuery, [bookingId]);
+        
+        const bookingQuery = 'SELECT customer_email, customer_id FROM webwelle_bookings WHERE id = $1';
+        const bookingResult = await client.query(bookingQuery, [bookingId]);
+        
+        let invoices: InvoiceData[] = [];
+        
+        if (webwelleResult.rows.length > 0) {
+          invoices = webwelleResult.rows.map((row: WebwelleInvoiceRow): InvoiceData => ({
+            id: row.id,
+            invoice_number: row.invoice_number || null,
+            amount_cents: row.amount_cents,
+            currency: row.currency || 'EUR',
+            status: row.status,
+            paid_at: row.paid_at || null,
+            due_date: row.due_date || null,
+            pdf_url: row.pdf_url || null,
+            hosted_invoice_url: null,
+            stripe_invoice_id: row.stripe_invoice_id || '',
+            customer_email: bookingResult.rows[0]?.customer_email || '',
+            customer_id: bookingResult.rows[0]?.customer_id || null,
+            customer_name: null,
+            customer_number: null,
+            issuer: 'WebWelle',
+            created_at: row.created_at,
+            updated_at: row.created_at,
+          }));
+        }
+        
+        if (bookingResult.rows.length > 0) {
+          const booking = bookingResult.rows[0] as BookingRow;
+          let invoicesQuery = 'SELECT * FROM invoices WHERE customer_email = $1';
+          const invoicesParams: (string | null)[] = [booking.customer_email || null];
+          
+          if (booking.customer_id) {
+            invoicesQuery = 'SELECT * FROM invoices WHERE customer_id = $1 OR customer_email = $2';
+            invoicesParams.push(booking.customer_email || null);
+          }
+          
+          invoicesQuery += ' ORDER BY created_at DESC';
+          const invoicesResult = await client.query(invoicesQuery, invoicesParams);
+          
+          const existingInvoiceNumbers = new Set(invoices.map(inv => inv.invoice_number));
+          invoicesResult.rows.forEach((row: InvoiceData) => {
+            if (!existingInvoiceNumbers.has(row.invoice_number)) {
+              invoices.push(row);
+            }
+          });
+        }
+        
+        client.release();
+        await tempPool.end();
+        return invoices;
+      } catch (fallbackError) {
+        if (client) client.release();
+        await tempPool.end();
+        throw fallbackError;
+      }
+    }
+    throw connectionError;
+  }
+}
+
+// Abonnement nach Booking-ID abrufen
+export interface SubscriptionData {
+  id: string;
+  booking_id: string;
+  stripe_subscription_id: string;
+  status: string;
+  current_period_start: Date;
+  current_period_end: Date;
+  next_billing_date?: Date | null;
+  cancelled_at?: Date | null;
+  cancel_at_period_end: boolean;
+  customer_cancelled: boolean;
+  cancellation_reason?: string | null;
+  created_at?: Date;
+}
+
+export async function getSubscriptionByBookingId(bookingId: string): Promise<SubscriptionData | null> {
+  let client;
+  let connectionError: Error | null = null;
+  
+  try {
+    client = await pool.connect();
+    const query = `
+      SELECT * FROM webwelle_subscriptions 
+      WHERE booking_id = $1 
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `;
+    const result = await client.query(query, [bookingId]);
+    client.release();
+    return result.rows[0] || null;
+  } catch (error) {
+    if (client) client.release();
+    connectionError = error instanceof Error ? error : new Error('Unbekannter Fehler');
+    
+    // SSL-Fallback für VPS
+    if (connectionError.message.includes('certificate') || 
+        connectionError.message.includes('SSL') || 
+        connectionError.message.includes('TLS') ||
+        connectionError.message.includes('unable to verify')) {
+      const { Pool } = await import('pg');
+      const tempPool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 10000,
+      });
+      
+      try {
+        client = await tempPool.connect();
+        const query = `
+          SELECT * FROM webwelle_subscriptions 
+          WHERE booking_id = $1 
+          ORDER BY created_at DESC 
+          LIMIT 1
+        `;
+        const result = await client.query(query, [bookingId]);
+        client.release();
+        await tempPool.end();
+        return result.rows[0] || null;
+      } catch (fallbackError) {
+        if (client) client.release();
+        await tempPool.end();
+        throw fallbackError;
+      }
+    }
+    throw connectionError;
   }
 }
 

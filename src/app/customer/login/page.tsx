@@ -37,11 +37,8 @@ export default function CustomerLogin() {
         setTanSent(true);
         setStep('tan');
         
-        // Für Entwicklung: TAN automatisch setzen
-        if (data.tan) {
-          setTan(data.tan);
-          console.log('🔑 TAN für Entwicklung:', data.tan);
-        }
+        // TAN wird NICHT mehr angezeigt (Sicherheit)
+        // Kunde muss TAN aus E-Mail eingeben
       } else {
         setError(data.error || 'Login fehlgeschlagen');
       }
@@ -57,23 +54,35 @@ export default function CustomerLogin() {
     setLoading(true);
     setError('');
 
+    // E-Mail normalisieren (toLowerCase) bevor sie an API gesendet wird
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedTan = tan.trim();
+
     try {
       const response = await fetch('/api/auth/verify-tan', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, tan }),
+        body: JSON.stringify({ email: normalizedEmail, tan: normalizedTan }),
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        // Token in Cookie speichern
-        document.cookie = `auth-token=${data.token}; path=/; max-age=86400; secure; samesite=strict`;
-        router.push('/customer');
+      if (response.ok && data.success) {
+        // Token wird bereits als HttpOnly Cookie gesetzt (vom Server)
+        // Zusätzlich als Fallback im Client (für Kompatibilität)
+        if (data.token) {
+          document.cookie = `auth-token=${data.token}; path=/; max-age=86400; secure; samesite=strict`;
+        }
+        
+        // Kurze Verzögerung, damit Cookie gesetzt wird
+        setTimeout(() => {
+          router.push('/customer');
+        }, 100);
       } else {
-        setError(data.error || 'TAN-Verifizierung fehlgeschlagen');
+        const errorMsg = data.error || 'TAN-Verifizierung fehlgeschlagen';
+        setError(errorMsg);
       }
     } catch {
       setError('Ein Fehler ist aufgetreten');
@@ -182,11 +191,6 @@ export default function CustomerLogin() {
                 {tanSent && (
                   <div className="bg-green-500/10 border border-green-500/20 text-green-500 px-4 py-3 rounded-lg">
                     ✓ TAN wurde an {email} gesendet
-                    {tan && (
-                      <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-yellow-500 text-center">
-                        <strong>Entwicklung: TAN = {tan}</strong>
-                      </div>
-                    )}
                   </div>
                 )}
 

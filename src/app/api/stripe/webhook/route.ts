@@ -104,6 +104,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       const customerPhone = session.customer_details?.phone || metadata.phone || undefined;
       const companyName = metadata.companyName || session.customer_details?.address?.line1 || undefined;
       
+      let customerId: string | undefined = undefined;
       if (customerEmail) {
         const customer = await getOrCreateCustomerWithNumber(
           customerEmail,
@@ -111,6 +112,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           customerPhone,
           companyName
         );
+        customerId = customer.id?.toString();
         console.log(`✅ Kunde ${customerEmail} erstellt/abgerufen mit Kundennummer: ${customer.customer_number || 'wird generiert'}`);
       }
 
@@ -167,6 +169,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         package_price_display: metadata.packagePriceDisplay || `${(session.amount_total || 0) / 100} €`,
         currency: 'eur',
         total_amount_cents: session.amount_total || 0,
+        customer_id: customerId, // WICHTIG: customer_id wird gesetzt, wenn Kunde existiert
         customer_name: metadata.customerName || (formData.customerName as string) || undefined,
         customer_email: session.customer_email || (formData.customerEmail as string) || undefined,
         customer_phone: isSimplifiedCheckout ? undefined : (formData.customerPhone as string) || undefined,

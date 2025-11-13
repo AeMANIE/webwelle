@@ -13,21 +13,32 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await requestTAN(email, password);
+    // E-Mail normalisieren (toLowerCase für konsistente Speicherung)
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    const result = await requestTAN(normalizedEmail, password);
     
     if (result.success) {
       const tan = (result as { tan?: string }).tan;
       
       // TAN im gemeinsamen Store speichern (Redis)
       if (tan) {
-        await storeTAN(email, tan);
+        await storeTAN(normalizedEmail, tan);
       }
       
-      return NextResponse.json({ 
+      // TAN wird NICHT mehr in Response zurückgegeben (Sicherheit)
+      // Nur in Entwicklung, wenn explizit gewünscht
+      const response: { success: boolean; message: string; tan?: string } = { 
         success: true, 
-        message: result.message,
-        tan: tan // Für Entwicklung: TAN zurückgeben
-      });
+        message: result.message
+      };
+      
+      // Nur in Entwicklung: TAN zurückgeben (wenn NODE_ENV !== 'production')
+      if (process.env.NODE_ENV !== 'production' && tan) {
+        response.tan = tan;
+      }
+      
+      return NextResponse.json(response);
     } else {
       return NextResponse.json(
         { success: false, error: result.message },
