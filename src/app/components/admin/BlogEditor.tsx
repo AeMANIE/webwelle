@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
+import QuillEditor from './QuillEditor';
+// CSS für ReactQuill importieren
 import 'react-quill/dist/quill.snow.css';
-
-// Dynamischer Import für React Quill (nur Client-Side)
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
 
 interface BlogPost {
   id?: string;
@@ -166,16 +164,14 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
         <label className="block text-sm font-medium text-foreground mb-2">
           Inhalt *
         </label>
-        {typeof window !== 'undefined' && (
-          <ReactQuill
-            theme="snow"
-            value={content}
-            onChange={setContent}
-            modules={quillModules}
-            className="bg-background text-foreground"
-            style={{ minHeight: '400px' }}
-          />
-        )}
+        <QuillEditor
+          theme="snow"
+          value={content}
+          onChange={setContent}
+          modules={quillModules}
+          className="bg-background text-foreground"
+          style={{ minHeight: '400px' }}
+        />
       </div>
 
       {/* Meta Description */}

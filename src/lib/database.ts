@@ -37,6 +37,7 @@ export interface BookingData {
   package_price_display: string;
   currency: string;
   total_amount_cents: number;
+  customer_id?: string; // Foreign Key zu customers (optional)
   customer_name?: string;
   customer_email?: string;
   customer_phone?: string;
@@ -74,13 +75,13 @@ export async function saveBooking(bookingData: BookingData): Promise<BookingData
     const query = `
       INSERT INTO webwelle_bookings (
         session_id, package_type, is_monthly, checkout_mode, package_price_display,
-        currency, total_amount_cents, customer_name, customer_email, customer_phone,
+        currency, total_amount_cents, customer_id, customer_name, customer_email, customer_phone,
         company_name, existing_website, existing_website_url, target_group,
         design_style, design_reference_url, selected_addons, message,
         raw_form_data, stripe_metadata, stripe_customer_id, stripe_payment_intent_id,
         stripe_subscription_id, stripe_invoice_id, status
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
       ) RETURNING *
     `;
     
@@ -92,6 +93,7 @@ export async function saveBooking(bookingData: BookingData): Promise<BookingData
       sanitizedData.package_price_display || 'Preis nicht angegeben',
       sanitizedData.currency || 'eur',
       sanitizedData.total_amount_cents || 0,
+      sanitizedData.customer_id || null,
       sanitizedData.customer_name || null,
       sanitizedData.customer_email || null,
       sanitizedData.customer_phone || null,
@@ -517,25 +519,31 @@ export async function createTables(): Promise<void> {
     const createResetTokensTableQuery = `
       CREATE TABLE IF NOT EXISTS reset_tokens (
         id SERIAL PRIMARY KEY,
+        customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
         email VARCHAR(255) NOT NULL,
         token VARCHAR(255) NOT NULL,
         expires_at TIMESTAMP NOT NULL,
         used BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT NOW()
       );
+      CREATE INDEX IF NOT EXISTS idx_reset_tokens_customer_id ON reset_tokens(customer_id);
+      CREATE INDEX IF NOT EXISTS idx_reset_tokens_email ON reset_tokens(email);
+      CREATE INDEX IF NOT EXISTS idx_reset_tokens_token ON reset_tokens(token);
     `;
     
     // Customer Portal Tokens Tabelle (für Portal-Aktivierung)
     const createPortalTokensTableQuery = `
       CREATE TABLE IF NOT EXISTS customer_portal_tokens (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
         customer_email VARCHAR(255) NOT NULL,
         token VARCHAR(255) UNIQUE NOT NULL,
         expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
         used_at TIMESTAMP WITH TIME ZONE,
-        booking_id UUID,
+        booking_id UUID REFERENCES webwelle_bookings(id) ON DELETE SET NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
+      CREATE INDEX IF NOT EXISTS idx_portal_tokens_customer_id ON customer_portal_tokens(customer_id);
       CREATE INDEX IF NOT EXISTS idx_portal_tokens_email ON customer_portal_tokens(customer_email);
       CREATE INDEX IF NOT EXISTS idx_portal_tokens_token ON customer_portal_tokens(token);
       CREATE INDEX IF NOT EXISTS idx_portal_tokens_expires ON customer_portal_tokens(expires_at);
@@ -547,14 +555,24 @@ export async function createTables(): Promise<void> {
       ADD COLUMN IF NOT EXISTS portal_activated BOOLEAN DEFAULT false,
       ADD COLUMN IF NOT EXISTS portal_activated_at TIMESTAMP,
       ADD COLUMN IF NOT EXISTS customer_number VARCHAR(50) UNIQUE;
+      CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
+      CREATE INDEX IF NOT EXISTS idx_customers_portal_activated ON customers(portal_activated);
     `;
     
-    // Rechnungen-Tabelle erstellen
+    // Erweitere webwelle_bookings um customer_id Foreign Key (falls noch nicht vorhanden)
+    const alterBookingsTableQuery = `
+      ALTER TABLE webwelle_bookings 
+      ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES customers(id) ON DELETE SET NULL;
+      CREATE INDEX IF NOT EXISTS idx_bookings_customer_id ON webwelle_bookings(customer_id);
+    `;
+    
+    // Rechnungen-Tabelle erstellen (Alternative zu webwelle_invoices)
     const createInvoicesTableQuery = `
       CREATE TABLE IF NOT EXISTS invoices (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         stripe_invoice_id VARCHAR(255) UNIQUE NOT NULL,
         invoice_number VARCHAR(255),
+        customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
         customer_email VARCHAR(255) NOT NULL,
         customer_name VARCHAR(255),
         customer_number VARCHAR(50),
@@ -569,6 +587,7 @@ export async function createTables(): Promise<void> {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
+      CREATE INDEX IF NOT EXISTS idx_invoices_customer_id ON invoices(customer_id);
       CREATE INDEX IF NOT EXISTS idx_invoices_customer_email ON invoices(customer_email);
       CREATE INDEX IF NOT EXISTS idx_invoices_stripe_id ON invoices(stripe_invoice_id);
       CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
@@ -602,10 +621,12 @@ export async function createTables(): Promise<void> {
     await client.query(createResetTokensTableQuery);
     await client.query(createPortalTokensTableQuery);
     await client.query(alterCustomersTableQuery);
+    await client.query(alterBookingsTableQuery);
     await client.query(createInvoicesTableQuery);
     await client.query(createBlogPostsTableQuery);
     
     console.log('✅ Zusätzliche Tabellen (customers, reset_tokens, customer_portal_tokens, invoices, blog_posts) erstellt/überprüft');
+    console.log('✅ Foreign Keys zu customers hinzugefügt');
   } finally {
     client.release();
   }
@@ -616,6 +637,7 @@ export interface InvoiceData {
   id?: string;
   stripe_invoice_id: string;
   invoice_number?: string | null;
+  customer_id?: string | null; // Foreign Key zu customers (optional)
   customer_email: string;
   customer_name?: string | null;
   customer_number?: string | null;
@@ -638,12 +660,13 @@ export async function saveInvoice(invoiceData: InvoiceData): Promise<InvoiceData
   try {
     const query = `
       INSERT INTO invoices (
-        stripe_invoice_id, invoice_number, customer_email, customer_name, customer_number,
+        stripe_invoice_id, invoice_number, customer_id, customer_email, customer_name, customer_number,
         amount_cents, currency, status, paid_at, due_date, pdf_url, hosted_invoice_url, issuer
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       ON CONFLICT (stripe_invoice_id) 
       DO UPDATE SET
         invoice_number = EXCLUDED.invoice_number,
+        customer_id = EXCLUDED.customer_id,
         customer_email = EXCLUDED.customer_email,
         customer_name = EXCLUDED.customer_name,
         customer_number = EXCLUDED.customer_number,
@@ -662,6 +685,7 @@ export async function saveInvoice(invoiceData: InvoiceData): Promise<InvoiceData
     const values = [
       invoiceData.stripe_invoice_id,
       invoiceData.invoice_number || null,
+      invoiceData.customer_id || null,
       invoiceData.customer_email,
       invoiceData.customer_name || null,
       invoiceData.customer_number || null,

@@ -116,15 +116,42 @@ export async function adminLogin(email: string, password: string): Promise<{ use
   const passwordHash = process.env.ADMIN_PASSWORD_HASH;
   const passwordPlain = process.env.ADMIN_PASSWORD;
 
+  console.log('🔍 Passwort-Verifikation Details:', {
+    passwordLength: password.length,
+    passwordValue: password,
+    passwordPlainSet: !!passwordPlain,
+    passwordPlainLength: passwordPlain?.length,
+    passwordPlainValue: passwordPlain,
+    passwordHashSet: !!passwordHash,
+    passwordHashLength: passwordHash?.length,
+    directComparison: password === passwordPlain,
+  });
+
   if (passwordPlain) {
     // Klartext-Modus (Fallback, auf Wunsch des Betreibers)
     isValid = password === passwordPlain;
+    console.log('🔐 Klartext-Vergleich:', {
+      isValid,
+      password: password,
+      passwordPlain: passwordPlain,
+      equal: password === passwordPlain,
+    });
   } else if (passwordHash) {
     // Hash-Modus (Standard, sicher)
     isValid = await verifyPassword(password, passwordHash);
+    console.log('🔐 Hash-Vergleich:', {
+      isValid,
+      passwordLength: password.length,
+      hashLength: passwordHash.length,
+    });
   }
+  
   if (!isValid) {
-    console.error('❌ Passwort-Verifikation fehlgeschlagen');
+    console.error('❌ Passwort-Verifikation fehlgeschlagen:', {
+      passwordReceived: password,
+      passwordExpected: passwordPlain || 'HASH',
+      passwordMatch: password === passwordPlain,
+    });
     logFailedAuth(`Admin-Login: Ungültiges Passwort - ${email}`);
     return null;
   }

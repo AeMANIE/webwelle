@@ -13,9 +13,16 @@ export async function POST(request: Request) {
     if (process.env.NODE_ENV !== 'production') {
       console.log('🔐 Admin Login Versuch:', {
         email,
+        emailLength: email.length,
         passwordLength: password.length,
+        passwordValue: password,
         adminEmail: process.env.ADMIN_EMAIL,
+        adminEmailLength: process.env.ADMIN_EMAIL?.length,
         hashSet: !!process.env.ADMIN_PASSWORD_HASH,
+        plainSet: !!process.env.ADMIN_PASSWORD,
+        plainPassword: process.env.ADMIN_PASSWORD,
+        emailMatch: email.toLowerCase() === (process.env.ADMIN_EMAIL || '').toLowerCase(),
+        passwordMatch: password === process.env.ADMIN_PASSWORD,
       });
     }
 
@@ -24,7 +31,13 @@ export async function POST(request: Request) {
       // Detailliertere Fehlermeldung für Debugging
       const errorDetails = {
         emailMatch: email.toLowerCase() === (process.env.ADMIN_EMAIL || '').toLowerCase(),
+        emailFromRequest: email,
+        emailFromEnv: process.env.ADMIN_EMAIL,
+        passwordFromRequest: password,
+        passwordFromEnv: process.env.ADMIN_PASSWORD,
+        passwordMatch: password === process.env.ADMIN_PASSWORD,
         hashSet: !!process.env.ADMIN_PASSWORD_HASH,
+        plainSet: !!process.env.ADMIN_PASSWORD,
       };
       console.error('❌ Admin Login fehlgeschlagen:', errorDetails);
       return NextResponse.json({ 

@@ -17,21 +17,18 @@ export default function AdminPage() {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const router = useRouter();
 
-  const checkAuth = useCallback(() => {
-    const token = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('auth-token='))
-      ?.split('=')[1];
-    
-    if (!token) {
-      router.push('/admin/login');
-      return;
-    }
-
+  const checkAuth = useCallback(async () => {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      setUser(payload);
-    } catch {
+      const response = await fetch('/api/auth/verify');
+      const data = await response.json();
+      
+      if (data.authenticated && data.user && data.user.role === 'admin') {
+        setUser(data.user);
+      } else {
+        router.push('/admin/login');
+      }
+    } catch (error) {
+      console.error('Auth-Check fehlgeschlagen:', error);
       router.push('/admin/login');
     }
   }, [router]);

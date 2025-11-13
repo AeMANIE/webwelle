@@ -23,6 +23,7 @@ export default function Footer() {
                   width={120}
                   height={32}
                   className="h-8 sm:h-12 md:h-16 lg:h-20 w-auto max-w-[200px] sm:max-w-[250px] md:max-w-none"
+                  loading="lazy"
                 />
               </div>
               <p className="text-muted-foreground text-lg font-light leading-relaxed">

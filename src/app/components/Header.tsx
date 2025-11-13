@@ -42,6 +42,7 @@ export default function Header() {
                   height={32}
                   className="h-15 w-auto"
                   priority
+                  fetchPriority="high"
                 />
               </div>
             </Link>

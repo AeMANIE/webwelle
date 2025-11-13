@@ -85,6 +85,7 @@ export default function CookieBanner() {
                 width={120}
                 height={32}
                 className="h-6 w-auto"
+                loading="lazy"
               />
             </div>
           </div>
