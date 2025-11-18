@@ -21,6 +21,9 @@ export default function AIVoiceSoundwave() {
     const numLines = 720; // Mehr Linien für detaillierteren Effekt
 
     useEffect(() => {
+        // Warte auf Client-Side Rendering
+        if (typeof window === 'undefined') return;
+
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -32,8 +35,13 @@ export default function AIVoiceSoundwave() {
             const container = canvas.parentElement;
             if (!container) return;
 
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
+            const width = container.clientWidth || window.innerWidth;
+            const height = container.clientHeight || window.innerHeight;
+            
+            if (width === 0 || height === 0) return;
+
+            canvas.width = width;
+            canvas.height = height;
             centerXRef.current = canvas.width / 2;
             centerYRef.current = canvas.height / 2;
             // Ring-Radius: DEUTLICH größer - Ring startet viel weiter außen
@@ -130,10 +138,12 @@ export default function AIVoiceSoundwave() {
             animationRef.current = requestAnimationFrame(animate);
         };
 
-        // Initial setup
-        resize();
-        createLines();
-        animate();
+        // Initial setup - mit kleiner Verzögerung für sichereres Mounting
+        const initTimeout = setTimeout(() => {
+            resize();
+            createLines();
+            animate();
+        }, 100);
 
         // Handle resize
         const handleResize = () => {
@@ -145,6 +155,7 @@ export default function AIVoiceSoundwave() {
         }
 
         return () => {
+            clearTimeout(initTimeout);
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
