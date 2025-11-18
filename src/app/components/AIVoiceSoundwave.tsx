@@ -47,10 +47,18 @@ export default function AIVoiceSoundwave() {
             const minDimension = Math.min(width, height);
             
             if (isMobileDevice) {
-                // Mobile: Portrait UND Landscape - Canva ist frei, kein Viereck mehr
-                // Canvas nutzt volle Bildschirmgröße, Kreis ist zentriert
-                canvas.width = width;
-                canvas.height = height;
+                // Mobile: Portrait UND Landscape - Verwende bewusst größeres Quadrat als den Bildschirm
+                const baseSize = Math.max(width, height);
+                const canvasSize = Math.floor(baseSize * 1.2); // 20% größer als größtes Display-Maß
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+                
+                // Canvas CSS-Größe so setzen, dass das Quadrat größer angezeigt wird und übersteht
+                canvas.style.width = `${canvasSize}px`;
+                canvas.style.height = `${canvasSize}px`;
+                canvas.style.top = '50%';
+                canvas.style.left = '50%';
+                canvas.style.transform = 'translate(-50%, -50%)';
                 
                 // Radius basierend auf der kleineren Dimension, damit der Kreis immer vollständig sichtbar ist
                 // Der Kreis sollte groß genug sein, damit der Text zentriert im Kreis liegt
@@ -59,10 +67,10 @@ export default function AIVoiceSoundwave() {
                 
                 if (isLandscape) {
                     // Landscape: Größerer Radius für bessere Textplatzierung
-                    radiusMultiplier = 0.5; // 50% der kleineren Dimension
+                    radiusMultiplier = 0.65; // 65% der kleineren Dimension
                 } else {
                     // Portrait: Radius für optimale Textplatzierung
-                    radiusMultiplier = 0.45; // 45% der kleineren Dimension
+                    radiusMultiplier = 0.5; // 50% der kleineren Dimension
                 }
                 
                 baseRadiusRef.current = minDimension * radiusMultiplier;
@@ -73,6 +81,11 @@ export default function AIVoiceSoundwave() {
                 // So ist die Canva kleiner und besser proportioniert
                 canvas.width = width;
                 canvas.height = height;
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                canvas.style.top = '0';
+                canvas.style.left = '0';
+                canvas.style.transform = 'none';
                 const calculatedRadius = minDimension * 0.36;
                 // Maximal 400px Radius für sehr große Bildschirme (800 / 2 = 400)
                 baseRadiusRef.current = Math.min(calculatedRadius, 400);
@@ -215,11 +228,7 @@ export default function AIVoiceSoundwave() {
                 className="absolute"
                 style={{ 
                     background: 'transparent', 
-                    pointerEvents: 'none',
-                    // Mobile und Desktop: Keine Einschränkungen - Canva ist frei
-                    // Der Kreis wird durch den Radius zentriert, nicht durch CSS-Einschränkungen
-                    width: '100%',
-                    height: '100%'
+                    pointerEvents: 'none'
                 }}
             />
         </div>
