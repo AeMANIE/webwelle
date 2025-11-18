@@ -111,8 +111,8 @@ export default function AIVoiceSoundwave() {
                 ctx.moveTo(startX + 1, startY + 1);
                 ctx.lineTo(endX + 1, endY + 1);
 
-                // Farbiger Schatten basierend auf Position und Zeit (wie im Original)
-                const shadowHue = (tick * 0.5 + index * 2) % 360;
+                // Farbiger Schatten - rotiert im Uhrzeigersinn
+                const shadowHue = (tick * 0.5 - index * 2 + 360) % 360;
                 ctx.strokeStyle = `hsla(${shadowHue}, 100%, 50%, 0.2)`;
                 ctx.lineWidth = lineWidth;
                 ctx.lineCap = 'round';
@@ -123,10 +123,10 @@ export default function AIVoiceSoundwave() {
                 ctx.moveTo(startX, startY);
                 ctx.lineTo(endX, endY);
 
-                // Farbige Linien ähnlich wie im Original
+                // Farbige Linien - rotiert im Uhrzeigersinn
                 const intensity = Math.max(0.3, Math.min(1, dynamicLength));
-                // Hue rotiert durch das Spektrum basierend auf Position und Zeit
-                const hue = (tick * 0.5 + index * 2) % 360;
+                // Hue rotiert im Uhrzeigersinn durch das Spektrum
+                const hue = (tick * 0.5 - index * 2 + 360) % 360;
                 // Saturation und Lightness für lebendige Farben
                 const saturation = 100;
                 const lightness = 50;
