@@ -41,42 +41,41 @@ export default function AIVoiceSoundwave() {
             if (width <= 0 || height <= 0) return;
 
             // Mobile Detection
-            const isMobile = width < 768;
+            const isMobileDevice = width < 768;
             
-            // WICHTIG: Für runde Canva immer quadratische Dimensionen verwenden
-            // Dies verhindert, dass die Canva beim Scrollen oval wird
+            // Berechne Dimensionen für responsive Größenanpassung
             const minDimension = Math.min(width, height);
-            const maxDimension = Math.max(width, height);
             
-            if (isMobile) {
-                // Mobile: Portrait UND Landscape
-                // Ziel: Canva muss groß genug sein, damit der Text IM runden Teil liegt
-                const isLandscape = width > height;
-                let canvasSize;
-                
-                if (isLandscape) {
-                    // Landscape: Canva muss groß genug sein für den Text
-                    // Verwende 180% der Höhe für bessere Balance zwischen Größe und Lesbarkeit
-                    canvasSize = Math.floor(height * 1.8);
-                } else {
-                    // Portrait: Verwende 90% der Höhe für optimale Größe
-                    // Auf großen Handys bleibt der Text gut lesbar und im Kreis
-                    canvasSize = Math.floor(height * 0.9);
-                }
-                
-                canvas.width = canvasSize;
-                canvas.height = canvasSize;
-                baseRadiusRef.current = canvasSize * 0.5;
-            } else {
-                // Desktop & Tablet: Größe für Chrome, Safari und Firefox
-                // Firefox zeigt die Canva größer, daher anpassen für Chrome/Safari
-                // Verwende 45% der kleineren Dimension, aber maximal 500px
-                // So ist die Canva in Chrome/Safari größer, bleibt aber auf sehr großen Bildschirmen begrenzt
+            if (isMobileDevice) {
+                // Mobile: Portrait UND Landscape - Canva ist frei, kein Viereck mehr
+                // Canvas nutzt volle Bildschirmgröße, Kreis ist zentriert
                 canvas.width = width;
                 canvas.height = height;
-                const calculatedRadius = minDimension * 0.45;
-                // Maximal 500px Radius für sehr große Bildschirme
-                baseRadiusRef.current = Math.min(calculatedRadius, 500);
+                
+                // Radius basierend auf der kleineren Dimension, damit der Kreis immer vollständig sichtbar ist
+                // Der Kreis sollte groß genug sein, damit der Text zentriert im Kreis liegt
+                const isLandscape = width > height;
+                let radiusMultiplier;
+                
+                if (isLandscape) {
+                    // Landscape: Größerer Radius für bessere Textplatzierung
+                    radiusMultiplier = 0.5; // 50% der kleineren Dimension
+                } else {
+                    // Portrait: Radius für optimale Textplatzierung
+                    radiusMultiplier = 0.45; // 45% der kleineren Dimension
+                }
+                
+                baseRadiusRef.current = minDimension * radiusMultiplier;
+            } else {
+                // Desktop & Tablet: Größe für Chrome, Safari und Firefox
+                // Reduziert auf etwa die Hälfte der vorherigen Größe für bessere Balance
+                // Verwende 36% der kleineren Dimension (0.72 / 2 = 0.36), aber maximal 400px
+                // So ist die Canva kleiner und besser proportioniert
+                canvas.width = width;
+                canvas.height = height;
+                const calculatedRadius = minDimension * 0.36;
+                // Maximal 400px Radius für sehr große Bildschirme (800 / 2 = 400)
+                baseRadiusRef.current = Math.min(calculatedRadius, 400);
             }
             
             centerXRef.current = canvas.width / 2;
@@ -116,9 +115,9 @@ export default function AIVoiceSoundwave() {
                 const startY = centerY + sin(angle) * radius;
 
                 // Berechne Länge basierend auf Position - unterschiedlich für Desktop und Mobile
-                const isMobile = canvas.width < 768;
+                const isMobileDevice = canvas.width < 768;
                 let baseLengthFactor;
-                if (isMobile) {
+                if (isMobileDevice) {
                     // Mobile: Längste Linien oben/unten (vertikal), kürzeste links/rechts (horizontal)
                     const verticalDistance = Math.abs(sin(angle));
                     baseLengthFactor = verticalDistance; // 1.0 oben/unten, 0.0 links/rechts
@@ -138,7 +137,7 @@ export default function AIVoiceSoundwave() {
                 // Linienlänge proportional zur Canvas-Größe - responsive für mobile
                 const maxCanvasSize = Math.max(canvas.width, canvas.height);
                 // Mobile: viel größere Linien (3x größer), Desktop: proportional zur Bildschirmgröße
-                const lineLengthMultiplier = isMobile ? 0.3 : 0.12; // Mobile: 3x größer, Desktop: größer
+                const lineLengthMultiplier = isMobileDevice ? 0.3 : 0.12; // Mobile: 3x größer, Desktop: größer
                 const lineLength = dynamicLength * maxCanvasSize * lineLengthMultiplier;
 
                 // Mindestlänge für sichtbare Linien
@@ -217,12 +216,10 @@ export default function AIVoiceSoundwave() {
                 style={{ 
                     background: 'transparent', 
                     pointerEvents: 'none',
-                    // WICHTIG: Aspect-ratio 1:1 für runde Form, auch beim Scrollen auf Mobile
-                    aspectRatio: '1 / 1',
-                    // Mobile: quadratisch und zentriert, Desktop: volle Größe
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                    objectFit: 'contain'
+                    // Mobile und Desktop: Keine Einschränkungen - Canva ist frei
+                    // Der Kreis wird durch den Radius zentriert, nicht durch CSS-Einschränkungen
+                    width: '100%',
+                    height: '100%'
                 }}
             />
         </div>
