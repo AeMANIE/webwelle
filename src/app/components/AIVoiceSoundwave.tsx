@@ -50,33 +50,32 @@ export default function AIVoiceSoundwave() {
             
             if (isMobile) {
                 // Mobile: Portrait UND Landscape
-                // WICHTIG: Im Landscape muss die Canva GROSS genug sein, damit der Text IM runden Teil ist
-                // Im Portrait: height ist größer, im Landscape: width ist größer
-                // Für Landscape: Verwende die Höhe (height) als Basis, damit die Canva groß genug ist
+                // Ziel: Canva muss groß genug sein, damit der Text IM runden Teil liegt
                 const isLandscape = width > height;
                 let canvasSize;
+                
                 if (isLandscape) {
-                    // Landscape: Verwende die Höhe als Basis und mache sie größer (150% der Höhe)
-                    // Damit der Text sicher im runden Teil der Canva ist
-                    canvasSize = Math.floor(height * 1.5);
+                    // Landscape: Canva muss groß genug sein für den Text
+                    // Verwende 180% der Höhe für bessere Balance zwischen Größe und Lesbarkeit
+                    canvasSize = Math.floor(height * 1.8);
                 } else {
-                    // Portrait: Verwende die größere Dimension (height)
-                    canvasSize = Math.floor(maxDimension * 1.0);
+                    // Portrait: Verwende 90% der Höhe für optimale Größe
+                    // Auf großen Handys bleibt der Text gut lesbar und im Kreis
+                    canvasSize = Math.floor(height * 0.9);
                 }
+                
                 canvas.width = canvasSize;
                 canvas.height = canvasSize;
                 baseRadiusRef.current = canvasSize * 0.5;
             } else {
-                // Desktop: FESTE Größe wie bei kleinem Fenster
-                // Problem: Bei großem Fenster wird minDimension groß → Canva wird groß
-                // Lösung: Verwende eine FESTE Basis-Größe (z.B. wie bei 1200px Breite)
-                // Oder: Begrenze auf eine maximale Größe
+                // Desktop & Tablet: Begrenzte Größe, damit Text auf großen Bildschirmen nicht herauskommt
+                // Verwende 35% der kleineren Dimension, aber maximal 400px
+                // So bleibt die Canva auf großen Bildschirmen klein genug, damit der Text im runden Teil bleibt
                 canvas.width = width;
                 canvas.height = height;
-                // FESTE Größe: Verwende max 600px als Basis (entspricht ~50% von 1200px)
-                // Oder: Verwende immer die Größe eines kleinen Fensters (z.B. 1200px Breite)
-                const baseSize = Math.min(minDimension, 1200); // Max 1200px als Basis
-                baseRadiusRef.current = baseSize * 0.5;
+                const calculatedRadius = minDimension * 0.35;
+                // Maximal 400px Radius, damit auf sehr großen Bildschirmen der Text nicht herauskommt
+                baseRadiusRef.current = Math.min(calculatedRadius, 400);
             }
             
             centerXRef.current = canvas.width / 2;

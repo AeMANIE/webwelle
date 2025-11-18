@@ -194,16 +194,16 @@ export default function AIVoicePage() {
           {/* Text komplett zentral in der Mitte der Canva */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex items-center justify-center">
             <div className="text-center">
-              <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 md:mb-6 tracking-tight">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-foreground mb-3 sm:mb-4 md:mb-6 tracking-tight">
                 Voice-AI bei WebWelle
               </h1>
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground mb-3 md:mb-4 font-light">
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-xl text-muted-foreground mb-2 sm:mb-3 md:mb-4 font-light">
                 Ihr digitaler Mitarbeiter am Telefon
               </p>
-              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-primary mb-6 md:mb-8">
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-2xl font-semibold text-primary mb-4 sm:mb-6 md:mb-8">
                 Effizient. Skalierbar. Immer erreichbar.
               </p>
-              <div className="flex flex-wrap justify-center gap-4 text-sm sm:text-base md:text-lg text-muted-foreground px-2">
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-4 text-xs sm:text-sm md:text-base lg:text-base xl:text-base text-muted-foreground px-2">
                 <span>Die Stimme, die für Sie arbeitet – digital. effizient. menschlich.</span>
               </div>
             </div>
