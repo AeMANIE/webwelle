@@ -22,13 +22,24 @@ export default function AIVoiceSoundwave() {
 
     useEffect(() => {
         // Warte auf Client-Side Rendering
-        if (typeof window === 'undefined') return;
+        if (typeof window === 'undefined') {
+            console.log('[AIVoiceSoundwave] Window not available');
+            return;
+        }
 
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!canvas) {
+            console.log('[AIVoiceSoundwave] Canvas ref not available');
+            return;
+        }
 
         const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        if (!ctx) {
+            console.log('[AIVoiceSoundwave] Canvas context not available');
+            return;
+        }
+        
+        console.log('[AIVoiceSoundwave] Initializing...');
 
         const resize = () => {
             if (!canvas) return;
@@ -154,12 +165,18 @@ export default function AIVoiceSoundwave() {
             const container = canvas.parentElement;
             const rect = container?.getBoundingClientRect();
             
+            console.log(`[AIVoiceSoundwave] Init attempt ${initAttempts}, container:`, container, 'rect:', rect);
+            
             if (rect && rect.width > 0 && rect.height > 0) {
+                console.log('[AIVoiceSoundwave] Container size OK, starting animation');
                 resize();
                 createLines();
                 animate();
             } else if (initAttempts < maxAttempts) {
+                console.log(`[AIVoiceSoundwave] Container size not ready, retrying... (${initAttempts}/${maxAttempts})`);
                 setTimeout(tryInit, 100);
+            } else {
+                console.error('[AIVoiceSoundwave] Failed to initialize after', maxAttempts, 'attempts');
             }
         };
         
@@ -204,7 +221,12 @@ export default function AIVoiceSoundwave() {
         <canvas
             ref={canvasRef}
             className="absolute inset-0 w-full h-full"
-            style={{ background: 'transparent', pointerEvents: 'none' }}
+            style={{ 
+                background: 'transparent', 
+                pointerEvents: 'none',
+                display: 'block',
+                position: 'absolute'
+            }}
         />
     );
 }
