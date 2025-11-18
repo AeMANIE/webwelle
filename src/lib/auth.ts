@@ -302,7 +302,7 @@ export async function customerLogin2FA(email: string, _tan: string): Promise<{ u
   let customer;
   try {
     customer = await getCustomerByEmail(normalizedEmail);
-  } catch (error) {
+  } catch {
     return null;
   }
   

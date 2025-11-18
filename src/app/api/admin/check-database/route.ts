@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
     } finally {
       client.release();
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json({ 
       success: false,
       error: 'Datenbank-Verbindung fehlgeschlagen'

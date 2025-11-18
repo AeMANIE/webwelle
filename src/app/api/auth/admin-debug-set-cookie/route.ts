@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
     return response;
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Interner Fehler' }, { status: 500 });
   }
 }
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
       path: '/',
     });
     return response;
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Interner Fehler' }, { status: 500 });
   }
 }

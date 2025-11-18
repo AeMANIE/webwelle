@@ -113,7 +113,7 @@ export async function GET(request: NextRequest, context: unknown) {
     } finally {
       client.release();
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Fehler bei Kunden-Details' }, { status: 500 });
   }
 }

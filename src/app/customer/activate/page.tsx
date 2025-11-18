@@ -69,7 +69,7 @@ function ActivateContent() {
         setError(validationData.feedback?.join(', ') || 'Passwort erfüllt nicht die Anforderungen');
         return;
       }
-    } catch (validationError) {
+    } catch {
       setError('Fehler bei der Passwort-Validierung');
       return;
     }

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         const cached = await redis.get(cacheKey);
         if (cached) return NextResponse.json(JSON.parse(cached));
       }
-    } catch (redisError) {
+    } catch {
       // Redis nicht verfügbar - ignorieren
     }
 
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
     } finally {
       client.release();
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json({ 
       error: 'Fehler beim Laden der Kunden'
     }, { status: 500 });

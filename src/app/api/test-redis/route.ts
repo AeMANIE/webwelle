@@ -28,7 +28,7 @@ export async function GET() {
           client.ping(),
           new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
         ]);
-      } catch (error) {
+      } catch {
         // Wenn nicht verbunden, versuche connect
         if (client.status !== 'ready') {
           try {

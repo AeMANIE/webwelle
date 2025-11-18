@@ -112,8 +112,9 @@ export default function Benefits() {
 
         if (!gsap) return;
 
+        // GSAP Context mit korrektem Scope - verwende track als Scope-Element
         ctx = gsap.context(() => {
-      const tween = gsap.to(track, {
+          const tween = gsap.to(track, {
         x: () => `-=${totalWidth}`,
         duration: Math.max(15, totalWidth / 100), // Schneller und kürzere Pause
         ease: 'none',
@@ -209,14 +210,14 @@ export default function Benefits() {
 
       window.addEventListener('resize', handleResize, { passive: true });
       
-      // Cleanup innerhalb von gsap.context
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        if (resizeTimeout) {
-          clearTimeout(resizeTimeout);
-        }
-      };
-      }, trackRef);
+          // Cleanup innerhalb von gsap.context
+          return () => {
+            window.removeEventListener('resize', handleResize);
+            if (resizeTimeout) {
+              clearTimeout(resizeTimeout);
+            }
+          };
+        }, track); // Scope: track Element
       }); // Ende requestAnimationFrame
       
       // Cleanup für GSAP Context (wird nach Promise ausgeführt)
@@ -243,6 +244,8 @@ export default function Benefits() {
       if (!gsap || hasAnimatedRef.current) return;
 
       // Verwende requestAnimationFrame für bessere Performance
+      // GSAP Context mit korrektem Scope - verwende performanceRef als Scope
+      const scopeElement = performanceRef.current || document.body;
       ctx = gsap.context(() => {
         // Performance Bar Animation - mit will-change für GPU-Beschleunigung
         if (performanceRef.current && performanceScoreRef.current) {
@@ -430,7 +433,7 @@ export default function Benefits() {
             }
           );
         }
-      });
+      }, scopeElement); // Scope: scopeElement
     });
 
     // Cleanup

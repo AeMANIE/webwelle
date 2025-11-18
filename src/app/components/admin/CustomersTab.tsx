@@ -135,7 +135,7 @@ export default function CustomersTab() {
           const data = await res.json();
           setCustomers(data);
         }
-      } catch (error) {
+      } catch {
         // Fehler wird still behandelt
       } finally {
         setLoading(false);

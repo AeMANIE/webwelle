@@ -68,14 +68,15 @@ export default function AIVoiceSoundwave() {
                 canvas.height = canvasSize;
                 baseRadiusRef.current = canvasSize * 0.5;
             } else {
-                // Desktop & Tablet: Begrenzte Größe, damit Text auf großen Bildschirmen nicht herauskommt
-                // Verwende 35% der kleineren Dimension, aber maximal 400px
-                // So bleibt die Canva auf großen Bildschirmen klein genug, damit der Text im runden Teil bleibt
+                // Desktop & Tablet: Größe für Chrome, Safari und Firefox
+                // Firefox zeigt die Canva größer, daher anpassen für Chrome/Safari
+                // Verwende 45% der kleineren Dimension, aber maximal 500px
+                // So ist die Canva in Chrome/Safari größer, bleibt aber auf sehr großen Bildschirmen begrenzt
                 canvas.width = width;
                 canvas.height = height;
-                const calculatedRadius = minDimension * 0.35;
-                // Maximal 400px Radius, damit auf sehr großen Bildschirmen der Text nicht herauskommt
-                baseRadiusRef.current = Math.min(calculatedRadius, 400);
+                const calculatedRadius = minDimension * 0.45;
+                // Maximal 500px Radius für sehr große Bildschirme
+                baseRadiusRef.current = Math.min(calculatedRadius, 500);
             }
             
             centerXRef.current = canvas.width / 2;

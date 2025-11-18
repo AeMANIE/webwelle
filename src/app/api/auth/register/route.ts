@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     let existingCustomer;
     try {
       existingCustomer = await getCustomerByEmail(email);
-    } catch (dbError) {
+    } catch {
       // Bei Datenbank-Fehler: Weiter mit Registrierung (kann sein, dass Tabelle noch nicht existiert)
       existingCustomer = null;
     }
