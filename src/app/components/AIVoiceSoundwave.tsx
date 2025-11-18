@@ -22,41 +22,22 @@ export default function AIVoiceSoundwave() {
 
     useEffect(() => {
         // Warte auf Client-Side Rendering
-        if (typeof window === 'undefined') {
-            console.log('[AIVoiceSoundwave] Window not available');
-            return;
-        }
+        if (typeof window === 'undefined') return;
 
         const canvas = canvasRef.current;
-        if (!canvas) {
-            console.log('[AIVoiceSoundwave] Canvas ref not available');
-            return;
-        }
+        if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            console.log('[AIVoiceSoundwave] Canvas context not available');
-            return;
-        }
-        
-        console.log('[AIVoiceSoundwave] Initializing...');
+        if (!ctx) return;
 
         const resize = () => {
             if (!canvas) return;
-            const container = canvas.parentElement;
-            if (!container) return;
-
-            // Verwende getBoundingClientRect für genauere Größen
-            const rect = container.getBoundingClientRect();
-            const width = rect.width || container.clientWidth || window.innerWidth;
-            const height = rect.height || container.clientHeight || window.innerHeight;
             
-            // Mindestgröße sicherstellen
-            if (width <= 0 || height <= 0) {
-                // Retry nach kurzer Zeit
-                setTimeout(resize, 50);
-                return;
-            }
+            // Verwende window.innerWidth/Height direkt wie InfiniteTunnelAnimation
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            
+            if (width <= 0 || height <= 0) return;
 
             canvas.width = width;
             canvas.height = height;
@@ -156,63 +137,27 @@ export default function AIVoiceSoundwave() {
             animationRef.current = requestAnimationFrame(animate);
         };
 
-        // Initial setup - mit mehreren Versuchen für sichereres Mounting
-        let initAttempts = 0;
-        const maxAttempts = 10;
-        
-        const tryInit = () => {
-            initAttempts++;
-            const container = canvas.parentElement;
-            const rect = container?.getBoundingClientRect();
-            
-            console.log(`[AIVoiceSoundwave] Init attempt ${initAttempts}, container:`, container, 'rect:', rect);
-            
-            if (rect && rect.width > 0 && rect.height > 0) {
-                console.log('[AIVoiceSoundwave] Container size OK, starting animation');
-                resize();
-                createLines();
-                animate();
-            } else if (initAttempts < maxAttempts) {
-                console.log(`[AIVoiceSoundwave] Container size not ready, retrying... (${initAttempts}/${maxAttempts})`);
-                setTimeout(tryInit, 100);
-            } else {
-                console.error('[AIVoiceSoundwave] Failed to initialize after', maxAttempts, 'attempts');
-            }
-        };
-        
-        const initTimeout = setTimeout(tryInit, 50);
+        // Initial setup - direkt wie InfiniteTunnelAnimation
+        resize();
+        createLines();
+        animate();
 
         // Handle resize
         const handleResize = () => {
             resize();
         };
 
-        let resizeObserver: ResizeObserver | null = null;
-        
         if (typeof window !== 'undefined') {
             window.addEventListener('resize', handleResize);
-            
-            // ResizeObserver für Container-Größenänderungen
-            const container = canvas.parentElement;
-            if (container && typeof ResizeObserver !== 'undefined') {
-                resizeObserver = new ResizeObserver(() => {
-                    resize();
-                });
-                resizeObserver.observe(container);
-            }
         }
         
         // Cleanup
         return () => {
-            clearTimeout(initTimeout);
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
             if (typeof window !== 'undefined') {
                 window.removeEventListener('resize', handleResize);
-            }
-            if (resizeObserver) {
-                resizeObserver.disconnect();
             }
         };
     }, []);

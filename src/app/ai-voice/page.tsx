@@ -187,7 +187,7 @@ export default function AIVoicePage() {
         {/* Hero Section */}
         <section className="py-32 md:py-48 bg-gradient-to-b from-primary/10 via-background to-background relative min-h-screen flex items-center justify-center overflow-hidden">
           {/* Canva im Hintergrund - opacity 100, viel größer, zentriert */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-100 w-[200%] h-[200%] z-0">
+          <div className="absolute inset-0 overflow-hidden z-0">
             <AIVoiceSoundwaveWrapper />
           </div>
           
