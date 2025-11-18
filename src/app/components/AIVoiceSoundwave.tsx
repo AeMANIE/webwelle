@@ -44,8 +44,8 @@ export default function AIVoiceSoundwave() {
             canvas.height = height;
             centerXRef.current = canvas.width / 2;
             centerYRef.current = canvas.height / 2;
-            // Ring-Radius wie in der ursprünglichen Canva
-            baseRadiusRef.current = Math.min(canvas.width, canvas.height) * 0.2;
+            // Ring-Radius - 35% größer (0.2 * 1.35 = 0.27)
+            baseRadiusRef.current = Math.min(canvas.width, canvas.height) * 0.27;
             createLines();
         };
 
@@ -98,9 +98,9 @@ export default function AIVoiceSoundwave() {
 
                 // Kombiniere Basis-Länge mit sanften Wellen-Effekt
                 const dynamicLength = baseLengthFactor * (0.6 + wave1 + wave2 + wave3);
-                // Linienlänge proportional zur Canvas-Größe
+                // Linienlänge proportional zur Canvas-Größe - 35% größer (0.15 * 1.35 = 0.2025)
                 const maxCanvasSize = Math.max(canvas.width, canvas.height);
-                const lineLength = dynamicLength * maxCanvasSize * 0.15;
+                const lineLength = dynamicLength * maxCanvasSize * 0.2;
 
                 // Mindestlänge für sichtbare Linien
                 if (lineLength < 2) return;
