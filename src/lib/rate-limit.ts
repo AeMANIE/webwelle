@@ -27,61 +27,96 @@ async function checkRateLimitRedis(
   const now = Date.now();
   const key = REDIS_KEYS.rateLimit(identifier);
   
-  // Atomic Operation: GET und INCR in einem
-  const result = await redis
-    .multi()
-    .get(key)
-    .incr(key)
-    .expire(key, Math.ceil(config.windowMs / 1000))
-    .exec();
+  // Atomare Operation: GET, prüfen, inkrementieren und SETEX in einem Transaction
+  // Verwende Lua Script für echte Atomizität
+  const luaScript = `
+    local key = KEYS[1]
+    local windowMs = tonumber(ARGV[1])
+    local maxRequests = tonumber(ARGV[2])
+    local now = tonumber(ARGV[3])
+    
+    local data = redis.call('GET', key)
+    local count = 1
+    local resetTime = now + windowMs
+    
+    if data then
+      local entry = cjson.decode(data)
+      if now > entry.resetTime then
+        -- Zeitfenster abgelaufen - neu starten
+        count = 1
+        resetTime = now + windowMs
+      else
+        -- Bestehendes Zeitfenster verwenden
+        count = entry.count + 1
+        resetTime = entry.resetTime
+      end
+    end
+    
+    local ttl = math.ceil((resetTime - now) / 1000)
+    local entry = cjson.encode({count = count, resetTime = resetTime})
+    redis.call('SETEX', key, ttl, entry)
+    
+    local allowed = count <= maxRequests
+    local remaining = math.max(0, maxRequests - count)
+    
+    return cjson.encode({allowed = allowed, remaining = remaining, resetTime = resetTime})
+  `;
 
-  if (!result) {
-    throw new Error('Redis multi/exec fehlgeschlagen');
-  }
+  try {
+    const result = await redis.eval(
+      luaScript,
+      1, // Anzahl der Keys
+      key, // KEYS[1]
+      config.windowMs.toString(), // ARGV[1]
+      config.maxRequests.toString(), // ARGV[2]
+      now.toString() // ARGV[3]
+    ) as string;
 
-  const existingData = result[0][1] as string | null;
-  let count: number;
-  let resetTime: number;
+    const parsed = JSON.parse(result) as { allowed: boolean; remaining: number; resetTime: number };
+    return parsed;
+  } catch (error) {
+    // Fallback: Wenn Lua Script fehlschlägt, verwende einfache GET/SET Logik
+    console.warn('⚠️ Redis Lua Script fehlgeschlagen, verwende Fallback-Logik:', error);
+    
+    const existingData = await redis.get(key);
+    let count: number;
+    let resetTime: number;
 
-  if (existingData) {
-    // Parse existing entry
-    const entry: RateLimitEntry = JSON.parse(existingData);
-    if (now > entry.resetTime) {
-      // Zeitfenster abgelaufen - neu starten
+    if (existingData) {
+      const entry: RateLimitEntry = JSON.parse(existingData);
+      if (now > entry.resetTime) {
+        // Zeitfenster abgelaufen - neu starten
+        count = 1;
+        resetTime = now + config.windowMs;
+      } else {
+        // Bestehendes Zeitfenster verwenden
+        count = entry.count + 1;
+        resetTime = entry.resetTime;
+      }
+    } else {
+      // Neuer Eintrag
       count = 1;
       resetTime = now + config.windowMs;
-      await redis.setex(key, Math.ceil(config.windowMs / 1000), JSON.stringify({ count, resetTime }));
-    } else {
-      // Bestehendes Zeitfenster verwenden
-      count = parseInt(result[1][1] as string) || entry.count + 1;
-      resetTime = entry.resetTime;
-      // Update entry
-      await redis.setex(
-        key,
-        Math.ceil((resetTime - now) / 1000),
-        JSON.stringify({ count, resetTime })
-      );
     }
-  } else {
-    // Neuer Eintrag
-    count = 1;
-    resetTime = now + config.windowMs;
-    await redis.setex(key, Math.ceil(config.windowMs / 1000), JSON.stringify({ count, resetTime }));
-  }
 
-  if (count > config.maxRequests) {
+    // Atomar speichern mit SETEX
+    const ttl = Math.ceil((resetTime - now) / 1000);
+    await redis.setex(key, ttl, JSON.stringify({ count, resetTime }));
+
+    if (count > config.maxRequests) {
+      return {
+        allowed: false,
+        remaining: 0,
+        resetTime
+      };
+    }
+
     return {
-      allowed: false,
-      remaining: 0,
+      allowed: true,
+      remaining: config.maxRequests - count,
       resetTime
     };
   }
-
-  return {
-    allowed: true,
-    remaining: config.maxRequests - count,
-    resetTime
-  };
 }
 
 // In-Memory Fallback
