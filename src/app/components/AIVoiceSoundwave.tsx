@@ -71,17 +71,11 @@ export default function AIVoiceSoundwave() {
             // Clear canvas - transparent
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Zeichne weißen Kreis in der Mitte (wie im ursprünglichen Bild)
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, baseRadius, 0, PI * 2);
-            ctx.fillStyle = 'white';
-            ctx.fill();
-
-            // Zeichne alle Linien (vertikale Balken radial nach außen)
+            // Zeichne alle Linien (vertikale Balken radial nach außen) - OHNE weißen Kreis
             linesRef.current.forEach((line, index) => {
                 const angle = line.angle;
 
-                // Berechne Position auf dem Ring (am Rand des weißen Kreises)
+                // Berechne Position - starte vom Zentrum (kein weißer Kreis)
                 const radius = baseRadius;
                 const startX = centerX + cos(angle) * radius;
                 const startY = centerY + sin(angle) * radius;
