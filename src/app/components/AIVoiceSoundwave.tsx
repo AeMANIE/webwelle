@@ -140,13 +140,17 @@ export default function AIVoiceSoundwave() {
             resize();
         };
 
-        window.addEventListener('resize', handleResize);
+        if (typeof window !== 'undefined') {
+            window.addEventListener('resize', handleResize);
+        }
 
         return () => {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
-            window.removeEventListener('resize', handleResize);
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('resize', handleResize);
+            }
         };
     }, []);
 
