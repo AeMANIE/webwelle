@@ -11,6 +11,7 @@ interface Line {
 }
 
 export default function AIVoiceSoundwave() {
+    const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animationRef = useRef<number | null>(null);
     const tickRef = useRef(0);
@@ -21,8 +22,8 @@ export default function AIVoiceSoundwave() {
     const numLines = 720; // Mehr Linien für detaillierteren Effekt
 
     useEffect(() => {
-        // Warte auf Client-Side Rendering
-        if (typeof window === 'undefined') return;
+        const container = containerRef.current;
+        if (!container) return;
 
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -138,6 +139,8 @@ export default function AIVoiceSoundwave() {
         };
 
         // Initial setup - direkt wie InfiniteTunnelAnimation
+        centerXRef.current = window.innerWidth * 0.5;
+        centerYRef.current = window.innerHeight * 0.5;
         resize();
         createLines();
         animate();
@@ -147,32 +150,28 @@ export default function AIVoiceSoundwave() {
             resize();
         };
 
-        if (typeof window !== 'undefined') {
-            window.addEventListener('resize', handleResize);
-        }
+        window.addEventListener('resize', handleResize);
         
         // Cleanup
         return () => {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
-            if (typeof window !== 'undefined') {
-                window.removeEventListener('resize', handleResize);
-            }
+            window.removeEventListener('resize', handleResize);
         };
     }, []);
 
     return (
-        <canvas
-            ref={canvasRef}
-            className="absolute inset-0 w-full h-full"
-            style={{ 
-                background: 'transparent', 
-                pointerEvents: 'none',
-                display: 'block',
-                position: 'absolute'
-            }}
-        />
+        <div ref={containerRef} className="absolute inset-0 w-full h-full">
+            <canvas
+                ref={canvasRef}
+                className="absolute inset-0 w-full h-full"
+                style={{ 
+                    background: 'transparent', 
+                    pointerEvents: 'none'
+                }}
+            />
+        </div>
     );
 }
 
