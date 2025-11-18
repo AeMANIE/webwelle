@@ -44,9 +44,9 @@ export default function AIVoiceSoundwave() {
             canvas.height = height;
             centerXRef.current = canvas.width / 2;
             centerYRef.current = canvas.height / 2;
-            // Ring-Radius: DEUTLICH größer - Ring startet viel weiter außen
-            // Größerer Radius = mehr Platz in der Mitte für Text, Balken rundherum
-            baseRadiusRef.current = Math.min(canvas.width, canvas.height) * 3.0;
+            // Ring-Radius: Startet außerhalb des Zentrums, aber innerhalb des Canvas
+            // Verwende einen kleineren Faktor, damit Linien sichtbar bleiben
+            baseRadiusRef.current = Math.min(canvas.width, canvas.height) * 0.3;
             createLines();
         };
 
@@ -92,8 +92,9 @@ export default function AIVoiceSoundwave() {
 
                 // Kombiniere Basis-Länge mit Wellen-Effekt
                 const dynamicLength = baseLengthFactor * (0.4 + wave1 + wave2 + wave3);
-                // Linienlänge DEUTLICH größer - Linien gehen sehr weit nach außen
-                const lineLength = dynamicLength * 5000;
+                // Linienlänge - angepasst damit Linien sichtbar bleiben
+                const maxCanvasSize = Math.max(canvas.width, canvas.height);
+                const lineLength = dynamicLength * maxCanvasSize * 0.5;
 
                 // Mindestlänge für sichtbare Linien
                 if (lineLength < 3) return;
@@ -102,8 +103,8 @@ export default function AIVoiceSoundwave() {
                 const endX = startX + cos(angle) * lineLength;
                 const endY = startY + sin(angle) * lineLength;
 
-                // Linienbreite variiert mit Länge - deutlich dicker für größere Canva
-                const lineWidth = Math.max(4, Math.min(12, lineLength * 0.005));
+                // Linienbreite variiert mit Länge
+                const lineWidth = Math.max(2, Math.min(4, lineLength * 0.01));
 
                 // Zeichne Schatten (leicht versetzt nach rechts/unten) - farbig
                 ctx.beginPath();
