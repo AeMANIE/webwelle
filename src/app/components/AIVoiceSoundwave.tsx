@@ -20,6 +20,7 @@ export default function AIVoiceSoundwave() {
     const centerYRef = useRef(0);
     const baseRadiusRef = useRef(150);
     const numLines = 360; // Weniger Linien für ruhigeren, klareren Effekt
+    const isMobileCanvasRef = useRef(false);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -74,6 +75,7 @@ export default function AIVoiceSoundwave() {
                 }
                 
                 baseRadiusRef.current = minDimension * radiusMultiplier;
+                isMobileCanvasRef.current = true;
             } else {
                 // Desktop & Tablet: Größe für Chrome, Safari und Firefox
                 // Reduziert auf etwa die Hälfte der vorherigen Größe für bessere Balance
@@ -89,6 +91,7 @@ export default function AIVoiceSoundwave() {
                 const calculatedRadius = minDimension * 0.36;
                 // Maximal 400px Radius für sehr große Bildschirme (800 / 2 = 400)
                 baseRadiusRef.current = Math.min(calculatedRadius, 400);
+                isMobileCanvasRef.current = false;
             }
             
             centerXRef.current = canvas.width / 2;
@@ -119,8 +122,10 @@ export default function AIVoiceSoundwave() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // Zeichne alle Linien (vertikale Balken radial nach außen) - OHNE weißen Kreis
+            const isMobileCanvas = isMobileCanvasRef.current;
+
             linesRef.current.forEach((line, index) => {
-                const angle = line.angle;
+                const angle = line.angle + (isMobileCanvas ? PI / 2 : 0);
 
                 // Berechne Position - starte vom Zentrum (kein weißer Kreis)
                 const radius = baseRadius;
@@ -128,10 +133,10 @@ export default function AIVoiceSoundwave() {
                 const startY = centerY + sin(angle) * radius;
 
                 // Berechne Länge basierend auf Position - unterschiedlich für Desktop und Mobile
-                const isMobileDevice = canvas.width < 768;
+                const isMobileDevice = isMobileCanvas;
                 let baseLengthFactor;
                 if (isMobileDevice) {
-                    // Mobile: Längste Linien oben/unten (vertikal), kürzeste links/rechts (horizontal)
+                    // Mobile: Lange Balken oben/unten, kurze links/rechts (durch Rotation bereits getauscht)
                     const verticalDistance = Math.abs(sin(angle));
                     baseLengthFactor = verticalDistance; // 1.0 oben/unten, 0.0 links/rechts
                 } else {
