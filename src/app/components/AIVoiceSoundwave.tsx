@@ -35,10 +35,17 @@ export default function AIVoiceSoundwave() {
             const container = canvas.parentElement;
             if (!container) return;
 
-            const width = container.clientWidth || window.innerWidth;
-            const height = container.clientHeight || window.innerHeight;
+            // Verwende getBoundingClientRect für genauere Größen
+            const rect = container.getBoundingClientRect();
+            const width = rect.width || container.clientWidth || window.innerWidth;
+            const height = rect.height || container.clientHeight || window.innerHeight;
             
-            if (width === 0 || height === 0) return;
+            // Mindestgröße sicherstellen
+            if (width <= 0 || height <= 0) {
+                // Retry nach kurzer Zeit
+                setTimeout(resize, 50);
+                return;
+            }
 
             canvas.width = width;
             canvas.height = height;
@@ -138,22 +145,47 @@ export default function AIVoiceSoundwave() {
             animationRef.current = requestAnimationFrame(animate);
         };
 
-        // Initial setup - mit kleiner Verzögerung für sichereres Mounting
-        const initTimeout = setTimeout(() => {
-            resize();
-            createLines();
-            animate();
-        }, 100);
+        // Initial setup - mit mehreren Versuchen für sichereres Mounting
+        let initAttempts = 0;
+        const maxAttempts = 10;
+        
+        const tryInit = () => {
+            initAttempts++;
+            const container = canvas.parentElement;
+            const rect = container?.getBoundingClientRect();
+            
+            if (rect && rect.width > 0 && rect.height > 0) {
+                resize();
+                createLines();
+                animate();
+            } else if (initAttempts < maxAttempts) {
+                setTimeout(tryInit, 100);
+            }
+        };
+        
+        const initTimeout = setTimeout(tryInit, 50);
 
         // Handle resize
         const handleResize = () => {
             resize();
         };
 
+        let resizeObserver: ResizeObserver | null = null;
+        
         if (typeof window !== 'undefined') {
             window.addEventListener('resize', handleResize);
+            
+            // ResizeObserver für Container-Größenänderungen
+            const container = canvas.parentElement;
+            if (container && typeof ResizeObserver !== 'undefined') {
+                resizeObserver = new ResizeObserver(() => {
+                    resize();
+                });
+                resizeObserver.observe(container);
+            }
         }
-
+        
+        // Cleanup
         return () => {
             clearTimeout(initTimeout);
             if (animationRef.current) {
@@ -161,6 +193,9 @@ export default function AIVoiceSoundwave() {
             }
             if (typeof window !== 'undefined') {
                 window.removeEventListener('resize', handleResize);
+            }
+            if (resizeObserver) {
+                resizeObserver.disconnect();
             }
         };
     }, []);
