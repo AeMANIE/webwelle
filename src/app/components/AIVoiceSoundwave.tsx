@@ -3,6 +3,8 @@
 import { useEffect, useRef } from 'react';
 
 const { PI, sin, cos, random } = Math;
+const DESKTOP_LINE_COUNT = 360;
+const MOBILE_LINE_COUNT = Math.round(DESKTOP_LINE_COUNT * 0.8); // 20% weniger Linien mobil
 
 interface Line {
     angle: number;
@@ -19,7 +21,7 @@ export default function AIVoiceSoundwave() {
     const centerXRef = useRef(0);
     const centerYRef = useRef(0);
     const baseRadiusRef = useRef(150);
-    const numLines = 360; // Weniger Linien für ruhigeren, klareren Effekt
+    const lineCountRef = useRef(DESKTOP_LINE_COUNT);
     const isMobileCanvasRef = useRef(false);
 
     useEffect(() => {
@@ -76,6 +78,7 @@ export default function AIVoiceSoundwave() {
                 
                 baseRadiusRef.current = minDimension * radiusMultiplier;
                 isMobileCanvasRef.current = true;
+                lineCountRef.current = MOBILE_LINE_COUNT;
             } else {
                 // Desktop & Tablet: Größe für Chrome, Safari und Firefox
                 // Reduziert auf etwa die Hälfte der vorherigen Größe für bessere Balance
@@ -92,6 +95,7 @@ export default function AIVoiceSoundwave() {
                 // Maximal 400px Radius für sehr große Bildschirme (800 / 2 = 400)
                 baseRadiusRef.current = Math.min(calculatedRadius, 400);
                 isMobileCanvasRef.current = false;
+                lineCountRef.current = DESKTOP_LINE_COUNT;
             }
             
             centerXRef.current = canvas.width / 2;
@@ -101,10 +105,11 @@ export default function AIVoiceSoundwave() {
 
         const createLines = () => {
             linesRef.current = [];
-            for (let i = 0; i < numLines; i++) {
-                const angle = (i / numLines) * PI * 2;
+            const lineCount = lineCountRef.current;
+            for (let i = 0; i < lineCount; i++) {
+                const angle = (i / lineCount) * PI * 2;
                 linesRef.current.push({
-                    angle: angle,
+                    angle,
                     phase: random() * PI * 2,
                     baseLength: 0
                 });
