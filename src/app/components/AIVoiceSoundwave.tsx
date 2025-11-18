@@ -80,40 +80,39 @@ export default function AIVoiceSoundwave() {
                 const startX = centerX + cos(angle) * radius;
                 const startY = centerY + sin(angle) * radius;
 
-                // Berechne Länge basierend auf Position
+                // Berechne Länge basierend auf Position (wie im ursprünglichen Bild)
                 // Längste Linien oben/unten (vertikal), kürzeste links/rechts (horizontal)
                 const verticalDistance = Math.abs(sin(angle));
                 const baseLengthFactor = verticalDistance; // 1.0 oben/unten, 0.0 links/rechts
 
-                // Ruhige Voice-AI Soundwave: Langsame, sanfte Wellen
-                const wave1 = sin(tick * 0.005 + index * 0.05 + line.phase) * 0.15;
-                const wave2 = sin(tick * 0.003 + index * 0.08) * 0.12;
-                const wave3 = sin(tick * 0.007 + index * 0.03) * 0.08;
+                // Audio-Visualizer-Effekt: Pulsierende Wellen (wie im Original)
+                const wave1 = sin(tick * 0.02 + index * 0.1 + line.phase) * 0.4;
+                const wave2 = sin(tick * 0.015 + index * 0.15) * 0.3;
+                const wave3 = sin(tick * 0.025 + index * 0.05) * 0.2;
 
-                // Kombiniere Basis-Länge mit sanften Wellen-Effekt
-                const dynamicLength = baseLengthFactor * (0.6 + wave1 + wave2 + wave3);
-                // Linienlänge proportional zur Canvas-Größe - DEUTLICH größer
+                // Kombiniere Basis-Länge mit Wellen-Effekt (wie im Original)
+                const dynamicLength = baseLengthFactor * (0.4 + wave1 + wave2 + wave3);
+                // Linienlänge proportional zur Canvas-Größe
                 const maxCanvasSize = Math.max(canvas.width, canvas.height);
-                const lineLength = dynamicLength * maxCanvasSize * 0.35;
+                const lineLength = dynamicLength * maxCanvasSize * 0.2;
 
                 // Mindestlänge für sichtbare Linien
-                if (lineLength < 2) return;
+                if (lineLength < 3) return;
 
                 // Berechne Endpunkt (radial nach außen)
                 const endX = startX + cos(angle) * lineLength;
                 const endY = startY + sin(angle) * lineLength;
 
-                // Linienbreite - dünn wie im ursprünglichen Bild
-                const lineWidth = Math.max(1, Math.min(2, lineLength * 0.01));
+                // Linienbreite variiert mit Länge (wie im Original)
+                const lineWidth = Math.max(1, Math.min(3, lineLength * 0.02));
 
                 // Zeichne Schatten (leicht versetzt nach rechts/unten) - farbig
                 ctx.beginPath();
                 ctx.moveTo(startX + 1, startY + 1);
                 ctx.lineTo(endX + 1, endY + 1);
 
-                // Farbiger Schatten - kontinuierlicher Farbverlauf durch das Spektrum
-                // Hue basierend auf Winkel (Position im Kreis) für kontinuierlichen Verlauf
-                const shadowHue = (index / numLines) * 360;
+                // Farbiger Schatten basierend auf Position und Zeit (wie im Original)
+                const shadowHue = (tick * 0.5 + index * 2) % 360;
                 ctx.strokeStyle = `hsla(${shadowHue}, 100%, 50%, 0.2)`;
                 ctx.lineWidth = lineWidth;
                 ctx.lineCap = 'round';
@@ -124,13 +123,14 @@ export default function AIVoiceSoundwave() {
                 ctx.moveTo(startX, startY);
                 ctx.lineTo(endX, endY);
 
-                // Farbige Linien - kontinuierlicher Farbverlauf durch das Spektrum
-                // Hue basierend auf Position im Kreis (nicht auf Zeit) für statischen Verlauf
-                const hue = (index / numLines) * 360;
-                const intensity = Math.max(0.4, Math.min(1, dynamicLength));
+                // Farbige Linien ähnlich wie im Original
+                const intensity = Math.max(0.3, Math.min(1, dynamicLength));
+                // Hue rotiert durch das Spektrum basierend auf Position und Zeit
+                const hue = (tick * 0.5 + index * 2) % 360;
+                // Saturation und Lightness für lebendige Farben
                 const saturation = 100;
                 const lightness = 50;
-                const alpha = 0.7 + intensity * 0.3;
+                const alpha = 0.6 + intensity * 0.4;
 
                 ctx.strokeStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
                 ctx.lineWidth = lineWidth;
