@@ -46,20 +46,23 @@ export default function AIVoiceSoundwave() {
             // WICHTIG: Für runde Canva immer quadratische Dimensionen verwenden
             // Dies verhindert, dass die Canva beim Scrollen oval wird
             const minDimension = Math.min(width, height);
+            const maxDimension = Math.max(width, height);
             
             if (isMobile) {
-                // Mobile: Größere Canva (75% statt 60% - 25% größer) und quadratisch für runde Form
+                // Mobile: MINDESTENS 3x größer - verwende fast die volle Bildschirmgröße
                 // Verwende minDimension um immer rund zu bleiben, auch beim Scrollen
-                // Vorher: 0.6, jetzt: 0.6 * 1.25 = 0.75 (25% größer)
-                const canvasSize = Math.floor(minDimension * 0.75);
+                const canvasSize = Math.floor(minDimension * 1.0); // 100% der kleineren Dimension
                 canvas.width = canvasSize;
                 canvas.height = canvasSize;
                 baseRadiusRef.current = canvasSize * 0.5;
             } else {
-                // Desktop: Volle Breite/Höhe, aber Radius basierend auf minDimension
+                // Desktop: Volle Breite/Höhe, Radius proportional zur Bildschirmgröße
+                // Bei großen Bildschirmen: größerer Radius, bei kleineren: kleinerer Radius
                 canvas.width = width;
                 canvas.height = height;
-                baseRadiusRef.current = minDimension * 0.4;
+                // Verwende maxDimension für größere Canva auf großen Bildschirmen
+                // Mindestens 40% der größeren Dimension, aber nicht mehr als 50% der kleineren
+                baseRadiusRef.current = Math.min(maxDimension * 0.4, minDimension * 0.5);
             }
             
             centerXRef.current = canvas.width / 2;
@@ -120,9 +123,8 @@ export default function AIVoiceSoundwave() {
                 const dynamicLength = baseLengthFactor * (0.4 + wave1 + wave2 + wave3);
                 // Linienlänge proportional zur Canvas-Größe - responsive für mobile
                 const maxCanvasSize = Math.max(canvas.width, canvas.height);
-                // Auf mobilen Geräten: größere Linien für bessere Sichtbarkeit (25% größer als vorher)
-                // Vorher: 0.15, jetzt: 0.15 * 1.25 = 0.1875
-                const lineLengthMultiplier = isMobile ? 0.1875 : 0.08; // Desktop: 5-7 cm, Mobile: größer
+                // Mobile: viel größere Linien (3x größer), Desktop: proportional zur Bildschirmgröße
+                const lineLengthMultiplier = isMobile ? 0.3 : 0.12; // Mobile: 3x größer, Desktop: größer
                 const lineLength = dynamicLength * maxCanvasSize * lineLengthMultiplier;
 
                 // Mindestlänge für sichtbare Linien
