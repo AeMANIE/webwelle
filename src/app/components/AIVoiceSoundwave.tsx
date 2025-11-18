@@ -19,7 +19,7 @@ export default function AIVoiceSoundwave() {
     const centerXRef = useRef(0);
     const centerYRef = useRef(0);
     const baseRadiusRef = useRef(150);
-    const numLines = 720; // Mehr Linien für detaillierteren Effekt
+    const numLines = 360; // Weniger Linien für ruhigeren, klareren Effekt
 
     useEffect(() => {
         const container = containerRef.current;
@@ -85,13 +85,15 @@ export default function AIVoiceSoundwave() {
                 const verticalDistance = Math.abs(sin(angle));
                 const baseLengthFactor = verticalDistance;
 
-                // Audio-Visualizer-Effekt: Pulsierende Wellen
-                const wave1 = sin(tick * 0.02 + index * 0.1 + line.phase) * 0.4;
-                const wave2 = sin(tick * 0.015 + index * 0.15) * 0.3;
-                const wave3 = sin(tick * 0.025 + index * 0.05) * 0.2;
+                // Ruhige Voice-AI Soundwave: Langsame, sanfte Wellen
+                // Langsamere Geschwindigkeit für ruhigere Bewegung
+                const wave1 = sin(tick * 0.005 + index * 0.05 + line.phase) * 0.15;
+                const wave2 = sin(tick * 0.003 + index * 0.08) * 0.12;
+                const wave3 = sin(tick * 0.007 + index * 0.03) * 0.08;
 
-                // Kombiniere Basis-Länge mit Wellen-Effekt
-                const dynamicLength = baseLengthFactor * (0.4 + wave1 + wave2 + wave3);
+                // Kombiniere Basis-Länge mit sanften Wellen-Effekt
+                // Basis höher, Wellen kleiner = ruhigere Bewegung
+                const dynamicLength = baseLengthFactor * (0.6 + wave1 + wave2 + wave3);
                 // Linienlänge - angepasst damit Linien sichtbar bleiben
                 const maxCanvasSize = Math.max(canvas.width, canvas.height);
                 const lineLength = dynamicLength * maxCanvasSize * 0.5;
@@ -111,9 +113,9 @@ export default function AIVoiceSoundwave() {
                 ctx.moveTo(startX + 1, startY + 1);
                 ctx.lineTo(endX + 1, endY + 1);
 
-                // Farbiger Schatten basierend auf Position und Zeit
-                const shadowHue = (tick * 0.5 + index * 2) % 360;
-                ctx.strokeStyle = `hsla(${shadowHue}, 100%, 50%, 0.2)`;
+                // Farbiger Schatten - langsamere Farbrotation
+                const shadowHue = (tick * 0.1 + index * 0.5) % 360;
+                ctx.strokeStyle = `hsla(${shadowHue}, 100%, 50%, 0.15)`;
                 ctx.lineWidth = lineWidth;
                 ctx.lineCap = 'round';
                 ctx.stroke();
@@ -123,12 +125,12 @@ export default function AIVoiceSoundwave() {
                 ctx.moveTo(startX, startY);
                 ctx.lineTo(endX, endY);
 
-                // Farbige Linien ähnlich wie canvamausinteraktiv
-                const intensity = Math.max(0.3, Math.min(1, dynamicLength));
-                const hue = (tick * 0.5 + index * 2) % 360;
+                // Farbige Linien - langsamere, ruhigere Farbrotation
+                const intensity = Math.max(0.4, Math.min(1, dynamicLength));
+                const hue = (tick * 0.1 + index * 0.5) % 360;
                 const saturation = 100;
                 const lightness = 50;
-                const alpha = 0.6 + intensity * 0.4;
+                const alpha = 0.5 + intensity * 0.3;
 
                 ctx.strokeStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`;
                 ctx.lineWidth = lineWidth;
