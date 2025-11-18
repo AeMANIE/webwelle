@@ -80,21 +80,21 @@ export default function AIVoiceSoundwave() {
                 const startX = centerX + cos(angle) * radius;
                 const startY = centerY + sin(angle) * radius;
 
-                // Berechne Länge basierend auf Position (wie im ursprünglichen Bild)
-                // Längste Linien oben/unten (vertikal), kürzeste links/rechts (horizontal)
-                const verticalDistance = Math.abs(sin(angle));
-                const baseLengthFactor = verticalDistance; // 1.0 oben/unten, 0.0 links/rechts
+                // Berechne Länge basierend auf Position - 90 Grad gedreht
+                // Längste Linien links/rechts (horizontal), kürzeste oben/unten (vertikal)
+                const horizontalDistance = Math.abs(cos(angle));
+                const baseLengthFactor = horizontalDistance; // 1.0 links/rechts, 0.0 oben/unten
 
-                // Audio-Visualizer-Effekt: Pulsierende Wellen (wie im Original)
-                const wave1 = sin(tick * 0.02 + index * 0.1 + line.phase) * 0.4;
-                const wave2 = sin(tick * 0.015 + index * 0.15) * 0.3;
-                const wave3 = sin(tick * 0.025 + index * 0.05) * 0.2;
+                // Audio-Visualizer-Effekt: Pulsierende Wellen - 20% langsamer
+                const wave1 = sin(tick * 0.016 + index * 0.1 + line.phase) * 0.4; // 0.02 * 0.8 = 0.016
+                const wave2 = sin(tick * 0.012 + index * 0.15) * 0.3; // 0.015 * 0.8 = 0.012
+                const wave3 = sin(tick * 0.02 + index * 0.05) * 0.2; // 0.025 * 0.8 = 0.02
 
-                // Kombiniere Basis-Länge mit Wellen-Effekt (wie im Original)
+                // Kombiniere Basis-Länge mit Wellen-Effekt
                 const dynamicLength = baseLengthFactor * (0.4 + wave1 + wave2 + wave3);
-                // Linienlänge proportional zur Canvas-Größe
+                // Linienlänge proportional zur Canvas-Größe - kürzer (5-7 cm statt 10-12 cm)
                 const maxCanvasSize = Math.max(canvas.width, canvas.height);
-                const lineLength = dynamicLength * maxCanvasSize * 0.2;
+                const lineLength = dynamicLength * maxCanvasSize * 0.08; // ca. 50% kürzer für 5-7 cm
 
                 // Mindestlänge für sichtbare Linien
                 if (lineLength < 3) return;
@@ -111,8 +111,8 @@ export default function AIVoiceSoundwave() {
                 ctx.moveTo(startX + 1, startY + 1);
                 ctx.lineTo(endX + 1, endY + 1);
 
-                // Farbiger Schatten - rotiert im Uhrzeigersinn
-                const shadowHue = (tick * 0.5 - index * 2 + 360) % 360;
+                // Farbiger Schatten - rotiert im Uhrzeigersinn - 20% langsamer
+                const shadowHue = (tick * 0.4 - index * 2 + 360) % 360; // 0.5 * 0.8 = 0.4
                 ctx.strokeStyle = `hsla(${shadowHue}, 100%, 50%, 0.2)`;
                 ctx.lineWidth = lineWidth;
                 ctx.lineCap = 'round';
@@ -123,10 +123,10 @@ export default function AIVoiceSoundwave() {
                 ctx.moveTo(startX, startY);
                 ctx.lineTo(endX, endY);
 
-                // Farbige Linien - rotiert im Uhrzeigersinn
+                // Farbige Linien - rotiert im Uhrzeigersinn - 20% langsamer
                 const intensity = Math.max(0.3, Math.min(1, dynamicLength));
                 // Hue rotiert im Uhrzeigersinn durch das Spektrum
-                const hue = (tick * 0.5 - index * 2 + 360) % 360;
+                const hue = (tick * 0.4 - index * 2 + 360) % 360; // 0.5 * 0.8 = 0.4
                 // Saturation und Lightness für lebendige Farben
                 const saturation = 100;
                 const lightness = 50;
