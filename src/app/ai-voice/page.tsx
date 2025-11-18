@@ -16,6 +16,10 @@ const AIVoiceFAQ = dynamic(() => import('../components/AIVoiceFAQ'), {
   loading: () => <div className="text-center py-4 text-muted-foreground">Lade FAQ...</div>,
 });
 
+const AIVoiceSoundwaveWrapper = dynamic(() => import('../components/AIVoiceSoundwaveWrapper'), {
+  loading: () => null,
+});
+
 export const metadata: Metadata = {
   title: "Voice AI Telefonassistent | 24/7 digitaler Mitarbeiter | WebWelle",
   description: "Voice-AI für Unternehmen – Ihr digitaler Telefon-Mitarbeiter. Effizient. Skalierbar. Immer erreichbar. Terminbuchung, Angebotsnachfrage, Lead-Qualifizierung – inbound wie outbound.",
@@ -181,9 +185,15 @@ export default function AIVoicePage() {
       <Header />
       <main>
         {/* Hero Section */}
-        <section className="py-20 bg-gradient-to-b from-primary/10 via-background to-background">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
+        <section className="py-32 md:py-48 bg-gradient-to-b from-primary/10 via-background to-background relative min-h-screen flex items-center justify-center overflow-hidden">
+          {/* Canva im Hintergrund - opacity 100, viel größer, zentriert */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-100 w-[200%] h-[200%]">
+            <AIVoiceSoundwaveWrapper />
+          </div>
+          
+          {/* Text komplett zentral in der Mitte der Canva */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex items-center justify-center">
+            <div className="text-center">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 tracking-tight">
                 Voice-AI bei WebWelle
               </h1>
@@ -203,7 +213,7 @@ export default function AIVoicePage() {
         {/* Value Proposition */}
         <section className="py-16">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
+            <div className="text-center">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
                 Ihre Stimme am Telefon – KI, die Aufgaben für Sie erledigt
               </h2>
@@ -326,7 +336,7 @@ export default function AIVoicePage() {
                   <div className="text-3xl font-bold text-primary mb-2">999 €</div>
                   <div className="text-sm text-muted-foreground">pro Monat</div>
                   <div className="mt-4 text-sm text-foreground">
-                    <strong>999 Minuten/Monat</strong>
+                    <strong>1750 Minuten/Monat</strong>
                   </div>
                 </div>
                 <AIVoiceCheckout
@@ -334,7 +344,7 @@ export default function AIVoicePage() {
                   packageName="Midi Job AI-Assistenz"
                   packageDescription="Ideal für wachsende Unternehmen und Teams"
                   price={999}
-                  minutes={999}
+                  minutes={1750}
                   showEinrichtungspaket={true}
                 />
               </div>
@@ -347,7 +357,7 @@ export default function AIVoicePage() {
                   <div className="text-3xl font-bold text-primary mb-2">1.999 €</div>
                   <div className="text-sm text-muted-foreground">pro Monat</div>
                   <div className="mt-4 text-sm text-foreground">
-                    <strong>1.999 Minuten/Monat</strong>
+                    <strong>4.000 Minuten/Monat</strong>
                   </div>
                 </div>
                 <AIVoiceCheckout
@@ -355,7 +365,7 @@ export default function AIVoicePage() {
                   packageName="Festangestellt AI-Agent"
                   packageDescription="Für Vieltelefonierer und Servicezentren"
                   price={1999}
-                  minutes={1999}
+                  minutes={4000}
                   showEinrichtungspaket={true}
                 />
               </div>
