@@ -49,20 +49,24 @@ export default function AIVoiceSoundwave() {
             const maxDimension = Math.max(width, height);
             
             if (isMobile) {
-                // Mobile: MINDESTENS 3x größer - verwende fast die volle Bildschirmgröße
-                // Verwende minDimension um immer rund zu bleiben, auch beim Scrollen
-                const canvasSize = Math.floor(minDimension * 1.0); // 100% der kleineren Dimension
+                // Mobile: Im Portrait (vertikal) und Landscape (horizontal) groß bleiben
+                // Im Landscape: Verwende die Breite (größer), im Portrait: Höhe (größer)
+                // Verwende die größere Dimension für die Canva-Größe
+                const canvasSize = Math.floor(maxDimension * 0.9); // 90% der größeren Dimension
                 canvas.width = canvasSize;
                 canvas.height = canvasSize;
                 baseRadiusRef.current = canvasSize * 0.5;
             } else {
-                // Desktop: Volle Breite/Höhe, Radius proportional zur Bildschirmgröße
-                // Bei großen Bildschirmen: größerer Radius, bei kleineren: kleinerer Radius
+                // Desktop: Volle Breite/Höhe, Radius 30% größer und proportional zur Bildschirmgröße
+                // WICHTIG: Bei größeren Bildschirmen soll die Canva größer werden, nicht kleiner!
                 canvas.width = width;
                 canvas.height = height;
-                // Verwende maxDimension für größere Canva auf großen Bildschirmen
-                // Mindestens 40% der größeren Dimension, aber nicht mehr als 50% der kleineren
-                baseRadiusRef.current = Math.min(maxDimension * 0.4, minDimension * 0.5);
+                // Basis: 50% der kleineren Dimension, dann 30% größer = 65%
+                // Bei großen Bildschirmen: Verwende auch die größere Dimension (40%), aber mindestens 65% der kleineren
+                const baseRadius = minDimension * 0.65; // 30% größer als 0.5 = 0.65
+                const largeScreenRadius = maxDimension * 0.4; // Für große Bildschirme
+                // Verwende den größeren Wert, damit die Canva bei großen Bildschirmen größer wird
+                baseRadiusRef.current = Math.max(baseRadius, largeScreenRadius);
             }
             
             centerXRef.current = canvas.width / 2;
