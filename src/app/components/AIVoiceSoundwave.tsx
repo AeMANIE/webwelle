@@ -48,9 +48,10 @@ export default function AIVoiceSoundwave() {
             const minDimension = Math.min(width, height);
             
             if (isMobile) {
-                // Mobile: Größere Canva (60% statt 50%) und quadratisch für runde Form
+                // Mobile: Größere Canva (75% statt 60% - 25% größer) und quadratisch für runde Form
                 // Verwende minDimension um immer rund zu bleiben, auch beim Scrollen
-                const canvasSize = Math.floor(minDimension * 0.6);
+                // Vorher: 0.6, jetzt: 0.6 * 1.25 = 0.75 (25% größer)
+                const canvasSize = Math.floor(minDimension * 0.75);
                 canvas.width = canvasSize;
                 canvas.height = canvasSize;
                 baseRadiusRef.current = canvasSize * 0.5;
@@ -119,8 +120,9 @@ export default function AIVoiceSoundwave() {
                 const dynamicLength = baseLengthFactor * (0.4 + wave1 + wave2 + wave3);
                 // Linienlänge proportional zur Canvas-Größe - responsive für mobile
                 const maxCanvasSize = Math.max(canvas.width, canvas.height);
-                // Auf mobilen Geräten: größere Linien für bessere Sichtbarkeit
-                const lineLengthMultiplier = isMobile ? 0.15 : 0.08; // Desktop: 5-7 cm, Mobile: größer
+                // Auf mobilen Geräten: größere Linien für bessere Sichtbarkeit (25% größer als vorher)
+                // Vorher: 0.15, jetzt: 0.15 * 1.25 = 0.1875
+                const lineLengthMultiplier = isMobile ? 0.1875 : 0.08; // Desktop: 5-7 cm, Mobile: größer
                 const lineLength = dynamicLength * maxCanvasSize * lineLengthMultiplier;
 
                 // Mindestlänge für sichtbare Linien
