@@ -49,23 +49,34 @@ export default function AIVoiceSoundwave() {
             const maxDimension = Math.max(width, height);
             
             if (isMobile) {
-                // Mobile: Im Portrait UND Landscape groß bleiben
-                // WICHTIG: Im Landscape (horizontal) muss die Canva genauso groß sein wie im Portrait
-                // Verwende immer die größere Dimension für die Canva-Größe
+                // Mobile: Portrait UND Landscape
+                // WICHTIG: Im Landscape muss die Canva GROSS genug sein, damit der Text IM runden Teil ist
                 // Im Portrait: height ist größer, im Landscape: width ist größer
-                const canvasSize = Math.floor(maxDimension * 1.0); // 100% der größeren Dimension
+                // Für Landscape: Verwende die Höhe (height) als Basis, damit die Canva groß genug ist
+                const isLandscape = width > height;
+                let canvasSize;
+                if (isLandscape) {
+                    // Landscape: Verwende die Höhe als Basis und mache sie größer (150% der Höhe)
+                    // Damit der Text sicher im runden Teil der Canva ist
+                    canvasSize = Math.floor(height * 1.5);
+                } else {
+                    // Portrait: Verwende die größere Dimension (height)
+                    canvasSize = Math.floor(maxDimension * 1.0);
+                }
                 canvas.width = canvasSize;
                 canvas.height = canvasSize;
                 baseRadiusRef.current = canvasSize * 0.5;
             } else {
-                // Desktop: EINHEITLICHE Größe - immer gleich, unabhängig von Bildschirmgröße
-                // Verwende eine feste Basis-Größe basierend auf einem Standard-Bildschirm (1920x1080)
-                // Standard: 50% der kleineren Dimension bei 1920x1080 = 540px
-                // Für alle Bildschirme: Verwende 50% der kleineren Dimension als Basis
+                // Desktop: FESTE Größe wie bei kleinem Fenster
+                // Problem: Bei großem Fenster wird minDimension groß → Canva wird groß
+                // Lösung: Verwende eine FESTE Basis-Größe (z.B. wie bei 1200px Breite)
+                // Oder: Begrenze auf eine maximale Größe
                 canvas.width = width;
                 canvas.height = height;
-                // EINHEITLICH: Immer 50% der kleineren Dimension (egal wie groß der Bildschirm ist)
-                baseRadiusRef.current = minDimension * 0.5;
+                // FESTE Größe: Verwende max 600px als Basis (entspricht ~50% von 1200px)
+                // Oder: Verwende immer die Größe eines kleinen Fensters (z.B. 1200px Breite)
+                const baseSize = Math.min(minDimension, 1200); // Max 1200px als Basis
+                baseRadiusRef.current = baseSize * 0.5;
             }
             
             centerXRef.current = canvas.width / 2;
