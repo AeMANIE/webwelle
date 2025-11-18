@@ -44,8 +44,16 @@ export default function AIVoiceSoundwave() {
             canvas.height = height;
             centerXRef.current = canvas.width / 2;
             centerYRef.current = canvas.height / 2;
-            // Ring-Radius - DEUTLICH größer für sichtbaren Unterschied
-            baseRadiusRef.current = Math.min(canvas.width, canvas.height) * 0.4;
+            
+            // Mobile Detection - größere Canva für Handys
+            const isMobile = width < 768;
+            if (isMobile) {
+                // Auf mobilen Geräten: größerer Radius für runde, sichtbare Canva
+                baseRadiusRef.current = Math.min(canvas.width, canvas.height) * 0.5;
+            } else {
+                // Desktop: normale Größe
+                baseRadiusRef.current = Math.min(canvas.width, canvas.height) * 0.4;
+            }
             createLines();
         };
 
@@ -80,10 +88,18 @@ export default function AIVoiceSoundwave() {
                 const startX = centerX + cos(angle) * radius;
                 const startY = centerY + sin(angle) * radius;
 
-                // Berechne Länge basierend auf Position - 90 Grad gedreht
-                // Längste Linien links/rechts (horizontal), kürzeste oben/unten (vertikal)
-                const horizontalDistance = Math.abs(cos(angle));
-                const baseLengthFactor = horizontalDistance; // 1.0 links/rechts, 0.0 oben/unten
+                // Berechne Länge basierend auf Position - unterschiedlich für Desktop und Mobile
+                const isMobile = canvas.width < 768;
+                let baseLengthFactor;
+                if (isMobile) {
+                    // Mobile: Längste Linien oben/unten (vertikal), kürzeste links/rechts (horizontal)
+                    const verticalDistance = Math.abs(sin(angle));
+                    baseLengthFactor = verticalDistance; // 1.0 oben/unten, 0.0 links/rechts
+                } else {
+                    // Desktop: Längste Linien links/rechts (horizontal), kürzeste oben/unten (vertikal)
+                    const horizontalDistance = Math.abs(cos(angle));
+                    baseLengthFactor = horizontalDistance; // 1.0 links/rechts, 0.0 oben/unten
+                }
 
                 // Audio-Visualizer-Effekt: Pulsierende Wellen - 20% langsamer
                 const wave1 = sin(tick * 0.016 + index * 0.1 + line.phase) * 0.4; // 0.02 * 0.8 = 0.016
@@ -92,9 +108,11 @@ export default function AIVoiceSoundwave() {
 
                 // Kombiniere Basis-Länge mit Wellen-Effekt
                 const dynamicLength = baseLengthFactor * (0.4 + wave1 + wave2 + wave3);
-                // Linienlänge proportional zur Canvas-Größe - kürzer (5-7 cm statt 10-12 cm)
+                // Linienlänge proportional zur Canvas-Größe - responsive für mobile
                 const maxCanvasSize = Math.max(canvas.width, canvas.height);
-                const lineLength = dynamicLength * maxCanvasSize * 0.08; // ca. 50% kürzer für 5-7 cm
+                // Auf mobilen Geräten: größere Linien für bessere Sichtbarkeit
+                const lineLengthMultiplier = isMobile ? 0.15 : 0.08; // Desktop: 5-7 cm, Mobile: größer
+                const lineLength = dynamicLength * maxCanvasSize * lineLengthMultiplier;
 
                 // Mindestlänge für sichtbare Linien
                 if (lineLength < 3) return;
