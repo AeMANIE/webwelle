@@ -40,20 +40,29 @@ export default function AIVoiceSoundwave() {
             
             if (width <= 0 || height <= 0) return;
 
-            canvas.width = width;
-            canvas.height = height;
+            // Mobile Detection
+            const isMobile = width < 768;
+            
+            // WICHTIG: Für runde Canva immer quadratische Dimensionen verwenden
+            // Dies verhindert, dass die Canva beim Scrollen oval wird
+            const minDimension = Math.min(width, height);
+            
+            if (isMobile) {
+                // Mobile: Größere Canva (60% statt 50%) und quadratisch für runde Form
+                // Verwende minDimension um immer rund zu bleiben, auch beim Scrollen
+                const canvasSize = Math.floor(minDimension * 0.6);
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+                baseRadiusRef.current = canvasSize * 0.5;
+            } else {
+                // Desktop: Volle Breite/Höhe, aber Radius basierend auf minDimension
+                canvas.width = width;
+                canvas.height = height;
+                baseRadiusRef.current = minDimension * 0.4;
+            }
+            
             centerXRef.current = canvas.width / 2;
             centerYRef.current = canvas.height / 2;
-            
-            // Mobile Detection - größere Canva für Handys
-            const isMobile = width < 768;
-            if (isMobile) {
-                // Auf mobilen Geräten: größerer Radius für runde, sichtbare Canva
-                baseRadiusRef.current = Math.min(canvas.width, canvas.height) * 0.5;
-            } else {
-                // Desktop: normale Größe
-                baseRadiusRef.current = Math.min(canvas.width, canvas.height) * 0.4;
-            }
             createLines();
         };
 
@@ -183,13 +192,19 @@ export default function AIVoiceSoundwave() {
     }, []);
 
     return (
-        <div ref={containerRef} className="absolute inset-0 w-full h-full">
+        <div ref={containerRef} className="absolute inset-0 w-full h-full flex items-center justify-center">
             <canvas
                 ref={canvasRef}
-                className="absolute inset-0 w-full h-full"
+                className="absolute"
                 style={{ 
                     background: 'transparent', 
-                    pointerEvents: 'none'
+                    pointerEvents: 'none',
+                    // WICHTIG: Aspect-ratio 1:1 für runde Form, auch beim Scrollen auf Mobile
+                    aspectRatio: '1 / 1',
+                    // Mobile: quadratisch und zentriert, Desktop: volle Größe
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    objectFit: 'contain'
                 }}
             />
         </div>
