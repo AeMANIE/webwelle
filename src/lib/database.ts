@@ -781,12 +781,14 @@ export async function markResetTokenAsUsed(token: string): Promise<void> {
   }
 }
 
-// Datenbank-Tabellen erstellen (Migration für bestehende Tabellen)
+// Datenbank-Tabellen erstellen (Vollständige Migration - erstellt ALLE Tabellen)
 export async function createTables(): Promise<void> {
   const client = await pool.connect();
   
   try {
-    // Kunden-Tabelle (falls noch nicht vorhanden) - erweitert um Portal-Felder
+    // =====================================================
+    // 1. CUSTOMERS TABELLE (muss zuerst erstellt werden)
+    // =====================================================
     const createCustomersTableQuery = `
       CREATE TABLE IF NOT EXISTS customers (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -795,6 +797,7 @@ export async function createTables(): Promise<void> {
         name VARCHAR(255),
         phone VARCHAR(50),
         company_name VARCHAR(255),
+        customer_number VARCHAR(50) UNIQUE,
         is_verified BOOLEAN DEFAULT false,
         verification_token VARCHAR(255),
         reset_token VARCHAR(255),
@@ -804,6 +807,8 @@ export async function createTables(): Promise<void> {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
+      CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
+      CREATE INDEX IF NOT EXISTS idx_customers_portal_activated ON customers(portal_activated);
     `;
     
     // Passwort-Reset-Tokens-Tabelle (falls noch nicht vorhanden)
@@ -850,11 +855,130 @@ export async function createTables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_customers_portal_activated ON customers(portal_activated);
     `;
     
-    // Erweitere webwelle_bookings um customer_id Foreign Key (falls noch nicht vorhanden)
-    const alterBookingsTableQuery = `
-      ALTER TABLE webwelle_bookings 
-      ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES customers(id) ON DELETE SET NULL;
+    // =====================================================
+    // 2. HAUPTBUCHUNGEN TABELLE (webwelle_bookings)
+    // =====================================================
+    const createBookingsTableQuery = `
+      CREATE TABLE IF NOT EXISTS webwelle_bookings (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        status VARCHAR(20) NOT NULL DEFAULT 'pending' 
+          CHECK (status IN ('pending', 'paid', 'failed', 'cancelled')),
+        session_id VARCHAR(255) NOT NULL UNIQUE,
+        package_type VARCHAR(20) NOT NULL 
+          CHECK (package_type IN ('starterwelle', 'businesswelle', 'erfolgswelle', 'flowwelle', 'powerwelle', 'meisterwelle', 'minijob', 'midijob', 'festangestellt', 'einrichtungspaket')),
+        is_monthly BOOLEAN NOT NULL,
+        checkout_mode VARCHAR(20) NOT NULL 
+          CHECK (checkout_mode IN ('payment', 'subscription')),
+        package_price_display VARCHAR(100) NOT NULL,
+        currency VARCHAR(3) NOT NULL DEFAULT 'eur',
+        total_amount_cents INTEGER NOT NULL CHECK (total_amount_cents > 0),
+        customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
+        customer_name VARCHAR(255),
+        customer_email VARCHAR(255),
+        customer_phone VARCHAR(50),
+        company_name VARCHAR(255),
+        existing_website BOOLEAN,
+        existing_website_url TEXT,
+        target_group JSONB,
+        design_style VARCHAR(20) 
+          CHECK (design_style IN ('modern', 'creative', 'professional', 'tech')),
+        design_reference_url TEXT,
+        selected_addons JSONB,
+        message TEXT,
+        raw_form_data JSONB,
+        stripe_metadata JSONB,
+        stripe_customer_id VARCHAR(255),
+        stripe_payment_intent_id VARCHAR(255),
+        stripe_subscription_id VARCHAR(255),
+        stripe_invoice_id VARCHAR(255)
+      );
+      CREATE INDEX IF NOT EXISTS idx_bookings_status_created_at ON webwelle_bookings(status, created_at);
+      CREATE INDEX IF NOT EXISTS idx_bookings_session_id ON webwelle_bookings(session_id);
       CREATE INDEX IF NOT EXISTS idx_bookings_customer_id ON webwelle_bookings(customer_id);
+      CREATE INDEX IF NOT EXISTS idx_bookings_customer_email ON webwelle_bookings(customer_email);
+      CREATE INDEX IF NOT EXISTS idx_bookings_package_type ON webwelle_bookings(package_type);
+      CREATE INDEX IF NOT EXISTS idx_bookings_stripe_customer_id ON webwelle_bookings(stripe_customer_id);
+    `;
+
+    // =====================================================
+    // 3. RECHNUNGEN TABELLE (webwelle_invoices)
+    // =====================================================
+    const createWebwelleInvoicesTableQuery = `
+      CREATE TABLE IF NOT EXISTS webwelle_invoices (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        booking_id UUID NOT NULL REFERENCES webwelle_bookings(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+        invoice_number VARCHAR(50) NOT NULL UNIQUE,
+        amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
+        currency VARCHAR(3) NOT NULL DEFAULT 'eur',
+        status VARCHAR(20) NOT NULL DEFAULT 'draft' 
+          CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'cancelled')),
+        due_date DATE NOT NULL,
+        paid_at TIMESTAMP WITH TIME ZONE,
+        stripe_invoice_id VARCHAR(255),
+        pdf_url TEXT,
+        notes TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_invoices_booking_id ON webwelle_invoices(booking_id);
+      CREATE INDEX IF NOT EXISTS idx_invoices_invoice_number ON webwelle_invoices(invoice_number);
+      CREATE INDEX IF NOT EXISTS idx_invoices_status_due_date ON webwelle_invoices(status, due_date);
+      CREATE INDEX IF NOT EXISTS idx_invoices_stripe_invoice_id ON webwelle_invoices(stripe_invoice_id);
+    `;
+
+    // =====================================================
+    // 4. ABONNEMENTS TABELLE (webwelle_subscriptions)
+    // =====================================================
+    const createSubscriptionsTableQuery = `
+      CREATE TABLE IF NOT EXISTS webwelle_subscriptions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        booking_id UUID NOT NULL UNIQUE REFERENCES webwelle_bookings(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+        stripe_subscription_id VARCHAR(255) NOT NULL UNIQUE,
+        status VARCHAR(20) NOT NULL DEFAULT 'active' 
+          CHECK (status IN ('active', 'paused', 'cancelled', 'past_due', 'incomplete')),
+        current_period_start TIMESTAMP WITH TIME ZONE NOT NULL,
+        current_period_end TIMESTAMP WITH TIME ZONE NOT NULL,
+        next_billing_date TIMESTAMP WITH TIME ZONE,
+        cancelled_at TIMESTAMP WITH TIME ZONE,
+        cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+        customer_cancelled BOOLEAN NOT NULL DEFAULT FALSE,
+        cancellation_reason TEXT,
+        trial_start TIMESTAMP WITH TIME ZONE,
+        trial_end TIMESTAMP WITH TIME ZONE
+      );
+      CREATE INDEX IF NOT EXISTS idx_subscriptions_booking_id ON webwelle_subscriptions(booking_id);
+      CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_subscription_id ON webwelle_subscriptions(stripe_subscription_id);
+      CREATE INDEX IF NOT EXISTS idx_subscriptions_status_next_billing ON webwelle_subscriptions(status, next_billing_date);
+      CREATE INDEX IF NOT EXISTS idx_subscriptions_customer_cancelled ON webwelle_subscriptions(customer_cancelled);
+    `;
+
+    // =====================================================
+    // 5. ADDON-BESTELLUNGEN TABELLE (webwelle_addon_orders)
+    // =====================================================
+    const createAddonOrdersTableQuery = `
+      CREATE TABLE IF NOT EXISTS webwelle_addon_orders (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        booking_id UUID NOT NULL REFERENCES webwelle_bookings(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+        addon_key VARCHAR(100) NOT NULL,
+        addon_label VARCHAR(255),
+        billing VARCHAR(20) NOT NULL CHECK (billing IN ('oneTime', 'monthly')),
+        price_id VARCHAR(255) NOT NULL,
+        amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
+        currency VARCHAR(3) NOT NULL DEFAULT 'eur',
+        checkout_mode VARCHAR(20) NOT NULL CHECK (checkout_mode IN ('payment', 'subscription')),
+        status VARCHAR(20) NOT NULL DEFAULT 'pending' 
+          CHECK (status IN ('pending', 'paid', 'failed', 'cancelled')),
+        session_id VARCHAR(255) UNIQUE,
+        stripe_invoice_id VARCHAR(255),
+        stripe_subscription_id VARCHAR(255),
+        notes TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_addon_orders_booking_id ON webwelle_addon_orders(booking_id);
+      CREATE INDEX IF NOT EXISTS idx_addon_orders_status_created_at ON webwelle_addon_orders(status, created_at);
+      CREATE INDEX IF NOT EXISTS idx_addon_orders_session_id ON webwelle_addon_orders(session_id);
+      CREATE INDEX IF NOT EXISTS idx_addon_orders_addon_key ON webwelle_addon_orders(addon_key);
     `;
     
     // Rechnungen-Tabelle erstellen (Alternative zu webwelle_invoices)
@@ -908,16 +1032,43 @@ export async function createTables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_blog_posts_published_at ON blog_posts(published_at);
     `;
     
+    // Führe alle CREATE TABLE Queries in der richtigen Reihenfolge aus
     await client.query(createCustomersTableQuery);
+    await client.query(createBookingsTableQuery);
+    await client.query(createWebwelleInvoicesTableQuery);
+    await client.query(createSubscriptionsTableQuery);
+    await client.query(createAddonOrdersTableQuery);
     await client.query(createResetTokensTableQuery);
     await client.query(createPortalTokensTableQuery);
     await client.query(alterCustomersTableQuery);
-    await client.query(alterBookingsTableQuery);
     await client.query(createInvoicesTableQuery);
     await client.query(createBlogPostsTableQuery);
     
-    console.log('✅ Zusätzliche Tabellen (customers, reset_tokens, customer_portal_tokens, invoices, blog_posts) erstellt/überprüft');
-    console.log('✅ Foreign Keys zu customers hinzugefügt');
+    // =====================================================
+    // TRIGGER FÜR AUTOMATISCHE TIMESTAMPS
+    // =====================================================
+    const createTriggerFunctionQuery = `
+      CREATE OR REPLACE FUNCTION update_updated_at_column()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        NEW.updated_at = NOW();
+        RETURN NEW;
+      END;
+      $$ language 'plpgsql';
+    `;
+    await client.query(createTriggerFunctionQuery);
+    
+    console.log('✅ Alle Tabellen erfolgreich erstellt/überprüft:');
+    console.log('   - customers');
+    console.log('   - webwelle_bookings');
+    console.log('   - webwelle_invoices');
+    console.log('   - webwelle_subscriptions');
+    console.log('   - webwelle_addon_orders');
+    console.log('   - reset_tokens');
+    console.log('   - customer_portal_tokens');
+    console.log('   - invoices');
+    console.log('   - blog_posts');
+    console.log('✅ Alle Indizes und Foreign Keys erstellt');
   } finally {
     client.release();
   }
