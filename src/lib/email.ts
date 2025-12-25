@@ -49,6 +49,74 @@ async function getTransporter() {
 }
 
 // TAN per E-Mail senden
+export async function sendAdminTANEmail(email: string, tan: string, adminName: string): Promise<boolean> {
+  try {
+    // Prüfe ob E-Mail-Konfiguration vorhanden ist
+    if (!process.env.EMAIL_SMTP_USER || !process.env.EMAIL_SMTP_PASSWORD) {
+      console.log('='.repeat(80));
+      console.log('📧 ADMIN-TAN-E-MAIL FÜR ENTWICKLUNG');
+      console.log('='.repeat(80));
+      console.log(`An: ${email}`);
+      console.log(`Name: ${adminName}`);
+      console.log(`TAN: ${tan}`);
+      console.log('='.repeat(80));
+      console.log('E-Mail-Konfiguration nicht gefunden. Konfigurieren Sie EMAIL_SMTP_USER und EMAIL_SMTP_PASSWORD in .env.local');
+      console.log('='.repeat(80));
+      return true; // Für Entwicklung als erfolgreich markieren
+    }
+
+    // Echte E-Mail senden
+    const transporter = await getTransporter();
+    
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'info@webwelle.com',
+      to: email,
+      subject: 'WebWelle Admin - Ihr TAN-Code für die Anmeldung',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0e141f; color: #ffffff; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #DCA441; margin: 0;">WebWelle Admin</h1>
+            <p style="color: #a0a0a0; margin: 5px 0;">Admin-Bereich Zugang</p>
+          </div>
+          
+          <div style="background: #1a2332; padding: 30px; border-radius: 10px; text-align: center;">
+            <h2 style="color: #ffffff; margin-bottom: 20px;">🔐 Ihr Admin-TAN-Code</h2>
+            <p style="color: #a0a0a0; margin-bottom: 20px;">
+              Hallo ${adminName},
+            </p>
+            <p style="color: #a0a0a0; margin-bottom: 30px;">
+              Hier ist Ihr TAN-Code für die Admin-Anmeldung:
+            </p>
+            <div style="background: #DCA441; color: #0e141f; font-size: 32px; font-weight: bold; padding: 20px; border-radius: 8px; letter-spacing: 5px; margin: 20px 0;">
+              ${tan}
+            </div>
+            <p style="color: #a0a0a0; font-size: 14px; margin-top: 20px;">
+              Dieser Code ist 10 Minuten gültig.
+            </p>
+            <p style="color: #ff6b6b; font-size: 12px; margin-top: 20px;">
+              ⚠️ Wenn Sie diese Anmeldung nicht angefordert haben, ignorieren Sie diese E-Mail.
+            </p>
+          </div>
+          
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #374151;">
+            <p style="color: #a0a0a0; font-size: 12px;">
+              WebWelle | Allgäu | Bayern<br>
+              E-Mail: info@webwelle.com
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log('✅ Admin-TAN-E-Mail erfolgreich gesendet an:', email);
+    return true;
+  } catch (error) {
+    console.error('❌ Fehler beim Senden der Admin-TAN-E-Mail:', error);
+    return false;
+  }
+}
+
 export async function sendTANEmail(email: string, tan: string, customerName: string): Promise<boolean> {
   try {
     // Prüfe ob E-Mail-Konfiguration vorhanden ist

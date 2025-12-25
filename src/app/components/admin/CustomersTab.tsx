@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 // SVG-Icons ohne externe Abhängigkeiten
 const UsersIcon = () => (
@@ -65,6 +66,7 @@ interface Customer {
 
 
 export default function CustomersTab() {
+  const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -75,10 +77,14 @@ export default function CustomersTab() {
         const res = await fetch('/api/admin/customers');
         if (res.ok) {
           const data = await res.json();
+          console.log('Kunden geladen:', data.length, data);
           setCustomers(data);
+        } else {
+          const errorData = await res.json().catch(() => ({}));
+          console.error('Fehler beim Laden der Kunden:', res.status, errorData);
         }
-      } catch {
-        // Fehler wird still behandelt
+      } catch (error) {
+        console.error('Fehler beim Laden der Kunden:', error);
       } finally {
         setLoading(false);
       }

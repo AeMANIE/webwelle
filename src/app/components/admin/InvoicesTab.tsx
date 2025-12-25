@@ -47,7 +47,7 @@ export default function InvoicesTab() {
 
   if (loading) return <div className="text-center py-8">Lade Rechnungen...</div>;
 
-  const filtered = invoices.filter(inv => statusFilter === 'all' ? true : inv.status === statusFilter);
+  const filtered = invoices;
 
   const exportCsv = () => {
     const headers = ['invoiceNumber','customerEmail','amount','currency','status','createdAt'];

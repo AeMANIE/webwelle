@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { Shield } from 'lucide-react';
 
 // Einfache SVG-Icons ohne externe Abhängigkeiten
 const LockIcon = () => (
@@ -139,6 +140,12 @@ export default function AdminLogin() {
                   ? 'Geben Sie den TAN-Code ein, der an Ihre E-Mail gesendet wurde'
                   : 'Melden Sie sich an, um auf den Admin-Bereich zuzugreifen'}
               </p>
+              {step === 'tan' && (
+                <div className="mt-3 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Shield className="w-4 h-4" />
+                  <span>Zwei-Faktor-Authentifizierung aktiviert</span>
+                </div>
+              )}
             </div>
 
             {step === 'credentials' ? (

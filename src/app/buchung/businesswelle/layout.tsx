@@ -5,6 +5,14 @@ export const metadata: Metadata = {
   description: "BusinessWelle Webdesign-Paket buchen. Professionelle Website mit erweiterten Features für wachsende Unternehmen. Festpreis, transparent, modern.",
   keywords: "BusinessWelle buchen, Webdesign-Paket, Website für Unternehmen, WebWelle",
   authors: [{ name: "WebWelle" }],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
   alternates: {
     canonical: 'https://webwelle.com/buchung/businesswelle',
   },

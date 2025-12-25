@@ -53,6 +53,29 @@ export async function GET(request: NextRequest) {
         createdAfter = now - (30 * 24 * 60 * 60); // Standard: 30 Tage
     }
 
+    // Hole Filter-Parameter
+    const startDate = request.nextUrl.searchParams.get('startDate');
+    const endDate = request.nextUrl.searchParams.get('endDate');
+    const statusFilter = request.nextUrl.searchParams.get('status');
+
+    // Baue Stripe-Query-Parameter
+    const stripeParams: Stripe.InvoiceListParams = {
+      limit: 100,
+      expand: ['data.customer', 'data.subscription'],
+    };
+
+    // Zeitraum-Filter
+    if (startDate && endDate) {
+      stripeParams.created = {
+        gte: Math.floor(new Date(startDate).getTime() / 1000),
+        lte: Math.floor(new Date(endDate).getTime() / 1000),
+      };
+    } else if (startDate) {
+      stripeParams.created = Math.floor(new Date(startDate).getTime() / 1000);
+    } else if (endDate) {
+      stripeParams.created = Math.floor(new Date(endDate).getTime() / 1000);
+    }
+
     const redis = getRedisClient();
     const cacheKey = `admin:invoices:list:${period}`;
     if (redis && redis.status === 'ready') {
@@ -82,7 +105,7 @@ export async function GET(request: NextRequest) {
       return (c as Stripe.DeletedCustomer).deleted !== true;
     };
 
-    const formatted = invoices.data.map(inv => {
+    let formatted = invoices.data.map(inv => {
       const cust = typeof inv.customer === 'object' && inv.customer ? inv.customer : null;
       const customerEmail = cust && isStripeCustomer(cust) ? cust.email ?? null : null;
       const customerName = cust && isStripeCustomer(cust) ? cust.name ?? null : null;

@@ -9,9 +9,9 @@ function getStripe(): Stripe {
   return new Stripe(key);
 }
 
-export async function GET(request: NextRequest, context: unknown) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { params } = context as { params: { id: string } };
+    const params = await context.params;
     const token = request.cookies.get('auth-token')?.value;
     if (!token) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
     const user = verifyToken(token);
