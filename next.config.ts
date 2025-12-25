@@ -11,12 +11,10 @@ const nextConfig: NextConfig = {
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 31536000, // 1 Jahr
   },
-  // Turbopack Root Directory - nur für lokale Entwicklung
-  ...(process.env.NODE_ENV === 'development' && {
-    turbopack: {
-      root: process.cwd()
-    }
-  }),
+  // Turbopack Konfiguration - leere Config für Production (webpack wird verwendet)
+  turbopack: process.env.NODE_ENV === 'development' ? {
+    root: process.cwd()
+  } : {},
   // Performance Optimierungen
   experimental: {
     // lucide-react entfernt, da es Probleme mit Icon-Imports verursacht
