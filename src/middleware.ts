@@ -29,7 +29,7 @@ async function verifyTokenEdge(token: string): Promise<{ role: string; exp: numb
   }
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const url = request.nextUrl;
   const hostname = request.headers.get('host') || '';
   
