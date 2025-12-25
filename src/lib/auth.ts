@@ -397,34 +397,6 @@ export async function requestAdminTAN(email: string, password: string): Promise<
   return { success: true, message: 'TAN wurde per E-Mail gesendet', tan: process.env.NODE_ENV !== 'production' ? tan : undefined };
 }
 
-// 2FA-Login mit TAN für Admin
-export async function adminLogin2FA(email: string, _tan: string): Promise<{ user: User; token: string } | null> {
-  // E-Mail normalisieren
-  const normalizedEmail = email.toLowerCase().trim();
-  
-  // Admin-Benutzer prüfen
-  const adminUsers = getAdminUsers();
-  const admin = adminUsers.find(u => u.email.toLowerCase() === normalizedEmail);
-  
-  if (!admin) {
-    return null;
-  }
-  
-  // TAN wurde bereits in der API-Route verifiziert und gelöscht
-  // Hier nur noch Admin validieren und Token erstellen
-  
-  const user: User = {
-    id: admin.id!,
-    email: admin.email!,
-    role: 'admin' as const,
-    name: admin.name!
-  };
-  
-  const token = createToken(user);
-  logLoginAttempt(normalizedEmail, true);
-  console.log('✅ Admin 2FA-Login erfolgreich:', user.email);
-  return { user, token };
-}
 
 // 2FA-Login mit TAN
 // WICHTIG: TAN wurde bereits in der API-Route verifiziert, hier nur noch Kunde prüfen
