@@ -6,9 +6,9 @@ nixPkgs = ["nodejs_22"]
 
 [phases.install]
 cmds = [
-  "npm ci",
-  "npm install --include=optional lightningcss",
-  "npm rebuild lightningcss --force"
+  "npm ci --include=optional",
+  "npm install --force --include=optional lightningcss@1.30.1 || true",
+  "npm rebuild lightningcss --force || true"
 ]
 
 [phases.build]
