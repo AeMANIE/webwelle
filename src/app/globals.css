@@ -3,6 +3,31 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --color-background: #0e141f;
+  --color-foreground: #ffffff;
+  --color-card: #1a2332;
+  --color-card-foreground: #ffffff;
+  --color-popover: #1a2332;
+  --color-popover-foreground: #ffffff;
+  --color-primary: #DCA441;
+  --color-primary-foreground: #0e141f;
+  --color-secondary: #2a3441;
+  --color-secondary-foreground: #ffffff;
+  --color-muted: #2a3441;
+  --color-muted-foreground: #a0a0a0;
+  --color-accent: #DCA441;
+  --color-accent-foreground: #0e141f;
+  --color-destructive: #ef4444;
+  --color-border: #374151;
+  --color-input: #374151;
+  --color-ring: #DCA441;
+  --radius-sm: calc(0.625rem - 4px);
+  --radius-md: calc(0.625rem - 2px);
+  --radius-lg: 0.625rem;
+  --radius-xl: calc(0.625rem + 4px);
+}
+
 /* Smooth scrolling for anchor links */
 html {
   scroll-behavior: smooth;
