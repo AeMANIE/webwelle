@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/database';
 import { getRedisClient } from '@/lib/redis';
-import { verifyToken } from '@/lib/auth';
+import { requireAdminAuth, secureResponse } from '@/lib/api-security';
+import type { Pool } from 'pg';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
-
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
+    // Admin-Auth mit Rate Limiting
+    const authResult = await requireAdminAuth(request);
+    if (authResult instanceof NextResponse) {
+      return authResult; // Rate limit oder Auth-Fehler
     }
+    const { user } = authResult;
 
     const customerId = request.nextUrl.searchParams.get('id');
     if (customerId) {
@@ -44,45 +44,62 @@ export async function GET(request: NextRequest) {
         });
         client = await tempPool.connect();
         // Verwende den temporären Pool für diese Anfrage
-        const query = `
-          SELECT 
-            c.id,
-            c.email,
-            c.name,
-            c.phone,
-            c.company_name,
-            c.customer_number,
-            c.portal_activated,
-            c.created_at,
-            COUNT(DISTINCT b.id) as booking_count,
-            COALESCE(SUM(b.total_amount_cents), 0) as total_revenue_cents,
-            MAX(b.created_at) as last_booking_date
-          FROM customers c
-          LEFT JOIN webwelle_bookings b ON (b.customer_id = c.id OR b.customer_email = c.email)
-          GROUP BY c.id, c.email, c.name, c.phone, c.company_name, c.customer_number, c.portal_activated, c.created_at
-          ORDER BY c.created_at DESC
-        `;
-        const result = await client.query(query);
-        const customers = result.rows.map(row => ({
-          id: row.id,
-          email: row.email,
-          name: row.name,
-          phone: row.phone,
-          companyName: row.company_name,
-          customerNumber: row.customer_number,
-          portalActivated: row.portal_activated,
-          createdAt: row.created_at,
-          stats: {
-            bookingCount: parseInt(row.booking_count) || 0,
-            totalRevenue: parseInt(row.total_revenue_cents) || 0,
-            lastBookingDate: row.last_booking_date,
+        try {
+          const query = `
+            SELECT 
+              c.id,
+              c.email,
+              c.name,
+              c.phone,
+              c.company_name,
+              c.customer_number,
+              c.portal_activated,
+              c.created_at,
+              COUNT(DISTINCT b.id) as booking_count,
+              COALESCE(SUM(b.total_amount_cents), 0) as total_revenue_cents,
+              MAX(b.created_at) as last_booking_date
+            FROM customers c
+            LEFT JOIN webwelle_bookings b ON (b.customer_id = c.id OR b.customer_email = c.email)
+            GROUP BY c.id, c.email, c.name, c.phone, c.company_name, c.customer_number, c.portal_activated, c.created_at
+            ORDER BY c.created_at DESC
+          `;
+          const result = await client.query(query);
+          const customers = result.rows.map(row => ({
+            id: row.id,
+            email: row.email,
+            name: row.name,
+            phone: row.phone,
+            companyName: row.company_name,
+            customerNumber: row.customer_number,
+            portalActivated: row.portal_activated,
+            createdAt: row.created_at,
+            stats: {
+              bookingCount: parseInt(row.booking_count) || 0,
+              totalRevenue: parseInt(row.total_revenue_cents) || 0,
+              lastBookingDate: row.last_booking_date,
+            }
+          }));
+          
+          // Cache setzen (falls Redis verfügbar)
+          try {
+            if (redis) {
+              await redis.setex(cacheKey, 300, JSON.stringify(customers));
+            }
+          } catch {
+            // Redis-Fehler ignorieren
           }
-        }));
-        client.release();
-        await tempPool.end();
-        return NextResponse.json(customers);
+          
+          client.release();
+          await tempPool.end();
+          return secureResponse(customers);
+        } catch (queryError) {
+          client.release();
+          await tempPool.end();
+          throw queryError;
+        }
+      } else {
+        throw connectionError;
       }
-      throw connectionError;
     }
 
     try {
@@ -131,14 +148,15 @@ export async function GET(request: NextRequest) {
         // Redis-Fehler ignorieren
       }
 
-      return NextResponse.json(customers);
+      return secureResponse(customers);
     } finally {
       client.release();
     }
-  } catch {
-    return NextResponse.json({ 
+  } catch (error) {
+    console.error('Fehler beim Laden der Kunden:', error);
+    return secureResponse({ 
       error: 'Fehler beim Laden der Kunden'
-    }, { status: 500 });
+    }, 500);
   }
 }
 
@@ -158,7 +176,14 @@ async function getCustomerDetails(customerId: string) {
       client = await tempPool.connect();
       // Führe Abfragen aus und beende dann den temporären Pool
       try {
-        const customerResult = await client.query('SELECT * FROM customers WHERE id = $1', [customerId]);
+        // Performance: Nur benötigte Spalten selektieren
+        const customerResult = await client.query(
+          `SELECT id, email, name, phone, company_name, customer_number, 
+                  street, city, zip, country, portal_activated, portal_activated_at, 
+                  is_verified, created_at, updated_at 
+           FROM customers WHERE id = $1`,
+          [customerId]
+        );
         if (customerResult.rows.length === 0) {
           client.release();
           await tempPool.end();
@@ -221,7 +246,14 @@ async function getCustomerDetails(customerId: string) {
   
   // Normale Abfrage mit dem verbundenen Client
   try {
-    const customerResult = await client.query('SELECT * FROM customers WHERE id = $1', [customerId]);
+    // Performance: Nur benötigte Spalten selektieren
+    const customerResult = await client.query(
+      `SELECT id, email, name, phone, company_name, customer_number, 
+              street, city, zip, country, portal_activated, portal_activated_at, 
+              is_verified, created_at, updated_at 
+       FROM customers WHERE id = $1`,
+      [customerId]
+    );
     if (customerResult.rows.length === 0) return null;
     const customer = customerResult.rows[0];
     

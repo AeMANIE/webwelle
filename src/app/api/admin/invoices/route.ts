@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { verifyToken } from '@/lib/auth';
+import { requireAdminAuth, secureResponse, validateAPIInput } from '@/lib/api-security';
 import { getRedisClient } from '@/lib/redis';
 
 function getStripe(): Stripe {
@@ -11,22 +11,72 @@ function getStripe(): Stripe {
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
+    // Admin-Auth mit Rate Limiting
+    const authResult = await requireAdminAuth(request);
+    if (authResult instanceof NextResponse) {
+      return authResult; // Rate limit oder Auth-Fehler
+    }
+
+    // Zeitfilter aus Query-Parameter
+    const periodParam = request.nextUrl.searchParams.get('period') || '30days';
+    
+    // Input-Validierung für period Parameter
+    const validation = validateAPIInput(
+      { period: periodParam },
+      { period: { type: 'string', required: false } }
+    );
+    
+    if (!validation.isValid) {
+      return secureResponse({ error: 'Ungültige Parameter', errors: validation.errors }, 400);
+    }
+
+    const period = periodParam;
+    
+    // Datum für Filter berechnen
+    let createdAfter: number | undefined;
+    const now = Math.floor(Date.now() / 1000);
+    
+    switch (period) {
+      case '30days':
+        createdAfter = now - (30 * 24 * 60 * 60); // 30 Tage
+        break;
+      case '3months':
+        createdAfter = now - (90 * 24 * 60 * 60); // 3 Monate
+        break;
+      case '6months':
+        createdAfter = now - (180 * 24 * 60 * 60); // 6 Monate
+        break;
+      case 'all':
+        createdAfter = undefined; // Alle
+        break;
+      default:
+        createdAfter = now - (30 * 24 * 60 * 60); // Standard: 30 Tage
     }
 
     const redis = getRedisClient();
-    const cacheKey = 'admin:invoices:list';
-    if (redis && (await redis.status) === 'ready') {
-      const cached = await redis.get(cacheKey);
-      if (cached) return NextResponse.json(JSON.parse(cached));
+    const cacheKey = `admin:invoices:list:${period}`;
+    if (redis && redis.status === 'ready') {
+      try {
+        const cached = await redis.get(cacheKey);
+        if (cached) return secureResponse(JSON.parse(cached));
+      } catch (cacheError) {
+        console.warn('⚠️ Redis Cache-Fehler (ignoriert):', cacheError);
+      }
     }
 
     const stripe = getStripe();
-    const invoices = await stripe.invoices.list({ limit: 100, expand: ['data.customer', 'data.subscription'] });
+    
+    // Stripe API: created Parameter für Zeitfilter
+    const listParams: Stripe.InvoiceListParams = {
+      limit: 100,
+      expand: ['data.customer', 'data.subscription']
+    };
+    
+    if (createdAfter) {
+      listParams.created = { gte: createdAfter };
+    }
+    
+    const invoices = await stripe.invoices.list(listParams);
 
     const isStripeCustomer = (c: Stripe.Customer | Stripe.DeletedCustomer): c is Stripe.Customer => {
       return (c as Stripe.DeletedCustomer).deleted !== true;
@@ -54,14 +104,19 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    if (redis && (await redis.status) === 'ready') {
-      await redis.setex(cacheKey, 600, JSON.stringify(formatted));
+    // Cache speichern (10 Minuten TTL)
+    if (redis && redis.status === 'ready') {
+      try {
+        await redis.setex(cacheKey, 600, JSON.stringify(formatted));
+      } catch (cacheError) {
+        console.warn('⚠️ Redis Cache-Speicher-Fehler (ignoriert):', cacheError);
+      }
     }
 
-    return NextResponse.json(formatted);
+    return secureResponse(formatted);
   } catch (error) {
     console.error('Fehler beim Laden der Rechnungen:', error);
-    return NextResponse.json({ error: 'Fehler beim Laden der Rechnungen' }, { status: 500 });
+    return secureResponse({ error: 'Fehler beim Laden der Rechnungen' }, 500);
   }
 }
 

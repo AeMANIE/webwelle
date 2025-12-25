@@ -58,18 +58,159 @@ const sslConfig = getSSLConfig();
 
 // Für sslmode=require: Stelle sicher, dass rejectUnauthorized false ist
 // WICHTIG: Für VPS mit sslmode=require immer rejectUnauthorized: false setzen
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('sslmode=require') 
-    ? { 
-        rejectUnauthorized: false
-      } 
-    : sslConfig,
-  // Verbindungs-Timeouts
-  connectionTimeoutMillis: 10000,
-  idleTimeoutMillis: 30000,
-  max: 20,
-});
+
+// Hilfsfunktion: Korrigiere DATABASE_URL (entfernt führenden Slash vom database path)
+export function correctDatabaseUrl(dbUrl: string | undefined): string {
+  if (!dbUrl) {
+    throw new Error('DATABASE_URL ist nicht gesetzt');
+  }
+  
+  try {
+    const url = new URL(dbUrl);
+    // Entferne führenden Slash vom database path
+    const database = url.pathname.replace(/^\//, '') || 'postgres';
+    
+    // IMMER korrigieren: Stelle sicher, dass pathname genau '/' + database ist
+    // (ohne doppelte Slashes oder falsche Formatierung)
+    const correctPathname = '/' + database;
+    
+    if (url.pathname !== correctPathname) {
+      url.pathname = correctPathname;
+      const corrected = url.toString();
+      console.log('🔧 DATABASE_URL korrigiert (database path):', {
+        originalPathname: url.pathname,
+        correctedPathname: correctPathname,
+        database: database,
+        original: dbUrl.substring(0, 50) + '...',
+        corrected: corrected.substring(0, 50) + '...'
+      });
+      return corrected;
+    }
+    
+    // Auch wenn pathname bereits korrekt aussieht, stelle sicher, dass es wirklich korrekt ist
+    // (für den Fall, dass es '/postgres/' mit trailing slash ist)
+    if (url.pathname.endsWith('/') && url.pathname !== '/') {
+      url.pathname = url.pathname.replace(/\/$/, '');
+      const corrected = url.toString();
+      console.log('🔧 DATABASE_URL korrigiert (trailing slash entfernt):', {
+        original: dbUrl.substring(0, 50) + '...',
+        corrected: corrected.substring(0, 50) + '...'
+      });
+      return corrected;
+    }
+    
+    return dbUrl;
+  } catch (e) {
+    // URL-Parsing fehlgeschlagen, verwende Original
+    console.warn('⚠️ DATABASE_URL konnte nicht geparst werden, verwende Original');
+    return dbUrl;
+  }
+}
+
+// Hilfsfunktion: Erstelle einen temporären Pool mit korrigierter URL
+export async function createTempPool(sslConfig: { rejectUnauthorized: boolean } = { rejectUnauthorized: false }): Promise<import('pg').Pool> {
+  const { Pool } = await import('pg');
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    throw new Error('DATABASE_URL ist nicht gesetzt');
+  }
+  
+  const correctedUrl = correctDatabaseUrl(dbUrl);
+  const url = new URL(correctedUrl);
+  
+  // Extrahiere database name (ohne führenden Slash)
+  const database = url.pathname.replace(/^\//, '') || 'postgres';
+  
+  // Passwort: URL.password ist bereits decoded, aber wenn es noch encoded ist, decode es
+  // Das kann passieren, wenn das Passwort Sonderzeichen enthält
+  let password = url.password;
+  try {
+    // Versuche zu dekodieren (falls es noch encoded ist)
+    // decodeURIComponent ist idempotent - wenn bereits decoded, bleibt es gleich
+    password = decodeURIComponent(password);
+  } catch {
+    // Falls Dekodierung fehlschlägt, verwende Original
+    password = url.password;
+  }
+  
+  // Erstelle Pool mit expliziten Parametern, um sicherzustellen, dass database richtig ist
+  return new Pool({
+    host: url.hostname,
+    port: parseInt(url.port || '5432', 10),
+    database: database, // Explizit setzen, ohne führenden Slash
+    user: url.username,
+    password: password, // Verwende dekodiertes Passwort
+    ssl: sslConfig,
+    connectionTimeoutMillis: 10000,
+    // Füge sslmode Parameter hinzu, falls vorhanden
+    ...(url.searchParams.get('sslmode') && {
+      // sslmode wird über ssl config gehandhabt
+    })
+  });
+}
+
+// Korrigiere DATABASE_URL falls nötig (database path)
+const correctedDatabaseUrl = correctDatabaseUrl(process.env.DATABASE_URL);
+
+// Parse URL für explizite Parameter
+let poolConfig: import('pg').PoolConfig;
+try {
+  const url = new URL(correctedDatabaseUrl);
+  const database = url.pathname.replace(/^\//, '') || 'postgres';
+  
+  // Passwort: URL.password ist bereits decoded, aber wenn es noch encoded ist, decode es
+  let password = url.password;
+  try {
+    // Versuche zu dekodieren (falls es noch encoded ist)
+    password = decodeURIComponent(password);
+  } catch {
+    // Falls Dekodierung fehlschlägt, verwende Original
+    password = url.password;
+  }
+  
+  poolConfig = {
+    host: url.hostname,
+    port: parseInt(url.port || '5432', 10),
+    database: database, // Explizit setzen, ohne führenden Slash
+    user: url.username,
+    password: password, // Verwende dekodiertes Passwort
+    ssl: process.env.DATABASE_URL?.includes('sslmode=require') 
+      ? { 
+          rejectUnauthorized: false
+        } 
+      : sslConfig,
+    // Verbindungs-Timeouts
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000,
+    max: 20,
+  };
+  
+  console.log('🔧 Pool konfiguriert mit expliziten Parametern:', {
+    host: poolConfig.host,
+    port: poolConfig.port,
+    database: poolConfig.database,
+    user: poolConfig.user,
+    hasPassword: !!poolConfig.password,
+    passwordLength: poolConfig.password?.length || 0,
+    sslEnabled: !!poolConfig.ssl
+  });
+} catch (urlError) {
+  // Fallback: Verwende connectionString
+  console.warn('⚠️ URL-Parsing für Pool fehlgeschlagen, verwende connectionString:', urlError);
+  poolConfig = {
+    connectionString: correctedDatabaseUrl,
+    ssl: process.env.DATABASE_URL?.includes('sslmode=require') 
+      ? { 
+          rejectUnauthorized: false
+        } 
+      : sslConfig,
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000,
+    max: 20,
+  };
+}
+
+export const pool = new Pool(poolConfig);
 
 // Input-Sanitization für Datenbank-Eingaben
 function sanitizeBookingData(bookingData: BookingData): BookingData {
@@ -273,12 +414,7 @@ export async function getBookingsByEmail(email: string): Promise<BookingData[]> 
         connectionError.message.includes('SSL') || 
         connectionError.message.includes('TLS') ||
         connectionError.message.includes('unable to verify')) {
-      const { Pool } = await import('pg');
-      const tempPool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-        connectionTimeoutMillis: 10000,
-      });
+      const tempPool = await createTempPool({ rejectUnauthorized: false });
       
       try {
         client = await tempPool.connect();
@@ -319,6 +455,12 @@ export interface CustomerData {
   phone?: string;
   company_name?: string;
   customer_number?: string; // Eindeutige Kundennummer (WEB-YYYY-NNNNN)
+  // Adressfelder
+  street?: string;
+  city?: string;
+  zip?: string;
+  country?: string;
+  // Verifikation & Portal
   is_verified: boolean;
   verification_token?: string;
   reset_token?: string;
@@ -341,11 +483,7 @@ export async function getCustomerByEmail(email: string): Promise<CustomerData | 
     // Bei SSL-Fehler: Erstelle temporären Pool
     const errorMsg = connectionError instanceof Error ? connectionError.message : '';
     if (errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify')) {
-      const { Pool: TempPool } = await import('pg');
-      const tempPool = new TempPool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-      });
+      const tempPool = await createTempPool({ rejectUnauthorized: false });
       client = await tempPool.connect();
       
       try {
@@ -382,11 +520,7 @@ export async function generateCustomerNumber(): Promise<string> {
     // Bei SSL-Fehler: Erstelle temporären Pool
     const errorMsg = connectionError instanceof Error ? connectionError.message : '';
     if (errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify')) {
-      const { Pool: TempPool } = await import('pg');
-      const tempPool = new TempPool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-      });
+      const tempPool = await createTempPool({ rejectUnauthorized: false });
       client = await tempPool.connect();
       
       try {
@@ -531,29 +665,10 @@ export async function createCustomer(customerData: Omit<CustomerData, 'id' | 'cr
   let client;
   let tempPool: import('pg').Pool | null = null;
   
-  // NEUER ANSATZ: Verwende NODE_TLS_REJECT_UNAUTHORIZED=0 Umgebungsvariable
-  // Oder: Parse URL und entferne sslmode Parameter komplett
-  const dbUrl = process.env.DATABASE_URL || '';
-  
-  // Entferne sslmode Parameter komplett aus URL
-  let urlWithoutSSLMode = dbUrl;
-  try {
-    const url = new URL(dbUrl);
-    url.searchParams.delete('sslmode');
-    urlWithoutSSLMode = url.toString();
-  } catch {
-    // Falls URL-Parsing fehlschlägt, verwende Original-URL
-    urlWithoutSSLMode = dbUrl.replace(/\?sslmode=[^&]*/, '').replace(/&sslmode=[^&]*/, '');
-  }
-  
-  // Versuche mit SSL aber rejectUnauthorized: false (Server erzwingt SSL)
+  // Verwende die zentrale Funktion für korrigierte URL
   try {
     console.log('🔌 Versuche Verbindung mit SSL (rejectUnauthorized: false)...');
-    tempPool = new Pool({
-      connectionString: urlWithoutSSLMode,
-      ssl: { rejectUnauthorized: false },
-      connectionTimeoutMillis: 10000,
-    });
+    tempPool = await createTempPool({ rejectUnauthorized: false });
     client = await tempPool.connect();
     console.log('✅ Verbindung erfolgreich');
   } catch (sslError) {
@@ -564,11 +679,7 @@ export async function createCustomer(customerData: Omit<CustomerData, 'id' | 'cr
     try {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       console.log('🔄 Versuche mit NODE_TLS_REJECT_UNAUTHORIZED=0...');
-      tempPool = new Pool({
-        connectionString: urlWithoutSSLMode,
-        ssl: true, // SSL aktiviert, aber Validierung deaktiviert
-        connectionTimeoutMillis: 10000,
-      });
+      tempPool = await createTempPool({ rejectUnauthorized: false });
       client = await tempPool.connect();
       console.log('✅ Verbindung mit NODE_TLS_REJECT_UNAUTHORIZED=0 erfolgreich');
     } catch (lastError) {
@@ -1183,12 +1294,7 @@ export async function getInvoicesByCustomerEmail(email: string): Promise<Invoice
         connectionError.message.includes('SSL') || 
         connectionError.message.includes('TLS') ||
         connectionError.message.includes('unable to verify')) {
-      const { Pool } = await import('pg');
-      const tempPool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-        connectionTimeoutMillis: 10000,
-      });
+      const tempPool = await createTempPool({ rejectUnauthorized: false });
       
       try {
         client = await tempPool.connect();
@@ -1326,12 +1432,7 @@ export async function getInvoicesByBookingId(bookingId: string): Promise<Invoice
         connectionError.message.includes('SSL') || 
         connectionError.message.includes('TLS') ||
         connectionError.message.includes('unable to verify')) {
-      const { Pool } = await import('pg');
-      const tempPool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-        connectionTimeoutMillis: 10000,
-      });
+      const tempPool = await createTempPool({ rejectUnauthorized: false });
       
       try {
         client = await tempPool.connect();
@@ -1454,12 +1555,7 @@ export async function getSubscriptionByBookingId(bookingId: string): Promise<Sub
         connectionError.message.includes('SSL') || 
         connectionError.message.includes('TLS') ||
         connectionError.message.includes('unable to verify')) {
-      const { Pool } = await import('pg');
-      const tempPool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-        connectionTimeoutMillis: 10000,
-      });
+      const tempPool = await createTempPool({ rejectUnauthorized: false });
       
       try {
         client = await tempPool.connect();

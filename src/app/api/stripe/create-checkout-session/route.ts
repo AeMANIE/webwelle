@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { saveBooking, BookingData } from '@/lib/database';
 import { validateBookingForm } from '@/lib/validation';
+import { applyRateLimit, secureResponse, validateAPIInput } from '@/lib/api-security';
+import { RATE_LIMITS } from '@/lib/rate-limit';
 
 // Stripe-Konfiguration zur Laufzeit validieren
 function getStripeInstance(): Stripe {
@@ -18,10 +20,36 @@ function getStripeInstance(): Stripe {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate Limiting für Checkout (wichtig gegen Missbrauch)
+    const rateLimitResponse = await applyRateLimit(request, RATE_LIMITS.CHECKOUT);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
     console.log('Stripe Checkout Session wird erstellt (Webdesign-Pakete)...');
     
     const stripe = getStripeInstance();
     
+    const body = await request.json();
+    
+    // Input-Validierung
+    const validation = validateAPIInput(body, {
+      packageType: { required: true, type: 'string' },
+      isMonthly: { required: true, type: 'string' }, // Wird als string gesendet
+      customerEmail: { required: true, type: 'email' },
+      customerName: { required: true, type: 'string', minLength: 2, maxLength: 255 },
+      priceId: { required: true, type: 'string' },
+      amount: { required: true, type: 'number' },
+      currency: { required: false, type: 'string' },
+    });
+
+    if (!validation.isValid) {
+      return secureResponse(
+        { error: 'Validierungsfehler', errors: validation.errors },
+        400
+      );
+    }
+
     const {
       packageType,
       isMonthly,
@@ -34,7 +62,7 @@ export async function POST(request: NextRequest) {
       priceId,
       amount,
       currency
-    } = await request.json();
+    } = body;
 
     console.log('Empfangene Daten:', {
       packageType,
@@ -169,7 +197,7 @@ export async function POST(request: NextRequest) {
       // Das ist nicht kritisch, da die Daten in Stripe Metadata gespeichert sind
     }
     
-    return NextResponse.json({ sessionId: session.id });
+    return secureResponse({ sessionId: session.id });
   } catch (error) {
     console.error('Stripe API Fehler:', error);
     
@@ -179,13 +207,13 @@ export async function POST(request: NextRequest) {
     console.error('Fehler-Details:', errorMessage);
     console.error('Error Stack:', errorStack);
     
-    return NextResponse.json(
+    return secureResponse(
       { 
         error: 'Fehler beim Erstellen der Checkout-Session',
-        details: errorMessage,
-        stack: errorStack
+        details: process.env.NODE_ENV !== 'production' ? errorMessage : undefined,
+        stack: process.env.NODE_ENV !== 'production' ? errorStack : undefined
       },
-      { status: 500 }
+      500
     );
   }
 }

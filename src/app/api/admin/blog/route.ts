@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
+import { requireAdminAuth, secureResponse, validateAPIInput } from '@/lib/api-security';
 import { getAllBlogPosts, createBlogPost } from '@/lib/blog-database';
 import { getRedisClient } from '@/lib/redis';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
-    }
-
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
+    // Admin-Auth mit Rate Limiting
+    const authResult = await requireAdminAuth(request);
+    if (authResult instanceof NextResponse) {
+      return authResult; // Rate limit oder Auth-Fehler
     }
 
     const status = request.nextUrl.searchParams.get('status') as 'draft' | 'published' | null;
@@ -20,42 +16,67 @@ export async function GET(request: NextRequest) {
     const redis = getRedisClient();
     const cacheKey = status ? `admin:blog:${status}` : 'admin:blog:all';
     
-    if (redis && (await redis.status) === 'ready') {
-      const cached = await redis.get(cacheKey);
-      if (cached) {
-        return NextResponse.json(JSON.parse(cached));
+    if (redis && redis.status === 'ready') {
+      try {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          return secureResponse(JSON.parse(cached));
+        }
+      } catch (cacheError) {
+        console.warn('⚠️ Redis Cache-Fehler (ignoriert):', cacheError);
       }
     }
 
     const posts = await getAllBlogPosts(status || undefined);
 
-    if (redis && (await redis.status) === 'ready') {
-      await redis.setex(cacheKey, 300, JSON.stringify(posts)); // 5 Min TTL
+    if (redis && redis.status === 'ready') {
+      try {
+        await redis.setex(cacheKey, 300, JSON.stringify(posts)); // 5 Min TTL
+      } catch (cacheError) {
+        console.warn('⚠️ Redis Cache-Speicher-Fehler (ignoriert):', cacheError);
+      }
     }
 
-    return NextResponse.json(posts);
+    return secureResponse(posts);
   } catch (error) {
     console.error('Fehler beim Laden der Blog-Posts:', error);
-    return NextResponse.json(
+    return secureResponse(
       { error: 'Fehler beim Laden der Blog-Posts' },
-      { status: 500 }
+      500
     );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    // Admin-Auth mit Rate Limiting
+    const authResult = await requireAdminAuth(request);
+    if (authResult instanceof NextResponse) {
+      return authResult; // Rate limit oder Auth-Fehler
     }
-
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
-    }
+    const { user } = authResult;
 
     const body = await request.json();
+    
+    // Input-Validierung
+    const validation = validateAPIInput(body, {
+      title: { required: true, type: 'string', minLength: 3, maxLength: 255 },
+      slug: { required: true, type: 'string', minLength: 3, maxLength: 255 },
+      content: { required: true, type: 'string', minLength: 10 },
+      excerpt: { required: false, type: 'string', maxLength: 500 },
+      author: { required: false, type: 'string', maxLength: 255 },
+      featuredImageUrl: { required: false, type: 'url' },
+      metaDescription: { required: false, type: 'string', maxLength: 500 },
+      status: { required: false, type: 'string' },
+    });
+
+    if (!validation.isValid) {
+      return secureResponse(
+        { error: 'Validierungsfehler', errors: validation.errors },
+        400
+      );
+    }
+
     const {
       title,
       slug,
@@ -68,13 +89,6 @@ export async function POST(request: NextRequest) {
       featured,
       status,
     } = body;
-
-    if (!title || !slug || !content) {
-      return NextResponse.json(
-        { error: 'Titel, Slug und Inhalt sind erforderlich' },
-        { status: 400 }
-      );
-    }
 
     const post = await createBlogPost({
       title,
@@ -92,19 +106,23 @@ export async function POST(request: NextRequest) {
 
     // Cache invalidieren
     const redis = getRedisClient();
-    if (redis && (await redis.status) === 'ready') {
-      await redis.del('admin:blog:all');
-      await redis.del('admin:blog:draft');
-      await redis.del('admin:blog:published');
-      await redis.del('blog:public:list');
+    if (redis && redis.status === 'ready') {
+      try {
+        await redis.del('admin:blog:all');
+        await redis.del('admin:blog:draft');
+        await redis.del('admin:blog:published');
+        await redis.del('blog:public:list');
+      } catch (cacheError) {
+        console.warn('⚠️ Redis Cache-Invalidierung-Fehler (ignoriert):', cacheError);
+      }
     }
 
-    return NextResponse.json(post, { status: 201 });
+    return secureResponse(post, 201);
   } catch (error) {
     console.error('Fehler beim Erstellen des Blog-Posts:', error);
-    return NextResponse.json(
+    return secureResponse(
       { error: 'Fehler beim Erstellen des Blog-Posts' },
-      { status: 500 }
+      500
     );
   }
 }

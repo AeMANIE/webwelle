@@ -19,21 +19,31 @@ interface Invoice {
   issuer?: string;
 }
 
+type TimePeriod = '30days' | '3months' | '6months' | 'all';
+
 export default function InvoicesTab() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [timeFilter, setTimeFilter] = useState<TimePeriod>('30days'); // Standard: letzte 30 Tage
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch('/api/admin/invoices');
-        if (res.ok) setInvoices(await res.json());
-      } finally {
-        setLoading(false);
+    loadInvoices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeFilter]);
+
+  const loadInvoices = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/invoices?period=${timeFilter}`);
+      if (res.ok) {
+        const data = await res.json();
+        setInvoices(data);
       }
-    })();
-  }, []);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) return <div className="text-center py-8">Lade Rechnungen...</div>;
 
@@ -53,10 +63,24 @@ export default function InvoicesTab() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">Rechnungen ({invoices.length})</h2>
+        <h2 className="text-2xl font-bold text-foreground">Rechnungen ({filtered.length})</h2>
         <div className="flex items-center gap-3">
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 bg-background border border-border rounded">
+          <select 
+            value={timeFilter} 
+            onChange={e => setTimeFilter(e.target.value as TimePeriod)} 
+            className="px-3 py-2 bg-background border border-border rounded text-foreground"
+          >
+            <option value="30days">Letzte 30 Tage</option>
+            <option value="3months">Letzte 3 Monate</option>
+            <option value="6months">Letzte 6 Monate</option>
             <option value="all">Alle</option>
+          </select>
+          <select 
+            value={statusFilter} 
+            onChange={e => setStatusFilter(e.target.value)} 
+            className="px-3 py-2 bg-background border border-border rounded text-foreground"
+          >
+            <option value="all">Alle Status</option>
             <option value="paid">Bezahlt</option>
             <option value="open">Offen</option>
             <option value="void">Ungültig</option>

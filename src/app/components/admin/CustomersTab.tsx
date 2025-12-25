@@ -46,23 +46,6 @@ const EyeIcon = () => (
   </svg>
 );
 
-const XIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-  </svg>
-);
-
-const CheckCircleIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
-
-const XCircleIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
 
 interface Customer {
   id: string;
@@ -80,51 +63,10 @@ interface Customer {
   };
 }
 
-interface BookingRow {
-  id: string;
-  package_type: string;
-  status: string;
-  created_at: string;
-}
-
-interface InvoiceRow {
-  id: string;
-  number?: string | null;
-  invoice_number?: string | null;
-  amount?: number;
-  amount_cents?: number;
-  currency?: string;
-  status: string;
-  pdfUrl?: string | null;
-  pdf_url?: string | null;
-  hosted_invoice_url?: string | null;
-  stripe_invoice_id?: string | null;
-  createdAt?: string;
-  created_at?: string;
-  paid_at?: string | null;
-  due_date?: string | null;
-}
-
-interface SubscriptionRow {
-  id: string;
-  status: string;
-  currentPeriodEnd?: string | null;
-  canceledAt?: string | null;
-  items?: Array<{ recurring?: string; amount: number; currency?: string }>;
-}
-
-interface CustomerDetailResponse {
-  customer: { id: string; email: string; name?: string };
-  bookings: BookingRow[];
-  invoices: InvoiceRow[];
-  subscriptions: SubscriptionRow[];
-}
 
 export default function CustomersTab() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [details, setDetails] = useState<CustomerDetailResponse | null>(null);
-  const [loadingDetails, setLoadingDetails] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -143,19 +85,6 @@ export default function CustomersTab() {
     })();
   }, []);
 
-  const loadCustomerDetails = async (customerId: string) => {
-    setLoadingDetails(true);
-    setDetails(null);
-    try {
-      const res = await fetch(`/api/admin/customers/${customerId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setDetails(data as CustomerDetailResponse);
-      }
-    } finally {
-      setLoadingDetails(false);
-    }
-  };
 
   if (loading) return <div className="text-center py-8">Lade Kunden...</div>;
 
@@ -189,8 +118,7 @@ export default function CustomersTab() {
           customers.map((customer) => (
           <div 
             key={customer.id} 
-            className="bg-card rounded-lg p-6 border border-border hover:border-primary/50 cursor-pointer transition-all"
-            onClick={() => loadCustomerDetails(customer.id)}
+            className="bg-card rounded-lg p-6 border border-border hover:border-primary/50 transition-all"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -216,129 +144,22 @@ export default function CustomersTab() {
                   )}
                 </div>
               </div>
-              <div className="ml-4 flex items-center text-primary">
+              <button
+                onClick={() => {
+                  // Navigation zur Detail-Seite
+                  window.location.href = `/admin/customers/${customer.id}`;
+                }}
+                className="ml-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+              >
                 <EyeIcon />
-                <span className="ml-2 text-sm font-medium">Klicken für Details</span>
-              </div>
+                Details anzeigen
+              </button>
             </div>
           </div>
           ))
         )}
       </div>
 
-      {details && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-border">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-foreground">Kundendetails</h2>
-              <button className="p-2 hover:bg-muted rounded" onClick={() => setDetails(null)}>
-                <XIcon />
-              </button>
-            </div>
-
-            {/* Pakete/Buchungen */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-foreground mb-2">Pakete (Buchungen)</h3>
-              {details.bookings?.length ? (
-                <div className="grid gap-3">
-                  {details.bookings.map((b) => (
-                    <div key={b.id} className="border border-border rounded p-3 text-sm">
-                      <div className="flex justify-between">
-                        <div className="font-medium text-foreground">{b.package_type}</div>
-                        <div>
-                          {b.status === 'paid' ? (
-                            <span className="inline-flex items-center gap-1 text-green-500"><CheckCircleIcon /> bezahlt</span>
-                          ) : b.status === 'pending' ? (
-                            <span className="text-yellow-500">ausstehend</span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-red-500"><XCircleIcon /> {b.status}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-muted-foreground">{new Date(b.created_at).toLocaleString('de-DE')}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-muted-foreground">Keine Buchungen</div>
-              )}
-            </div>
-
-            {/* Abos */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-foreground mb-2">Abonnements</h3>
-            {details.subscriptions?.length ? (
-                <div className="grid gap-3">
-                  {details.subscriptions.map((s) => (
-                    <div key={s.id} className="border border-border rounded p-3 text-sm">
-                      <div className="flex justify-between">
-                        <div className="font-medium text-foreground">{s.id}</div>
-                        <div className={s.status === 'active' ? 'text-green-500' : 'text-muted-foreground'}>{s.status}</div>
-                      </div>
-                      <div className="text-muted-foreground">Periode endet: {s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString('de-DE') : '—'}</div>
-                      {s.canceledAt && (
-                        <div className="text-red-500">Gekündigt am: {new Date(s.canceledAt).toLocaleDateString('de-DE')}</div>
-                      )}
-                      {s.canceledAt && <div className="text-red-500">Gekündigt am: {new Date(s.canceledAt).toLocaleDateString('de-DE')}</div>}
-                      <div className="mt-2">
-                        {s.items?.map((i, idx) => (
-                          <div key={idx} className="text-muted-foreground">{i.recurring} • {i.amount} {i.currency}</div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-muted-foreground">Keine Abos</div>
-              )}
-            </div>
-
-            {/* Rechnungen */}
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Rechnungen</h3>
-              {details.invoices?.length ? (
-                <div className="grid gap-3">
-                  {details.invoices.map((inv) => (
-                    <div key={inv.id} className="border border-border rounded p-3 text-sm">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <div className="font-mono text-foreground font-semibold">{inv.number || inv.invoice_number || 'Keine Nummer'}</div>
-                          <div className="text-muted-foreground text-xs mt-1">
-                            Erstellt: {(inv.created_at || inv.createdAt) ? new Date(inv.created_at || inv.createdAt!).toLocaleDateString('de-DE') : 'Unbekannt'}
-                            {inv.paid_at && ` • Bezahlt: ${new Date(inv.paid_at).toLocaleDateString('de-DE')}`}
-                            {inv.due_date && ` • Fällig: ${new Date(inv.due_date).toLocaleDateString('de-DE')}`}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-semibold text-foreground">
-                            {typeof inv.amount === 'number' 
-                              ? inv.amount.toFixed(2) 
-                              : inv.amount_cents 
-                                ? (inv.amount_cents / 100).toFixed(2) 
-                                : '0.00'} {inv.currency || 'EUR'}
-                          </div>
-                          <div className={`text-xs mt-1 ${inv.status === 'paid' ? 'text-green-500' : inv.status === 'open' ? 'text-yellow-500' : 'text-red-500'}`}>
-                            {inv.status === 'paid' ? '✓ Bezahlt' : inv.status === 'open' ? 'Offen' : inv.status}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 mt-2">
-                        {inv.pdf_url && <a className="text-primary hover:underline text-xs" href={inv.pdf_url} target="_blank" rel="noopener noreferrer">PDF öffnen</a>}
-                        {inv.hosted_invoice_url && <a className="text-primary hover:underline text-xs" href={inv.hosted_invoice_url} target="_blank" rel="noopener noreferrer">Online ansehen</a>}
-                        {inv.stripe_invoice_id && <span className="text-muted-foreground text-xs">Stripe: {inv.stripe_invoice_id.substring(0, 20)}...</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-muted-foreground">Keine Rechnungen gefunden</div>
-              )}
-            </div>
-
-            {loadingDetails && <div className="mt-4 text-muted-foreground">Lade Details…</div>}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
