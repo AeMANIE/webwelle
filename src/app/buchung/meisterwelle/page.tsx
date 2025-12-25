@@ -47,6 +47,7 @@ export const metadata: Metadata = {
     images: ['https://webwelle.com/logo.png'],
   },
   alternates: {
+    // Canonical ohne Query-Parameter (für SEO)
     canonical: 'https://webwelle.com/buchung/meisterwelle',
   },
   category: 'Technology',

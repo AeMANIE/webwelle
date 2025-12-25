@@ -29,7 +29,19 @@ async function verifyTokenEdge(token: string): Promise<{ role: string; exp: numb
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
+  const url = request.nextUrl;
+  const hostname = request.headers.get('host') || '';
+  
+  // www → non-www Redirect (für SEO)
+  if (hostname.startsWith('www.')) {
+    const newHostname = hostname.replace('www.', '');
+    return NextResponse.redirect(
+      new URL(`${url.pathname}${url.search}`, `https://${newHostname}`),
+      301
+    );
+  }
+  
   const token = request.cookies.get('auth-token')?.value;
   const pathname = request.nextUrl.pathname;
   
@@ -61,5 +73,16 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/customer/:path*']
+  // Matcher für alle Routen (für www → non-www Redirect und Auth)
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:jpg|jpeg|gif|png|svg|ico|webp|woff|woff2|ttf|eot)).*)',
+  ],
 };
+

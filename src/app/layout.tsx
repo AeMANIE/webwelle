@@ -16,6 +16,14 @@ export const metadata: Metadata = {
   description: "Webdesign aus Kempten im Allgäu. SEO-optimierte Websites mit Festpreis, garantierter Performance & persönlicher Betreuung. Jetzt kostenloses Erstgespräch sichern!",
   keywords: "Webdesign Kempten, Webdesign Allgäu, Website erstellen Kempten, SEO Agentur Allgäu, Festpreis Webdesign, Webdesign Bayern",
   authors: [{ name: "WebWelle" }],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
   alternates: {
     canonical: 'https://webwelle.com',
   },
