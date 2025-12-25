@@ -3,8 +3,13 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 import { Pool } from 'pg';
 
-// Datenbank-URL
-const DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:WLQajQ48svGqIpvCC8Nxmqk9YXw9DCnFkK0DhQolM7luP4tLdyrNgQXOO1it4y4s@145.223.81.159:5433/postgres?sslmode=require';
+// Datenbank-URL - MUSS in Umgebungsvariablen gesetzt sein
+const DATABASE_URL = process.env.DATABASE_URL || process.env.DATABASE_PUBLICURL;
+if (!DATABASE_URL) {
+  console.error('❌ FEHLER: DATABASE_URL oder DATABASE_PUBLICURL muss in Umgebungsvariablen gesetzt sein!');
+  console.error('Bitte setzen Sie die Umgebungsvariable: export DATABASE_URL="..."');
+  process.exit(1);
+}
 
 // Erwartete Tabellen
 const EXPECTED_TABLES = [

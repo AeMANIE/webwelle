@@ -288,8 +288,8 @@ export async function GET(request: NextRequest) {
       }
 
       // Prüfe ob DATABASE_URL öffentlich ist (Sicherheitshinweis)
-      // dbUrl wurde bereits oben deklariert (Zeile 124)
-      if (dbUrl.includes('145.223.81.159') || dbUrl.includes('DATABASE_PUBLICURL')) {
+      // Prüfe nur auf Umgebungsvariablen-Namen, nicht auf konkrete IPs
+      if (process.env.DATABASE_PUBLICURL || dbUrl.includes('DATABASE_PUBLICURL')) {
         verification.recommendations.push(
           '🔒 SICHERHEIT: Sie verwenden eine öffentliche Datenbank-URL. Wechseln Sie nach der Entwicklung zur internen URL für bessere Sicherheit.'
         );
