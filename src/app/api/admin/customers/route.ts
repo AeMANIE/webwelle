@@ -34,13 +34,17 @@ export async function GET(request: NextRequest) {
     try {
       client = await pool.connect();
     } catch (connectionError) {
-      // Bei SSL-Fehler: Erstelle temporären Pool mit expliziter SSL-Konfiguration
+      // Bei SSL-Fehler oder Hostname-Fehler: Erstelle temporären Pool mit expliziter SSL-Konfiguration
       const errorMsg = connectionError instanceof Error ? connectionError.message : '';
-      if (errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify')) {
+      if (errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || 
+          errorMsg.includes('unable to verify') || errorMsg.includes('ENOTFOUND') || errorMsg.includes('getaddrinfo')) {
         const { Pool: TempPool } = await import('pg');
+        // Versuche mit öffentlicher URL falls DATABASE_PUBLICURL gesetzt ist
+        const dbUrl = process.env.DATABASE_PUBLICURL || process.env.DATABASE_URL;
         const tempPool = new TempPool({
-          connectionString: process.env.DATABASE_URL,
-          ssl: { rejectUnauthorized: false },
+          connectionString: dbUrl,
+          ssl: dbUrl?.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+          connectionTimeoutMillis: 10000,
         });
         client = await tempPool.connect();
         // Verwende den temporären Pool für diese Anfrage
@@ -133,11 +137,13 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(customers);
     } finally {
-      client.release();
+      if (client) client.release();
     }
-  } catch {
+  } catch (error) {
+    console.error('Fehler beim Laden der Kunden:', error);
     return NextResponse.json({ 
-      error: 'Fehler beim Laden der Kunden'
+      error: 'Fehler beim Laden der Kunden',
+      details: error instanceof Error ? error.message : 'Unbekannter Fehler'
     }, { status: 500 });
   }
 }

@@ -144,7 +144,7 @@ export default function AdminLogin() {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Standard-Login: admin@webwelle.com / password
+                Verwenden Sie Ihre Admin-Zugangsdaten
               </p>
             </div>
           </div>

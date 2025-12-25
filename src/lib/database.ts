@@ -58,9 +58,20 @@ const sslConfig = getSSLConfig();
 
 // Für sslmode=require: Stelle sicher, dass rejectUnauthorized false ist
 // WICHTIG: Für VPS mit sslmode=require immer rejectUnauthorized: false setzen
+// Verwende DATABASE_PUBLICURL als Fallback, falls DATABASE_URL nicht funktioniert
+const getDatabaseUrl = () => {
+  // Wenn DATABASE_PUBLICURL gesetzt ist, verwende diese (für Development)
+  if (process.env.DATABASE_PUBLICURL) {
+    return process.env.DATABASE_PUBLICURL;
+  }
+  return process.env.DATABASE_URL || '';
+};
+
+const databaseUrl = getDatabaseUrl();
+
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('sslmode=require') 
+  connectionString: databaseUrl,
+  ssl: databaseUrl?.includes('sslmode=require') 
     ? { 
         rejectUnauthorized: false
       } 

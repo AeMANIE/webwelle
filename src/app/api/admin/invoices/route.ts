@@ -18,21 +18,44 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
     }
 
+    // Hole Filter-Parameter
+    const startDate = request.nextUrl.searchParams.get('startDate');
+    const endDate = request.nextUrl.searchParams.get('endDate');
+    const statusFilter = request.nextUrl.searchParams.get('status');
+
+    // Baue Stripe-Query-Parameter
+    const stripeParams: Stripe.InvoiceListParams = {
+      limit: 100,
+      expand: ['data.customer', 'data.subscription'],
+    };
+
+    // Zeitraum-Filter
+    if (startDate && endDate) {
+      stripeParams.created = {
+        gte: Math.floor(new Date(startDate).getTime() / 1000),
+        lte: Math.floor(new Date(endDate).getTime() / 1000),
+      };
+    } else if (startDate) {
+      stripeParams.created = Math.floor(new Date(startDate).getTime() / 1000);
+    } else if (endDate) {
+      stripeParams.created = Math.floor(new Date(endDate).getTime() / 1000);
+    }
+
     const redis = getRedisClient();
-    const cacheKey = 'admin:invoices:list';
+    const cacheKey = `admin:invoices:list:${startDate || 'all'}:${endDate || 'all'}:${statusFilter || 'all'}`;
     if (redis && (await redis.status) === 'ready') {
       const cached = await redis.get(cacheKey);
       if (cached) return NextResponse.json(JSON.parse(cached));
     }
 
     const stripe = getStripe();
-    const invoices = await stripe.invoices.list({ limit: 100, expand: ['data.customer', 'data.subscription'] });
+    const invoices = await stripe.invoices.list(stripeParams);
 
     const isStripeCustomer = (c: Stripe.Customer | Stripe.DeletedCustomer): c is Stripe.Customer => {
       return (c as Stripe.DeletedCustomer).deleted !== true;
     };
 
-    const formatted = invoices.data.map(inv => {
+    let formatted = invoices.data.map(inv => {
       const cust = typeof inv.customer === 'object' && inv.customer ? inv.customer : null;
       const customerEmail = cust && isStripeCustomer(cust) ? cust.email ?? null : null;
       const customerName = cust && isStripeCustomer(cust) ? cust.name ?? null : null;
@@ -53,6 +76,11 @@ export async function GET(request: NextRequest) {
         createdAt: new Date(inv.created * 1000).toISOString(),
       };
     });
+
+    // Status-Filter (client-side, da Stripe API keine direkte Status-Filterung unterstützt)
+    if (statusFilter && statusFilter !== 'all') {
+      formatted = formatted.filter(inv => inv.status === statusFilter);
+    }
 
     if (redis && (await redis.status) === 'ready') {
       await redis.setex(cacheKey, 600, JSON.stringify(formatted));

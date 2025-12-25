@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-type TabId = 'bookings' | 'customers' | 'invoices' | 'blog';
+type TabId = 'bookings' | 'customers' | 'invoices' | 'blog' | 'database';
 
 interface AdminTabsProps {
   activeTab: TabId;
@@ -34,17 +34,24 @@ const EditIcon = () => (
   </svg>
 );
 
+const DatabaseIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+  </svg>
+);
+
 export default function AdminTabs({ activeTab, onTabChange }: AdminTabsProps) {
   const tabs: Array<{ id: TabId; label: string; icon: React.ReactNode }> = [
     { id: 'bookings', label: 'Bestellungen', icon: <PackageIcon /> },
     { id: 'customers', label: 'Kunden', icon: <UsersIcon /> },
     { id: 'invoices', label: 'Rechnungen', icon: <FileTextIcon /> },
     { id: 'blog', label: 'Blog-Editor', icon: <EditIcon /> },
+    { id: 'database', label: 'Datenbank', icon: <DatabaseIcon /> },
   ];
 
   return (
     <div className="border-b border-border mb-6">
-      <nav className="flex space-x-8">
+      <nav className="flex space-x-8 overflow-x-auto">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           

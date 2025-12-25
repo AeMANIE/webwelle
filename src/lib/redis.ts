@@ -106,18 +106,27 @@ const initializeRedis = () => {
     });
     
     redisClient.on('error', (error) => {
-      console.error('❌ Redis Fehler:', error);
+      // Nur in Development detaillierte Fehler loggen
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Redis Fehler:', error);
+      }
       redisEnabled = false;
     });
     
     redisClient.on('close', () => {
-      console.warn('⚠️ Redis Verbindung geschlossen');
+      // Nur in Development Warnung loggen
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ Redis Verbindung geschlossen');
+      }
       redisEnabled = false;
     });
 
     // Verbindung aufbauen (async, blockiert nicht)
     redisClient.connect().catch((error) => {
-      console.error('❌ Redis Verbindung fehlgeschlagen:', error);
+      // Nur in Development detaillierte Fehler loggen
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Redis Verbindung fehlgeschlagen:', error);
+      }
       redisEnabled = false;
     });
 

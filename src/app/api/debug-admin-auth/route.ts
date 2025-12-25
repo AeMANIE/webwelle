@@ -16,23 +16,24 @@ export async function GET(request: NextRequest) {
   const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
   const adminPasswordPlain = process.env.ADMIN_PASSWORD;
 
-  // Teste Passwort-Verifikation
+  // Teste Passwort-Verifikation (nur wenn Test-Passwort als Parameter übergeben wird)
   let passwordTest = null;
   let plainPasswordTest = null;
   
-  if (adminPasswordHash) {
+  // Hole Test-Passwort aus Query-Parameter (nicht hardcoded!)
+  const testPassword = request.nextUrl.searchParams.get('testPassword');
+  
+  if (testPassword && adminPasswordHash) {
     try {
       const { verifyPassword } = await import('@/lib/auth');
-      // Teste mit dem Passwort, das der User verwendet
-      passwordTest = await verifyPassword('87437Kempten+', adminPasswordHash);
+      passwordTest = await verifyPassword(testPassword, adminPasswordHash);
     } catch (error) {
       passwordTest = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
   }
   
-  if (adminPasswordPlain) {
-    // Teste Klartext-Vergleich
-    plainPasswordTest = '87437Kempten+' === adminPasswordPlain;
+  if (testPassword && adminPasswordPlain) {
+    plainPasswordTest = testPassword === adminPasswordPlain;
   }
 
   return NextResponse.json({
@@ -46,23 +47,24 @@ export async function GET(request: NextRequest) {
       ADMIN_PASSWORD_VALUE: adminPasswordPlain ? `${adminPasswordPlain.substring(0, 5)}...` : 'N/A',
       ADMIN_PASSWORD_LENGTH: adminPasswordPlain ? adminPasswordPlain.length : 0,
     },
-    passwordVerification: {
-      testPassword: '87437Kempten+',
-      testPasswordLength: '87437Kempten+'.length,
+    passwordVerification: testPassword ? {
+      testPasswordProvided: true,
+      testPasswordLength: testPassword.length,
       hashMatch: passwordTest,
       plainMatch: plainPasswordTest,
-      plainPasswordFromEnv: adminPasswordPlain,
-      plainPasswordFromEnvLength: adminPasswordPlain?.length,
-      passwordsEqual: '87437Kempten+' === adminPasswordPlain,
+      passwordsEqual: testPassword === adminPasswordPlain,
+    } : {
+      testPasswordProvided: false,
+      note: 'Kein Test-Passwort übergeben. Verwenden Sie ?testPassword=... als Query-Parameter zum Testen.'
     },
     recommendations: [
       !adminEmail ? 'ADMIN_EMAIL fehlt in Umgebungsvariablen' : null,
       !adminPasswordHash && !adminPasswordPlain ? 'ADMIN_PASSWORD_HASH oder ADMIN_PASSWORD muss gesetzt sein' : null,
       adminPasswordHash && adminPasswordHash.length !== 60 ? `ADMIN_PASSWORD_HASH hat falsche Länge (erwartet: 60, aktuell: ${adminPasswordHash.length})` : null,
-      passwordTest === false ? 'Passwort-Hash stimmt NICHT mit "87437Kempten+" überein. Hash neu generieren!' : null,
-      passwordTest === true ? '✅ Passwort-Hash stimmt mit "87437Kempten+" überein' : null,
-      plainPasswordTest === false ? '⚠️ ADMIN_PASSWORD stimmt NICHT mit "87437Kempten+" überein. Prüfe .env.local Datei!' : null,
-      plainPasswordTest === true ? '✅ ADMIN_PASSWORD stimmt mit "87437Kempten+" überein' : null,
+      testPassword && passwordTest === false ? `Passwort-Hash stimmt NICHT mit dem Test-Passwort überein. Hash neu generieren!` : null,
+      testPassword && passwordTest === true ? '✅ Passwort-Hash stimmt mit dem Test-Passwort überein' : null,
+      testPassword && plainPasswordTest === false ? '⚠️ ADMIN_PASSWORD stimmt NICHT mit dem Test-Passwort überein. Prüfe Umgebungsvariablen!' : null,
+      testPassword && plainPasswordTest === true ? '✅ ADMIN_PASSWORD stimmt mit dem Test-Passwort überein' : null,
     ].filter(Boolean),
   });
 }

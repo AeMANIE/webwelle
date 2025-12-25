@@ -9,9 +9,9 @@ function getStripe(): Stripe {
   return new Stripe(key);
 }
 
-export async function GET(request: NextRequest, context: unknown) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { params } = context as { params: { id: string } };
+    const params = await context.params;
     const token = request.cookies.get('auth-token')?.value;
     if (!token) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
     const user = verifyToken(token);
@@ -115,6 +115,35 @@ export async function GET(request: NextRequest, context: unknown) {
     }
   } catch {
     return NextResponse.json({ error: 'Fehler bei Kunden-Details' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    const params = await context.params;
+    const token = request.cookies.get('auth-token')?.value;
+    if (!token) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    const user = verifyToken(token);
+    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
+
+    const client = await pool.connect();
+    try {
+      // Prüfe ob Kunde existiert
+      const customerRes = await client.query('SELECT id, email FROM customers WHERE id = $1', [params.id]);
+      if (customerRes.rows.length === 0) {
+        return NextResponse.json({ error: 'Kunde nicht gefunden' }, { status: 404 });
+      }
+
+      // Lösche Kunde (CASCADE löscht automatisch verknüpfte Daten)
+      await client.query('DELETE FROM customers WHERE id = $1', [params.id]);
+
+      return NextResponse.json({ success: true, message: 'Kunde erfolgreich gelöscht' });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Fehler beim Löschen des Kunden:', error);
+    return NextResponse.json({ error: 'Fehler beim Löschen des Kunden' }, { status: 500 });
   }
 }
 
