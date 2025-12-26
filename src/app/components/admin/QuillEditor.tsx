@@ -8,21 +8,21 @@ import dynamic from 'next/dynamic';
 // Die neueste Version von react-quill sollte ohne findDOMNode funktionieren
 
 // Wrapper für ReactQuill mit sicherer Fehlerbehandlung und React 19 Kompatibilität
-// react-quill-new ist ein Fork, der mit React 19 kompatibel ist
+// react-quill für React 18.3.1
 const ReactQuillNoSSR = dynamic(
-  () => import('react-quill-new').then((mod) => {
+  () => import('react-quill').then((mod) => {
     // Sicherstellen, dass das Modul korrekt geladen wird
     if (!mod) {
-      throw new Error('react-quill-new konnte nicht geladen werden');
+      throw new Error('react-quill konnte nicht geladen werden');
     }
-    // react-quill-new exportiert standardmäßig als default
+    // react-quill exportiert standardmäßig als default
     const ReactQuill = mod.default || mod;
     if (!ReactQuill) {
       throw new Error('ReactQuill Komponente nicht gefunden');
     }
     return { default: ReactQuill };
   }).catch((error) => {
-    console.error('Fehler beim Laden von react-quill-new:', error);
+    console.error('Fehler beim Laden von react-quill:', error);
     // Fallback: Leere Komponente
     return { 
       default: () => (

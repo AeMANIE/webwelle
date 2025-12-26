@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import QuillEditor from './QuillEditor';
 // CSS für ReactQuill importieren
-import 'react-quill-new/dist/quill.snow.css';
+import 'react-quill/dist/quill.snow.css';
 
 interface BlogPost {
   id?: string;
