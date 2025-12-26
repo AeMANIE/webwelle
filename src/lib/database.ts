@@ -1256,6 +1256,42 @@ export async function createTables(): Promise<void> {
   }
 }
 
+// Adressfelder zur customers Tabelle hinzufügen (falls noch nicht vorhanden)
+export async function ensureAddressColumnsExist(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    // Prüfe ob Adressfelder existieren
+    const columnCheck = await client.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      AND table_name = 'customers' 
+      AND column_name IN ('street', 'city', 'zip', 'country')
+    `);
+    const existingColumns = columnCheck.rows.map(row => row.column_name);
+    const missingColumns: string[] = [];
+    
+    if (!existingColumns.includes('street')) missingColumns.push('street VARCHAR(255)');
+    if (!existingColumns.includes('city')) missingColumns.push('city VARCHAR(255)');
+    if (!existingColumns.includes('zip')) missingColumns.push('zip VARCHAR(20)');
+    if (!existingColumns.includes('country')) missingColumns.push('country VARCHAR(100)');
+    
+    if (missingColumns.length > 0) {
+      console.log('📋 Füge fehlende Adressfelder hinzu:', missingColumns);
+      const alterQuery = `ALTER TABLE customers ADD COLUMN ${missingColumns.join(', ADD COLUMN ')}`;
+      await client.query(alterQuery);
+      console.log('✅ Adressfelder erfolgreich hinzugefügt');
+    } else {
+      console.log('✅ Alle Adressfelder existieren bereits');
+    }
+  } catch (error) {
+    console.error('❌ Fehler beim Hinzufügen der Adressfelder:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 // Rechnung-Schema
 export interface InvoiceData {
   id?: string;

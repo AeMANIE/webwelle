@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { pool } from '@/lib/database';
+import { pool, ensureAddressColumnsExist } from '@/lib/database';
 import { verifyToken } from '@/lib/auth';
 
 function getStripe(): Stripe {
@@ -271,6 +271,17 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         updates.push(`email = $${paramCount++}`);
         values.push(email.toLowerCase().trim());
       }
+      // Stelle sicher, dass Adressfelder existieren (füge sie hinzu, falls nötig)
+      const hasAddressData = street !== undefined || city !== undefined || zip !== undefined || country !== undefined;
+      if (hasAddressData) {
+        try {
+          await ensureAddressColumnsExist();
+        } catch (migrationError) {
+          console.error('⚠️ Fehler beim Hinzufügen der Adressfelder:', migrationError);
+          // Weiter machen, auch wenn Migration fehlschlägt
+        }
+      }
+      
       // Prüfe ob Adressfelder existieren, bevor wir sie aktualisieren
       const columnCheck = await client.query(`
         SELECT column_name 
