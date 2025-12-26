@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       // Performance: Nur benötigte Spalten selektieren (kein SELECT *)
       const customerRes = await client.query(
         `SELECT id, email, name, phone, company_name, customer_number, 
-                street, city, zip, country, portal_activated, portal_activated_at, 
+                portal_activated, portal_activated_at, 
                 is_verified, created_at, updated_at 
          FROM customers WHERE id = $1`,
         [params.id]
@@ -146,7 +146,7 @@ export async function PUT(request: NextRequest, context: unknown) {
     }
 
     const body = await request.json();
-    const { name, phone, company_name, street, city, zip, country, email } = body;
+    const { name, phone, company_name, email } = body;
 
     const client = await pool.connect();
     try {
@@ -172,22 +172,6 @@ export async function PUT(request: NextRequest, context: unknown) {
       if (company_name !== undefined) {
         updates.push(`company_name = $${paramCount++}`);
         values.push(company_name);
-      }
-      if (street !== undefined) {
-        updates.push(`street = $${paramCount++}`);
-        values.push(street);
-      }
-      if (city !== undefined) {
-        updates.push(`city = $${paramCount++}`);
-        values.push(city);
-      }
-      if (zip !== undefined) {
-        updates.push(`zip = $${paramCount++}`);
-        values.push(zip);
-      }
-      if (country !== undefined) {
-        updates.push(`country = $${paramCount++}`);
-        values.push(country);
       }
       if (email !== undefined) {
         // E-Mail-Änderung: Prüfe ob E-Mail bereits existiert
@@ -216,7 +200,7 @@ export async function PUT(request: NextRequest, context: unknown) {
       // Aktualisierten Kunden zurückgeben (nur benötigte Spalten)
       const customerRes = await client.query(
         `SELECT id, email, name, phone, company_name, customer_number, 
-                street, city, zip, country, portal_activated, portal_activated_at, 
+                portal_activated, portal_activated_at, 
                 is_verified, created_at, updated_at 
          FROM customers WHERE id = $1`,
         [params.id]
