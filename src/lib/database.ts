@@ -107,13 +107,34 @@ export function correctDatabaseUrl(dbUrl: string | undefined): string {
   }
 }
 
-// Hilfsfunktion: Erstelle einen temporären Pool mit korrigierter URL
-export async function createTempPool(sslConfig: { rejectUnauthorized: boolean } = { rejectUnauthorized: false }): Promise<import('pg').Pool> {
-  const { Pool } = await import('pg');
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
+// Hilfsfunktion: Hole die beste verfügbare Datenbank-URL
+// Für Hostname-Fehler: Bevorzugt DATABASE_PUBLICURL (für externe Verbindungen wie Mac)
+// Für SSL-Fehler: Verwendet DATABASE_URL (für VPS interne Verbindungen)
+export function getDatabaseUrl(usePublicUrl: boolean = false): string {
+  const publicUrl = process.env.DATABASE_PUBLICURL;
+  const internalUrl = process.env.DATABASE_URL;
+  
+  // Nur bei Hostname-Fehlern (z.B. auf Mac) PUBLICURL verwenden
+  if (usePublicUrl && publicUrl) {
+    return publicUrl;
+  }
+  
+  // Standard: Immer DATABASE_URL verwenden (für VPS)
+  if (!internalUrl) {
     throw new Error('DATABASE_URL ist nicht gesetzt');
   }
+  
+  return internalUrl;
+}
+
+// Hilfsfunktion: Erstelle einen temporären Pool mit korrigierter URL
+// usePublicUrl: true = bei Hostname-Fehlern (z.B. Mac), false = bei SSL-Fehlern (z.B. VPS)
+export async function createTempPool(
+  sslConfig: { rejectUnauthorized: boolean } = { rejectUnauthorized: false },
+  usePublicUrl: boolean = false
+): Promise<import('pg').Pool> {
+  const { Pool } = await import('pg');
+  const dbUrl = getDatabaseUrl(usePublicUrl);
   
   const correctedUrl = correctDatabaseUrl(dbUrl);
   const url = new URL(correctedUrl);

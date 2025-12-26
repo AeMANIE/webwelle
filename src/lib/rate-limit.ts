@@ -21,6 +21,7 @@ async function checkRateLimitRedis(
 ): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
   const redis = getRedisClient();
   if (!redis || !isRedisEnabled()) {
+    // Redis nicht verfügbar - wirft Fehler, damit safeRedisOperation Fallback verwendet
     throw new Error('Redis nicht verfügbar');
   }
 

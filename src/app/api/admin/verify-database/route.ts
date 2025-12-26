@@ -125,18 +125,30 @@ export async function GET(request: NextRequest) {
       verification.connection.success = true;
       verification.connection.message = 'Verbindung erfolgreich';
     } catch (connectionError) {
-      // Bei SSL-Fehler: Erstelle temporären Pool
+      // Bei SSL-Fehler oder Hostname-Fehler: Erstelle temporären Pool
       const errorMsg = connectionError instanceof Error ? connectionError.message : '';
-      if (errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify')) {
+      if (errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || 
+          errorMsg.includes('unable to verify') || errorMsg.includes('ENOTFOUND') || errorMsg.includes('getaddrinfo')) {
         const { Pool: TempPool } = await import('pg');
+        // Versuche mit öffentlicher URL falls DATABASE_PUBLICURL gesetzt ist
+        const dbUrl = process.env.DATABASE_PUBLICURL || process.env.DATABASE_URL;
         tempPool = new TempPool({
-          connectionString: process.env.DATABASE_URL,
-          ssl: { rejectUnauthorized: false },
+          connectionString: dbUrl,
+          ssl: dbUrl?.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
           connectionTimeoutMillis: 10000,
         });
-        client = await tempPool.connect();
-        verification.connection.success = true;
-        verification.connection.message = 'Verbindung erfolgreich (mit SSL-Fallback)';
+        try {
+          client = await tempPool.connect();
+          verification.connection.success = true;
+          verification.connection.message = 'Verbindung erfolgreich (mit SSL-Fallback)';
+        } catch (tempError) {
+          verification.connection.success = false;
+          verification.connection.message = `Verbindung fehlgeschlagen: ${errorMsg}`;
+          return NextResponse.json({
+            success: false,
+            verification
+          }, { status: 500 });
+        }
       } else {
         verification.connection.success = false;
         verification.connection.message = `Verbindung fehlgeschlagen: ${errorMsg}`;

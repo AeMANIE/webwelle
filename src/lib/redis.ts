@@ -39,7 +39,10 @@ const getRedisConfig = () => {
         retryStrategy: (times: number) => {
           // Exponential backoff, max 3 Versuche
           if (times > 3) {
-            console.warn('⚠️ Redis Verbindung fehlgeschlagen nach 3 Versuchen. Fallback zu In-Memory.');
+            // Komplett stumm - nur in Development loggen
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('⚠️ Redis Verbindung fehlgeschlagen nach 3 Versuchen. Fallback zu In-Memory.');
+            }
             return null; // Kein Retry mehr
           }
           return Math.min(times * 50, 2000);
@@ -67,7 +70,10 @@ const getRedisConfig = () => {
       } : undefined,
       retryStrategy: (times: number) => {
         if (times > 3) {
-          console.warn('⚠️ Redis Verbindung fehlgeschlagen nach 3 Versuchen. Fallback zu In-Memory.');
+          // Komplett stumm - nur in Development loggen
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('⚠️ Redis Verbindung fehlgeschlagen nach 3 Versuchen. Fallback zu In-Memory.');
+          }
           return null;
         }
         return Math.min(times * 50, 2000);
@@ -115,42 +121,60 @@ const initializeRedis = () => {
       connectionAttempts++;
       const now = Date.now();
       
-      // Nur loggen wenn:
-      // 1. Development Mode ODER
-      // 2. Erster Fehler ODER
-      // 3. Letzter Fehler-Log war vor mehr als 30 Sekunden
-      if (process.env.NODE_ENV === 'development' || connectionAttempts === 1 || (now - lastErrorLogged) > ERROR_LOG_INTERVAL) {
-        // Nur ENOTFOUND Fehler nicht in Production loggen (zu viele)
-        const isConnectionError = error instanceof Error && error.message.includes('ENOTFOUND');
-        if (process.env.NODE_ENV === 'development' || !isConnectionError || connectionAttempts === 1) {
+      // Connection-Errors komplett unterdrücken (außer in Development)
+      const isConnectionError = error instanceof Error && (
+        error.message.includes('ENOTFOUND') || 
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('ETIMEDOUT') ||
+        error.message.includes('getaddrinfo')
+      );
+      
+      // Nur in Development loggen, sonst komplett stumm für Connection-Errors
+      if (process.env.NODE_ENV === 'development') {
+        // In Development: Alle Fehler loggen (mit Throttling)
+        if (connectionAttempts === 1 || (now - lastErrorLogged) > ERROR_LOG_INTERVAL) {
           console.error('❌ Redis Fehler:', error instanceof Error ? error.message : error);
           lastErrorLogged = now;
         }
+      } else if (!isConnectionError && connectionAttempts === 1) {
+        // In Production: Nur nicht-Verbindungsfehler beim ersten Mal loggen
+        console.error('❌ Redis Fehler:', error instanceof Error ? error.message : error);
+        lastErrorLogged = now;
       }
+      // Connection-Errors in Production: Komplett stumm
+      
       redisEnabled = false;
     });
     
     redisClient.on('close', () => {
-      // Nur einmal loggen, nicht bei jedem close Event
-      if (connectionAttempts <= 1 && process.env.NODE_ENV === 'development') {
+      // Komplett stumm - nur in Development loggen
+      if (process.env.NODE_ENV === 'development' && connectionAttempts <= 1) {
         console.warn('⚠️ Redis Verbindung geschlossen');
       }
+      // In Production: Komplett stumm
       redisEnabled = false;
     });
 
     // Verbindung aufbauen (async, blockiert nicht)
     redisClient.connect().catch((error) => {
       connectionAttempts++;
-      // Nur ersten Verbindungsfehler loggen
-      if (connectionAttempts === 1) {
-        const isConnectionError = error instanceof Error && error.message.includes('ENOTFOUND');
-        if (process.env.NODE_ENV === 'development' || !isConnectionError) {
-          console.error('❌ Redis Verbindung fehlgeschlagen:', error instanceof Error ? error.message : error);
-        } else {
-          // In Production: Nur einmal kurz loggen
-          console.warn('⚠️ Redis nicht erreichbar. Verwende In-Memory Store.');
-        }
+      // Connection-Errors komplett unterdrücken (außer in Development)
+      const isConnectionError = error instanceof Error && (
+        error.message.includes('ENOTFOUND') || 
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('ETIMEDOUT') ||
+        error.message.includes('getaddrinfo')
+      );
+      
+      // Nur in Development loggen
+      if (process.env.NODE_ENV === 'development' && connectionAttempts === 1) {
+        console.error('❌ Redis Verbindung fehlgeschlagen:', error instanceof Error ? error.message : error);
+      } else if (!isConnectionError && connectionAttempts === 1) {
+        // In Production: Nur nicht-Verbindungsfehler beim ersten Mal loggen
+        console.error('❌ Redis Verbindung fehlgeschlagen:', error instanceof Error ? error.message : error);
       }
+      // Connection-Errors: Komplett stumm (außer Development)
+      
       redisEnabled = false;
     });
 

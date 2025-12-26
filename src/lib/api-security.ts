@@ -16,34 +16,41 @@ export async function applyRateLimit(
   config: { windowMs: number; maxRequests: number },
   identifier?: string
 ): Promise<NextResponse | null> {
-  const ip = identifier || 
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip') ||
-    'unknown';
+  try {
+    const ip = identifier || 
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
 
-  const limiter = rateLimit(config);
-  const result = await limiter(`api:${ip}`);
+    const limiter = rateLimit(config);
+    const result = await limiter(`api:${ip}`);
 
-  if (!result.allowed) {
-    return NextResponse.json(
-      {
-        error: 'Rate limit exceeded',
-        message: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.',
-        resetTime: result.resetTime,
-      },
-      {
-        status: 429,
-        headers: {
-          'X-RateLimit-Limit': config.maxRequests.toString(),
-          'X-RateLimit-Remaining': result.remaining.toString(),
-          'X-RateLimit-Reset': result.resetTime.toString(),
-          'Retry-After': Math.ceil((result.resetTime - Date.now()) / 1000).toString(),
+    if (!result.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.',
+          resetTime: result.resetTime,
         },
-      }
-    );
-  }
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': config.maxRequests.toString(),
+            'X-RateLimit-Remaining': result.remaining.toString(),
+            'X-RateLimit-Reset': result.resetTime.toString(),
+            'Retry-After': Math.ceil((result.resetTime - Date.now()) / 1000).toString(),
+          },
+        }
+      );
+    }
 
-  return null; // Rate limit OK, weiter mit Request
+    return null; // Rate limit OK, weiter mit Request
+  } catch (error) {
+    // Rate Limiting Fehler sollten nicht die Anfrage blockieren
+    // Logge den Fehler, aber erlaube die Anfrage weiter
+    console.warn('⚠️ Rate Limiting Fehler (ignoriert, Anfrage wird fortgesetzt):', error);
+    return null; // Erlaube Anfrage trotz Rate Limit Fehler
+  }
 }
 
 /**

@@ -75,35 +75,74 @@ export async function GET(request: NextRequest) {
       // Prüfe auf verschiedene Fehlertypen
       const isSSLError = errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify');
       const isPasswordError = errorMsg.includes('password authentication failed') || errorMsg.includes('authentication failed');
+      const isHostnameError = errorMsg.includes('ENOTFOUND') || errorMsg.includes('getaddrinfo');
       
+      // Hostname-Fehler: Versuche automatisch mit DATABASE_PUBLICURL
+      if (isHostnameError) {
+        console.warn('⚠️ Bookings API - Interne URL kann nicht aufgelöst werden, versuche DATABASE_PUBLICURL...');
+        
+        // Versuche mit DATABASE_PUBLICURL, falls verfügbar
+        const publicUrl = process.env.DATABASE_PUBLICURL;
+        if (publicUrl) {
+          let publicTempPool: import('pg').Pool | null = null;
+          try {
+            const { Pool: TempPool } = await import('pg');
+            publicTempPool = new TempPool({
+              connectionString: publicUrl,
+              ssl: publicUrl.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+              connectionTimeoutMillis: 10000,
+            });
+            
+            client = await publicTempPool.connect();
+            tempPool = publicTempPool; // Setze tempPool für späteres Cleanup
+            console.log('✅ Bookings API - Verbindung mit DATABASE_PUBLICURL erfolgreich');
+          } catch (publicUrlError) {
+            const publicErrorMsg = publicUrlError instanceof Error ? publicUrlError.message : '';
+            console.error('❌ Bookings API - Auch DATABASE_PUBLICURL fehlgeschlagen:', publicErrorMsg);
+            
+            if (publicTempPool) await publicTempPool.end();
+            
+            return secureResponse(
+              {
+                error: 'Datenbank nicht erreichbar',
+                message: 'Die Datenbank-Verbindung konnte weder mit der internen noch mit der öffentlichen URL hergestellt werden.',
+                solution: 'Bitte überprüfen Sie die DATABASE_URL und DATABASE_PUBLICURL in Ihrer .env-Datei. Stellen Sie sicher, dass die Datenbank erreichbar ist.',
+                details: process.env.NODE_ENV !== 'production' ? {
+                  internalError: errorMsg,
+                  publicError: publicErrorMsg
+                } : undefined
+              },
+              500
+            );
+          }
+        } else {
+          // Keine DATABASE_PUBLICURL verfügbar
+          console.error('❌ Bookings API - Datenbank-Hostname kann nicht aufgelöst werden und DATABASE_PUBLICURL ist nicht gesetzt:', errorMsg);
+          return secureResponse(
+            {
+              error: 'Datenbank nicht erreichbar',
+              message: 'Die Datenbank-Verbindung konnte nicht hergestellt werden. Der Datenbank-Hostname kann nicht aufgelöst werden.',
+              solution: 'Bitte überprüfen Sie die DATABASE_URL in Ihrer .env-Datei oder setzen Sie DATABASE_PUBLICURL für externe Verbindungen.',
+              details: process.env.NODE_ENV !== 'production' ? {
+                hostname: errorMsg.match(/hostname: '([^']+)'/)?.[1] || 'unbekannt',
+                error: errorMsg
+              } : undefined
+            },
+            500
+          );
+        }
+      }
+      
+      // SSL/Passwort-Fehler: Versuche Fallback mit DATABASE_URL (für VPS)
+      // Bei SSL-Fehlern verwenden wir immer die interne URL, da wir auf dem VPS sind
       if (isSSLError || isPasswordError) {
         // Verwende die zentrale Funktion aus database.ts
         const { createTempPool } = await import('@/lib/database');
         
-        const dbUrl = process.env.DATABASE_URL;
-        if (!dbUrl) {
-          console.error('❌ DATABASE_URL nicht gesetzt');
-          throw new Error('DATABASE_URL Umgebungsvariable ist nicht gesetzt');
-        }
+        // Bei SSL-Fehlern: Verwende DATABASE_URL (interne URL für VPS)
+        // usePublicUrl = false, da wir auf dem VPS sind und die interne URL verwenden sollten
         
-        try {
-          const { correctDatabaseUrl } = await import('@/lib/database');
-          const correctedUrl = correctDatabaseUrl(dbUrl);
-          const url = new URL(correctedUrl);
-          console.log('🔍 Bookings API - URL korrigiert:', {
-            host: url.hostname,
-            port: url.port,
-            database: url.pathname.replace(/^\//, ''),
-            username: url.username,
-            hasPassword: !!url.password,
-            passwordLength: url.password?.length || 0,
-            sslMode: url.searchParams.get('sslmode')
-          });
-        } catch (urlError) {
-          console.error('❌ Bookings API - URL-Parsing fehlgeschlagen:', urlError);
-        }
-        
-        tempPool = await createTempPool({ rejectUnauthorized: false });
+        tempPool = await createTempPool({ rejectUnauthorized: false }, false); // false = verwende DATABASE_URL (VPS)
         
         try {
           client = await tempPool.connect();
@@ -118,7 +157,8 @@ export async function GET(request: NextRequest) {
           // Wenn es ein Passwort-Fehler ist, gib eine hilfreiche Fehlermeldung zurück
           if (fallbackErrorMsg.includes('password authentication failed')) {
             try {
-              const { correctDatabaseUrl } = await import('@/lib/database');
+              const { correctDatabaseUrl, getDatabaseUrl } = await import('@/lib/database');
+              const dbUrl = getDatabaseUrl(false); // false = verwende DATABASE_URL (VPS)
               const correctedUrl = correctDatabaseUrl(dbUrl);
               const url = new URL(correctedUrl);
               
@@ -152,8 +192,19 @@ export async function GET(request: NextRequest) {
           throw connectionError;
         }
       } else {
+        // Unbekannter Verbindungsfehler
         console.error('❌ Bookings API - Unbekannter Verbindungsfehler:', errorMsg);
-        throw connectionError;
+        return secureResponse(
+          {
+            error: 'Datenbank-Verbindung fehlgeschlagen',
+            message: errorMsg,
+            solution: 'Bitte überprüfen Sie die DATABASE_URL in Ihrer .env-Datei und stellen Sie sicher, dass die Datenbank erreichbar ist.',
+            details: process.env.NODE_ENV !== 'production' ? {
+              error: errorMsg
+            } : undefined
+          },
+          500
+        );
       }
     }
 

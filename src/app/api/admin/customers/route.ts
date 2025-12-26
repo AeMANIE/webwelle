@@ -15,8 +15,22 @@ export async function GET(request: NextRequest) {
 
     const customerId = request.nextUrl.searchParams.get('id');
     if (customerId) {
-      const detail = await getCustomerDetails(customerId);
-      return NextResponse.json(detail);
+      try {
+        const detail = await getCustomerDetails(customerId);
+        if (!detail || !detail.customer) {
+          return secureResponse({ error: 'Kunde nicht gefunden' }, 404);
+        }
+        return secureResponse(detail);
+      } catch (error) {
+        console.error('Fehler beim Laden der Kundendetails:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        console.error('Fehler-Details:', { errorMessage, errorStack, customerId });
+        return secureResponse({ 
+          error: 'Fehler beim Laden der Kundendaten',
+          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+        }, 500);
+      }
     }
 
     const redis = getRedisClient();
@@ -31,81 +45,65 @@ export async function GET(request: NextRequest) {
     }
 
     let client;
+    let tempPool: import('pg').Pool | null = null;
     try {
       client = await pool.connect();
     } catch (connectionError) {
       // Bei SSL-Fehler oder Hostname-Fehler: Erstelle temporären Pool mit expliziter SSL-Konfiguration
       const errorMsg = connectionError instanceof Error ? connectionError.message : '';
-      if (errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || 
-          errorMsg.includes('unable to verify') || errorMsg.includes('ENOTFOUND') || errorMsg.includes('getaddrinfo')) {
+      const isSSLError = errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify');
+      const isHostnameError = errorMsg.includes('ENOTFOUND') || errorMsg.includes('getaddrinfo');
+      
+      // Hostname-Fehler: Versuche automatisch mit DATABASE_PUBLICURL (für Mac)
+      if (isHostnameError) {
+        console.warn('⚠️ Kundenliste - Interne URL kann nicht aufgelöst werden, versuche DATABASE_PUBLICURL...');
+        const publicUrl = process.env.DATABASE_PUBLICURL;
+        if (publicUrl) {
+          try {
+            const { Pool: TempPool } = await import('pg');
+            tempPool = new TempPool({
+              connectionString: publicUrl,
+              ssl: publicUrl.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+              connectionTimeoutMillis: 10000,
+            });
+            client = await tempPool.connect();
+            console.log('✅ Kundenliste - Verbindung mit DATABASE_PUBLICURL erfolgreich');
+          } catch (publicUrlError) {
+            const publicErrorMsg = publicUrlError instanceof Error ? publicUrlError.message : '';
+            console.error('❌ Kundenliste - Auch DATABASE_PUBLICURL fehlgeschlagen:', publicErrorMsg);
+            if (tempPool) await tempPool.end();
+            throw new Error(`Datenbank-Verbindung fehlgeschlagen: ${errorMsg}. Auch DATABASE_PUBLICURL fehlgeschlagen: ${publicErrorMsg}`);
+          }
+        } else {
+          throw new Error(`Datenbank-Hostname kann nicht aufgelöst werden und DATABASE_PUBLICURL ist nicht gesetzt: ${errorMsg}`);
+        }
+      }
+      // SSL-Fehler: Versuche Fallback mit DATABASE_URL (für VPS)
+      else if (isSSLError) {
+        console.warn('⚠️ Kundenliste - SSL-Fehler, versuche Fallback...');
         const { Pool: TempPool } = await import('pg');
-        // Versuche mit öffentlicher URL falls DATABASE_PUBLICURL gesetzt ist
-        const dbUrl = process.env.DATABASE_PUBLICURL || process.env.DATABASE_URL;
-        const tempPool = new TempPool({
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl) {
+          throw new Error('DATABASE_URL ist nicht gesetzt');
+        }
+        tempPool = new TempPool({
           connectionString: dbUrl,
-          ssl: dbUrl?.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+          ssl: { rejectUnauthorized: false },
           connectionTimeoutMillis: 10000,
         });
-        client = await tempPool.connect();
-        // Verwende den temporären Pool für diese Anfrage
         try {
-          const query = `
-            SELECT 
-              c.id,
-              c.email,
-              c.name,
-              c.phone,
-              c.company_name,
-              c.customer_number,
-              c.portal_activated,
-              c.created_at,
-              COUNT(DISTINCT b.id) as booking_count,
-              COALESCE(SUM(b.total_amount_cents), 0) as total_revenue_cents,
-              MAX(b.created_at) as last_booking_date
-            FROM customers c
-            LEFT JOIN webwelle_bookings b ON (b.customer_id = c.id OR b.customer_email = c.email)
-            GROUP BY c.id, c.email, c.name, c.phone, c.company_name, c.customer_number, c.portal_activated, c.created_at
-            ORDER BY c.created_at DESC
-          `;
-          const result = await client.query(query);
-          const customers = result.rows.map(row => ({
-            id: row.id,
-            email: row.email,
-            name: row.name,
-            phone: row.phone,
-            companyName: row.company_name,
-            customerNumber: row.customer_number,
-            portalActivated: row.portal_activated,
-            createdAt: row.created_at,
-            stats: {
-              bookingCount: parseInt(row.booking_count) || 0,
-              totalRevenue: parseInt(row.total_revenue_cents) || 0,
-              lastBookingDate: row.last_booking_date,
-            }
-          }));
-          
-          // Cache setzen (falls Redis verfügbar)
-          try {
-            if (redis) {
-              await redis.setex(cacheKey, 300, JSON.stringify(customers));
-            }
-          } catch {
-            // Redis-Fehler ignorieren
-          }
-          
-          client.release();
-          await tempPool.end();
-          return secureResponse(customers);
-        } catch (queryError) {
-          client.release();
-          await tempPool.end();
-          throw queryError;
+          client = await tempPool.connect();
+          console.log('✅ Kundenliste - SSL-Fallback erfolgreich');
+        } catch (sslFallbackError) {
+          if (tempPool) await tempPool.end();
+          throw sslFallbackError;
         }
       } else {
         throw connectionError;
       }
     }
-
+    
+    // Führe Abfragen aus (egal ob normale Verbindung oder Fallback)
     try {
       const query = `
         SELECT 
@@ -153,8 +151,12 @@ export async function GET(request: NextRequest) {
       }
 
       return secureResponse(customers);
+    } catch (queryError) {
+      console.error('❌ Fehler bei Kundenliste-Query:', queryError);
+      throw queryError;
     } finally {
       if (client) client.release();
+      if (tempPool) await tempPool.end();
     }
   } catch (error) {
     console.error('Fehler beim Laden der Kunden:', error);
@@ -165,92 +167,78 @@ export async function GET(request: NextRequest) {
 }
 
 async function getCustomerDetails(customerId: string) {
-  let client;
+  console.log('🔍 getCustomerDetails aufgerufen für:', customerId);
+  let client: import('pg').PoolClient | undefined;
+  let tempPool: import('pg').Pool | null = null;
+  
   try {
     client = await pool.connect();
+    console.log('✅ Datenbankverbindung erfolgreich');
   } catch (connectionError) {
-    // Bei SSL-Fehler: Erstelle temporären Pool
+    console.error('❌ Datenbankverbindung fehlgeschlagen:', connectionError);
     const errorMsg = connectionError instanceof Error ? connectionError.message : '';
-    if (errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify')) {
-      const { Pool: TempPool } = await import('pg');
-      const tempPool = new TempPool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-      });
-      client = await tempPool.connect();
-      // Führe Abfragen aus und beende dann den temporären Pool
-      try {
-        // Performance: Nur benötigte Spalten selektieren
-        const customerResult = await client.query(
-          `SELECT id, email, name, phone, company_name, customer_number, 
-                  street, city, zip, country, portal_activated, portal_activated_at, 
-                  is_verified, created_at, updated_at 
-           FROM customers WHERE id = $1`,
-          [customerId]
-        );
-        if (customerResult.rows.length === 0) {
-          client.release();
-          await tempPool.end();
-          return null;
+    const isSSLError = errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify');
+    const isHostnameError = errorMsg.includes('ENOTFOUND') || errorMsg.includes('getaddrinfo');
+    
+    // Hostname-Fehler: Versuche automatisch mit DATABASE_PUBLICURL (für Mac)
+    if (isHostnameError) {
+      console.warn('⚠️ getCustomerDetails - Interne URL kann nicht aufgelöst werden, versuche DATABASE_PUBLICURL...');
+      const publicUrl = process.env.DATABASE_PUBLICURL;
+      if (publicUrl) {
+        try {
+          const { Pool: TempPool } = await import('pg');
+          tempPool = new TempPool({
+            connectionString: publicUrl,
+            ssl: publicUrl.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+            connectionTimeoutMillis: 10000,
+          });
+          client = await tempPool.connect();
+          console.log('✅ getCustomerDetails - Verbindung mit DATABASE_PUBLICURL erfolgreich');
+        } catch (publicUrlError) {
+          const publicErrorMsg = publicUrlError instanceof Error ? publicUrlError.message : '';
+          console.error('❌ getCustomerDetails - Auch DATABASE_PUBLICURL fehlgeschlagen:', publicErrorMsg);
+          if (tempPool) await tempPool.end();
+          throw new Error(`Datenbank-Verbindung fehlgeschlagen: ${errorMsg}. Auch DATABASE_PUBLICURL fehlgeschlagen: ${publicErrorMsg}`);
         }
-        const customer = customerResult.rows[0];
-        
-        const bookingsResult = await client.query(
-          `SELECT 
-            id,
-            package_type,
-            status,
-            total_amount_cents,
-            currency,
-            created_at,
-            customer_name,
-            customer_email,
-            company_name
-           FROM webwelle_bookings 
-           WHERE customer_id = $1 OR customer_email = $2 
-           ORDER BY created_at DESC`,
-          [customerId, customer.email]
-        );
-        
-        const invoicesResult = await client.query(
-          `SELECT 
-            id,
-            invoice_number,
-            stripe_invoice_id,
-            amount_cents,
-            currency,
-            status,
-            paid_at,
-            due_date,
-            pdf_url,
-            hosted_invoice_url,
-            created_at
-           FROM invoices 
-           WHERE customer_id = $1 OR customer_email = $2 
-           ORDER BY created_at DESC`,
-          [customerId, customer.email]
-        );
-        
-        client.release();
-        await tempPool.end();
-        return { 
-          customer, 
-          bookings: bookingsResult.rows, 
-          invoices: invoicesResult.rows,
-          subscriptions: [] 
-        };
-      } catch (error) {
-        if (client) client.release();
-        await tempPool.end();
-        throw error;
+      } else {
+        throw new Error(`Datenbank-Hostname kann nicht aufgelöst werden und DATABASE_PUBLICURL ist nicht gesetzt: ${errorMsg}`);
       }
     }
-    throw connectionError;
+    // SSL-Fehler: Versuche Fallback mit DATABASE_URL (für VPS)
+    else if (isSSLError) {
+      console.warn('⚠️ getCustomerDetails - SSL-Fehler, versuche Fallback...');
+      const { Pool: TempPool } = await import('pg');
+      const dbUrl = process.env.DATABASE_URL;
+      if (!dbUrl) {
+        throw new Error('DATABASE_URL ist nicht gesetzt');
+      }
+      tempPool = new TempPool({
+        connectionString: dbUrl,
+        ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 10000,
+      });
+      try {
+        client = await tempPool.connect();
+        console.log('✅ getCustomerDetails - SSL-Fallback erfolgreich');
+      } catch (sslFallbackError) {
+        if (tempPool) await tempPool.end();
+        throw sslFallbackError;
+      }
+    } else {
+      // Unbekannter Fehler
+      throw connectionError;
+    }
   }
   
-  // Normale Abfrage mit dem verbundenen Client
+  // Prüfe ob client definiert ist
+  if (!client) {
+    throw new Error('Datenbank-Client ist nicht definiert');
+  }
+  
+  // Führe Abfragen aus (egal ob normale Verbindung oder Fallback)
   try {
     // Performance: Nur benötigte Spalten selektieren
+    console.log('🔍 Suche Kunde in Datenbank...', tempPool ? '(Fallback)' : '(normal)');
     const customerResult = await client.query(
       `SELECT id, email, name, phone, company_name, customer_number, 
               street, city, zip, country, portal_activated, portal_activated_at, 
@@ -258,8 +246,13 @@ async function getCustomerDetails(customerId: string) {
        FROM customers WHERE id = $1`,
       [customerId]
     );
-    if (customerResult.rows.length === 0) return null;
+    console.log('📊 Kunden-Query Ergebnis:', { rowCount: customerResult.rows.length, customerId });
+    if (customerResult.rows.length === 0) {
+      console.log('⚠️ Kunde nicht gefunden in Datenbank');
+      return null;
+    }
     const customer = customerResult.rows[0];
+    console.log('✅ Kunde gefunden:', { id: customer.id, email: customer.email });
     
     const bookingsResult = await client.query(
       `SELECT 
@@ -299,12 +292,36 @@ async function getCustomerDetails(customerId: string) {
     
     return { 
       customer, 
-      bookings: bookingsResult.rows, 
-      invoices: invoicesResult.rows,
+      bookings: bookingsResult.rows || [], 
+      invoices: invoicesResult.rows || [],
       subscriptions: [] 
     };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('❌ Fehler in getCustomerDetails:', {
+      message: errorMessage,
+      stack: errorStack,
+      customerId,
+      hasClient: !!client,
+      hasTempPool: !!tempPool
+    });
+    throw error;
   } finally {
-    client.release();
+    try {
+      if (client) {
+        client.release();
+      }
+    } catch (releaseError) {
+      console.error('⚠️ Fehler beim Release des Clients:', releaseError);
+    }
+    try {
+      if (tempPool) {
+        await tempPool.end();
+      }
+    } catch (endError) {
+      console.error('⚠️ Fehler beim Beenden des tempPool:', endError);
+    }
   }
 }
 

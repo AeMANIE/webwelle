@@ -1,4 +1,31 @@
-import { pool } from './database';
+import { pool, createTempPool } from './database';
+
+// Helper-Funktion: Sichere Datenbankverbindung mit Fallback
+async function getDatabaseClient(): Promise<{ client: import('pg').PoolClient; tempPool: import('pg').Pool | null }> {
+  let client;
+  let tempPool: import('pg').Pool | null = null;
+  
+  try {
+    client = await pool.connect();
+    return { client, tempPool: null };
+  } catch (connectionError) {
+    const errorMsg = connectionError instanceof Error ? connectionError.message : '';
+    
+    // SSL-Fallback für VPS oder Hostname-Fehler
+    if (errorMsg.includes('certificate') || 
+        errorMsg.includes('SSL') || 
+        errorMsg.includes('TLS') ||
+        errorMsg.includes('unable to verify') ||
+        errorMsg.includes('ENOTFOUND') ||
+        errorMsg.includes('getaddrinfo')) {
+      tempPool = await createTempPool({ rejectUnauthorized: false });
+      client = await tempPool.connect();
+      return { client, tempPool };
+    }
+    
+    throw connectionError;
+  }
+}
 
 export interface BlogPost {
   id: string;
@@ -30,15 +57,19 @@ export async function getAllBlogPosts(
   } catch (error) {
     connectionError = error instanceof Error ? error : new Error('Unbekannter Fehler');
     
-    // SSL-Fallback für VPS
+    // SSL-Fallback für VPS oder Hostname-Fehler
     if (connectionError.message.includes('certificate') || 
         connectionError.message.includes('SSL') || 
         connectionError.message.includes('TLS') ||
-        connectionError.message.includes('unable to verify')) {
+        connectionError.message.includes('unable to verify') ||
+        connectionError.message.includes('ENOTFOUND') ||
+        connectionError.message.includes('getaddrinfo')) {
       const { Pool: TempPool } = await import('pg');
+      // Versuche mit öffentlicher URL falls DATABASE_PUBLICURL gesetzt ist
+      const dbUrl = process.env.DATABASE_PUBLICURL || process.env.DATABASE_URL;
       const tempPool = new TempPool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
+        connectionString: dbUrl,
+        ssl: dbUrl?.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
         connectionTimeoutMillis: 10000,
       });
       
@@ -123,7 +154,7 @@ export async function getAllBlogPosts(
 
 // Einzelner Blog-Post
 export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
-  const client = await pool.connect();
+  const { client, tempPool } = await getDatabaseClient();
   
   try {
     const result = await client.query(
@@ -155,12 +186,13 @@ export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> 
     };
   } finally {
     client.release();
+    if (tempPool) await tempPool.end();
   }
 }
 
 // Blog-Post nach ID
 export async function getBlogPostById(id: string): Promise<BlogPost | null> {
-  const client = await pool.connect();
+  const { client, tempPool } = await getDatabaseClient();
   
   try {
     const result = await client.query(
@@ -192,12 +224,13 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
     };
   } finally {
     client.release();
+    if (tempPool) await tempPool.end();
   }
 }
 
 // Blog-Post erstellen
 export async function createBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlogPost> {
-  const client = await pool.connect();
+  const { client, tempPool } = await getDatabaseClient();
   
   try {
     const result = await client.query(
@@ -242,12 +275,13 @@ export async function createBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | '
     };
   } finally {
     client.release();
+    if (tempPool) await tempPool.end();
   }
 }
 
 // Blog-Post aktualisieren
 export async function updateBlogPost(id: string, updates: Partial<BlogPost>): Promise<BlogPost | null> {
-  const client = await pool.connect();
+  const { client, tempPool } = await getDatabaseClient();
   
   try {
     const fields: string[] = [];
@@ -339,12 +373,13 @@ export async function updateBlogPost(id: string, updates: Partial<BlogPost>): Pr
     };
   } finally {
     client.release();
+    if (tempPool) await tempPool.end();
   }
 }
 
 // Blog-Post löschen
 export async function deleteBlogPost(id: string): Promise<boolean> {
-  const client = await pool.connect();
+  const { client, tempPool } = await getDatabaseClient();
   
   try {
     const result = await client.query(
@@ -355,6 +390,7 @@ export async function deleteBlogPost(id: string): Promise<boolean> {
     return result.rowCount !== null && result.rowCount > 0;
   } finally {
     client.release();
+    if (tempPool) await tempPool.end();
   }
 }
 
