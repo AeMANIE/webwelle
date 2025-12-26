@@ -156,11 +156,11 @@ export default function CookieBanner() {
                 <button
                   onClick={() => toggleCookie('preferences')}
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    cookieSettings.preferences ? 'bg-primary' : 'bg-gray-300'
+                    cookieSettings.preferences ? 'bg-primary' : 'bg-muted'
                   }`}
                 >
                   <span
-                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                    className={`inline-block h-3 w-3 transform rounded-full bg-foreground transition-transform ${
                       cookieSettings.preferences ? 'translate-x-5' : 'translate-x-1'
                     }`}
                   />
@@ -178,11 +178,11 @@ export default function CookieBanner() {
                 <button
                   onClick={() => toggleCookie('statistics')}
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    cookieSettings.statistics ? 'bg-primary' : 'bg-gray-300'
+                    cookieSettings.statistics ? 'bg-primary' : 'bg-muted'
                   }`}
                 >
                   <span
-                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                    className={`inline-block h-3 w-3 transform rounded-full bg-foreground transition-transform ${
                       cookieSettings.statistics ? 'translate-x-5' : 'translate-x-1'
                     }`}
                   />
@@ -200,11 +200,11 @@ export default function CookieBanner() {
                 <button
                   onClick={() => toggleCookie('marketing')}
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    cookieSettings.marketing ? 'bg-primary' : 'bg-gray-300'
+                    cookieSettings.marketing ? 'bg-primary' : 'bg-muted'
                   }`}
                 >
                   <span
-                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                    className={`inline-block h-3 w-3 transform rounded-full bg-foreground transition-transform ${
                       cookieSettings.marketing ? 'translate-x-5' : 'translate-x-1'
                     }`}
                   />

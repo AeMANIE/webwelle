@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
     webpackBuildWorker: true,
   },
   // Optimierte Server-Komponenten
-  serverExternalPackages: ['pg'],
+  serverExternalPackages: ['pg', 'pdfkit', 'fontkit'],
   // Output file tracing
   outputFileTracingRoot: process.cwd(),
   // Modern JavaScript für bessere Performance
@@ -123,6 +123,20 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // CSS-Dateien in chunks mit korrektem MIME-Type (MUSS VOR JS-Header stehen!)
+      {
+        source: '/_next/static/chunks/(.*)\\.css',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'text/css',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
       // Alle CSS-Dateien mit korrektem MIME-Type
       {
         source: '/_next/static/css/(.*)',
@@ -137,9 +151,9 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // Alle JS-Dateien mit korrektem MIME-Type
+      // Alle JS-Dateien in chunks mit korrektem MIME-Type
       {
-        source: '/_next/static/chunks/(.*)',
+        source: '/_next/static/chunks/(.*)\\.js',
         headers: [
           {
             key: 'Content-Type',

@@ -2,7 +2,7 @@ import { MessageCircle, ClipboardList, Lock, Zap, CheckCircle, Mail, MapPin } fr
 
 export default function CTA() {
   return (
-    <section id="cta" className="py-20 bg-gradient-to-br from-primary to-primary/80">
+    <section id="cta" className="py-20 bg-primary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h2 className="text-3xl md:text-5xl font-extrabold text-primary-foreground mb-6 tracking-tight">

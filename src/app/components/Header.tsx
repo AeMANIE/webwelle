@@ -17,14 +17,14 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+    <header className="bg-background backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
             <Link 
               href="/" 
-              className="flex items-center space-x-1 hover:opacity-80 transition-opacity focus:outline-none focus:ring-0"
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity focus:outline-none focus:ring-0"
             >
               <Image
                 src="/webwellelogo.svg"
@@ -34,28 +34,26 @@ export default function Header() {
                 className="h-12 w-auto"
                 priority
               />
-              <div className="flex items-center">
-                <Image
-                  src="/webwellecom-weissihr.svg"
-                  alt="WebWelle"
-                  width={120}
-                  height={32}
-                  className="h-15 w-auto"
-                  priority
-                  fetchPriority="high"
-                />
-              </div>
+              <Image
+                src="/webwellecom-weissihr.svg"
+                alt="WebWelle"
+                width={180}
+                height={48}
+                className="h-12 w-auto"
+                priority
+                fetchPriority="high"
+              />
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-6">
-            <Link href="/ai-voice" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link href="/ai-voice" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap py-2 px-1">
               Telefonassistent AI
             </Link>
             <Link 
               href="/#vorteile" 
-              className="text-foreground hover:text-primary transition-colors font-medium"
+              className="text-foreground hover:text-primary transition-colors font-medium py-2 px-1"
               onClick={(e) => {
                 e.preventDefault();
                 
@@ -76,16 +74,16 @@ export default function Header() {
             >
               Webdesign-Pakete
             </Link>
-            <Link href="/ai-agent" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
+            <Link href="/ai-agent" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap py-2 px-1">
               KI & Automatisierung
             </Link>
-            <Link href="/app-entwicklung" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap">
+            <Link href="/app-entwicklung" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap py-2 px-1">
               App-Entwicklung
             </Link>
-            <Link href="/blog" className="text-foreground hover:text-primary transition-colors font-medium">
+            <Link href="/blog" className="text-foreground hover:text-primary transition-colors font-medium py-2 px-1">
               Blog
             </Link>
-            <Link href="/customer" className="text-primary hover:text-primary/80 transition-colors font-medium border border-primary px-3 py-1 rounded-md flex items-center space-x-1">
+            <Link href="/customer" className="text-primary hover:text-primary/80 transition-colors font-medium border border-primary px-4 py-2 rounded-md flex items-center space-x-1 hover:bg-primary/10">
               <LogIn className="w-4 h-4" />
               <span>Login</span>
             </Link>

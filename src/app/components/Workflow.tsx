@@ -43,7 +43,7 @@ export default function Workflow() {
   ];
 
   return (
-    <section id="arbeitsweise" className="py-20" style={{ backgroundColor: '#0a0f1a' }}>
+    <section id="arbeitsweise" className="py-20 bg-background">
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Glassmorphism Window 1 - Einleitung */}
