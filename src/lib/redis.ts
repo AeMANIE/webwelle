@@ -186,6 +186,7 @@ export async function safeRedisOperation<T>(
 export const REDIS_KEYS = {
   rateLimit: (identifier: string) => `rate_limit:${identifier}`,
   tan: (email: string) => `tan:${email}`,
+  adminTan: (email: string) => `admin_tan:${email}`, // Separate Keys für Admin-TAN
   bookingCache: (sessionId: string) => `booking:${sessionId}`,
   bookingsList: () => 'bookings:list',
   customerBookings: (email: string) => `bookings:customer:${email}`,

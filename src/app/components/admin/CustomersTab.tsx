@@ -91,6 +91,7 @@ export default function CustomersTab() {
     })();
   }, []);
 
+
   if (loading) return <div className="text-center py-8">Lade Kunden...</div>;
 
   return (
@@ -121,10 +122,9 @@ export default function CustomersTab() {
           </div>
         ) : (
           customers.map((customer) => (
-          <div
-            key={customer.id}
-            onClick={() => router.push(`/admin/customers/${customer.id}`)}
-            className="block bg-card rounded-lg p-6 border border-border hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer"
+          <div 
+            key={customer.id} 
+            className="bg-card rounded-lg p-6 border border-border hover:border-primary/50 transition-all"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -150,10 +150,16 @@ export default function CustomersTab() {
                   )}
                 </div>
               </div>
-              <div className="ml-4 flex items-center text-primary">
+              <button
+                onClick={() => {
+                  // Navigation zur Detail-Seite
+                  window.location.href = `/admin/customers/${customer.id}`;
+                }}
+                className="ml-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+              >
                 <EyeIcon />
-                <span className="ml-2 text-sm font-medium">Klicken für Details →</span>
-              </div>
+                Details anzeigen
+              </button>
             </div>
           </div>
           ))

@@ -5,6 +5,14 @@ export const metadata: Metadata = {
   description: "ErfolgsWelle Webdesign-Paket buchen. Premium Website mit allen Features für Marktführer. Festpreis, transparent, modern.",
   keywords: "ErfolgsWelle buchen, Premium Webdesign-Paket, Website für Marktführer, WebWelle",
   authors: [{ name: "WebWelle" }],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
   alternates: {
     canonical: 'https://webwelle.com/buchung/erfolgswelle',
   },

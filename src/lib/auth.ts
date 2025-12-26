@@ -20,7 +20,7 @@ export interface User {
 }
 
 // Admin-Benutzer (in Produktion aus Datenbank)
-function getAdminUsers() {
+export function getAdminUsers() {
   // Prüfe ob Admin-Konfiguration vorhanden ist (nur zur Laufzeit)
   if (!process.env.ADMIN_EMAIL) {
     throw new Error('ADMIN_EMAIL Umgebungsvariable ist nicht gesetzt');
@@ -85,77 +85,123 @@ export function verifyToken(token: string): User | null {
   }
 }
 
-// Admin-Login (DEPRECATED - verwendet jetzt TAN-System)
-// Diese Funktion wird nicht mehr direkt verwendet, sondern nur noch für TAN-Anfrage
+// Admin-Login (NUR Passwort-Validierung - TAN wird separat angefordert)
 export async function adminLogin(email: string, password: string): Promise<{ user: User; token: string } | null> {
   const adminUsers = getAdminUsers();
-  
-  // Debug-Logging
-  console.log('🔐 Admin Login Versuch:', {
-    email,
-    adminEmailFromEnv: process.env.ADMIN_EMAIL,
-    adminUsersFound: adminUsers.length,
-    adminEmails: adminUsers.map(u => u.email),
-  });
   
   // Case-insensitive E-Mail-Vergleich
   const admin = adminUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
   if (!admin) {
-    console.error('❌ Admin nicht gefunden:', {
-      searchedEmail: email,
-      availableEmails: adminUsers.map(u => u.email),
-    });
     logFailedAuth(`Admin-Login: E-Mail nicht gefunden - ${email}`);
     return null;
   }
   
-  console.log('✅ Admin gefunden, verifiziere Passwort...');
   let isValid = false;
-
   const passwordHash = process.env.ADMIN_PASSWORD_HASH;
   const passwordPlain = process.env.ADMIN_PASSWORD;
 
-  console.log('🔍 Passwort-Verifikation Details:', {
-    passwordLength: password.length,
-    passwordValue: password,
-    passwordPlainSet: !!passwordPlain,
-    passwordPlainLength: passwordPlain?.length,
-    passwordPlainValue: passwordPlain,
-    passwordHashSet: !!passwordHash,
-    passwordHashLength: passwordHash?.length,
-    directComparison: password === passwordPlain,
-  });
-
   if (passwordPlain) {
-    // Klartext-Modus (Fallback, auf Wunsch des Betreibers)
     isValid = password === passwordPlain;
-    console.log('🔐 Klartext-Vergleich:', {
-      isValid,
-      password: password,
-      passwordPlain: passwordPlain,
-      equal: password === passwordPlain,
-    });
   } else if (passwordHash) {
-    // Hash-Modus (Standard, sicher)
     isValid = await verifyPassword(password, passwordHash);
-    console.log('🔐 Hash-Vergleich:', {
-      isValid,
-      passwordLength: password.length,
-      hashLength: passwordHash.length,
-    });
   }
   
   if (!isValid) {
-    console.error('❌ Passwort-Verifikation fehlgeschlagen:', {
-      passwordReceived: password,
-      passwordExpected: passwordPlain || 'HASH',
-      passwordMatch: password === passwordPlain,
-    });
     logFailedAuth(`Admin-Login: Ungültiges Passwort - ${email}`);
     return null;
   }
   
-  console.log('✅ Passwort korrekt, erstelle Token...');
+  // Passwort ist korrekt - aber KEIN Token zurückgeben!
+  // TAN muss zuerst angefordert werden
+  return null;
+}
+
+// Admin-TAN anfordern (nach erfolgreicher Passwort-Validierung)
+export async function adminRequestTAN(email: string, password: string): Promise<{ success: boolean; message: string; tan?: string }> {
+  const adminUsers = getAdminUsers();
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  // Admin finden
+  const admin = adminUsers.find(u => u.email.toLowerCase() === normalizedEmail);
+  if (!admin) {
+    return { success: false, message: 'Ungültige E-Mail-Adresse' };
+  }
+  
+  // Passwort validieren
+  let isValid = false;
+  const passwordHash = process.env.ADMIN_PASSWORD_HASH;
+  const passwordPlain = process.env.ADMIN_PASSWORD;
+
+  if (passwordPlain) {
+    isValid = password === passwordPlain;
+  } else if (passwordHash) {
+    isValid = await verifyPassword(password, passwordHash);
+  }
+  
+  if (!isValid) {
+    logFailedAuth(`Admin-TAN-Anfrage: Ungültiges Passwort - ${email}`);
+    return { success: false, message: 'Ungültiges Passwort' };
+  }
+  
+  // TAN generieren und senden
+  const { generateTAN } = await import('./email');
+  const { storeAdminTAN } = await import('./tan-store');
+  const { sendAdminTANEmail } = await import('./email');
+  
+  const tan = generateTAN();
+  
+  console.log('🔑 Generiere Admin-TAN für:', { 
+    normalizedEmail,
+    adminName: admin.name 
+  });
+  
+  // TAN speichern
+  try {
+    await storeAdminTAN(normalizedEmail, tan);
+    console.log('✅ Admin-TAN gespeichert für:', normalizedEmail);
+  } catch (storeError) {
+    console.error('❌ Fehler beim Speichern der Admin-TAN:', storeError);
+    return { success: false, message: 'Fehler beim Speichern der TAN' };
+  }
+  
+  // TAN per E-Mail senden
+  const emailSent = await sendAdminTANEmail(normalizedEmail, tan, admin.name || 'Admin');
+  if (!emailSent) {
+    return { success: false, message: 'Fehler beim Senden der E-Mail' };
+  }
+  
+  console.log('✅ Admin-TAN-E-Mail gesendet an:', normalizedEmail);
+  
+  // Für Entwicklung: TAN zurückgeben (nur wenn nicht in Produktion)
+  return { 
+    success: true, 
+    message: 'TAN wurde per E-Mail gesendet', 
+    tan: process.env.NODE_ENV !== 'production' ? tan : undefined 
+  };
+}
+
+// Admin-Login mit TAN (2FA)
+export async function adminLogin2FA(email: string, tan: string): Promise<{ user: User; token: string } | null> {
+  const adminUsers = getAdminUsers();
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  // Admin finden
+  const admin = adminUsers.find(u => u.email.toLowerCase() === normalizedEmail);
+  if (!admin) {
+    logFailedAuth(`Admin-2FA-Login: E-Mail nicht gefunden - ${email}`);
+    return null;
+  }
+  
+  // TAN verifizieren und LÖSCHEN (deleteAfterVerify = true)
+  const { verifyAdminTAN } = await import('./tan-store');
+  const tanValidation = await verifyAdminTAN(normalizedEmail, tan, true); // true = löschen nach Verifizierung
+  
+  if (!tanValidation.valid) {
+    logFailedAuth(`Admin-2FA-Login: Ungültiger TAN - ${email} - ${tanValidation.message}`);
+    return null;
+  }
+  
+  // TAN ist gültig - erstelle Token
   const user: User = {
     id: admin.id!,
     email: admin.email!,
@@ -165,7 +211,7 @@ export async function adminLogin(email: string, password: string): Promise<{ use
   
   const token = createToken(user);
   logLoginAttempt(email, true);
-  console.log('✅ Admin Login erfolgreich:', user.email);
+  console.log('✅ Admin 2FA-Login erfolgreich:', user.email);
   return { user, token };
 }
 
@@ -351,34 +397,6 @@ export async function requestAdminTAN(email: string, password: string): Promise<
   return { success: true, message: 'TAN wurde per E-Mail gesendet', tan: process.env.NODE_ENV !== 'production' ? tan : undefined };
 }
 
-// 2FA-Login mit TAN für Admin
-export async function adminLogin2FA(email: string, _tan: string): Promise<{ user: User; token: string } | null> {
-  // E-Mail normalisieren
-  const normalizedEmail = email.toLowerCase().trim();
-  
-  // Admin-Benutzer prüfen
-  const adminUsers = getAdminUsers();
-  const admin = adminUsers.find(u => u.email.toLowerCase() === normalizedEmail);
-  
-  if (!admin) {
-    return null;
-  }
-  
-  // TAN wurde bereits in der API-Route verifiziert und gelöscht
-  // Hier nur noch Admin validieren und Token erstellen
-  
-  const user: User = {
-    id: admin.id!,
-    email: admin.email!,
-    role: 'admin' as const,
-    name: admin.name!
-  };
-  
-  const token = createToken(user);
-  logLoginAttempt(normalizedEmail, true);
-  console.log('✅ Admin 2FA-Login erfolgreich:', user.email);
-  return { user, token };
-}
 
 // 2FA-Login mit TAN
 // WICHTIG: TAN wurde bereits in der API-Route verifiziert, hier nur noch Kunde prüfen

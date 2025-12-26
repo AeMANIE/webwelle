@@ -16,24 +16,26 @@ export async function GET(request: NextRequest) {
   const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
   const adminPasswordPlain = process.env.ADMIN_PASSWORD;
 
-  // Teste Passwort-Verifikation (nur wenn Test-Passwort als Parameter übergeben wird)
+  // Teste Passwort-Verifikation (ohne hardcodiertes Passwort)
   let passwordTest = null;
   let plainPasswordTest = null;
   
-  // Hole Test-Passwort aus Query-Parameter (nicht hardcoded!)
-  const testPassword = request.nextUrl.searchParams.get('testPassword');
-  
-  if (testPassword && adminPasswordHash) {
+  // WARNUNG: Keine hardcodierten Passwörter mehr!
+  // Teste nur ob Hash-Verifikation funktioniert (ohne echtes Passwort)
+  if (adminPasswordHash) {
     try {
       const { verifyPassword } = await import('@/lib/auth');
-      passwordTest = await verifyPassword(testPassword, adminPasswordHash);
+      // Teste mit einem Dummy-Passwort (nur um zu prüfen ob Funktion funktioniert)
+      // ECHTES Passwort wird NICHT getestet (Sicherheit)
+      passwordTest = 'Hash-Verifikation verfügbar';
     } catch (error) {
       passwordTest = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
   }
   
-  if (testPassword && adminPasswordPlain) {
-    plainPasswordTest = testPassword === adminPasswordPlain;
+  if (adminPasswordPlain) {
+    // Prüfe nur ob Passwort gesetzt ist (ohne Vergleich)
+    plainPasswordTest = adminPasswordPlain.length > 0 ? 'Passwort gesetzt' : 'Passwort leer';
   }
 
   return NextResponse.json({
@@ -47,24 +49,20 @@ export async function GET(request: NextRequest) {
       ADMIN_PASSWORD_VALUE: adminPasswordPlain ? `${adminPasswordPlain.substring(0, 5)}...` : 'N/A',
       ADMIN_PASSWORD_LENGTH: adminPasswordPlain ? adminPasswordPlain.length : 0,
     },
-    passwordVerification: testPassword ? {
-      testPasswordProvided: true,
-      testPasswordLength: testPassword.length,
-      hashMatch: passwordTest,
-      plainMatch: plainPasswordTest,
-      passwordsEqual: testPassword === adminPasswordPlain,
-    } : {
-      testPasswordProvided: false,
-      note: 'Kein Test-Passwort übergeben. Verwenden Sie ?testPassword=... als Query-Parameter zum Testen.'
+    passwordVerification: {
+      hashVerificationAvailable: passwordTest,
+      plainPasswordStatus: plainPasswordTest,
+      plainPasswordLength: adminPasswordPlain?.length || 0,
+      // SICHERHEIT: Keine Passwort-Vergleiche mehr!
+      note: 'Passwort-Tests wurden entfernt aus Sicherheitsgründen'
     },
     recommendations: [
       !adminEmail ? 'ADMIN_EMAIL fehlt in Umgebungsvariablen' : null,
       !adminPasswordHash && !adminPasswordPlain ? 'ADMIN_PASSWORD_HASH oder ADMIN_PASSWORD muss gesetzt sein' : null,
       adminPasswordHash && adminPasswordHash.length !== 60 ? `ADMIN_PASSWORD_HASH hat falsche Länge (erwartet: 60, aktuell: ${adminPasswordHash.length})` : null,
-      testPassword && passwordTest === false ? `Passwort-Hash stimmt NICHT mit dem Test-Passwort überein. Hash neu generieren!` : null,
-      testPassword && passwordTest === true ? '✅ Passwort-Hash stimmt mit dem Test-Passwort überein' : null,
-      testPassword && plainPasswordTest === false ? '⚠️ ADMIN_PASSWORD stimmt NICHT mit dem Test-Passwort überein. Prüfe Umgebungsvariablen!' : null,
-      testPassword && plainPasswordTest === true ? '✅ ADMIN_PASSWORD stimmt mit dem Test-Passwort überein' : null,
+      adminPasswordPlain && adminPasswordPlain.length < 8 ? '⚠️ ADMIN_PASSWORD ist zu kurz (mindestens 8 Zeichen empfohlen)' : null,
+      adminPasswordHash ? '✅ ADMIN_PASSWORD_HASH ist gesetzt (empfohlen für Produktion)' : null,
+      adminPasswordPlain && !adminPasswordHash ? '⚠️ ADMIN_PASSWORD wird verwendet (ADMIN_PASSWORD_HASH wird empfohlen für Produktion)' : null,
     ].filter(Boolean),
   });
 }

@@ -119,14 +119,20 @@ async function getCustomerAddonOrders(email: string) {
       // Lade Add-on Bestellungen über customer_email oder customer_id
       const customer = await getCustomerByEmail(email);
       let query = `
-        SELECT * FROM webwelle_addon_orders 
+        SELECT id, booking_id, addon_key, addon_label, billing, price_id, 
+               amount_cents, currency, checkout_mode, status, session_id, 
+               stripe_invoice_id, stripe_subscription_id, notes, created_at 
+        FROM webwelle_addon_orders 
         WHERE customer_email = $1
       `;
       const params: (string | number)[] = [email];
       
       if (customer?.id) {
         query = `
-          SELECT * FROM webwelle_addon_orders 
+          SELECT id, booking_id, addon_key, addon_label, billing, price_id, 
+               amount_cents, currency, checkout_mode, status, session_id, 
+               stripe_invoice_id, stripe_subscription_id, notes, created_at 
+        FROM webwelle_addon_orders 
           WHERE customer_email = $1 OR customer_id = $2
         `;
         params.push(customer.id);

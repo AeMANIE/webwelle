@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import QuillEditor from './QuillEditor';
 // CSS für ReactQuill importieren
-import 'react-quill/dist/quill.snow.css';
+import 'react-quill-new/dist/quill.snow.css';
 
 interface BlogPost {
   id?: string;
@@ -99,12 +99,14 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
     }
   };
 
+  // Quill-Module werden jetzt im QuillEditor selbst definiert (mit Bild-Upload-Handler)
   const quillModules = {
     toolbar: [
       [{ header: [1, 2, 3, false] }],
       ['bold', 'italic', 'underline', 'strike'],
       [{ list: 'ordered' }, { list: 'bullet' }],
       ['link', 'image'],
+      ['code-block'],
       ['clean'],
     ],
   };
@@ -191,15 +193,77 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
       {/* Featured Image */}
       <div>
         <label className="block text-sm font-medium text-foreground mb-2">
-          Featured Image URL
+          Featured Image
         </label>
-        <input
-          type="url"
-          value={featuredImageUrl}
-          onChange={(e) => setFeaturedImageUrl(e.target.value)}
-          className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground"
-          placeholder="https://example.com/image.jpg"
-        />
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={featuredImageUrl}
+            onChange={(e) => setFeaturedImageUrl(e.target.value)}
+            className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-foreground"
+            placeholder="https://example.com/image.jpg oder Bild hochladen"
+          />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+
+              // Validierung
+              const maxSize = 5 * 1024 * 1024; // 5MB
+              if (file.size > maxSize) {
+                setError('Datei ist zu groß (max. 5MB)');
+                return;
+              }
+
+              const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+              if (!allowedTypes.includes(file.type)) {
+                setError('Nur Bilder (JPEG, PNG, WebP, GIF) sind erlaubt');
+                return;
+              }
+
+              // Upload
+              const formData = new FormData();
+              formData.append('file', file);
+
+              try {
+                const response = await fetch('/api/admin/blog/upload', {
+                  method: 'POST',
+                  body: formData,
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.url) {
+                  setFeaturedImageUrl(data.url);
+                  setError('');
+                } else {
+                  setError(data.error || 'Fehler beim Hochladen des Bildes');
+                }
+              } catch (err) {
+                setError('Fehler beim Hochladen des Bildes');
+              }
+            }}
+            className="hidden"
+            id="featured-image-upload"
+          />
+          <label
+            htmlFor="featured-image-upload"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors cursor-pointer font-medium"
+          >
+            Bild hochladen
+          </label>
+        </div>
+        {featuredImageUrl && (
+          <div className="mt-2">
+            <img
+              src={featuredImageUrl}
+              alt="Featured"
+              className="max-w-xs max-h-48 object-cover rounded-lg border border-border"
+            />
+          </div>
+        )}
       </div>
 
       {/* Tags */}

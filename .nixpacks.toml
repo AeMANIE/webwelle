@@ -1,0 +1,21 @@
+# Nixpacks Konfiguration für WebWelle
+# Stellt sicher, dass lightningcss native Binaries installiert werden
+
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = [
+  "npm ci --include=optional",
+  "bash scripts/install-lightningcss.sh",
+  "npm rebuild lightningcss --force || echo 'lightningcss rebuild optional'"
+]
+
+[phases.build]
+cmds = [
+  "npm run build"
+]
+
+[phases.start]
+cmd = "npm start"
+

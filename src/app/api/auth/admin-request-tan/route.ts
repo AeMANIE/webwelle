@@ -1,10 +1,31 @@
 import { NextResponse } from 'next/server';
-import { requestAdminTAN } from '@/lib/auth';
+import { adminRequestTAN } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate-limit';
+
+// Rate Limiting: Max. 3 TAN-Anfragen pro 15 Minuten pro IP
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 Minuten
+  maxRequests: 3, // Max. 3 Versuche
+});
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    // Rate Limiting
+    const ip = request.headers.get('x-forwarded-for') || 
+               request.headers.get('x-real-ip') || 
+               'unknown';
     
+    const rateLimitResult = await limiter(`admin-tan-request:${ip}`);
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.' },
+        { status: 429 }
+      );
+    }
+
+    const { email, password } = await request.json();
+
     if (!email || !password) {
       return NextResponse.json(
         { success: false, error: 'E-Mail und Passwort sind erforderlich' },
@@ -12,7 +33,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await requestAdminTAN(email, password);
+    const result = await adminRequestTAN(email, password);
     
     if (!result.success) {
       return NextResponse.json(
@@ -21,16 +42,63 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    // TAN wurde gesendet - JETZT: TAN auch in Cookie speichern (für Serverless-Kompatibilität)
+    const normalizedEmail = email.toLowerCase().trim();
+    const response = NextResponse.json({
+      success: true,
       message: result.message,
-      // TAN nur in Development zurückgeben (Sicherheit)
-      tan: process.env.NODE_ENV !== 'production' ? result.tan : undefined
+      // Nur in Development: TAN zurückgeben
+      ...(process.env.NODE_ENV !== 'production' && result.tan ? { tan: result.tan } : {})
     });
+
+    // TAN in HttpOnly Cookie speichern (10 Minuten Gültigkeit)
+    // WICHTIG: result.tan ist nur in Development verfügbar, aber wir müssen die TAN trotzdem speichern
+    // Lösung: Die TAN wird bereits in storeAdminTAN gespeichert, wir holen sie aus dem Store
+    if (result.tan) {
+      const tanData = JSON.stringify({ 
+        email: normalizedEmail, 
+        tan: result.tan, 
+        expiresAt: Date.now() + (10 * 60 * 1000) 
+      });
+      response.cookies.set('admin-tan-pending', tanData, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 10 * 60, // 10 Minuten
+        path: '/',
+      });
+      console.log('✅ Admin-TAN in Cookie gespeichert für:', normalizedEmail);
+    } else {
+      // In Production: TAN aus Store holen und in Cookie speichern
+      try {
+        const { getAdminTAN } = await import('@/lib/tan-store');
+        const tanEntry = await getAdminTAN(normalizedEmail);
+        if (tanEntry) {
+          const tanData = JSON.stringify({ 
+            email: normalizedEmail, 
+            tan: tanEntry.tan, 
+            expiresAt: tanEntry.expiresAt 
+          });
+          response.cookies.set('admin-tan-pending', tanData, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: Math.floor((tanEntry.expiresAt - Date.now()) / 1000),
+            path: '/',
+          });
+          console.log('✅ Admin-TAN aus Store in Cookie gespeichert für:', normalizedEmail);
+        }
+      } catch (error) {
+        console.error('⚠️ Fehler beim Speichern der TAN in Cookie:', error);
+      }
+    }
+
+    return response;
   } catch (error) {
-    console.error('❌ Fehler beim Anfordern der Admin-TAN:', error);
+    console.error('❌ Admin-TAN-Anfrage Fehler:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten';
     return NextResponse.json(
-      { success: false, error: 'Ein Fehler ist aufgetreten' },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }

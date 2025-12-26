@@ -22,7 +22,69 @@ export interface BlogPost {
 export async function getAllBlogPosts(
   status?: 'draft' | 'published'
 ): Promise<BlogPost[]> {
-  const client = await pool.connect();
+  let client;
+  let connectionError: Error | null = null;
+  
+  try {
+    client = await pool.connect();
+  } catch (error) {
+    connectionError = error instanceof Error ? error : new Error('Unbekannter Fehler');
+    
+    // SSL-Fallback für VPS
+    if (connectionError.message.includes('certificate') || 
+        connectionError.message.includes('SSL') || 
+        connectionError.message.includes('TLS') ||
+        connectionError.message.includes('unable to verify')) {
+      const { Pool: TempPool } = await import('pg');
+      const tempPool = new TempPool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 10000,
+      });
+      
+      try {
+        client = await tempPool.connect();
+        
+        let query = 'SELECT * FROM blog_posts';
+        const params: unknown[] = [];
+        
+        if (status) {
+          query += ' WHERE status = $1';
+          params.push(status);
+        }
+        
+        query += ' ORDER BY created_at DESC';
+        
+        const result = await client.query(query, params);
+        const posts = result.rows.map(row => ({
+          id: row.id,
+          title: row.title,
+          slug: row.slug,
+          excerpt: row.excerpt,
+          content: row.content,
+          author: row.author,
+          featuredImageUrl: row.featured_image_url,
+          metaDescription: row.meta_description,
+          tags: row.tags || [],
+          featured: row.featured || false,
+          status: row.status,
+          publishedAt: row.published_at ? new Date(row.published_at) : undefined,
+          createdAt: new Date(row.created_at),
+          updatedAt: new Date(row.updated_at),
+          createdBy: row.created_by,
+        }));
+        
+        client.release();
+        await tempPool.end();
+        return posts;
+      } catch (fallbackError) {
+        if (client) client.release();
+        await tempPool.end();
+        throw fallbackError;
+      }
+    }
+    throw connectionError;
+  }
   
   try {
     let query = 'SELECT * FROM blog_posts';
@@ -294,5 +356,17 @@ export async function deleteBlogPost(id: string): Promise<boolean> {
   } finally {
     client.release();
   }
+}
+
+// Slug aus Titel generieren
+export function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 

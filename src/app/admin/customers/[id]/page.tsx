@@ -2,19 +2,22 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Header from '@/app/components/Header';
-import Footer from '@/app/components/Footer';
-import { Trash2, Mail, Key, Download, Send, ArrowLeft, Package, FileText, CreditCard, User, Building, Phone, Calendar } from 'lucide-react';
+import Header from '../../../components/Header';
+import Footer from '../../../components/Footer';
 
 interface Customer {
   id: string;
   email: string;
-  name: string;
+  name?: string;
   phone?: string;
   company_name?: string;
   customer_number?: string;
-  portal_activated: boolean;
-  created_at: string;
+  street?: string;
+  city?: string;
+  zip?: string;
+  country?: string;
+  portal_activated?: boolean;
+  created_at?: string;
 }
 
 interface Booking {
@@ -24,137 +27,146 @@ interface Booking {
   total_amount_cents: number;
   currency: string;
   created_at: string;
-  customer_name?: string;
-  customer_email?: string;
-  company_name?: string;
 }
 
 interface Invoice {
   id: string;
   invoice_number?: string;
-  number?: string;
-  stripe_invoice_id?: string;
   amount_cents?: number;
   amount?: number;
   currency?: string;
   status: string;
-  paid_at?: string;
-  due_date?: string;
   pdf_url?: string;
   hosted_invoice_url?: string;
   created_at?: string;
+  paid_at?: string;
 }
 
-interface Subscription {
-  id: string;
-  status: string;
-  cancelAt?: string;
-  canceledAt?: string;
-  currentPeriodEnd?: string;
-  items: Array<{
-    priceId: string;
-    productId: string | null;
-    recurring?: string;
-    amount: number;
-    currency?: string;
-  }>;
-}
 
 export default function CustomerDetailPage() {
-  const router = useRouter();
   const params = useParams();
+  const router = useRouter();
   const customerId = params.id as string;
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showResetPasswordConfirm, setShowResetPasswordConfirm] = useState(false);
+  const [error, setError] = useState('');
+  
+  // Bearbeitungs-Modus
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<Partial<Customer>>({});
+  const [saving, setSaving] = useState(false);
+  
+  // E-Mail-Modus
+  const [showEmailForm, setShowEmailForm] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
-  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
-    loadCustomerData();
+    if (customerId) {
+      loadCustomerDetails();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId]);
 
-  const loadCustomerData = async () => {
-    setLoading(true);
-    setError(null);
+  const loadCustomerDetails = async () => {
     try {
-      const res = await fetch(`/api/admin/customers/${customerId}`);
-      if (res.ok) {
-        const data = await res.json();
+      const response = await fetch(`/api/admin/customers?id=${customerId}`);
+      if (response.ok) {
+        const data = await response.json();
         setCustomer(data.customer);
         setBookings(data.bookings || []);
         setInvoices(data.invoices || []);
-        setSubscriptions(data.subscriptions || []);
+        setEditData(data.customer);
       } else {
-        const errorData = await res.json().catch(() => ({ error: 'Unbekannter Fehler' }));
-        setError(errorData.error || 'Fehler beim Laden der Kundendaten');
+        setError('Kunde nicht gefunden');
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Fehler beim Laden der Kundendaten');
+    } catch {
+      setError('Fehler beim Laden der Kundendaten');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async () => {
-    setActionLoading('delete');
+  const handleSave = async () => {
+    setSaving(true);
     try {
-      const res = await fetch(`/api/admin/customers/${customerId}`, {
+      const response = await fetch(`/api/admin/customers/${customerId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCustomer(data.customer);
+        setIsEditing(false);
+        setError('');
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Fehler beim Speichern');
+      }
+    } catch {
+      setError('Fehler beim Speichern');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Möchten Sie diesen Kunden wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/customers/${customerId}`, {
         method: 'DELETE',
       });
-      if (res.ok) {
+
+      if (response.ok) {
         router.push('/admin?tab=customers');
       } else {
-        const errorData = await res.json().catch(() => ({ error: 'Fehler beim Löschen' }));
-        alert(`Fehler: ${errorData.error}`);
+        const data = await response.json();
+        setError(data.error || 'Fehler beim Löschen');
       }
-    } catch (err) {
-      alert(`Fehler: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
-    } finally {
-      setActionLoading(null);
-      setShowDeleteConfirm(false);
+    } catch {
+      setError('Fehler beim Löschen');
     }
   };
 
   const handleResetPassword = async () => {
-    setActionLoading('reset-password');
+    if (!confirm('Möchten Sie dem Kunden eine Passwort-Reset-E-Mail senden?')) {
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/admin/customers/${customerId}/reset-password`, {
+      const response = await fetch(`/api/admin/customers/${customerId}/reset-password`, {
         method: 'POST',
       });
-      if (res.ok) {
-        const data = await res.json();
-        alert(`✅ Passwort zurückgesetzt! Neues Passwort: ${data.newPassword}`);
+
+      if (response.ok) {
+        alert('Passwort-Reset-E-Mail wurde erfolgreich gesendet');
       } else {
-        const errorData = await res.json().catch(() => ({ error: 'Fehler beim Zurücksetzen' }));
-        alert(`Fehler: ${errorData.error}`);
+        const data = await response.json();
+        setError(data.error || 'Fehler beim Senden der E-Mail');
       }
-    } catch (err) {
-      alert(`Fehler: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
-    } finally {
-      setActionLoading(null);
-      setShowResetPasswordConfirm(false);
+    } catch {
+      setError('Fehler beim Senden der E-Mail');
     }
   };
 
   const handleSendEmail = async () => {
     if (!emailSubject || !emailMessage) {
-      alert('Bitte füllen Sie Betreff und Nachricht aus');
+      setError('Betreff und Nachricht sind erforderlich');
       return;
     }
 
-    setActionLoading('send-email');
+    setSendingEmail(true);
     try {
-      const res = await fetch(`/api/admin/customers/${customerId}/send-email`, {
+      const response = await fetch(`/api/admin/customers/${customerId}/send-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -162,80 +174,53 @@ export default function CustomerDetailPage() {
           message: emailMessage,
         }),
       });
-      if (res.ok) {
-        alert('✅ E-Mail erfolgreich gesendet!');
-        setShowEmailModal(false);
+
+      if (response.ok) {
+        alert('E-Mail wurde erfolgreich gesendet');
+        setShowEmailForm(false);
         setEmailSubject('');
         setEmailMessage('');
+        setError('');
       } else {
-        const errorData = await res.json().catch(() => ({ error: 'Fehler beim Senden' }));
-        alert(`Fehler: ${errorData.error}`);
+        const data = await response.json();
+        setError(data.error || 'Fehler beim Senden der E-Mail');
       }
-    } catch (err) {
-      alert(`Fehler: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
+    } catch {
+      setError('Fehler beim Senden der E-Mail');
     } finally {
-      setActionLoading(null);
+      setSendingEmail(false);
     }
-  };
-
-  const handleSendInvoiceEmail = async (invoiceId: string) => {
-    setActionLoading(`send-invoice-${invoiceId}`);
-    try {
-      const res = await fetch(`/api/admin/invoices/${invoiceId}/send-email`, {
-        method: 'POST',
-      });
-      if (res.ok) {
-        alert('✅ Rechnung erfolgreich per E-Mail gesendet!');
-      } else {
-        const errorData = await res.json().catch(() => ({ error: 'Fehler beim Senden' }));
-        alert(`Fehler: ${errorData.error}`);
-      }
-    } catch (err) {
-      alert(`Fehler: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const getPackageName = (packageType: string): string => {
-    const names: Record<string, string> = {
-      starterwelle: 'StarterWelle',
-      businesswelle: 'BusinessWelle',
-      erfolgswelle: 'ErfolgsWelle',
-      flowwelle: 'FlowWelle',
-      powerwelle: 'PowerWelle',
-      meisterwelle: 'MeisterWelle',
-      minijob: 'Mini Job AI-Assistent',
-      midijob: 'Midi Job AI-Assistenz',
-      festangestellt: 'Festangestellt AI-Agent',
-      einrichtungspaket: 'Einrichtungspaket AI Voice',
-    };
-    return names[packageType] || packageType;
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="py-20">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center">Lade Kundendaten...</div>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
 
-  if (error || !customer) {
+  if (error && !customer) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="py-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-red-500/10 border border-red-500 text-red-500 p-4 rounded-lg">
-              <p>{error || 'Kunde nicht gefunden'}</p>
-              <button
-                onClick={() => router.push('/admin?tab=customers')}
-                className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
-              >
-                Zurück zu Kunden
-              </button>
+        <main className="py-20">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
+              {error}
             </div>
+            <button
+              onClick={() => router.push('/admin?tab=customers')}
+              className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+            >
+              Zurück zur Kundenliste
+            </button>
           </div>
         </main>
         <Footer />
@@ -248,369 +233,337 @@ export default function CustomerDetailPage() {
       <Header />
       <main className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header mit Aktionen */}
+          {/* Header */}
           <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div>
               <button
                 onClick={() => router.push('/admin?tab=customers')}
-                className="p-2 hover:bg-muted rounded-lg transition-colors"
+                className="text-primary hover:underline mb-2"
               >
-                <ArrowLeft className="w-5 h-5" />
+                ← Zurück zur Kundenliste
               </button>
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">{customer.name || 'Kein Name'}</h1>
-                <p className="text-muted-foreground">{customer.email}</p>
-              </div>
+              <h1 className="text-3xl font-bold text-foreground">
+                {isEditing ? 'Kunde bearbeiten' : 'Kundendetails'}
+              </h1>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowEmailModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                <Mail className="w-4 h-4" />
-                E-Mail senden
-              </button>
-              <button
-                onClick={() => setShowResetPasswordConfirm(true)}
-                disabled={actionLoading !== null}
-                className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors disabled:opacity-50"
-              >
-                <Key className="w-4 h-4" />
-                Passwort zurücksetzen
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                disabled={actionLoading !== null}
-                className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors disabled:opacity-50"
-              >
-                <Trash2 className="w-4 h-4" />
-                Löschen
-              </button>
+            <div className="flex gap-2">
+              {!isEditing ? (
+                <>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+                  >
+                    Bearbeiten
+                  </button>
+                  <button
+                    onClick={handleResetPassword}
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+                  >
+                    Passwort zurücksetzen
+                  </button>
+                  <button
+                    onClick={() => setShowEmailForm(!showEmailForm)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    E-Mail senden
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90"
+                  >
+                    Löschen
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditData(customer || {});
+                    }}
+                    className="px-4 py-2 bg-muted text-foreground rounded-lg"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    {saving ? 'Speichern...' : 'Speichern'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Kundeninformationen */}
-          <div className="bg-card rounded-lg p-6 border border-border mb-6">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Kundeninformationen</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                <User className="w-5 h-5 text-muted-foreground" />
+          {error && (
+            <div className="mb-4 bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          {/* E-Mail-Formular */}
+          {showEmailForm && (
+            <div className="mb-6 bg-card rounded-lg p-6 border border-border">
+              <h2 className="text-xl font-bold text-foreground mb-4">E-Mail an Kunde senden</h2>
+              <div className="space-y-4">
                 <div>
-                  <div className="text-sm text-muted-foreground">Name</div>
-                  <div className="font-medium text-foreground">{customer.name || 'Kein Name'}</div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Betreff</label>
+                  <input
+                    type="text"
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+                    placeholder="Betreff der E-Mail"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Nachricht</label>
+                  <textarea
+                    value={emailMessage}
+                    onChange={(e) => setEmailMessage(e.target.value)}
+                    rows={8}
+                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+                    placeholder="Ihre Nachricht an den Kunden..."
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setShowEmailForm(false);
+                      setEmailSubject('');
+                      setEmailMessage('');
+                    }}
+                    className="px-4 py-2 bg-muted text-foreground rounded-lg"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={handleSendEmail}
+                    disabled={sendingEmail}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    {sendingEmail ? 'Wird gesendet...' : 'E-Mail senden'}
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-muted-foreground" />
+            </div>
+          )}
+
+          {/* Kunden-Informationen */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="bg-card rounded-lg p-6 border border-border">
+              <h2 className="text-xl font-bold text-foreground mb-4">Kontaktinformationen</h2>
+              <div className="space-y-3">
                 <div>
-                  <div className="text-sm text-muted-foreground">E-Mail</div>
-                  <div className="font-medium text-foreground">{customer.email}</div>
-                </div>
-              </div>
-              {customer.phone && (
-                <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <div className="text-sm text-muted-foreground">Telefon</div>
-                    <div className="font-medium text-foreground">{customer.phone}</div>
-                  </div>
-                </div>
-              )}
-              {customer.company_name && (
-                <div className="flex items-center gap-3">
-                  <Building className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <div className="text-sm text-muted-foreground">Firma</div>
-                    <div className="font-medium text-foreground">{customer.company_name}</div>
-                  </div>
-                </div>
-              )}
-              {customer.customer_number && (
-                <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <div className="text-sm text-muted-foreground">Kundennummer</div>
-                    <div className="font-mono font-medium text-foreground">{customer.customer_number}</div>
-                  </div>
-                </div>
-              )}
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-muted-foreground" />
-                <div>
-                  <div className="text-sm text-muted-foreground">Registriert am</div>
-                  <div className="font-medium text-foreground">
-                    {new Date(customer.created_at).toLocaleDateString('de-DE')}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 flex items-center justify-center">
-                  {customer.portal_activated ? (
-                    <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded text-xs">Portal aktiviert</span>
+                  <label className="text-sm text-muted-foreground">E-Mail</label>
+                  {isEditing ? (
+                    <input
+                      type="email"
+                      value={editData.email || ''}
+                      onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
+                    />
                   ) : (
-                    <span className="bg-gray-500/10 text-gray-500 px-2 py-1 rounded text-xs">Portal nicht aktiviert</span>
+                    <p className="text-foreground">{customer?.email}</p>
                   )}
                 </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Name</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editData.name || ''}
+                      onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
+                    />
+                  ) : (
+                    <p className="text-foreground">{customer?.name || '—'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Telefon</label>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      value={editData.phone || ''}
+                      onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
+                    />
+                  ) : (
+                    <p className="text-foreground">{customer?.phone || '—'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Firma</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editData.company_name || ''}
+                      onChange={(e) => setEditData({ ...editData, company_name: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
+                    />
+                  ) : (
+                    <p className="text-foreground">{customer?.company_name || '—'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Kundennummer</label>
+                  <p className="text-foreground font-mono">{customer?.customer_number || '—'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-card rounded-lg p-6 border border-border">
+              <h2 className="text-xl font-bold text-foreground mb-4">Adresse</h2>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm text-muted-foreground">Straße</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editData.street || ''}
+                      onChange={(e) => setEditData({ ...editData, street: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
+                    />
+                  ) : (
+                    <p className="text-foreground">{customer?.street || '—'}</p>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm text-muted-foreground">PLZ</label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editData.zip || ''}
+                        onChange={(e) => setEditData({ ...editData, zip: e.target.value })}
+                        className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
+                      />
+                    ) : (
+                      <p className="text-foreground">{customer?.zip || '—'}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground">Stadt</label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editData.city || ''}
+                        onChange={(e) => setEditData({ ...editData, city: e.target.value })}
+                        className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
+                      />
+                    ) : (
+                      <p className="text-foreground">{customer?.city || '—'}</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Land</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editData.country || ''}
+                      onChange={(e) => setEditData({ ...editData, country: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
+                    />
+                  ) : (
+                    <p className="text-foreground">{customer?.country || '—'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Portal-Status</label>
+                  <p className="text-foreground">
+                    {customer?.portal_activated ? (
+                      <span className="text-green-500">✓ Aktiviert</span>
+                    ) : (
+                      <span className="text-muted-foreground">Nicht aktiviert</span>
+                    )}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Pakete/Buchungen */}
+          {/* Bestellungen */}
           <div className="bg-card rounded-lg p-6 border border-border mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                <Package className="w-5 h-5" />
-                Pakete & Buchungen ({bookings.length})
-              </h2>
-            </div>
-            {bookings.length === 0 ? (
-              <div className="text-muted-foreground">Keine Buchungen gefunden</div>
-            ) : (
+            <h2 className="text-xl font-bold text-foreground mb-4">Bestellungen ({bookings.length})</h2>
+            {bookings.length > 0 ? (
               <div className="space-y-3">
                 {bookings.map((booking) => (
-                  <div key={booking.id} className="border border-border rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="font-semibold text-foreground mb-2">{getPackageName(booking.package_type)}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Erstellt: {new Date(booking.created_at).toLocaleString('de-DE')}
-                        </div>
-                        <div className="mt-2">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            booking.status === 'paid' 
-                              ? 'bg-green-500/10 text-green-500' 
-                              : booking.status === 'pending'
-                              ? 'bg-yellow-500/10 text-yellow-500'
-                              : 'bg-red-500/10 text-red-500'
-                          }`}>
-                            {booking.status === 'paid' ? 'Bezahlt' : booking.status === 'pending' ? 'Ausstehend' : booking.status}
-                          </span>
-                        </div>
+                  <div key={booking.id} className="border border-border rounded p-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold text-foreground">{booking.package_type}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(booking.created_at).toLocaleDateString('de-DE')}
+                        </p>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-foreground text-lg">
-                          {((booking.total_amount_cents || 0) / 100).toFixed(2)} {booking.currency || 'EUR'}
-                        </div>
+                        <p className="font-semibold text-foreground">
+                          {(booking.total_amount_cents / 100).toFixed(2)} {booking.currency?.toUpperCase()}
+                        </p>
+                        <p className={`text-sm ${booking.status === 'paid' ? 'text-green-500' : 'text-yellow-500'}`}>
+                          {booking.status}
+                        </p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
+            ) : (
+              <p className="text-muted-foreground">Keine Bestellungen</p>
             )}
           </div>
 
           {/* Rechnungen */}
           <div className="bg-card rounded-lg p-6 border border-border mb-6">
-            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Rechnungen ({invoices.length})
-            </h2>
-            {invoices.length === 0 ? (
-              <div className="text-muted-foreground">Keine Rechnungen gefunden</div>
-            ) : (
+            <h2 className="text-xl font-bold text-foreground mb-4">Rechnungen ({invoices.length})</h2>
+            {invoices.length > 0 ? (
               <div className="space-y-3">
                 {invoices.map((invoice) => (
-                  <div key={invoice.id} className="border border-border rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="font-mono font-semibold text-foreground mb-2">
-                          {invoice.invoice_number || invoice.number || 'Keine Nummer'}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Erstellt: {invoice.created_at ? new Date(invoice.created_at).toLocaleDateString('de-DE') : 'Unbekannt'}
-                          {invoice.paid_at && ` • Bezahlt: ${new Date(invoice.paid_at).toLocaleDateString('de-DE')}`}
-                          {invoice.due_date && ` • Fällig: ${new Date(invoice.due_date).toLocaleDateString('de-DE')}`}
-                        </div>
-                        <div className="mt-2">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            invoice.status === 'paid' 
-                              ? 'bg-green-500/10 text-green-500' 
-                              : invoice.status === 'open'
-                              ? 'bg-yellow-500/10 text-yellow-500'
-                              : 'bg-red-500/10 text-red-500'
-                          }`}>
-                            {invoice.status === 'paid' ? 'Bezahlt' : invoice.status === 'open' ? 'Offen' : invoice.status}
-                          </span>
-                        </div>
+                  <div key={invoice.id} className="border border-border rounded p-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-mono text-foreground">{invoice.invoice_number || '—'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {invoice.created_at ? new Date(invoice.created_at).toLocaleDateString('de-DE') : '—'}
+                        </p>
                       </div>
-                      <div className="text-right flex flex-col gap-2">
-                        <div className="font-bold text-foreground">
+                      <div className="text-right">
+                        <p className="font-semibold text-foreground">
                           {invoice.amount 
-                            ? invoice.amount.toFixed(2) 
+                            ? `${invoice.amount.toFixed(2)} ${invoice.currency || 'EUR'}`
                             : invoice.amount_cents 
-                            ? (invoice.amount_cents / 100).toFixed(2) 
-                            : '0.00'} {invoice.currency || 'EUR'}
-                        </div>
-                        <div className="flex gap-2">
-                          {invoice.pdf_url && (
-                            <a
-                              href={invoice.pdf_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 transition-colors flex items-center gap-1"
-                            >
-                              <Download className="w-4 h-4" />
-                              PDF
-                            </a>
-                          )}
-                          <button
-                            onClick={() => handleSendInvoiceEmail(invoice.id)}
-                            disabled={actionLoading === `send-invoice-${invoice.id}`}
-                            className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center gap-1"
+                              ? `${(invoice.amount_cents / 100).toFixed(2)} ${invoice.currency || 'EUR'}`
+                              : '—'}
+                        </p>
+                        <p className={`text-sm ${invoice.status === 'paid' ? 'text-green-500' : 'text-yellow-500'}`}>
+                          {invoice.status}
+                        </p>
+                        {invoice.pdf_url && (
+                          <a
+                            href={invoice.pdf_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary text-sm hover:underline"
                           >
-                            <Send className="w-4 h-4" />
-                            {actionLoading === `send-invoice-${invoice.id}` ? 'Sende...' : 'E-Mail'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Abonnements */}
-          {subscriptions.length > 0 && (
-            <div className="bg-card rounded-lg p-6 border border-border mb-6">
-              <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
-                Abonnements ({subscriptions.length})
-              </h2>
-              <div className="space-y-3">
-                {subscriptions.map((sub) => (
-                  <div key={sub.id} className="border border-border rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="font-semibold text-foreground mb-2">Abonnement {sub.id.substring(0, 20)}...</div>
-                        <div className="text-sm text-muted-foreground">
-                          Status: {sub.status}
-                          {sub.currentPeriodEnd && ` • Endet: ${new Date(sub.currentPeriodEnd).toLocaleDateString('de-DE')}`}
-                        </div>
-                        {sub.items && sub.items.length > 0 && (
-                          <div className="mt-2">
-                            {sub.items.map((item, idx) => (
-                              <div key={idx} className="text-sm text-muted-foreground">
-                                {item.amount} {item.currency} / {item.recurring || 'monatlich'}
-                              </div>
-                            ))}
-                          </div>
+                            PDF öffnen
+                          </a>
                         )}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-muted-foreground">Keine Rechnungen</p>
+            )}
+          </div>
         </div>
       </main>
       <Footer />
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 border border-border">
-            <h3 className="text-xl font-bold text-foreground mb-4">Kunde löschen?</h3>
-            <p className="text-muted-foreground mb-6">
-              Möchten Sie den Kunden <strong>{customer.name || customer.email}</strong> wirklich löschen?
-              Diese Aktion kann nicht rückgängig gemacht werden.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 bg-muted text-foreground rounded hover:bg-muted/80"
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={actionLoading === 'delete'}
-                className="px-4 py-2 bg-destructive text-destructive-foreground rounded hover:bg-destructive/90 disabled:opacity-50"
-              >
-                {actionLoading === 'delete' ? 'Lösche...' : 'Löschen'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Reset Password Confirmation Modal */}
-      {showResetPasswordConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 border border-border">
-            <h3 className="text-xl font-bold text-foreground mb-4">Passwort zurücksetzen?</h3>
-            <p className="text-muted-foreground mb-6">
-              Möchten Sie das Passwort für <strong>{customer.name || customer.email}</strong> zurücksetzen?
-              Ein neues zufälliges Passwort wird generiert.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setShowResetPasswordConfirm(false)}
-                className="px-4 py-2 bg-muted text-foreground rounded hover:bg-muted/80"
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={handleResetPassword}
-                disabled={actionLoading === 'reset-password'}
-                className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 disabled:opacity-50"
-              >
-                {actionLoading === 'reset-password' ? 'Zurücksetzen...' : 'Zurücksetzen'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Email Modal */}
-      {showEmailModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-6 max-w-2xl w-full mx-4 border border-border max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold text-foreground mb-4">E-Mail an {customer.name || customer.email} senden</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Betreff</label>
-                <input
-                  type="text"
-                  value={emailSubject}
-                  onChange={(e) => setEmailSubject(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded"
-                  placeholder="Betreff der E-Mail"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Nachricht</label>
-                <textarea
-                  value={emailMessage}
-                  onChange={(e) => setEmailMessage(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded min-h-[200px]"
-                  placeholder="Nachricht an den Kunden..."
-                />
-              </div>
-            </div>
-            <div className="flex gap-2 justify-end mt-6">
-              <button
-                onClick={() => {
-                  setShowEmailModal(false);
-                  setEmailSubject('');
-                  setEmailMessage('');
-                }}
-                className="px-4 py-2 bg-muted text-foreground rounded hover:bg-muted/80"
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={handleSendEmail}
-                disabled={actionLoading === 'send-email' || !emailSubject || !emailMessage}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
-              >
-                {actionLoading === 'send-email' ? 'Sende...' : 'Senden'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
