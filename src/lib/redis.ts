@@ -101,21 +101,38 @@ const initializeRedis = () => {
     redisEnabled = true;
     
     // Event Handler
+    let connectionAttempts = 0;
+    let lastErrorLogged = 0;
+    const ERROR_LOG_INTERVAL = 30000; // Nur alle 30 Sekunden einen Fehler loggen
+    
     redisClient.on('connect', () => {
       console.log('✅ Redis verbunden');
+      connectionAttempts = 0;
+      redisEnabled = true;
     });
     
     redisClient.on('error', (error) => {
-      // Nur in Development detaillierte Fehler loggen
-      if (process.env.NODE_ENV === 'development') {
-        console.error('❌ Redis Fehler:', error);
+      connectionAttempts++;
+      const now = Date.now();
+      
+      // Nur loggen wenn:
+      // 1. Development Mode ODER
+      // 2. Erster Fehler ODER
+      // 3. Letzter Fehler-Log war vor mehr als 30 Sekunden
+      if (process.env.NODE_ENV === 'development' || connectionAttempts === 1 || (now - lastErrorLogged) > ERROR_LOG_INTERVAL) {
+        // Nur ENOTFOUND Fehler nicht in Production loggen (zu viele)
+        const isConnectionError = error instanceof Error && error.message.includes('ENOTFOUND');
+        if (process.env.NODE_ENV === 'development' || !isConnectionError || connectionAttempts === 1) {
+          console.error('❌ Redis Fehler:', error instanceof Error ? error.message : error);
+          lastErrorLogged = now;
+        }
       }
       redisEnabled = false;
     });
     
     redisClient.on('close', () => {
-      // Nur in Development Warnung loggen
-      if (process.env.NODE_ENV === 'development') {
+      // Nur einmal loggen, nicht bei jedem close Event
+      if (connectionAttempts <= 1 && process.env.NODE_ENV === 'development') {
         console.warn('⚠️ Redis Verbindung geschlossen');
       }
       redisEnabled = false;
@@ -123,9 +140,16 @@ const initializeRedis = () => {
 
     // Verbindung aufbauen (async, blockiert nicht)
     redisClient.connect().catch((error) => {
-      // Nur in Development detaillierte Fehler loggen
-      if (process.env.NODE_ENV === 'development') {
-        console.error('❌ Redis Verbindung fehlgeschlagen:', error);
+      connectionAttempts++;
+      // Nur ersten Verbindungsfehler loggen
+      if (connectionAttempts === 1) {
+        const isConnectionError = error instanceof Error && error.message.includes('ENOTFOUND');
+        if (process.env.NODE_ENV === 'development' || !isConnectionError) {
+          console.error('❌ Redis Verbindung fehlgeschlagen:', error instanceof Error ? error.message : error);
+        } else {
+          // In Production: Nur einmal kurz loggen
+          console.warn('⚠️ Redis nicht erreichbar. Verwende In-Memory Store.');
+        }
       }
       redisEnabled = false;
     });
@@ -161,23 +185,36 @@ export async function safeRedisOperation<T>(
   const client = getRedisClient();
   const enabled = isRedisEnabled();
   
-  console.log('🔧 safeRedisOperation:', { 
-    hasClient: !!client, 
-    isEnabled: enabled,
-    clientStatus: client ? (client as Redis).status : 'kein Client'
-  });
+  // Nur in Development detaillierte Logs
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔧 safeRedisOperation:', { 
+      hasClient: !!client, 
+      isEnabled: enabled,
+      clientStatus: client ? (client as Redis).status : 'kein Client'
+    });
+  }
   
   if (!client || !enabled) {
-    console.log('⚠️ Redis nicht verfügbar, verwende Fallback');
+    // Nur in Development loggen
+    if (process.env.NODE_ENV === 'development') {
+      console.log('⚠️ Redis nicht verfügbar, verwende Fallback');
+    }
     return fallback();
   }
 
   try {
     const result = await operation(client);
-    console.log('✅ Redis Operation erfolgreich');
+    // Nur in Development Erfolgs-Log
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Redis Operation erfolgreich');
+    }
     return result;
   } catch (error) {
-    console.error('⚠️ Redis Operation fehlgeschlagen, verwende Fallback:', error instanceof Error ? error.message : error);
+    // Nur in Development oder bei nicht-Verbindungsfehlern loggen
+    const isConnectionError = error instanceof Error && error.message.includes('ENOTFOUND');
+    if (process.env.NODE_ENV === 'development' || !isConnectionError) {
+      console.error('⚠️ Redis Operation fehlgeschlagen, verwende Fallback:', error instanceof Error ? error.message : error);
+    }
     return fallback();
   }
 }
