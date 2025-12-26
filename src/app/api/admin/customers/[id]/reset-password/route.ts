@@ -5,9 +5,9 @@ import { randomBytes } from 'crypto';
 import { sendEmail } from '@/lib/email';
 
 // POST: Passwort für Kunde zurücksetzen (Admin-initiiert)
-export async function POST(request: NextRequest, context: unknown) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { params } = context as { params: { id: string } };
+    const params = await context.params;
     const token = request.cookies.get('auth-token')?.value;
     if (!token) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
@@ -18,7 +18,43 @@ export async function POST(request: NextRequest, context: unknown) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
     }
 
-    const client = await pool.connect();
+    let client: import('pg').PoolClient;
+    let tempPool: import('pg').Pool | null = null;
+    try {
+      client = await pool.connect();
+    } catch (connectionError) {
+      const errorMsg = connectionError instanceof Error ? connectionError.message : '';
+      const isSSLError = errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify');
+      const isHostnameError = errorMsg.includes('ENOTFOUND') || errorMsg.includes('getaddrinfo');
+      
+      if (isHostnameError) {
+        const publicUrl = process.env.DATABASE_PUBLICURL;
+        if (publicUrl) {
+          const { Pool: TempPool } = await import('pg');
+          tempPool = new TempPool({
+            connectionString: publicUrl,
+            ssl: publicUrl.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+            connectionTimeoutMillis: 10000,
+          });
+          client = await tempPool.connect();
+        } else {
+          throw new Error(`Datenbank-Hostname kann nicht aufgelöst werden: ${errorMsg}`);
+        }
+      } else if (isSSLError) {
+        const { Pool: TempPool } = await import('pg');
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl) throw new Error('DATABASE_URL ist nicht gesetzt');
+        tempPool = new TempPool({
+          connectionString: dbUrl,
+          ssl: { rejectUnauthorized: false },
+          connectionTimeoutMillis: 10000,
+        });
+        client = await tempPool.connect();
+      } else {
+        throw connectionError;
+      }
+    }
+
     try {
       // Kunde abrufen
       const customerRes = await client.query(
@@ -104,7 +140,8 @@ export async function POST(request: NextRequest, context: unknown) {
         message: 'Passwort-Reset-E-Mail wurde an den Kunden gesendet'
       });
     } finally {
-      client.release();
+      if (client) client.release();
+      if (tempPool) await tempPool.end();
     }
   } catch (error) {
     console.error('Fehler beim Zurücksetzen des Passworts:', error);

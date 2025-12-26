@@ -17,11 +17,48 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     const user = verifyToken(token);
     if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
 
-    const client = await pool.connect();
+    let client: import('pg').PoolClient;
+    let tempPool: import('pg').Pool | null = null;
+    try {
+      client = await pool.connect();
+    } catch (connectionError) {
+      const errorMsg = connectionError instanceof Error ? connectionError.message : '';
+      const isSSLError = errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify');
+      const isHostnameError = errorMsg.includes('ENOTFOUND') || errorMsg.includes('getaddrinfo');
+      
+      if (isHostnameError) {
+        const publicUrl = process.env.DATABASE_PUBLICURL;
+        if (publicUrl) {
+          const { Pool: TempPool } = await import('pg');
+          tempPool = new TempPool({
+            connectionString: publicUrl,
+            ssl: publicUrl.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+            connectionTimeoutMillis: 10000,
+          });
+          client = await tempPool.connect();
+        } else {
+          throw new Error(`Datenbank-Hostname kann nicht aufgelöst werden: ${errorMsg}`);
+        }
+      } else if (isSSLError) {
+        const { Pool: TempPool } = await import('pg');
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl) throw new Error('DATABASE_URL ist nicht gesetzt');
+        tempPool = new TempPool({
+          connectionString: dbUrl,
+          ssl: { rejectUnauthorized: false },
+          connectionTimeoutMillis: 10000,
+        });
+        client = await tempPool.connect();
+      } else {
+        throw connectionError;
+      }
+    }
+
     try {
       // Performance: Nur benötigte Spalten selektieren (kein SELECT *)
       const customerRes = await client.query(
         `SELECT id, email, name, phone, company_name, customer_number, 
+                street, city, zip, country,
                 portal_activated, portal_activated_at, 
                 is_verified, created_at, updated_at 
          FROM customers WHERE id = $1`,
@@ -126,17 +163,19 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
         subscriptions 
       });
     } finally {
-      client.release();
+      if (client) client.release();
+      if (tempPool) await tempPool.end();
     }
-  } catch {
+  } catch (error) {
+    console.error('Fehler bei Kunden-Details:', error);
     return NextResponse.json({ error: 'Fehler bei Kunden-Details' }, { status: 500 });
   }
 }
 
 // PUT: Kunde bearbeiten
-export async function PUT(request: NextRequest, context: unknown) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { params } = context as { params: { id: string } };
+    const params = await context.params;
     const token = request.cookies.get('auth-token')?.value;
     if (!token) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
     
@@ -146,9 +185,45 @@ export async function PUT(request: NextRequest, context: unknown) {
     }
 
     const body = await request.json();
-    const { name, phone, company_name, email } = body;
+    const { name, phone, company_name, email, street, city, zip, country } = body;
 
-    const client = await pool.connect();
+    let client: import('pg').PoolClient;
+    let tempPool: import('pg').Pool | null = null;
+    try {
+      client = await pool.connect();
+    } catch (connectionError) {
+      const errorMsg = connectionError instanceof Error ? connectionError.message : '';
+      const isSSLError = errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify');
+      const isHostnameError = errorMsg.includes('ENOTFOUND') || errorMsg.includes('getaddrinfo');
+      
+      if (isHostnameError) {
+        const publicUrl = process.env.DATABASE_PUBLICURL;
+        if (publicUrl) {
+          const { Pool: TempPool } = await import('pg');
+          tempPool = new TempPool({
+            connectionString: publicUrl,
+            ssl: publicUrl.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+            connectionTimeoutMillis: 10000,
+          });
+          client = await tempPool.connect();
+        } else {
+          throw new Error(`Datenbank-Hostname kann nicht aufgelöst werden: ${errorMsg}`);
+        }
+      } else if (isSSLError) {
+        const { Pool: TempPool } = await import('pg');
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl) throw new Error('DATABASE_URL ist nicht gesetzt');
+        tempPool = new TempPool({
+          connectionString: dbUrl,
+          ssl: { rejectUnauthorized: false },
+          connectionTimeoutMillis: 10000,
+        });
+        client = await tempPool.connect();
+      } else {
+        throw connectionError;
+      }
+    }
+
     try {
       // Prüfe ob Kunde existiert
       const checkRes = await client.query('SELECT id FROM customers WHERE id = $1', [params.id]);
@@ -185,6 +260,22 @@ export async function PUT(request: NextRequest, context: unknown) {
         updates.push(`email = $${paramCount++}`);
         values.push(email.toLowerCase().trim());
       }
+      if (street !== undefined) {
+        updates.push(`street = $${paramCount++}`);
+        values.push(street);
+      }
+      if (city !== undefined) {
+        updates.push(`city = $${paramCount++}`);
+        values.push(city);
+      }
+      if (zip !== undefined) {
+        updates.push(`zip = $${paramCount++}`);
+        values.push(zip);
+      }
+      if (country !== undefined) {
+        updates.push(`country = $${paramCount++}`);
+        values.push(country);
+      }
 
       if (updates.length === 0) {
         return NextResponse.json({ error: 'Keine Felder zum Aktualisieren' }, { status: 400 });
@@ -200,6 +291,7 @@ export async function PUT(request: NextRequest, context: unknown) {
       // Aktualisierten Kunden zurückgeben (nur benötigte Spalten)
       const customerRes = await client.query(
         `SELECT id, email, name, phone, company_name, customer_number, 
+                street, city, zip, country,
                 portal_activated, portal_activated_at, 
                 is_verified, created_at, updated_at 
          FROM customers WHERE id = $1`,
@@ -211,7 +303,8 @@ export async function PUT(request: NextRequest, context: unknown) {
         customer: customerRes.rows[0] 
       });
     } finally {
-      client.release();
+      if (client) client.release();
+      if (tempPool) await tempPool.end();
     }
   } catch (error) {
     console.error('Fehler beim Bearbeiten des Kunden:', error);
@@ -223,9 +316,9 @@ export async function PUT(request: NextRequest, context: unknown) {
 }
 
 // DELETE: Kunde löschen
-export async function DELETE(request: NextRequest, context: unknown) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { params } = context as { params: { id: string } };
+    const params = await context.params;
     const token = request.cookies.get('auth-token')?.value;
     if (!token) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
     
@@ -234,7 +327,43 @@ export async function DELETE(request: NextRequest, context: unknown) {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
     }
 
-    const client = await pool.connect();
+    let client: import('pg').PoolClient;
+    let tempPool: import('pg').Pool | null = null;
+    try {
+      client = await pool.connect();
+    } catch (connectionError) {
+      const errorMsg = connectionError instanceof Error ? connectionError.message : '';
+      const isSSLError = errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify');
+      const isHostnameError = errorMsg.includes('ENOTFOUND') || errorMsg.includes('getaddrinfo');
+      
+      if (isHostnameError) {
+        const publicUrl = process.env.DATABASE_PUBLICURL;
+        if (publicUrl) {
+          const { Pool: TempPool } = await import('pg');
+          tempPool = new TempPool({
+            connectionString: publicUrl,
+            ssl: publicUrl.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+            connectionTimeoutMillis: 10000,
+          });
+          client = await tempPool.connect();
+        } else {
+          throw new Error(`Datenbank-Hostname kann nicht aufgelöst werden: ${errorMsg}`);
+        }
+      } else if (isSSLError) {
+        const { Pool: TempPool } = await import('pg');
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl) throw new Error('DATABASE_URL ist nicht gesetzt');
+        tempPool = new TempPool({
+          connectionString: dbUrl,
+          ssl: { rejectUnauthorized: false },
+          connectionTimeoutMillis: 10000,
+        });
+        client = await tempPool.connect();
+      } else {
+        throw connectionError;
+      }
+    }
+
     try {
       // Prüfe ob Kunde existiert
       const checkRes = await client.query('SELECT email, name FROM customers WHERE id = $1', [params.id]);
@@ -250,7 +379,8 @@ export async function DELETE(request: NextRequest, context: unknown) {
         message: 'Kunde erfolgreich gelöscht'
       });
     } finally {
-      client.release();
+      if (client) client.release();
+      if (tempPool) await tempPool.end();
     }
   } catch (error) {
     console.error('Fehler beim Löschen des Kunden:', error);

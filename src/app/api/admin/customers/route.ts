@@ -241,6 +241,7 @@ async function getCustomerDetails(customerId: string) {
     console.log('🔍 Suche Kunde in Datenbank...', tempPool ? '(Fallback)' : '(normal)');
     const customerResult = await client.query(
       `SELECT id, email, name, phone, company_name, customer_number, 
+              street, city, zip, country,
               portal_activated, portal_activated_at, 
               is_verified, created_at, updated_at 
        FROM customers WHERE id = $1`,

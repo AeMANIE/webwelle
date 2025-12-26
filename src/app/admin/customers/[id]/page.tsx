@@ -117,7 +117,10 @@ export default function CustomerDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Möchten Sie diesen Kunden wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+    const customerName = customer?.name || customer?.email || 'diesen Kunden';
+    const confirmMessage = `Möchten Sie ${customerName} wirklich löschen?\n\nDiese Aktion kann nicht rückgängig gemacht werden. Alle zugehörigen Daten (Bestellungen, Rechnungen, etc.) werden ebenfalls gelöscht.`;
+    
+    if (!confirm(confirmMessage)) {
       return;
     }
 
@@ -127,13 +130,15 @@ export default function CustomerDetailPage() {
       });
 
       if (response.ok) {
+        alert('Kunde wurde erfolgreich gelöscht');
         router.push('/admin?tab=customers');
       } else {
         const data = await response.json();
-        setError(data.error || 'Fehler beim Löschen');
+        setError(data.error || 'Fehler beim Löschen. Bitte versuchen Sie es erneut.');
       }
-    } catch {
-      setError('Fehler beim Löschen');
+    } catch (error) {
+      console.error('Fehler beim Löschen:', error);
+      setError('Fehler beim Löschen. Bitte versuchen Sie es erneut.');
     }
   };
 
@@ -426,6 +431,7 @@ export default function CustomerDetailPage() {
                       value={editData.street || ''}
                       onChange={(e) => setEditData({ ...editData, street: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
+                      placeholder="Straße und Hausnummer"
                     />
                   ) : (
                     <p className="text-foreground">{customer?.street || '—'}</p>
@@ -440,6 +446,7 @@ export default function CustomerDetailPage() {
                         value={editData.zip || ''}
                         onChange={(e) => setEditData({ ...editData, zip: e.target.value })}
                         className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
+                        placeholder="PLZ"
                       />
                     ) : (
                       <p className="text-foreground">{customer?.zip || '—'}</p>
@@ -453,6 +460,7 @@ export default function CustomerDetailPage() {
                         value={editData.city || ''}
                         onChange={(e) => setEditData({ ...editData, city: e.target.value })}
                         className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
+                        placeholder="Stadt"
                       />
                     ) : (
                       <p className="text-foreground">{customer?.city || '—'}</p>
@@ -467,12 +475,13 @@ export default function CustomerDetailPage() {
                       value={editData.country || ''}
                       onChange={(e) => setEditData({ ...editData, country: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
+                      placeholder="Land"
                     />
                   ) : (
                     <p className="text-foreground">{customer?.country || '—'}</p>
                   )}
                 </div>
-                <div>
+                <div className="pt-3 border-t border-border">
                   <label className="text-sm text-muted-foreground">Portal-Status</label>
                   <p className="text-foreground">
                     {customer?.portal_activated ? (

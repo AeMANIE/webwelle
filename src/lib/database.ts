@@ -930,6 +930,10 @@ export async function createTables(): Promise<void> {
         phone VARCHAR(50),
         company_name VARCHAR(255),
         customer_number VARCHAR(50) UNIQUE,
+        street VARCHAR(255),
+        city VARCHAR(255),
+        zip VARCHAR(20),
+        country VARCHAR(100),
         is_verified BOOLEAN DEFAULT false,
         verification_token VARCHAR(255),
         reset_token VARCHAR(255),
@@ -977,12 +981,16 @@ export async function createTables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_portal_tokens_expires ON customer_portal_tokens(expires_at);
     `;
     
-    // Erweitere customers Tabelle um Portal-Felder und Kundennummer (falls noch nicht vorhanden)
+    // Erweitere customers Tabelle um Portal-Felder, Kundennummer und Adressfelder (falls noch nicht vorhanden)
     const alterCustomersTableQuery = `
       ALTER TABLE customers 
       ADD COLUMN IF NOT EXISTS portal_activated BOOLEAN DEFAULT false,
       ADD COLUMN IF NOT EXISTS portal_activated_at TIMESTAMP,
-      ADD COLUMN IF NOT EXISTS customer_number VARCHAR(50) UNIQUE;
+      ADD COLUMN IF NOT EXISTS customer_number VARCHAR(50) UNIQUE,
+      ADD COLUMN IF NOT EXISTS street VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS city VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS zip VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS country VARCHAR(100);
       CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
       CREATE INDEX IF NOT EXISTS idx_customers_portal_activated ON customers(portal_activated);
     `;
