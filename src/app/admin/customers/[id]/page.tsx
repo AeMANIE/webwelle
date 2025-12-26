@@ -102,9 +102,14 @@ export default function CustomerDetailPage() {
 
       if (response.ok) {
         const data = await response.json();
+        // Aktualisiere Customer-Daten mit den zurückgegebenen Daten
         setCustomer(data.customer);
+        // Aktualisiere auch editData, damit die Adresse im Bearbeitungsmodus korrekt ist
+        setEditData(data.customer);
         setIsEditing(false);
         setError('');
+        // Lade Daten neu, um sicherzustellen, dass alles aktuell ist
+        await loadCustomerDetails();
       } else {
         const data = await response.json();
         setError(data.error || 'Fehler beim Speichern');

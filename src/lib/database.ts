@@ -859,6 +859,7 @@ export async function updateCustomer(email: string, updates: Partial<CustomerDat
 // Reset-Token-Schema
 export interface ResetTokenData {
   id?: number;
+  customer_id?: string | number; // Für Admin-Reset aus customers Tabelle
   email: string;
   token: string;
   expires_at: Date;
@@ -885,29 +886,70 @@ export async function createResetToken(email: string, token: string, expiresAt: 
 }
 
 // Reset-Token validieren
+// Prüft sowohl reset_tokens Tabelle als auch customers.reset_token (für Admin-Reset)
 export async function validateResetToken(token: string): Promise<ResetTokenData | null> {
   const client = await pool.connect();
   
   try {
-    const query = `
+    // Zuerst in reset_tokens Tabelle suchen (normale Passwort-Reset-Flows)
+    const resetTokensQuery = `
       SELECT * FROM reset_tokens 
       WHERE token = $1 AND expires_at > NOW() AND used = false
     `;
+    const resetTokensResult = await client.query(resetTokensQuery, [token]);
     
-    const result = await client.query(query, [token]);
-    return result.rows[0] || null;
+    if (resetTokensResult.rows.length > 0) {
+      return resetTokensResult.rows[0];
+    }
+    
+    // Falls nicht gefunden, in customers.reset_token suchen (Admin-initiiert)
+    const customersQuery = `
+      SELECT 
+        id as customer_id,
+        email,
+        reset_token as token,
+        reset_token_expires as expires_at,
+        false as used
+      FROM customers 
+      WHERE reset_token = $1 
+        AND reset_token_expires > NOW()
+        AND reset_token IS NOT NULL
+    `;
+    const customersResult = await client.query(customersQuery, [token]);
+    
+    if (customersResult.rows.length > 0) {
+      const row = customersResult.rows[0];
+      return {
+        customer_id: row.customer_id,
+        email: row.email,
+        token: row.token,
+        expires_at: row.expires_at,
+        used: false
+      };
+    }
+    
+    return null;
   } finally {
     client.release();
   }
 }
 
 // Reset-Token als verwendet markieren
+// Markiert Token sowohl in reset_tokens Tabelle als auch in customers.reset_token
 export async function markResetTokenAsUsed(token: string): Promise<void> {
   const client = await pool.connect();
   
   try {
-    const query = 'UPDATE reset_tokens SET used = true WHERE token = $1';
-    await client.query(query, [token]);
+    // In reset_tokens Tabelle markieren
+    await client.query('UPDATE reset_tokens SET used = true WHERE token = $1', [token]);
+    
+    // In customers Tabelle markieren (Admin-Reset)
+    await client.query(
+      `UPDATE customers 
+       SET reset_token = NULL, reset_token_expires = NULL 
+       WHERE reset_token = $1`,
+      [token]
+    );
   } finally {
     client.release();
   }
