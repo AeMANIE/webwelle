@@ -22,10 +22,17 @@ export function generateInvoicePdf(options: {
     vatId: string;
   };
   notes?: string;
-}): Buffer {
-  const doc = new PDFDocument({ size: 'A4', margin: 50 });
-  const chunks: Buffer[] = [];
-  doc.on('data', (d) => chunks.push(d as Buffer));
+}): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const chunks: Buffer[] = [];
+    doc.on('data', (d) => chunks.push(d as Buffer));
+    doc.on('end', () => {
+      resolve(Buffer.concat(chunks));
+    });
+    doc.on('error', (error) => {
+      reject(error);
+    });
 
   // Header Branding
   doc
@@ -106,7 +113,7 @@ export function generateInvoicePdf(options: {
   }
 
   doc.end();
-  return Buffer.concat(chunks);
+  });
 }
 
 function drawTableHeader(doc: PDFKit.PDFDocument, y: number) {

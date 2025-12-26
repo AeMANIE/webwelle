@@ -280,22 +280,27 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         AND column_name IN ('street', 'city', 'zip', 'country')
       `);
       const existingAddressColumns = columnCheck.rows.map(row => row.column_name);
+      console.log('📋 Vorhandene Adressspalten:', existingAddressColumns);
       
       if (street !== undefined && existingAddressColumns.includes('street')) {
         updates.push(`street = $${paramCount++}`);
         values.push(street);
+        console.log('✅ Street wird aktualisiert:', street);
       }
       if (city !== undefined && existingAddressColumns.includes('city')) {
         updates.push(`city = $${paramCount++}`);
         values.push(city);
+        console.log('✅ City wird aktualisiert:', city);
       }
       if (zip !== undefined && existingAddressColumns.includes('zip')) {
         updates.push(`zip = $${paramCount++}`);
         values.push(zip);
+        console.log('✅ Zip wird aktualisiert:', zip);
       }
       if (country !== undefined && existingAddressColumns.includes('country')) {
         updates.push(`country = $${paramCount++}`);
         values.push(country);
+        console.log('✅ Country wird aktualisiert:', country);
       }
 
       if (updates.length === 0) {
@@ -307,7 +312,10 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       values.push(params.id);
 
       const query = `UPDATE customers SET ${updates.join(', ')} WHERE id = $${paramCount}`;
+      console.log('📝 UPDATE Query:', query);
+      console.log('📝 UPDATE Values:', values);
       await client.query(query, values);
+      console.log('✅ Update erfolgreich ausgeführt');
 
       // Prüfe ob Adressfelder existieren für Rückgabe-Query
       const columnCheckReturn = await client.query(`
@@ -318,6 +326,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         AND column_name IN ('street', 'city', 'zip', 'country')
       `);
       const hasAddressFieldsReturn = columnCheckReturn.rows.length > 0;
+      console.log('📋 Adressfelder für Rückgabe vorhanden:', hasAddressFieldsReturn, columnCheckReturn.rows.map(r => r.column_name));
       
       const baseColumnsReturn = 'id, email, name, phone, company_name, customer_number, portal_activated, portal_activated_at, is_verified, created_at, updated_at';
       const addressColumnsReturn = hasAddressFieldsReturn ? ', street, city, zip, country' : '';
@@ -328,6 +337,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         `SELECT ${selectColumnsReturn} FROM customers WHERE id = $1`,
         [params.id]
       );
+      console.log('📊 Zurückgegebene Kundendaten:', customerRes.rows[0]);
       
       return NextResponse.json({ 
         success: true, 

@@ -266,7 +266,15 @@ async function getCustomerDetails(customerId: string) {
       return null;
     }
     const customer = customerResult.rows[0];
-    console.log('✅ Kunde gefunden:', { id: customer.id, email: customer.email });
+    console.log('✅ Kunde gefunden:', { 
+      id: customer.id, 
+      email: customer.email,
+      street: customer.street,
+      city: customer.city,
+      zip: customer.zip,
+      country: customer.country,
+      hasAddressFields: hasAddressFields
+    });
     
     const bookingsResult = await client.query(
       `SELECT 

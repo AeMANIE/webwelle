@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       return { description: desc, quantity, netAmount, interval } as const;
     });
 
-    const pdf = generateInvoicePdf({
+    const pdf = await generateInvoicePdf({
       invoiceNumber: String(inv.number || inv.id),
       issueDate: new Date(((inv.created ?? Math.floor(Date.now() / 1000)) as number) * 1000),
       customer: { name: customerName || customerEmail || '', email: customerEmail || '' },
