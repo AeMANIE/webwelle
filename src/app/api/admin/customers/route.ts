@@ -238,13 +238,26 @@ async function getCustomerDetails(customerId: string) {
   // Führe Abfragen aus (egal ob normale Verbindung oder Fallback)
   try {
     // Performance: Nur benötigte Spalten selektieren
+    // Prüfe zuerst, ob Adressfelder existieren
     console.log('🔍 Suche Kunde in Datenbank...', tempPool ? '(Fallback)' : '(normal)');
+    
+    // Prüfe ob Adressfelder existieren
+    const columnCheck = await client.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      AND table_name = 'customers' 
+      AND column_name IN ('street', 'city', 'zip', 'country')
+    `);
+    const hasAddressFields = columnCheck.rows.length > 0;
+    
+    // Baue Query dynamisch auf - nur Spalten verwenden, die existieren
+    const baseColumns = 'id, email, name, phone, company_name, customer_number, portal_activated, portal_activated_at, is_verified, created_at, updated_at';
+    const addressColumns = hasAddressFields ? ', street, city, zip, country' : '';
+    const selectColumns = baseColumns + addressColumns;
+    
     const customerResult = await client.query(
-      `SELECT id, email, name, phone, company_name, customer_number, 
-              street, city, zip, country,
-              portal_activated, portal_activated_at, 
-              is_verified, created_at, updated_at 
-       FROM customers WHERE id = $1`,
+      `SELECT ${selectColumns} FROM customers WHERE id = $1`,
       [customerId]
     );
     console.log('📊 Kunden-Query Ergebnis:', { rowCount: customerResult.rows.length, customerId });

@@ -55,13 +55,24 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     }
 
     try {
+      // Prüfe ob Adressfelder existieren
+      const columnCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'customers' 
+        AND column_name IN ('street', 'city', 'zip', 'country')
+      `);
+      const hasAddressFields = columnCheck.rows.length > 0;
+      
+      // Baue Query dynamisch auf - nur Spalten verwenden, die existieren
+      const baseColumns = 'id, email, name, phone, company_name, customer_number, portal_activated, portal_activated_at, is_verified, created_at, updated_at';
+      const addressColumns = hasAddressFields ? ', street, city, zip, country' : '';
+      const selectColumns = baseColumns + addressColumns;
+      
       // Performance: Nur benötigte Spalten selektieren (kein SELECT *)
       const customerRes = await client.query(
-        `SELECT id, email, name, phone, company_name, customer_number, 
-                street, city, zip, country,
-                portal_activated, portal_activated_at, 
-                is_verified, created_at, updated_at 
-         FROM customers WHERE id = $1`,
+        `SELECT ${selectColumns} FROM customers WHERE id = $1`,
         [params.id]
       );
       if (customerRes.rows.length === 0) return NextResponse.json({ error: 'Kunde nicht gefunden' }, { status: 404 });
@@ -260,19 +271,29 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         updates.push(`email = $${paramCount++}`);
         values.push(email.toLowerCase().trim());
       }
-      if (street !== undefined) {
+      // Prüfe ob Adressfelder existieren, bevor wir sie aktualisieren
+      const columnCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'customers' 
+        AND column_name IN ('street', 'city', 'zip', 'country')
+      `);
+      const existingAddressColumns = columnCheck.rows.map(row => row.column_name);
+      
+      if (street !== undefined && existingAddressColumns.includes('street')) {
         updates.push(`street = $${paramCount++}`);
         values.push(street);
       }
-      if (city !== undefined) {
+      if (city !== undefined && existingAddressColumns.includes('city')) {
         updates.push(`city = $${paramCount++}`);
         values.push(city);
       }
-      if (zip !== undefined) {
+      if (zip !== undefined && existingAddressColumns.includes('zip')) {
         updates.push(`zip = $${paramCount++}`);
         values.push(zip);
       }
-      if (country !== undefined) {
+      if (country !== undefined && existingAddressColumns.includes('country')) {
         updates.push(`country = $${paramCount++}`);
         values.push(country);
       }
@@ -288,13 +309,23 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       const query = `UPDATE customers SET ${updates.join(', ')} WHERE id = $${paramCount}`;
       await client.query(query, values);
 
+      // Prüfe ob Adressfelder existieren für Rückgabe-Query
+      const columnCheckReturn = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'customers' 
+        AND column_name IN ('street', 'city', 'zip', 'country')
+      `);
+      const hasAddressFieldsReturn = columnCheckReturn.rows.length > 0;
+      
+      const baseColumnsReturn = 'id, email, name, phone, company_name, customer_number, portal_activated, portal_activated_at, is_verified, created_at, updated_at';
+      const addressColumnsReturn = hasAddressFieldsReturn ? ', street, city, zip, country' : '';
+      const selectColumnsReturn = baseColumnsReturn + addressColumnsReturn;
+      
       // Aktualisierten Kunden zurückgeben (nur benötigte Spalten)
       const customerRes = await client.query(
-        `SELECT id, email, name, phone, company_name, customer_number, 
-                street, city, zip, country,
-                portal_activated, portal_activated_at, 
-                is_verified, created_at, updated_at 
-         FROM customers WHERE id = $1`,
+        `SELECT ${selectColumnsReturn} FROM customers WHERE id = $1`,
         [params.id]
       );
       
