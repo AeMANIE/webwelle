@@ -119,6 +119,34 @@ export interface ValidationError {
   message: string;
 }
 
+/**
+ * Feldnamen zu benutzerfreundlichen deutschen Texten
+ */
+const FIELD_NAME_MAP: Record<string, string> = {
+  packageType: 'Paket-Typ',
+  isMonthly: 'Zahlungsintervall',
+  customerEmail: 'E-Mail-Adresse',
+  customerName: 'Ihr Name',
+  customerPhone: 'Telefonnummer',
+  companyName: 'Firmenname',
+  existingWebsite: 'Bestehende Website',
+  designStyle: 'Design-Stil',
+  budget: 'Budget',
+  priceId: 'Preis-ID',
+  amount: 'Betrag',
+  currency: 'Währung',
+  targetGroup: 'Zielgruppe',
+  functions: 'Funktionen',
+  message: 'Nachricht',
+};
+
+/**
+ * Konvertiert technische Feldnamen zu benutzerfreundlichen Texten
+ */
+function getFieldDisplayName(field: string): string {
+  return FIELD_NAME_MAP[field] || field;
+}
+
 export function validateAPIInput(
   data: Record<string, unknown>,
   rules: Record<string, { required?: boolean; type?: 'string' | 'number' | 'email' | 'url' | 'uuid'; minLength?: number; maxLength?: number }>
@@ -130,21 +158,24 @@ export function validateAPIInput(
 
     // Required check
     if (rule.required && (value === undefined || value === null || value === '')) {
-      errors.push({ field, message: `${field} ist erforderlich` });
+      const fieldName = getFieldDisplayName(field);
+      errors.push({ field, message: `Bitte füllen Sie das Feld "${fieldName}" aus.` });
       continue;
     }
 
     // Skip validation if value is empty and not required
-    if (value === undefined || value === null || value === '') {
+    if ((value === undefined || value === null || value === '') && !rule.required) {
       continue;
     }
+
 
     // Type check
     if (rule.type) {
       switch (rule.type) {
         case 'string':
           if (typeof value !== 'string') {
-            errors.push({ field, message: `${field} muss ein String sein` });
+            const fieldName = getFieldDisplayName(field);
+            errors.push({ field, message: `Das Feld "${fieldName}" enthält einen ungültigen Wert.` });
             continue;
           }
           // Sanitize string input
@@ -155,25 +186,28 @@ export function validateAPIInput(
           break;
         case 'number':
           if (typeof value !== 'number' && isNaN(Number(value))) {
-            errors.push({ field, message: `${field} muss eine Zahl sein` });
+            const fieldName = getFieldDisplayName(field);
+            errors.push({ field, message: `Das Feld "${fieldName}" muss eine Zahl sein.` });
             continue;
           }
           break;
         case 'email':
           if (typeof value !== 'string' || !validateEmail(value)) {
-            errors.push({ field, message: `${field} muss eine gültige E-Mail-Adresse sein` });
+            errors.push({ field, message: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.' });
             continue;
           }
           break;
         case 'url':
           if (typeof value !== 'string' || !validateUrl(value)) {
-            errors.push({ field, message: `${field} muss eine gültige URL sein` });
+            const fieldName = getFieldDisplayName(field);
+            errors.push({ field, message: `Das Feld "${fieldName}" muss eine gültige Internetadresse (URL) sein.` });
             continue;
           }
           break;
         case 'uuid':
           if (typeof value !== 'string' || !validateUUID(value)) {
-            errors.push({ field, message: `${field} muss eine gültige UUID sein` });
+            const fieldName = getFieldDisplayName(field);
+            errors.push({ field, message: `Das Feld "${fieldName}" enthält einen ungültigen Wert.` });
             continue;
           }
           break;
@@ -183,10 +217,12 @@ export function validateAPIInput(
     // Length checks (only for strings)
     if (typeof value === 'string') {
       if (rule.minLength && value.length < rule.minLength) {
-        errors.push({ field, message: `${field} muss mindestens ${rule.minLength} Zeichen lang sein` });
+        const fieldName = getFieldDisplayName(field);
+        errors.push({ field, message: `Das Feld "${fieldName}" muss mindestens ${rule.minLength} Zeichen lang sein.` });
       }
       if (rule.maxLength && value.length > rule.maxLength) {
-        errors.push({ field, message: `${field} darf maximal ${rule.maxLength} Zeichen lang sein` });
+        const fieldName = getFieldDisplayName(field);
+        errors.push({ field, message: `Das Feld "${fieldName}" darf maximal ${rule.maxLength} Zeichen lang sein.` });
       }
     }
   }

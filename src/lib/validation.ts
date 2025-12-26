@@ -38,33 +38,33 @@ export function validateUrl(url: string): boolean {
 export function validateBookingForm(formData: Record<string, unknown>): ValidationResult {
   const errors: Record<string, string> = {};
 
-  // Pflichtfelder prüfen
-  const requiredFields = [
-    'customerName',
-    'customerEmail', 
-    'companyName',
-    'existingWebsite',
-    'designStyle',
-    'budget'
-  ];
+  // Pflichtfelder prüfen mit benutzerfreundlichen Namen
+  const requiredFields: Record<string, string> = {
+    customerName: 'Ihr Name',
+    customerEmail: 'E-Mail-Adresse',
+    companyName: 'Firmenname',
+    existingWebsite: 'Bestehende Website',
+    designStyle: 'Design-Stil',
+    budget: 'Budget'
+  };
 
-  for (const field of requiredFields) {
+  for (const [field, displayName] of Object.entries(requiredFields)) {
     if (!formData[field] || typeof formData[field] !== 'string' || !formData[field].toString().trim()) {
-      errors[field] = `${field} ist erforderlich`;
+      errors[field] = `Bitte füllen Sie das Feld "${displayName}" aus.`;
     }
   }
 
   // E-Mail-Validierung
   if (formData.customerEmail && typeof formData.customerEmail === 'string') {
     if (!validateEmail(formData.customerEmail)) {
-      errors.customerEmail = 'Ungültige E-Mail-Adresse';
+      errors.customerEmail = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
     }
   }
 
   // Telefon-Validierung (optional)
   if (formData.customerPhone && typeof formData.customerPhone === 'string') {
     if (!validatePhone(formData.customerPhone)) {
-      errors.customerPhone = 'Ungültige Telefonnummer';
+      errors.customerPhone = 'Bitte geben Sie eine gültige Telefonnummer ein (z.B. +49 123 456789 oder 0123 456789).';
     }
   }
 
@@ -79,7 +79,7 @@ export function validateBookingForm(formData: Record<string, unknown>): Validati
   // Array-Validierung für targetGroup und functions
   if (formData.targetGroup) {
     if (!Array.isArray(formData.targetGroup)) {
-      errors.targetGroup = 'Zielgruppe muss eine Liste sein';
+      errors.targetGroup = 'Bitte wählen Sie mindestens eine Zielgruppe aus.';
     } else {
       formData.targetGroup = formData.targetGroup.map(item => sanitizeText(item as string));
     }
@@ -87,7 +87,7 @@ export function validateBookingForm(formData: Record<string, unknown>): Validati
 
   if (formData.functions) {
     if (!Array.isArray(formData.functions)) {
-      errors.functions = 'Funktionen müssen eine Liste sein';
+      errors.functions = 'Bitte wählen Sie mindestens eine Funktion aus.';
     } else {
       formData.functions = formData.functions.map(item => sanitizeText(item as string));
     }

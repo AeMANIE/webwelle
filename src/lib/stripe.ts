@@ -31,12 +31,12 @@ export const loadStripeOnDemand = async (): Promise<unknown> => {
 export const WEBDESIGN_PRICE_CONFIG = {
   starterwelle: {
     monthly: {
-      priceId: 'price_1SGWPMQoIwTqROaydTqIlX1W', // StarterWelle monatlich (77€)
+      priceId: 'price_1SigHuJ8MIbotcdAxsLi9CDM', // StarterWelle monatlich (77€) - LIVE
       amount: 7700, // 77€ in Cent
       currency: 'eur'
     },
     yearly: {
-      priceId: 'price_1SGWRJQoIwTqROayqyfkpogg', // StarterWelle jährlich (840€)
+      priceId: 'price_1SigIZJ8MIbotcdALYoAD71T', // StarterWelle jährlich (840€) - LIVE
       amount: 84000, // 840€ in Cent
       currency: 'eur'
     }
@@ -330,8 +330,9 @@ export async function createWebdesignCheckoutSession(
       const errorData = await response.json();
       console.error('API Fehler:', errorData);
       console.error('Response Status:', response.status);
-      console.error('Response Headers:', response.headers);
-      throw new Error(errorData.details || errorData.error || 'Fehler beim Erstellen der Checkout-Session');
+      // Verwende benutzerfreundliche Fehlermeldung, falls vorhanden
+      const errorMessage = errorData.message || errorData.details || errorData.error || 'Bitte füllen Sie alle erforderlichen Felder aus.';
+      throw new Error(errorMessage);
     }
 
     const { sessionId } = await response.json();

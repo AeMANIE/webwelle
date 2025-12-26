@@ -33,19 +33,43 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Input-Validierung
+    // customerEmail und customerName sind optional, da sie im Stripe Checkout eingegeben werden können
+    // isMonthly kann Boolean oder String sein
     const validation = validateAPIInput(body, {
       packageType: { required: true, type: 'string' },
-      isMonthly: { required: true, type: 'string' }, // Wird als string gesendet
-      customerEmail: { required: true, type: 'email' },
-      customerName: { required: true, type: 'string', minLength: 2, maxLength: 255 },
+      // isMonthly wird als Boolean gesendet, aber wir validieren es nicht als String
+      customerEmail: { required: false, type: 'email' }, // Optional - wird im Stripe Checkout eingegeben
+      customerName: { required: false, type: 'string', minLength: 2, maxLength: 255 }, // Optional - wird im Stripe Checkout eingegeben
       priceId: { required: true, type: 'string' },
       amount: { required: true, type: 'number' },
       currency: { required: false, type: 'string' },
     });
 
-    if (!validation.isValid) {
+    // Manuelle Validierung für isMonthly (kann Boolean oder String sein)
+    if (body.isMonthly === undefined || body.isMonthly === null) {
       return secureResponse(
-        { error: 'Validierungsfehler', errors: validation.errors },
+        { 
+          error: 'Bitte füllen Sie alle erforderlichen Felder aus',
+          message: 'Bitte wählen Sie ein Zahlungsintervall aus (monatlich oder jährlich).',
+          errors: [{ field: 'isMonthly', message: 'Bitte wählen Sie ein Zahlungsintervall aus.' }]
+        },
+        400
+      );
+    }
+
+    if (!validation.isValid) {
+      // Erstelle benutzerfreundliche Fehlermeldung
+      const errorMessages = validation.errors.map(err => err.message).join(' ');
+      const friendlyMessage = validation.errors.length === 1
+        ? errorMessages
+        : `Bitte beantworten Sie alle erforderlichen Fragen: ${errorMessages}`;
+      
+      return secureResponse(
+        { 
+          error: 'Bitte füllen Sie alle erforderlichen Felder aus',
+          message: friendlyMessage,
+          errors: validation.errors 
+        },
         400
       );
     }
@@ -63,6 +87,10 @@ export async function POST(request: NextRequest) {
       amount,
       currency
     } = body;
+
+    // customerEmail und customerName sind optional - wenn nicht vorhanden, werden sie im Stripe Checkout eingegeben
+    // Konvertiere isMonthly von String zu Boolean für die Session-Konfiguration
+    const isMonthlyBool = isMonthly === 'true' || isMonthly === true;
 
     console.log('Empfangene Daten:', {
       packageType,
@@ -116,8 +144,8 @@ export async function POST(request: NextRequest) {
       mode: mainPackageMode,
       metadata: {
         packageType,
-        isMonthly: isMonthly.toString(),
-        customerName,
+        isMonthly: isMonthlyBool.toString(),
+        customerName: customerName || '', // Kann leer sein, wird im Checkout eingegeben
         formData: JSON.stringify(formData),
         addOnPriceIds: JSON.stringify(addOnPriceIds || []),
       },
@@ -125,6 +153,8 @@ export async function POST(request: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/buchung/${packageType}?cancelled=true`,
       locale: 'de',
       billing_address_collection: 'required',
+      // E-Mail und Name werden im Stripe Checkout eingegeben, wenn nicht bereits vorhanden
+      ...(customerEmail && { customer_email: customerEmail }),
       shipping_address_collection: {
         allowed_countries: ['DE', 'AT', 'CH'],
       },
@@ -136,7 +166,7 @@ export async function POST(request: NextRequest) {
             custom: 'Firmenname'
           },
           type: 'text',
-          optional: true,
+          optional: false, // Pflichtfeld
         },
         {
           key: 'phone',
@@ -145,9 +175,22 @@ export async function POST(request: NextRequest) {
             custom: 'Telefonnummer'
           },
           type: 'text',
-          optional: true,
+          optional: false, // Pflichtfeld
+        },
+        {
+          key: 'tax_id',
+          label: {
+            type: 'custom',
+            custom: 'MwSt-ID-Nummer (USt-IdNr.)'
+          },
+          type: 'text',
+          optional: true, // Optional
         }
       ],
+      // MwSt-ID kann auch über tax_id_collection gesammelt werden (für EU)
+      tax_id_collection: {
+        enabled: true, // Aktiviert automatische MwSt-ID-Erfassung für EU-Länder
+      },
     };
 
     // payment_intent_data NICHT setzen, da mode immer 'subscription' ist (monthly/yearly)
@@ -169,9 +212,9 @@ export async function POST(request: NextRequest) {
       const bookingData: BookingData = {
         session_id: session.id,
         package_type: packageType,
-        is_monthly: isMonthly,
+        is_monthly: isMonthlyBool,
         checkout_mode: 'payment',
-        package_price_display: `${amount} €${isMonthly ? ' mtl.' : ''}`,
+        package_price_display: `${amount} €${isMonthlyBool ? ' mtl.' : ''}`,
         currency: currency || 'eur',
         total_amount_cents: Math.round(amount * 100),
         customer_name: customerName,
