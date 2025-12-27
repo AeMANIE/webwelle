@@ -1,6 +1,11 @@
 // WICHTIG: Setze NODE_TLS_REJECT_UNAUTHORIZED für self-signed certificates
 // Dies muss GLOBAL gesetzt werden, BEVOR pg importiert wird
-if (process.env.DATABASE_URL?.includes('sslmode=require') && process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0') {
+const isDevelopmentEnv = process.env.NODE_ENV !== 'production';
+const dbUrlForSSL = isDevelopmentEnv && process.env.DATABASE_PUBLICURL 
+  ? process.env.DATABASE_PUBLICURL 
+  : process.env.DATABASE_URL;
+
+if (dbUrlForSSL?.includes('sslmode=require') && process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0') {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
   console.log('⚠️ NODE_TLS_REJECT_UNAUTHORIZED auf 0 gesetzt für VPS-Datenbank');
 }
@@ -10,7 +15,10 @@ import { sanitizeText } from './validation';
 
 // PostgreSQL Verbindung mit SSL-Konfiguration für VPS
 const getSSLConfig = () => {
-  const dbUrl = process.env.DATABASE_URL || '';
+  const isDev = process.env.NODE_ENV !== 'production';
+  const dbUrl = (isDev && process.env.DATABASE_PUBLICURL) 
+    ? process.env.DATABASE_PUBLICURL 
+    : (process.env.DATABASE_URL || '');
   const disableSSL = process.env.DATABASE_DISABLE_SSL === 'true';
   
   // Explizite Deaktivierung
@@ -108,19 +116,30 @@ export function correctDatabaseUrl(dbUrl: string | undefined): string {
 }
 
 // Hilfsfunktion: Hole die beste verfügbare Datenbank-URL
-// Für Hostname-Fehler: Bevorzugt DATABASE_PUBLICURL (für externe Verbindungen wie Mac)
-// Für SSL-Fehler: Verwendet DATABASE_URL (für VPS interne Verbindungen)
+// In Development: Bevorzugt DATABASE_PUBLICURL (für externe Verbindungen wie Mac)
+// In Production: Verwendet DATABASE_URL (für VPS interne Verbindungen)
 export function getDatabaseUrl(usePublicUrl: boolean = false): string {
   const publicUrl = process.env.DATABASE_PUBLICURL;
   const internalUrl = process.env.DATABASE_URL;
+  const isDevelopment = process.env.NODE_ENV !== 'production';
   
-  // Nur bei Hostname-Fehlern (z.B. auf Mac) PUBLICURL verwenden
+  // In Development: Bevorzuge DATABASE_PUBLICURL wenn vorhanden
+  if (isDevelopment && publicUrl) {
+    return publicUrl;
+  }
+  
+  // Bei expliziter Anforderung (z.B. bei Hostname-Fehlern)
   if (usePublicUrl && publicUrl) {
     return publicUrl;
   }
   
-  // Standard: Immer DATABASE_URL verwenden (für VPS)
+  // Standard: DATABASE_URL verwenden (für Production oder wenn PUBLICURL nicht gesetzt)
   if (!internalUrl) {
+    // Fallback: Wenn DATABASE_URL nicht gesetzt, aber PUBLICURL vorhanden ist
+    if (publicUrl) {
+      console.warn('⚠️ DATABASE_URL nicht gesetzt, verwende DATABASE_PUBLICURL als Fallback');
+      return publicUrl;
+    }
     throw new Error('DATABASE_URL ist nicht gesetzt');
   }
   
@@ -170,8 +189,19 @@ export async function createTempPool(
   });
 }
 
+// Hole die beste verfügbare Datenbank-URL
+// In Development: Bevorzugt DATABASE_PUBLICURL
+// In Production: Verwendet DATABASE_URL
+const selectedDbUrl = isDevelopmentEnv && process.env.DATABASE_PUBLICURL 
+  ? process.env.DATABASE_PUBLICURL 
+  : process.env.DATABASE_URL;
+
+if (!selectedDbUrl) {
+  throw new Error('DATABASE_URL oder DATABASE_PUBLICURL muss gesetzt sein');
+}
+
 // Korrigiere DATABASE_URL falls nötig (database path)
-const correctedDatabaseUrl = correctDatabaseUrl(process.env.DATABASE_URL);
+const correctedDatabaseUrl = correctDatabaseUrl(selectedDbUrl);
 
 // Parse URL für explizite Parameter
 let poolConfig: import('pg').PoolConfig;
@@ -195,7 +225,7 @@ try {
     database: database, // Explizit setzen, ohne führenden Slash
     user: url.username,
     password: password, // Verwende dekodiertes Passwort
-    ssl: process.env.DATABASE_URL?.includes('sslmode=require') 
+    ssl: selectedDbUrl?.includes('sslmode=require') 
       ? { 
           rejectUnauthorized: false
         } 
@@ -220,7 +250,7 @@ try {
   console.warn('⚠️ URL-Parsing für Pool fehlgeschlagen, verwende connectionString:', urlError);
   poolConfig = {
     connectionString: correctedDatabaseUrl,
-    ssl: process.env.DATABASE_URL?.includes('sslmode=require') 
+    ssl: selectedDbUrl?.includes('sslmode=require') 
       ? { 
           rejectUnauthorized: false
         } 

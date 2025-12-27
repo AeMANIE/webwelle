@@ -142,7 +142,7 @@ export default function Hero() {
           </div>
           
           <div className="bg-card backdrop-blur-md rounded-xl md:rounded-2xl shadow-xl p-4 md:p-8 max-w-2xl mx-auto mb-6 md:mb-8 border border-border">
-            <h2 className="text-lg md:text-2xl font-semibold text-primary mb-3 md:mb-4 tracking-wide">
+            <h2 className="text-lg md:text-2xl font-semibold text-primary mb-3 md:mb-4 tracking-wide" style={{ color: 'rgba(59, 130, 246, 1)' }}>
               WebWelle – Ihre Erfolgswelle
             </h2>
             <p className="text-sm md:text-lg text-muted-foreground mb-4 md:mb-6 font-medium">

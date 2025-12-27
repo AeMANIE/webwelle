@@ -49,73 +49,7 @@ export interface BlogPost {
 export async function getAllBlogPosts(
   status?: 'draft' | 'published'
 ): Promise<BlogPost[]> {
-  let client;
-  let connectionError: Error | null = null;
-  
-  try {
-    client = await pool.connect();
-  } catch (error) {
-    connectionError = error instanceof Error ? error : new Error('Unbekannter Fehler');
-    
-    // SSL-Fallback für VPS oder Hostname-Fehler
-    if (connectionError.message.includes('certificate') || 
-        connectionError.message.includes('SSL') || 
-        connectionError.message.includes('TLS') ||
-        connectionError.message.includes('unable to verify') ||
-        connectionError.message.includes('ENOTFOUND') ||
-        connectionError.message.includes('getaddrinfo')) {
-      const { Pool: TempPool } = await import('pg');
-      // Versuche mit öffentlicher URL falls DATABASE_PUBLICURL gesetzt ist
-      const dbUrl = process.env.DATABASE_PUBLICURL || process.env.DATABASE_URL;
-      const tempPool = new TempPool({
-        connectionString: dbUrl,
-        ssl: dbUrl?.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
-        connectionTimeoutMillis: 10000,
-      });
-      
-      try {
-        client = await tempPool.connect();
-        
-        let query = 'SELECT * FROM blog_posts';
-        const params: unknown[] = [];
-        
-        if (status) {
-          query += ' WHERE status = $1';
-          params.push(status);
-        }
-        
-        query += ' ORDER BY created_at DESC';
-        
-        const result = await client.query(query, params);
-        const posts = result.rows.map(row => ({
-          id: row.id,
-          title: row.title,
-          slug: row.slug,
-          excerpt: row.excerpt,
-          content: row.content,
-          author: row.author,
-          featuredImageUrl: row.featured_image_url,
-          metaDescription: row.meta_description,
-          tags: row.tags || [],
-          featured: row.featured || false,
-          status: row.status,
-          publishedAt: row.published_at ? new Date(row.published_at) : undefined,
-          createdAt: new Date(row.created_at),
-          updatedAt: new Date(row.updated_at),
-          createdBy: row.created_by,
-        }));
-        
-        client.release();
-        await tempPool.end();
-        return posts;
-      } catch (fallbackError) {
-        if (client) client.release();
-        await tempPool.end();
-        throw fallbackError;
-      }
-    }
-    throw connectionError;
-  }
+  const { client, tempPool } = await getDatabaseClient();
   
   try {
     let query = 'SELECT * FROM blog_posts';
@@ -149,6 +83,7 @@ export async function getAllBlogPosts(
     }));
   } finally {
     client.release();
+    if (tempPool) await tempPool.end();
   }
 }
 
