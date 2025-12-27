@@ -14,9 +14,10 @@ interface QuillEditorProps {
   className?: string;
   style?: React.CSSProperties;
   theme?: string;
+  onImageInserted?: (imageUrl: string) => void;
 }
 
-export default function QuillEditor({ value, onChange, modules, className, style, theme = 'snow' }: QuillEditorProps) {
+export default function QuillEditor({ value, onChange, modules, className, style, theme = 'snow', onImageInserted }: QuillEditorProps) {
   const [mounted, setMounted] = useState(false);
   const quillRef = useRef<HTMLDivElement>(null);
   const quillInstanceRef = useRef<any>(null);
@@ -35,6 +36,20 @@ export default function QuillEditor({ value, onChange, modules, className, style
         const QuillModule = await import('quill');
         const Quill = QuillModule.default || QuillModule;
         if (!Quill) return;
+
+        // Image Blot registrieren (wichtig für korrekte Bildanzeige)
+        try {
+          const ImageBlot = Quill.import('formats/image') as any;
+          if (ImageBlot && typeof ImageBlot === 'object') {
+            // Stelle sicher, dass Bilder korrekt gerendert werden
+            ImageBlot.sanitize = (url: string) => {
+              return url;
+            };
+          }
+        } catch (blotError) {
+          // Image Blot könnte bereits registriert sein oder nicht verfügbar
+          console.warn('Image Blot konnte nicht konfiguriert werden:', blotError);
+        }
 
         // Bild-Upload-Handler für Quill
         const imageHandler = async () => {
@@ -76,9 +91,48 @@ export default function QuillEditor({ value, onChange, modules, className, style
                 // Quill-Editor-Instanz verwenden, um Bild einzufügen
                 const quill = quillInstanceRef.current;
                 if (quill) {
-                  const range = quill.getSelection(true);
-                  quill.insertEmbed(range.index, 'image', data.url);
-                  quill.setSelection(range.index + 1);
+                  try {
+                    // Aktuelle Cursor-Position oder Ende des Contents
+                    const range = quill.getSelection();
+                    const index = range ? range.index : quill.getLength();
+                    
+                    // Bild einfügen mit insertEmbed
+                    quill.insertEmbed(index, 'image', data.url, 'user');
+                    
+                    // Cursor nach dem Bild positionieren
+                    quill.setSelection(index + 1);
+                    
+                    // Content aktualisieren (mit kurzer Verzögerung für Quill)
+                    setTimeout(() => {
+                      const content = quill.root.innerHTML;
+                      onChange(content);
+                    }, 100);
+                    
+                    // Callback aufrufen
+                    if (onImageInserted) {
+                      onImageInserted(data.url);
+                    }
+                  } catch (embedError) {
+                    console.warn('insertEmbed fehlgeschlagen, verwende HTML-Fallback:', embedError);
+                    // Fallback: Direkt HTML einfügen
+                    const imageHtml = `<p><img src="${data.url}" alt="Uploaded image" style="max-width: 100%; height: auto; display: block; margin: 1em 0;" /></p>`;
+                    const currentContent = quill.root.innerHTML;
+                    quill.root.innerHTML = currentContent + imageHtml;
+                    onChange(quill.root.innerHTML);
+                    
+                    if (onImageInserted) {
+                      onImageInserted(data.url);
+                    }
+                  }
+                } else {
+                  // Fallback: Direkt HTML einfügen
+                  const imageHtml = `<p><img src="${data.url}" alt="Uploaded image" style="max-width: 100%; height: auto; display: block; margin: 1em 0;" /></p>`;
+                  onChange(value + imageHtml);
+                  
+                  // Callback aufrufen
+                  if (onImageInserted) {
+                    onImageInserted(data.url);
+                  }
                 }
               } else {
                 alert(data.error || 'Fehler beim Hochladen des Bildes');

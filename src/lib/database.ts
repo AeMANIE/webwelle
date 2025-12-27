@@ -1244,6 +1244,32 @@ export async function createTables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_blog_posts_published_at ON blog_posts(published_at);
     `;
     
+    // Blog-Images Tabelle für professionelle Bildverwaltung
+    const createBlogImagesTableQuery = `
+      CREATE TABLE IF NOT EXISTS blog_images (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        blog_post_id UUID REFERENCES blog_posts(id) ON DELETE CASCADE,
+        file_name VARCHAR(255) NOT NULL,
+        file_path VARCHAR(500) NOT NULL,
+        file_url VARCHAR(500) NOT NULL,
+        file_size INTEGER,
+        mime_type VARCHAR(100),
+        width INTEGER,
+        height INTEGER,
+        format VARCHAR(20) DEFAULT 'auto',
+        alt_text TEXT,
+        caption TEXT,
+        position INTEGER DEFAULT 0,
+        is_featured BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        created_by VARCHAR(255)
+      );
+      CREATE INDEX IF NOT EXISTS idx_blog_images_post_id ON blog_images(blog_post_id);
+      CREATE INDEX IF NOT EXISTS idx_blog_images_position ON blog_images(blog_post_id, position);
+      CREATE INDEX IF NOT EXISTS idx_blog_images_featured ON blog_images(is_featured);
+    `;
+    
     // Führe alle CREATE TABLE Queries in der richtigen Reihenfolge aus
     await client.query(createCustomersTableQuery);
     await client.query(createBookingsTableQuery);
@@ -1255,6 +1281,7 @@ export async function createTables(): Promise<void> {
     await client.query(alterCustomersTableQuery);
     await client.query(createInvoicesTableQuery);
     await client.query(createBlogPostsTableQuery);
+    await client.query(createBlogImagesTableQuery);
     
     // =====================================================
     // TRIGGER FÜR AUTOMATISCHE TIMESTAMPS
@@ -1280,6 +1307,7 @@ export async function createTables(): Promise<void> {
     console.log('   - customer_portal_tokens');
     console.log('   - invoices');
     console.log('   - blog_posts');
+    console.log('   - blog_images');
     console.log('✅ Alle Indizes und Foreign Keys erstellt');
   } finally {
     client.release();

@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import QuillEditor from './QuillEditor';
-import { Eye, Save, Upload, X, CheckCircle, AlertCircle, Search, Image as ImageIcon, FileText, Settings, Zap } from 'lucide-react';
+import { Eye, Save, Upload, X, CheckCircle, AlertCircle, Search, Image as ImageIcon, FileText, Settings, Zap, Images } from 'lucide-react';
 // CSS für ReactQuill importieren
 import 'react-quill/dist/quill.snow.css';
+import BlogImageGallery from './BlogImageGallery';
 
 interface BlogPost {
   id?: string;
@@ -78,7 +79,8 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
   const [success, setSuccess] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [activeTab, setActiveTab] = useState<'content' | 'seo' | 'settings'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'seo' | 'settings' | 'images'>('content');
+  const [selectedImageFormat, setSelectedImageFormat] = useState<'landscape' | 'square' | 'portrait' | undefined>();
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<string>('');
 
@@ -311,6 +313,17 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
             SEO
           </button>
           <button
+            onClick={() => setActiveTab('images')}
+            className={`pb-3 px-2 border-b-2 transition-colors ${
+              activeTab === 'images'
+                ? 'border-primary text-primary font-semibold'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Images className="w-4 h-4 inline mr-2" />
+            Bilder
+          </button>
+          <button
             onClick={() => setActiveTab('settings')}
             className={`pb-3 px-2 border-b-2 transition-colors ${
               activeTab === 'settings'
@@ -414,9 +427,26 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
 
               {/* Content */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Inhalt * <span className="text-muted-foreground">({seoAnalysis.wordCount} Wörter)</span>
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-foreground">
+                    Inhalt * <span className="text-muted-foreground">({seoAnalysis.wordCount} Wörter)</span>
+                  </label>
+                  {featuredImageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Featured Image in Content einfügen
+                        const imageHtml = `<p><img src="${featuredImageUrl}" alt="${title}" style="max-width: 100%; height: auto;" /></p>`;
+                        setContent(content + imageHtml);
+                        setSuccess('Featured Image wurde in den Content eingefügt!');
+                        setTimeout(() => setSuccess(''), 3000);
+                      }}
+                      className="text-xs px-3 py-1 bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors"
+                    >
+                      Featured Image einfügen
+                    </button>
+                  )}
+                </div>
                 <QuillEditor
                   theme="snow"
                   value={content}
@@ -424,7 +454,53 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                   modules={quillModules}
                   className="bg-background text-foreground"
                   style={{ minHeight: '500px' }}
+                  onImageInserted={(imageUrl) => {
+                    setSuccess(`Bild erfolgreich eingefügt!`);
+                    setTimeout(() => setSuccess(''), 3000);
+                  }}
                 />
+                <div className="mt-2 space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    💡 Tipp: Klicken Sie auf das Bild-Icon in der Toolbar, um Bilder direkt im Content einzufügen. Oder verwenden Sie den Button oben, um das Featured Image einzufügen.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      placeholder="Bild-URL hier einfügen..."
+                      className="flex-1 px-3 py-1.5 text-xs bg-background border border-border rounded text-foreground"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.currentTarget.value) {
+                          e.preventDefault();
+                          const imageUrl = e.currentTarget.value.trim();
+                          if (imageUrl) {
+                            const imageHtml = `<p><img src="${imageUrl}" alt="Image" style="max-width: 100%; height: auto;" /></p>`;
+                            setContent(content + imageHtml);
+                            setSuccess('Bild per URL eingefügt!');
+                            setTimeout(() => setSuccess(''), 3000);
+                            e.currentTarget.value = '';
+                          }
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                        if (input && input.value.trim()) {
+                          const imageUrl = input.value.trim();
+                          const imageHtml = `<p><img src="${imageUrl}" alt="Image" style="max-width: 100%; height: auto;" /></p>`;
+                          setContent(content + imageHtml);
+                          setSuccess('Bild per URL eingefügt!');
+                          setTimeout(() => setSuccess(''), 3000);
+                          input.value = '';
+                        }
+                      }}
+                      className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+                    >
+                      Einfügen
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Featured Image mit Drag & Drop */}
@@ -519,6 +595,96 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bilder Tab */}
+          {activeTab === 'images' && (
+            <div className="space-y-6">
+              <div className="bg-card border border-border rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <Images className="w-5 h-5" />
+                  Professionelle Bildverwaltung
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Verwalten Sie alle Bilder für diesen Artikel. Wählen Sie das Format (Landscape, Quadratisch, Portrait) und fügen Sie Bilder direkt in den Content ein.
+                </p>
+                
+                {/* Format-Auswahl */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Bildformat für Upload
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedImageFormat('landscape')}
+                      className={`px-4 py-2 rounded-lg border transition-colors ${
+                        selectedImageFormat === 'landscape'
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background text-foreground border-border hover:border-primary'
+                      }`}
+                    >
+                      Landscape (16:9)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedImageFormat('square')}
+                      className={`px-4 py-2 rounded-lg border transition-colors ${
+                        selectedImageFormat === 'square'
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background text-foreground border-border hover:border-primary'
+                      }`}
+                    >
+                      Quadratisch (1:1)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedImageFormat('portrait')}
+                      className={`px-4 py-2 rounded-lg border transition-colors ${
+                        selectedImageFormat === 'portrait'
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background text-foreground border-border hover:border-primary'
+                      }`}
+                    >
+                      Portrait (3:4)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedImageFormat(undefined)}
+                      className={`px-4 py-2 rounded-lg border transition-colors ${
+                        !selectedImageFormat
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background text-foreground border-border hover:border-primary'
+                      }`}
+                    >
+                      Auto
+                    </button>
+                  </div>
+                </div>
+
+                {/* Bild-Galerie */}
+                <BlogImageGallery
+                  postId={post?.id}
+                  selectedFormat={selectedImageFormat}
+                  onSelectImage={(imageUrl, format) => {
+                    // Bild in Content einfügen
+                    const formatClass = format === 'landscape' 
+                      ? 'aspect-video' 
+                      : format === 'square' 
+                        ? 'aspect-square' 
+                        : format === 'portrait'
+                          ? 'aspect-[3/4]'
+                          : '';
+                    const imageHtml = `<p><img src="${imageUrl}" alt="${title}" class="${formatClass}" style="max-width: 100%; height: auto; display: block; margin: 1em 0;" /></p>`;
+                    setContent(content + imageHtml);
+                    setSuccess('Bild wurde in den Content eingefügt!');
+                    setTimeout(() => setSuccess(''), 3000);
+                    // Zurück zum Content-Tab
+                    setActiveTab('content');
+                  }}
+                />
               </div>
             </div>
           )}
