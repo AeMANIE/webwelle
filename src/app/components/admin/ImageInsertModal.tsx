@@ -125,6 +125,14 @@ export default function ImageInsertModal({ imageUrl, onInsert, onClose }: ImageI
             </div>
           </div>
 
+          {/* Hinweis */}
+          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <p className="text-sm text-blue-600 dark:text-blue-400">
+              💡 <strong>Tipp:</strong> Klicken Sie zuerst im Text-Editor an die gewünschte Stelle, bevor Sie das Bild einfügen. 
+              Das Bild wird dann genau an dieser Position eingefügt.
+            </p>
+          </div>
+
           {/* Buttons */}
           <div className="flex gap-2">
             <button

@@ -91,7 +91,12 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
   const [activeTab, setActiveTab] = useState<'content' | 'seo' | 'settings' | 'images'>('content');
   const [selectedImageFormat, setSelectedImageFormat] = useState<'landscape' | 'square' | 'portrait' | undefined>();
   const [imageInsertModal, setImageInsertModal] = useState<{ url: string } | null>(null);
-  const quillEditorRef = useRef<{ insertImageAtCursor?: (url: string, size?: 'small' | 'medium' | 'large' | 'full', align?: 'left' | 'center' | 'right') => void }>({});
+  const quillEditorRef = useRef<{ 
+    insertImageAtCursor?: (url: string, size?: 'small' | 'medium' | 'large' | 'full', align?: 'left' | 'center' | 'right') => void;
+    saveCursorPosition?: () => void;
+    restoreCursorPosition?: () => void;
+    quillInstance?: any;
+  }>({});
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<string>('');
 
@@ -453,9 +458,32 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
 
               {/* Content */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Inhalt * <span className="text-muted-foreground">({seoAnalysis.wordCount} Wörter)</span>
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-foreground">
+                    Inhalt * <span className="text-muted-foreground">({seoAnalysis.wordCount} Wörter)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      // WICHTIG: onMouseDown wird VOR dem onClick ausgeführt
+                      // So können wir die Position speichern, BEVOR der Editor den Fokus verliert
+                      e.preventDefault(); // Verhindere, dass der Button den Fokus bekommt
+                      
+                      // Speichere Cursor-Position BEVOR der Editor den Fokus verliert
+                      if (quillEditorRef.current?.saveCursorPosition) {
+                        quillEditorRef.current.saveCursorPosition();
+                      }
+                    }}
+                    onClick={() => {
+                      // Wechsle zum Bilder-Tab
+                      setActiveTab('images');
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    <Images className="w-4 h-4" />
+                    Bild aus Galerie einfügen
+                  </button>
+                </div>
                 <QuillEditor
                   ref={quillEditorRef}
                   theme="snow"
@@ -465,13 +493,17 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                   className="bg-background text-foreground"
                   style={{ minHeight: '500px' }}
                   onImageInserted={(imageUrl) => {
+                    // Speichere Cursor-Position bevor Modal geöffnet wird
+                    if (quillEditorRef.current?.saveCursorPosition) {
+                      quillEditorRef.current.saveCursorPosition();
+                    }
                     // Öffne Modal für Größen- und Ausrichtungs-Auswahl
                     setImageInsertModal({ url: imageUrl });
                   }}
                 />
                 <div className="mt-2">
                   <p className="text-xs text-muted-foreground">
-                    💡 Tipp: Klicken Sie auf das Bild-Icon in der Toolbar, um Bilder direkt im Content einzufügen. Oder verwenden Sie den "Bilder"-Tab für die professionelle Bildverwaltung.
+                    💡 Tipp: Klicken Sie zuerst im Text an die gewünschte Stelle, dann auf "Bild aus Galerie einfügen" oder das Bild-Icon in der Toolbar.
                   </p>
                 </div>
               </div>
@@ -548,6 +580,11 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                   postId={post?.id}
                   selectedFormat={selectedImageFormat}
                   onSelectImage={(imageUrl, format) => {
+                    // Speichere Cursor-Position bevor Modal geöffnet wird
+                    // Falls die Position noch nicht gespeichert wurde (z.B. wenn direkt im Bilder-Tab gearbeitet wird)
+                    if (quillEditorRef.current?.saveCursorPosition) {
+                      quillEditorRef.current.saveCursorPosition();
+                    }
                     // Öffne Modal für Größen- und Ausrichtungs-Auswahl
                     setImageInsertModal({ url: imageUrl });
                   }}
@@ -756,8 +793,45 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
         <ImageInsertModal
           imageUrl={imageInsertModal.url}
           onInsert={(imageUrl, size, align) => {
-            // Bild an Cursor-Position einfügen
-            if (quillEditorRef.current?.insertImageAtCursor) {
+            // Stelle sicher, dass der Editor fokussiert ist
+            if (quillEditorRef.current?.quillInstance) {
+              quillEditorRef.current.quillInstance.focus();
+            }
+            
+            // Stelle sicher, dass die Cursor-Position noch gespeichert ist
+            // Falls nicht, versuche sie nochmal zu speichern
+            if (quillEditorRef.current?.saveCursorPosition) {
+              // Kurze Verzögerung, damit der Fokus gesetzt wird
+              setTimeout(() => {
+                quillEditorRef.current?.saveCursorPosition?.();
+                
+                // Bild an Cursor-Position einfügen
+                if (quillEditorRef.current?.insertImageAtCursor) {
+                  quillEditorRef.current.insertImageAtCursor(imageUrl, size, align);
+                  setSuccess('Bild wurde an der Cursor-Position eingefügt!');
+                  setTimeout(() => setSuccess(''), 3000);
+                } else {
+                  // Fallback: Am Ende einfügen
+                  const sizeStyles: Record<string, string> = {
+                    small: 'max-width: 300px;',
+                    medium: 'max-width: 600px;',
+                    large: 'max-width: 900px;',
+                    full: 'max-width: 100%; width: 100%;',
+                  };
+                  const alignStyles: Record<string, string> = {
+                    left: 'float: left; margin-right: 1em;',
+                    center: 'display: block; margin: 1em auto;',
+                    right: 'float: right; margin-left: 1em;',
+                  };
+                  const style = `${sizeStyles[size]} ${alignStyles[align]} height: auto;`;
+                  const imageHtml = `<p><img src="${imageUrl}" alt="${title}" style="${style}" /></p>`;
+                  setContent(content + imageHtml);
+                  setSuccess('Bild wurde eingefügt!');
+                  setTimeout(() => setSuccess(''), 3000);
+                }
+              }, 100);
+            } else if (quillEditorRef.current?.insertImageAtCursor) {
+              // Direkt einfügen, falls saveCursorPosition nicht verfügbar ist
               quillEditorRef.current.insertImageAtCursor(imageUrl, size, align);
               setSuccess('Bild wurde an der Cursor-Position eingefügt!');
               setTimeout(() => setSuccess(''), 3000);
