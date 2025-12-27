@@ -130,6 +130,7 @@ const QuillEditor = forwardRef<any, QuillEditorProps>(({ value, onChange, module
             imgElement.style.cssText = style;
             imgElement.draggable = true;
             imgElement.style.cursor = 'move';
+            imgElement.style.position = 'relative';
             imgElement.title = 'Ziehen Sie das Bild, um es zu verschieben';
           }
         }, 50);
@@ -353,6 +354,122 @@ const QuillEditor = forwardRef<any, QuillEditorProps>(({ value, onChange, module
           quill.root.innerHTML = value;
         }
 
+        // Hilfsfunktion: Verschiebe-Buttons für Bilder hinzufügen
+        const addImageMoveButtons = (imgElement: HTMLImageElement, imageUrl: string, style: string) => {
+          // Entferne alte Buttons falls vorhanden
+          const existingButtons = imgElement.parentElement?.querySelector('.image-move-buttons');
+          if (existingButtons) {
+            existingButtons.remove();
+          }
+          
+          // Erstelle Button-Container
+          const buttonContainer = document.createElement('div');
+          buttonContainer.className = 'image-move-buttons';
+          buttonContainer.style.cssText = 'position: absolute; top: 5px; right: 5px; display: flex; gap: 4px; z-index: 1000; background: rgba(0,0,0,0.7); padding: 4px; border-radius: 4px;';
+          
+          // Button: Nach oben verschieben
+          const moveUpBtn = document.createElement('button');
+          moveUpBtn.innerHTML = '↑';
+          moveUpBtn.title = 'Bild nach oben verschieben';
+          moveUpBtn.style.cssText = 'background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;';
+          moveUpBtn.onclick = (e) => {
+            e.stopPropagation();
+            moveImage(imgElement, imageUrl, style, 'up');
+          };
+          
+          // Button: Nach unten verschieben
+          const moveDownBtn = document.createElement('button');
+          moveDownBtn.innerHTML = '↓';
+          moveDownBtn.title = 'Bild nach unten verschieben';
+          moveDownBtn.style.cssText = 'background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;';
+          moveDownBtn.onclick = (e) => {
+            e.stopPropagation();
+            moveImage(imgElement, imageUrl, style, 'down');
+          };
+          
+          buttonContainer.appendChild(moveUpBtn);
+          buttonContainer.appendChild(moveDownBtn);
+          
+          // Stelle sicher, dass das Bild-Container position: relative hat
+          const imgParent = imgElement.parentElement;
+          if (imgParent) {
+            const computedStyle = window.getComputedStyle(imgParent);
+            if (computedStyle.position === 'static') {
+              imgParent.style.position = 'relative';
+            }
+            imgParent.appendChild(buttonContainer);
+          }
+        };
+        
+        // Hilfsfunktion: Bild verschieben
+        const moveImage = (imgElement: HTMLImageElement, imageUrl: string, style: string, direction: 'up' | 'down') => {
+          const delta = quill.getContents();
+          let currentIndex = -1;
+          let pos = 0;
+          
+          // Finde die aktuelle Position des Bildes
+          for (let i = 0; i < delta.ops.length; i++) {
+            const op = delta.ops[i];
+            if (op.insert && typeof op.insert === 'object' && op.insert.image === imageUrl) {
+              currentIndex = pos;
+              break;
+            }
+            if (typeof op.insert === 'string') {
+              pos += op.insert.length;
+            } else if (op.insert && typeof op.insert === 'object') {
+              pos += 1;
+            }
+          }
+          
+          if (currentIndex < 0) return;
+          
+          // Berechne neue Position
+          let newIndex = currentIndex;
+          if (direction === 'up') {
+            // Verschiebe nach oben (vorherige Position)
+            if (currentIndex > 0) {
+              newIndex = currentIndex - 1;
+            } else {
+              return; // Bereits ganz oben
+            }
+          } else {
+            // Verschiebe nach unten (nächste Position)
+            if (currentIndex < quill.getLength() - 1) {
+              newIndex = currentIndex + 1;
+            } else {
+              return; // Bereits ganz unten
+            }
+          }
+          
+          // Entferne das alte Bild
+          quill.deleteText(currentIndex, 1);
+          
+          // Berechne die neue Position nach dem Löschen
+          const adjustedIndex = newIndex > currentIndex ? newIndex - 1 : newIndex;
+          
+          // Füge das Bild an der neuen Position ein
+          setTimeout(() => {
+            quill.setSelection(adjustedIndex);
+            quill.insertEmbed(adjustedIndex, 'image', imageUrl, 'user');
+            
+            // Wende den Style wieder an
+            setTimeout(() => {
+              const newImg = quill.root.querySelector(`img[src="${imageUrl}"]`) as HTMLImageElement;
+              if (newImg) {
+                newImg.style.cssText = style;
+                newImg.draggable = true;
+                newImg.style.cursor = 'move';
+                newImg.style.position = 'relative';
+                addImageMoveButtons(newImg, imageUrl, style);
+              }
+              
+              // Content aktualisieren
+              const updatedContent = quill.root.innerHTML;
+              onChange(updatedContent);
+            }, 50);
+          }, 10);
+        };
+
         // Content-Änderungen überwachen
         quill.on('text-change', () => {
           const content = quill.root.innerHTML;
@@ -387,7 +504,9 @@ const QuillEditor = forwardRef<any, QuillEditorProps>(({ value, onChange, module
               const imgElement = img as HTMLImageElement;
               
               // Überspringe, wenn bereits draggable
-              if (imgElement.draggable) return;
+              if (imgElement.draggable) {
+                return;
+              }
               
               imgElement.draggable = true;
               imgElement.style.cursor = 'move';
@@ -534,6 +653,10 @@ const QuillEditor = forwardRef<any, QuillEditorProps>(({ value, onChange, module
                 if (newImg) {
                   newImg.style.cssText = imageData.style;
                   newImg.alt = imageData.alt;
+                  newImg.draggable = true;
+                  newImg.style.cursor = 'move';
+                  newImg.style.position = 'relative';
+                  addImageMoveButtons(newImg, imageData.src, imageData.style);
                 }
                 
                 // Content aktualisieren
