@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     
     await writeFile(filePath, buffer);
 
-    // URL zurückgeben
+    // URL zurückgeben - verwende API-Route für Bilder (funktioniert auch im standalone mode)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const imageUrl = `${baseUrl}/blog-images/${fileName}`;
 

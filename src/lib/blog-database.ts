@@ -168,6 +168,16 @@ export async function createBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | '
   const { client, tempPool } = await getDatabaseClient();
   
   try {
+    // published_at setzen
+    let publishedAtValue: Date | null = null;
+    if (post.status === 'published') {
+      if (post.publishedAt) {
+        publishedAtValue = post.publishedAt;
+      } else {
+        publishedAtValue = new Date(); // Standard: aktuelles Datum
+      }
+    }
+
     const result = await client.query(
       `INSERT INTO blog_posts (
         title, slug, excerpt, content, author, featured_image_url, 
@@ -185,7 +195,7 @@ export async function createBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | '
         post.tags,
         post.featured,
         post.status,
-        post.status === 'published' ? new Date() : null,
+        publishedAtValue,
         post.createdBy || null,
       ]
     );

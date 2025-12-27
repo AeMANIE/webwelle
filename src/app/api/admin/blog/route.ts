@@ -88,7 +88,18 @@ export async function POST(request: NextRequest) {
       tags,
       featured,
       status,
+      publishedAt,
     } = body;
+
+    // Datum verarbeiten
+    let publishedAtDate: Date | undefined = undefined;
+    if (status === 'published') {
+      if (publishedAt) {
+        publishedAtDate = new Date(publishedAt);
+      } else {
+        publishedAtDate = new Date(); // Standard: aktuelles Datum
+      }
+    }
 
     const post = await createBlogPost({
       title,
@@ -101,6 +112,7 @@ export async function POST(request: NextRequest) {
       tags: tags || [],
       featured: featured || false,
       status: status || 'draft',
+      publishedAt: publishedAtDate,
       createdBy: user.email,
     });
 

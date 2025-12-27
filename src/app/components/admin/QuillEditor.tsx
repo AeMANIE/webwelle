@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, forwardRef, useImperativeHandle } from 'react';
 // Quill CSS importieren
 import 'quill/dist/quill.snow.css';
 
@@ -17,10 +17,67 @@ interface QuillEditorProps {
   onImageInserted?: (imageUrl: string) => void;
 }
 
-export default function QuillEditor({ value, onChange, modules, className, style, theme = 'snow', onImageInserted }: QuillEditorProps) {
+const QuillEditor = forwardRef<any, QuillEditorProps>(({ value, onChange, modules, className, style, theme = 'snow', onImageInserted }, ref) => {
   const [mounted, setMounted] = useState(false);
   const quillRef = useRef<HTMLDivElement>(null);
   const quillInstanceRef = useRef<any>(null);
+
+  // Exponiere Quill-Instanz und insertImageAtCursor Funktion
+  useImperativeHandle(ref, () => ({
+    quillInstance: quillInstanceRef.current,
+    insertImageAtCursor: (imageUrl: string, size: 'small' | 'medium' | 'large' | 'full' = 'medium', align: 'left' | 'center' | 'right' = 'center') => {
+      const quill = quillInstanceRef.current;
+      if (!quill) return;
+      
+      const range = quill.getSelection(true);
+      const index = range ? range.index : quill.getLength();
+      
+      // Größen-Klassen
+      const sizeStyles: Record<string, string> = {
+        small: 'max-width: 300px;',
+        medium: 'max-width: 600px;',
+        large: 'max-width: 900px;',
+        full: 'max-width: 100%; width: 100%;',
+      };
+      
+      // Alignment
+      const alignStyles: Record<string, string> = {
+        left: 'float: left; margin-right: 1em;',
+        center: 'display: block; margin: 1em auto;',
+        right: 'float: right; margin-left: 1em;',
+      };
+      
+      const style = `${sizeStyles[size]} ${alignStyles[align]} height: auto;`;
+      
+      try {
+        // Versuche insertEmbed
+        quill.insertEmbed(index, 'image', imageUrl, 'user');
+        // Füge Style hinzu (nach dem Einfügen)
+        setTimeout(() => {
+          const img = quill.root.querySelector(`img[src="${imageUrl}"]`);
+          if (img) {
+            (img as HTMLImageElement).style.cssText = style;
+          }
+        }, 50);
+      } catch (error) {
+        // Fallback: HTML einfügen
+        const imageHtml = `<p><img src="${imageUrl}" alt="Image" style="${style}" /></p>`;
+        quill.clipboard.dangerouslyPasteHTML(index, imageHtml);
+      }
+      
+      // Cursor nach dem Bild positionieren
+      setTimeout(() => {
+        const newLength = quill.getLength();
+        quill.setSelection(newLength);
+      }, 100);
+      
+      // Content aktualisieren
+      setTimeout(() => {
+        const content = quill.root.innerHTML;
+        onChange(content);
+      }, 100);
+    },
+  }));
 
   useEffect(() => {
     setMounted(true);
@@ -207,6 +264,7 @@ export default function QuillEditor({ value, onChange, modules, className, style
           onChange(content);
         });
 
+
         // Cleanup
         return () => {
           if (quillInstanceRef.current) {
@@ -245,5 +303,9 @@ export default function QuillEditor({ value, onChange, modules, className, style
       />
     </div>
   );
-}
+});
+
+QuillEditor.displayName = 'QuillEditor';
+
+export default QuillEditor;
 

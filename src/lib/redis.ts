@@ -39,9 +39,10 @@ const getRedisConfig = () => {
         retryStrategy: (times: number) => {
           // Exponential backoff, max 3 Versuche
           if (times > 3) {
-            // Komplett stumm - nur in Development loggen
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('⚠️ Redis Verbindung fehlgeschlagen nach 3 Versuchen. Fallback zu In-Memory.');
+            // Stumm - Redis ist optional, Fallback zu In-Memory funktioniert
+            // Nur einmalig in Development loggen, wenn Redis explizit konfiguriert wurde
+            if (process.env.NODE_ENV === 'development' && times === 4) {
+              console.log('ℹ️ Redis nicht verfügbar. Verwende In-Memory Fallback (funktioniert normal).');
             }
             return null; // Kein Retry mehr
           }
@@ -70,9 +71,10 @@ const getRedisConfig = () => {
       } : undefined,
       retryStrategy: (times: number) => {
         if (times > 3) {
-          // Komplett stumm - nur in Development loggen
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('⚠️ Redis Verbindung fehlgeschlagen nach 3 Versuchen. Fallback zu In-Memory.');
+          // Stumm - Redis ist optional, Fallback zu In-Memory funktioniert
+          // Nur einmalig in Development loggen
+          if (process.env.NODE_ENV === 'development' && times === 4) {
+            console.log('ℹ️ Redis nicht verfügbar. Verwende In-Memory Fallback (funktioniert normal).');
           }
           return null;
         }
@@ -98,7 +100,10 @@ const initializeRedis = () => {
   const config = getRedisConfig();
   
   if (!config) {
-    console.warn('⚠️ REDIS_URL nicht gesetzt. Verwende In-Memory Store.');
+    // Redis ist optional - kein Warnung, da In-Memory Fallback funktioniert
+    if (process.env.NODE_ENV === 'development') {
+      console.log('ℹ️ REDIS_URL nicht gesetzt. Verwende In-Memory Store (funktioniert normal).');
+    }
     return null;
   }
 
@@ -112,7 +117,9 @@ const initializeRedis = () => {
     const ERROR_LOG_INTERVAL = 30000; // Nur alle 30 Sekunden einen Fehler loggen
     
     redisClient.on('connect', () => {
-      console.log('✅ Redis verbunden');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Redis verbunden');
+      }
       connectionAttempts = 0;
       redisEnabled = true;
     });
@@ -166,14 +173,12 @@ const initializeRedis = () => {
         error.message.includes('getaddrinfo')
       );
       
-      // Nur in Development loggen
-      if (process.env.NODE_ENV === 'development' && connectionAttempts === 1) {
-        console.error('❌ Redis Verbindung fehlgeschlagen:', error instanceof Error ? error.message : error);
-      } else if (!isConnectionError && connectionAttempts === 1) {
-        // In Production: Nur nicht-Verbindungsfehler beim ersten Mal loggen
-        console.error('❌ Redis Verbindung fehlgeschlagen:', error instanceof Error ? error.message : error);
+      // Redis ist optional - nur in Development bei ersten Versuch loggen
+      if (process.env.NODE_ENV === 'development' && connectionAttempts === 1 && !isConnectionError) {
+        console.log('ℹ️ Redis Verbindung nicht möglich:', error instanceof Error ? error.message : error);
+        console.log('ℹ️ Verwende In-Memory Fallback (funktioniert normal).');
       }
-      // Connection-Errors: Komplett stumm (außer Development)
+      // Connection-Errors: Komplett stumm (Redis ist optional)
       
       redisEnabled = false;
     });

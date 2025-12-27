@@ -6,23 +6,18 @@ import { Eye, Save, Upload, X, CheckCircle, AlertCircle, Search, Image as ImageI
 // CSS für ReactQuill importieren
 import 'react-quill/dist/quill.snow.css';
 import BlogImageGallery from './BlogImageGallery';
+import ImageInsertModal from './ImageInsertModal';
+import type { BlogPost } from '@/lib/blog-database';
 
-interface BlogPost {
-  id?: string;
-  title: string;
-  slug: string;
-  excerpt?: string;
-  content?: string;
-  author?: string;
-  featuredImageUrl?: string;
-  metaDescription?: string;
-  tags?: string[];
-  featured?: boolean;
-  status?: 'draft' | 'published';
+// Erweitertes Interface, das auch string für Datumsfelder akzeptiert (für Kompatibilität)
+interface BlogPostInput extends Omit<Partial<BlogPost>, 'publishedAt' | 'createdAt' | 'updatedAt'> {
+  publishedAt?: Date | string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 
 interface BlogEditorProps {
-  post?: BlogPost;
+  post?: BlogPostInput;
   onSave: () => void;
 }
 
@@ -74,6 +69,20 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
   const [tags, setTags] = useState((post?.tags || []).join(', '));
   const [featured, setFeatured] = useState(post?.featured || false);
   const [status, setStatus] = useState<'draft' | 'published'>(post?.status || 'draft');
+  const [publishedAt, setPublishedAt] = useState<string>(() => {
+    if (post?.publishedAt) {
+      const date = post.publishedAt instanceof Date ? post.publishedAt : new Date(post.publishedAt);
+      return date.toISOString().split('T')[0];
+    }
+    return new Date().toISOString().split('T')[0];
+  });
+  const [publishedAtTime, setPublishedAtTime] = useState<string>(() => {
+    if (post?.publishedAt) {
+      const date = post.publishedAt instanceof Date ? post.publishedAt : new Date(post.publishedAt);
+      return date.toTimeString().slice(0, 5);
+    }
+    return new Date().toTimeString().slice(0, 5);
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -81,6 +90,8 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [activeTab, setActiveTab] = useState<'content' | 'seo' | 'settings' | 'images'>('content');
   const [selectedImageFormat, setSelectedImageFormat] = useState<'landscape' | 'square' | 'portrait' | undefined>();
+  const [imageInsertModal, setImageInsertModal] = useState<{ url: string } | null>(null);
+  const quillEditorRef = useRef<{ insertImageAtCursor?: (url: string, size?: 'small' | 'medium' | 'large' | 'full', align?: 'left' | 'center' | 'right') => void }>({});
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<string>('');
 
@@ -140,6 +151,20 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
         .map(t => t.trim())
         .filter(t => t.length > 0);
 
+      // Datum zusammenstellen
+      let publishedAtDate: string | null = null;
+      if (status === 'published' && !isAutoSave) {
+        if (publishedAt && publishedAtTime) {
+          publishedAtDate = `${publishedAt}T${publishedAtTime}:00`;
+        } else {
+          publishedAtDate = new Date().toISOString(); // Standard: aktuelles Datum
+        }
+      } else if (post?.publishedAt && !isAutoSave) {
+        // Bestehendes Datum beibehalten
+        const date = post.publishedAt instanceof Date ? post.publishedAt : new Date(post.publishedAt);
+        publishedAtDate = date.toISOString();
+      }
+
       const payload = {
         title,
         slug,
@@ -151,6 +176,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
         tags: tagsArray,
         featured,
         status: isAutoSave ? (post?.status || 'draft') : status, // Status bei Auto-Save nicht ändern
+        publishedAt: publishedAtDate,
       };
 
       const url = post?.id ? `/api/admin/blog/${post.id}` : '/api/admin/blog';
@@ -427,27 +453,11 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
 
               {/* Content */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-foreground">
-                    Inhalt * <span className="text-muted-foreground">({seoAnalysis.wordCount} Wörter)</span>
-                  </label>
-                  {featuredImageUrl && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Featured Image in Content einfügen
-                        const imageHtml = `<p><img src="${featuredImageUrl}" alt="${title}" style="max-width: 100%; height: auto;" /></p>`;
-                        setContent(content + imageHtml);
-                        setSuccess('Featured Image wurde in den Content eingefügt!');
-                        setTimeout(() => setSuccess(''), 3000);
-                      }}
-                      className="text-xs px-3 py-1 bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors"
-                    >
-                      Featured Image einfügen
-                    </button>
-                  )}
-                </div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Inhalt * <span className="text-muted-foreground">({seoAnalysis.wordCount} Wörter)</span>
+                </label>
                 <QuillEditor
+                  ref={quillEditorRef}
                   theme="snow"
                   value={content}
                   onChange={setContent}
@@ -455,145 +465,14 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                   className="bg-background text-foreground"
                   style={{ minHeight: '500px' }}
                   onImageInserted={(imageUrl) => {
-                    setSuccess(`Bild erfolgreich eingefügt!`);
-                    setTimeout(() => setSuccess(''), 3000);
+                    // Öffne Modal für Größen- und Ausrichtungs-Auswahl
+                    setImageInsertModal({ url: imageUrl });
                   }}
                 />
-                <div className="mt-2 space-y-2">
+                <div className="mt-2">
                   <p className="text-xs text-muted-foreground">
-                    💡 Tipp: Klicken Sie auf das Bild-Icon in der Toolbar, um Bilder direkt im Content einzufügen. Oder verwenden Sie den Button oben, um das Featured Image einzufügen.
+                    💡 Tipp: Klicken Sie auf das Bild-Icon in der Toolbar, um Bilder direkt im Content einzufügen. Oder verwenden Sie den "Bilder"-Tab für die professionelle Bildverwaltung.
                   </p>
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      placeholder="Bild-URL hier einfügen..."
-                      className="flex-1 px-3 py-1.5 text-xs bg-background border border-border rounded text-foreground"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && e.currentTarget.value) {
-                          e.preventDefault();
-                          const imageUrl = e.currentTarget.value.trim();
-                          if (imageUrl) {
-                            const imageHtml = `<p><img src="${imageUrl}" alt="Image" style="max-width: 100%; height: auto;" /></p>`;
-                            setContent(content + imageHtml);
-                            setSuccess('Bild per URL eingefügt!');
-                            setTimeout(() => setSuccess(''), 3000);
-                            e.currentTarget.value = '';
-                          }
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                        if (input && input.value.trim()) {
-                          const imageUrl = input.value.trim();
-                          const imageHtml = `<p><img src="${imageUrl}" alt="Image" style="max-width: 100%; height: auto;" /></p>`;
-                          setContent(content + imageHtml);
-                          setSuccess('Bild per URL eingefügt!');
-                          setTimeout(() => setSuccess(''), 3000);
-                          input.value = '';
-                        }
-                      }}
-                      className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-                    >
-                      Einfügen
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Featured Image mit Drag & Drop */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Featured Image
-                </label>
-                <div
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors"
-                >
-                  {featuredImageUrl ? (
-                    <div className="space-y-4">
-                      <img
-                        src={featuredImageUrl}
-                        alt="Featured"
-                        className="max-w-full max-h-64 object-cover rounded-lg border border-border mx-auto"
-                      />
-                      <div className="flex gap-2 justify-center">
-                        <input
-                          type="url"
-                          value={featuredImageUrl}
-                          onChange={(e) => setFeaturedImageUrl(e.target.value)}
-                          className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-foreground text-sm max-w-md"
-                          placeholder="Bild-URL"
-                        />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) uploadImage(file);
-                          }}
-                          className="hidden"
-                          id="featured-image-upload"
-                        />
-                        <label
-                          htmlFor="featured-image-upload"
-                          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors cursor-pointer font-medium flex items-center gap-2"
-                        >
-                          {uploadingImage ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                              Upload...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-4 h-4" />
-                              Ändern
-                            </>
-                          )}
-                        </label>
-                        <button
-                          onClick={() => setFeaturedImageUrl('')}
-                          className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <ImageIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground mb-4">
-                        Ziehen Sie ein Bild hierher oder klicken Sie zum Hochladen
-                      </p>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) uploadImage(file);
-                        }}
-                        className="hidden"
-                        id="featured-image-upload-empty"
-                      />
-                      <label
-                        htmlFor="featured-image-upload-empty"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors cursor-pointer font-medium"
-                      >
-                        <Upload className="w-4 h-4" />
-                        Bild hochladen
-                      </label>
-                      <input
-                        type="url"
-                        value={featuredImageUrl}
-                        onChange={(e) => setFeaturedImageUrl(e.target.value)}
-                        className="mt-4 w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground"
-                        placeholder="Oder Bild-URL eingeben"
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -669,20 +548,8 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                   postId={post?.id}
                   selectedFormat={selectedImageFormat}
                   onSelectImage={(imageUrl, format) => {
-                    // Bild in Content einfügen
-                    const formatClass = format === 'landscape' 
-                      ? 'aspect-video' 
-                      : format === 'square' 
-                        ? 'aspect-square' 
-                        : format === 'portrait'
-                          ? 'aspect-[3/4]'
-                          : '';
-                    const imageHtml = `<p><img src="${imageUrl}" alt="${title}" class="${formatClass}" style="max-width: 100%; height: auto; display: block; margin: 1em 0;" /></p>`;
-                    setContent(content + imageHtml);
-                    setSuccess('Bild wurde in den Content eingefügt!');
-                    setTimeout(() => setSuccess(''), 3000);
-                    // Zurück zum Content-Tab
-                    setActiveTab('content');
+                    // Öffne Modal für Größen- und Ausrichtungs-Auswahl
+                    setImageInsertModal({ url: imageUrl });
                   }}
                 />
               </div>
@@ -791,6 +658,51 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                 />
               </div>
 
+              {/* Veröffentlichungsdatum */}
+              {status === 'published' && (
+                <div className="bg-card border border-border rounded-lg p-6">
+                  <label className="block text-sm font-medium text-foreground mb-4">
+                    Veröffentlichungsdatum
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-2">Datum</label>
+                      <input
+                        type="date"
+                        value={publishedAt}
+                        onChange={(e) => setPublishedAt(e.target.value)}
+                        className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Sie können auch ein Datum in der Vergangenheit wählen
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-2">Uhrzeit</label>
+                      <input
+                        type="time"
+                        value={publishedAtTime}
+                        onChange={(e) => setPublishedAtTime(e.target.value)}
+                        className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      Gewähltes Datum: {publishedAt && publishedAtTime 
+                        ? new Date(`${publishedAt}T${publishedAtTime}`).toLocaleString('de-DE', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                        : 'Nicht gesetzt'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Featured & Status */}
               <div className="bg-card border border-border rounded-lg p-6 space-y-4">
                 <div className="flex items-center justify-between">
@@ -837,6 +749,42 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
             </div>
           )}
         </>
+      )}
+
+      {/* Bild-Einfügen Modal */}
+      {imageInsertModal && (
+        <ImageInsertModal
+          imageUrl={imageInsertModal.url}
+          onInsert={(imageUrl, size, align) => {
+            // Bild an Cursor-Position einfügen
+            if (quillEditorRef.current?.insertImageAtCursor) {
+              quillEditorRef.current.insertImageAtCursor(imageUrl, size, align);
+              setSuccess('Bild wurde an der Cursor-Position eingefügt!');
+              setTimeout(() => setSuccess(''), 3000);
+            } else {
+              // Fallback: Am Ende einfügen
+              const sizeStyles: Record<string, string> = {
+                small: 'max-width: 300px;',
+                medium: 'max-width: 600px;',
+                large: 'max-width: 900px;',
+                full: 'max-width: 100%; width: 100%;',
+              };
+              const alignStyles: Record<string, string> = {
+                left: 'float: left; margin-right: 1em;',
+                center: 'display: block; margin: 1em auto;',
+                right: 'float: right; margin-left: 1em;',
+              };
+              const style = `${sizeStyles[size]} ${alignStyles[align]} height: auto;`;
+              const imageHtml = `<p><img src="${imageUrl}" alt="${title}" style="${style}" /></p>`;
+              setContent(content + imageHtml);
+              setSuccess('Bild wurde eingefügt!');
+              setTimeout(() => setSuccess(''), 3000);
+            }
+            setImageInsertModal(null);
+            setActiveTab('content');
+          }}
+          onClose={() => setImageInsertModal(null)}
+        />
       )}
 
       {/* Action Buttons */}

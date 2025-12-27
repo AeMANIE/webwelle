@@ -15,10 +15,15 @@ export async function GET(request: NextRequest) {
 
     const postId = request.nextUrl.searchParams.get('postId');
     
-    const images = postId 
-      ? await getBlogImagesByPostId(postId)
-      : await getAllBlogImages(100);
+    let images;
+    if (postId) {
+      images = await getBlogImagesByPostId(postId);
+    } else {
+      images = await getAllBlogImages(100);
+    }
 
+    console.log(`Geladene ${images.length} Bilder${postId ? ` für Post ${postId}` : ' (alle)'}`);
+    
     return secureResponse(images);
   } catch (error) {
     console.error('Fehler beim Laden der Bilder:', error);
@@ -86,6 +91,7 @@ export async function POST(request: NextRequest) {
     await writeFile(filePath, buffer);
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    // Verwende API-Route für Bilder (funktioniert auch im standalone mode)
     const fileUrl = `${baseUrl}/blog-images/${fileName}`;
 
     // In Datenbank speichern

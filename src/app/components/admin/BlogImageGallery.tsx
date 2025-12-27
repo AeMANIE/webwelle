@@ -31,18 +31,39 @@ export default function BlogImageGallery({ postId, onSelectImage, selectedFormat
     fetchImages();
   }, [postId]);
 
+  // Debug: Log images when they change
+  useEffect(() => {
+    if (images.length > 0) {
+      console.log('Bilder in Galerie:', images);
+    }
+  }, [images]);
+
   const fetchImages = async () => {
     try {
+      setLoading(true);
       const url = postId 
         ? `/api/admin/blog/images?postId=${postId}`
         : '/api/admin/blog/images';
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        setImages(data);
+        console.log('Geladene Bilder:', data); // Debug
+        if (Array.isArray(data)) {
+          setImages(data);
+        } else if (data.images && Array.isArray(data.images)) {
+          setImages(data.images);
+        } else {
+          console.warn('Unerwartetes Datenformat:', data);
+          setImages([]);
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Fehler beim Laden der Bilder:', response.status, errorData);
+        setImages([]);
       }
     } catch (error) {
       console.error('Fehler beim Laden der Bilder:', error);
+      setImages([]);
     } finally {
       setLoading(false);
     }
@@ -66,9 +87,10 @@ export default function BlogImageGallery({ postId, onSelectImage, selectedFormat
       const data = await response.json();
 
       if (response.ok && data.image) {
-        setImages(prev => [data.image, ...prev]);
+        // Galerie aktualisieren
+        await fetchImages();
         setShowUpload(false);
-        // Automatisch auswählen und einfügen
+        // Öffne Modal für Größen- und Ausrichtungs-Auswahl (nicht automatisch einfügen)
         onSelectImage(data.image.fileUrl, format !== 'auto' ? format : undefined);
       } else {
         alert(data.error || 'Fehler beim Hochladen');
@@ -131,14 +153,29 @@ export default function BlogImageGallery({ postId, onSelectImage, selectedFormat
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground">Bild-Galerie</h3>
-        <button
-          onClick={() => setShowUpload(!showUpload)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          <Upload className="w-4 h-4" />
-          Bild hochladen
-        </button>
+        <div className="flex items-center gap-4">
+          <h3 className="text-lg font-semibold text-foreground">Bild-Galerie</h3>
+          {images.length > 0 && (
+            <span className="text-sm text-muted-foreground">({images.length} {images.length === 1 ? 'Bild' : 'Bilder'})</span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => fetchImages()}
+            className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
+            title="Aktualisieren"
+          >
+            <ImageIcon className="w-4 h-4" />
+            Aktualisieren
+          </button>
+          <button
+            onClick={() => setShowUpload(!showUpload)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            Bild hochladen
+          </button>
+        </div>
       </div>
 
       {/* Upload-Bereich */}
@@ -177,10 +214,11 @@ export default function BlogImageGallery({ postId, onSelectImage, selectedFormat
       )}
 
       {/* Bild-Galerie */}
-      {images.length === 0 ? (
+      {images.length === 0 && !loading ? (
         <div className="border border-border rounded-lg p-8 text-center text-muted-foreground">
           <ImageIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p>Noch keine Bilder hochgeladen</p>
+          <p className="text-xs mt-2">Laden Sie Bilder über den "Bild hochladen" Button hoch</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -198,6 +236,10 @@ export default function BlogImageGallery({ postId, onSelectImage, selectedFormat
                   src={image.fileUrl}
                   alt={image.altText || image.fileName}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error('Bild konnte nicht geladen werden:', image.fileUrl);
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
                 />
               </div>
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">

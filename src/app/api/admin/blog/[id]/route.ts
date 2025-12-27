@@ -66,7 +66,14 @@ export async function PUT(
       tags,
       featured,
       status,
+      publishedAt,
     } = body;
+
+    // Datum verarbeiten
+    let publishedAtDate: Date | undefined = undefined;
+    if (publishedAt) {
+      publishedAtDate = new Date(publishedAt);
+    }
 
     const updated = await updateBlogPost(params.id, {
       title,
@@ -79,6 +86,7 @@ export async function PUT(
       tags,
       featured,
       status,
+      publishedAt: publishedAtDate,
     });
 
     if (!updated) {
@@ -90,12 +98,19 @@ export async function PUT(
 
     // Cache invalidieren
     const redis = getRedisClient();
-    if (redis && (await redis.status) === 'ready') {
-      await redis.del('admin:blog:all');
-      await redis.del('admin:blog:draft');
-      await redis.del('admin:blog:published');
-      await redis.del(`blog:post:${updated.slug}`);
-      await redis.del('blog:public:list');
+    if (redis && redis.status === 'ready') {
+      try {
+        await redis.del('admin:blog:all');
+        await redis.del('admin:blog:draft');
+        await redis.del('admin:blog:published');
+        await redis.del(`blog:post:${updated.slug}`);
+        await redis.del('blog:public:list');
+      } catch (cacheError) {
+        // Redis Fehler ignorieren - Cache wird beim nächsten Request neu geladen
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ Redis Cache-Invalidierung-Fehler (ignoriert):', cacheError);
+        }
+      }
     }
 
     return NextResponse.json(updated);
@@ -135,12 +150,19 @@ export async function DELETE(
 
     // Cache invalidieren
     const redis = getRedisClient();
-    if (redis && (await redis.status) === 'ready') {
-      await redis.del('admin:blog:all');
-      await redis.del('admin:blog:draft');
-      await redis.del('admin:blog:published');
-      await redis.del(`blog:post:${params.id}`); // Note: Would need slug for proper invalidation
-      await redis.del('blog:public:list');
+    if (redis && redis.status === 'ready') {
+      try {
+        await redis.del('admin:blog:all');
+        await redis.del('admin:blog:draft');
+        await redis.del('admin:blog:published');
+        await redis.del(`blog:post:${params.id}`); // Note: Would need slug for proper invalidation
+        await redis.del('blog:public:list');
+      } catch (cacheError) {
+        // Redis Fehler ignorieren - Cache wird beim nächsten Request neu geladen
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ Redis Cache-Invalidierung-Fehler (ignoriert):', cacheError);
+        }
+      }
     }
 
     return NextResponse.json({ success: true });
