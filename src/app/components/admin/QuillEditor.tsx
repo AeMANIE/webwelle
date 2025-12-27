@@ -122,11 +122,15 @@ const QuillEditor = forwardRef<any, QuillEditorProps>(({ value, onChange, module
       try {
         // Versuche insertEmbed
         quill.insertEmbed(index, 'image', imageUrl, 'user');
-        // Füge Style hinzu (nach dem Einfügen)
+        // Füge Style hinzu und mache Bild draggable (nach dem Einfügen)
         setTimeout(() => {
           const img = quill.root.querySelector(`img[src="${imageUrl}"]`);
           if (img) {
-            (img as HTMLImageElement).style.cssText = style;
+            const imgElement = img as HTMLImageElement;
+            imgElement.style.cssText = style;
+            imgElement.draggable = true;
+            imgElement.style.cursor = 'move';
+            imgElement.title = 'Ziehen Sie das Bild, um es zu verschieben';
           }
         }, 50);
       } catch (error) {
@@ -369,6 +373,208 @@ const QuillEditor = forwardRef<any, QuillEditorProps>(({ value, onChange, module
             savedCursorPositionRef.current = range.index;
           }
         });
+
+        // Drag & Drop für Bilder aktivieren
+        const enableImageDragAndDrop = () => {
+          const editorElement = quill.root;
+          let draggedImageData: { src: string; style: string; alt: string } | null = null;
+          let draggedImageOldIndex: number = -1;
+          
+          // Mache alle Bilder draggable
+          const makeImagesDraggable = () => {
+            const images = editorElement.querySelectorAll('img');
+            images.forEach((img: Element) => {
+              const imgElement = img as HTMLImageElement;
+              
+              // Überspringe, wenn bereits draggable
+              if (imgElement.draggable) return;
+              
+              imgElement.draggable = true;
+              imgElement.style.cursor = 'move';
+              imgElement.style.userSelect = 'none';
+              imgElement.title = 'Ziehen Sie das Bild, um es zu verschieben';
+              
+              // Drag-Start Event
+              const dragStartHandler = (e: DragEvent) => {
+                e.stopPropagation();
+                console.log('🖼️ Drag gestartet für Bild:', imgElement.src);
+                
+                if (e.dataTransfer) {
+                  e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('text/plain', imgElement.src);
+                }
+                
+                // Finde die Position des Bildes im Delta
+                const delta = quill.getContents();
+                let pos = 0;
+                for (let i = 0; i < delta.ops.length; i++) {
+                  const op = delta.ops[i];
+                  if (op.insert && typeof op.insert === 'object' && op.insert.image === imgElement.src) {
+                    draggedImageOldIndex = pos;
+                    console.log('📍 Alte Position gefunden:', pos);
+                    break;
+                  }
+                  if (typeof op.insert === 'string') {
+                    pos += op.insert.length;
+                  } else if (op.insert && typeof op.insert === 'object') {
+                    pos += 1;
+                  }
+                }
+                
+                draggedImageData = {
+                  src: imgElement.src,
+                  style: imgElement.style.cssText,
+                  alt: imgElement.alt || ''
+                };
+                imgElement.style.opacity = '0.5';
+              };
+              
+              // Drag-End Event
+              const dragEndHandler = () => {
+                console.log('🖼️ Drag beendet');
+                imgElement.style.opacity = '1';
+                if (!draggedImageData) {
+                  draggedImageData = null;
+                  draggedImageOldIndex = -1;
+                }
+              };
+              
+              imgElement.addEventListener('dragstart', dragStartHandler);
+              imgElement.addEventListener('dragend', dragEndHandler);
+            });
+          };
+          
+          // Initial: Mache alle vorhandenen Bilder draggable
+          setTimeout(() => {
+            makeImagesDraggable();
+          }, 500);
+          
+          // Drop-Zone für den Editor
+          const dragOverHandler = (e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.dataTransfer) {
+              e.dataTransfer.dropEffect = 'move';
+            }
+          };
+          
+          const dropHandler = (e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('📥 Drop Event ausgelöst');
+            console.log('📦 Gespeicherte Daten:', draggedImageData, 'Alte Position:', draggedImageOldIndex);
+            
+            if (!draggedImageData || draggedImageOldIndex < 0) {
+              console.warn('⚠️ Keine Drag-Daten verfügbar');
+              draggedImageData = null;
+              draggedImageOldIndex = -1;
+              return;
+            }
+            
+            // Hole die Drop-Position basierend auf der Maus-Position
+            const x = e.clientX;
+            const y = e.clientY;
+            
+            // Versuche die Position aus der Maus-Position zu berechnen
+            const range = document.caretRangeFromPoint?.(x, y) || 
+                         (document.caretPositionFromPoint?.(x, y)?.offsetNode ? {
+                           startContainer: document.caretPositionFromPoint(x, y)?.offsetNode,
+                           startOffset: document.caretPositionFromPoint(x, y)?.offset || 0
+                         } : null);
+            
+            let dropIndex = quill.getLength();
+            
+            if (range) {
+              try {
+                // Versuche die Position im Quill-Editor zu finden
+                const quillRange = quill.getSelection(true);
+                if (quillRange) {
+                  dropIndex = quillRange.index;
+                  console.log('📍 Drop-Position aus Selection:', dropIndex);
+                }
+              } catch (err) {
+                console.warn('⚠️ Konnte Drop-Position nicht bestimmen:', err);
+              }
+            }
+            
+            // Verhindere, dass das Bild an derselben Position bleibt
+            if (Math.abs(dropIndex - draggedImageOldIndex) <= 1) {
+              console.log('⚠️ Drop-Position zu nah an alter Position, ignoriere');
+              draggedImageData = null;
+              draggedImageOldIndex = -1;
+              return;
+            }
+            
+            console.log('🔄 Verschiebe Bild von Position', draggedImageOldIndex, 'nach', dropIndex);
+            
+            // Entferne das alte Bild
+            quill.deleteText(draggedImageOldIndex, 1);
+            
+            // Berechne die neue Position (kann sich durch das Löschen geändert haben)
+            const newIndex = dropIndex > draggedImageOldIndex ? dropIndex - 1 : dropIndex;
+            
+            // Füge das Bild an der neuen Position ein
+            if (!draggedImageData) {
+              draggedImageData = null;
+              draggedImageOldIndex = -1;
+              return;
+            }
+            
+            const imageData = draggedImageData; // Lokale Kopie für setTimeout
+            
+            setTimeout(() => {
+              quill.setSelection(newIndex);
+              quill.insertEmbed(newIndex, 'image', imageData.src, 'user');
+              console.log('✅ Bild eingefügt an Position:', newIndex);
+              
+              // Wende den Style wieder an
+              setTimeout(() => {
+                const newImg = editorElement.querySelector(`img[src="${imageData.src}"]`) as HTMLImageElement;
+                if (newImg) {
+                  newImg.style.cssText = imageData.style;
+                  newImg.alt = imageData.alt;
+                }
+                
+                // Content aktualisieren
+                const updatedContent = quill.root.innerHTML;
+                onChange(updatedContent);
+                
+                // Mache alle Bilder wieder draggable
+                setTimeout(() => {
+                  makeImagesDraggable();
+                }, 100);
+              }, 50);
+            }, 10);
+            
+            draggedImageData = null;
+            draggedImageOldIndex = -1;
+          };
+          
+          editorElement.addEventListener('dragover', dragOverHandler);
+          editorElement.addEventListener('drop', dropHandler);
+          
+          // Beobachte neue Bilder (MutationObserver)
+          const observer = new MutationObserver(() => {
+            setTimeout(() => {
+              makeImagesDraggable();
+            }, 100);
+          });
+          
+          observer.observe(editorElement, {
+            childList: true,
+            subtree: true,
+          });
+          
+          // Cleanup
+          return () => {
+            observer.disconnect();
+            editorElement.removeEventListener('dragover', dragOverHandler);
+            editorElement.removeEventListener('drop', dropHandler);
+          };
+        };
+        
+        enableImageDragAndDrop();
 
         // Cleanup
         return () => {

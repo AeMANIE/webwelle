@@ -503,7 +503,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                 />
                 <div className="mt-2">
                   <p className="text-xs text-muted-foreground">
-                    💡 Tipp: Klicken Sie zuerst im Text an die gewünschte Stelle, dann auf "Bild aus Galerie einfügen" oder das Bild-Icon in der Toolbar.
+                    💡 Tipp: Bilder werden am Ende eingefügt. Sie können sie dann per Drag & Drop an die gewünschte Stelle ziehen.
                   </p>
                 </div>
               </div>
