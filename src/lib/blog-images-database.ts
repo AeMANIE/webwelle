@@ -49,8 +49,62 @@ export interface BlogImage {
   createdBy?: string;
 }
 
+// Stelle sicher, dass die blog_images Tabelle existiert
+async function ensureBlogImagesTable(): Promise<void> {
+  const { client, tempPool } = await getDatabaseClient();
+  
+  try {
+    // Prüfe ob Tabelle existiert
+    const tableCheck = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'blog_images'
+      );
+    `);
+    
+    if (!tableCheck.rows[0].exists) {
+      // Tabelle erstellen
+      await client.query(`
+        CREATE TABLE blog_images (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          blog_post_id UUID REFERENCES blog_posts(id) ON DELETE CASCADE,
+          file_name VARCHAR(255) NOT NULL,
+          file_path VARCHAR(500) NOT NULL,
+          file_url VARCHAR(500) NOT NULL,
+          file_size INTEGER,
+          mime_type VARCHAR(100),
+          width INTEGER,
+          height INTEGER,
+          format VARCHAR(20) DEFAULT 'auto',
+          alt_text TEXT,
+          caption TEXT,
+          position INTEGER DEFAULT 0,
+          is_featured BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          created_by VARCHAR(255)
+        );
+        CREATE INDEX IF NOT EXISTS idx_blog_images_post_id ON blog_images(blog_post_id);
+        CREATE INDEX IF NOT EXISTS idx_blog_images_position ON blog_images(blog_post_id, position);
+        CREATE INDEX IF NOT EXISTS idx_blog_images_featured ON blog_images(is_featured);
+      `);
+      console.log('✅ blog_images Tabelle wurde erstellt');
+    }
+  } catch (error) {
+    console.error('Fehler beim Erstellen der blog_images Tabelle:', error);
+    throw error;
+  } finally {
+    client.release();
+    if (tempPool) await tempPool.end();
+  }
+}
+
 // Blog-Image erstellen
 export async function createBlogImage(image: Omit<BlogImage, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlogImage> {
+  // Stelle sicher, dass die Tabelle existiert
+  await ensureBlogImagesTable();
+  
   const { client, tempPool } = await getDatabaseClient();
   
   try {
@@ -98,6 +152,9 @@ export async function createBlogImage(image: Omit<BlogImage, 'id' | 'createdAt' 
       updatedAt: new Date(row.updated_at),
       createdBy: row.created_by,
     };
+  } catch (error) {
+    console.error('Fehler beim Erstellen des Blog-Images:', error);
+    throw error;
   } finally {
     client.release();
     if (tempPool) await tempPool.end();
@@ -106,6 +163,9 @@ export async function createBlogImage(image: Omit<BlogImage, 'id' | 'createdAt' 
 
 // Alle Bilder für einen Blog-Post abrufen
 export async function getBlogImagesByPostId(postId: string): Promise<BlogImage[]> {
+  // Stelle sicher, dass die Tabelle existiert
+  await ensureBlogImagesTable();
+  
   const { client, tempPool } = await getDatabaseClient();
   
   try {
@@ -133,6 +193,13 @@ export async function getBlogImagesByPostId(postId: string): Promise<BlogImage[]
       updatedAt: new Date(row.updated_at),
       createdBy: row.created_by,
     }));
+  } catch (error) {
+    console.error('Fehler beim Abrufen der Blog-Images:', error);
+    // Wenn Tabelle nicht existiert, leere Liste zurückgeben
+    if (error instanceof Error && error.message.includes('does not exist')) {
+      return [];
+    }
+    throw error;
   } finally {
     client.release();
     if (tempPool) await tempPool.end();
@@ -141,6 +208,9 @@ export async function getBlogImagesByPostId(postId: string): Promise<BlogImage[]
 
 // Alle hochgeladenen Bilder abrufen (für Galerie)
 export async function getAllBlogImages(limit = 50): Promise<BlogImage[]> {
+  // Stelle sicher, dass die Tabelle existiert
+  await ensureBlogImagesTable();
+  
   const { client, tempPool } = await getDatabaseClient();
   
   try {
@@ -168,6 +238,13 @@ export async function getAllBlogImages(limit = 50): Promise<BlogImage[]> {
       updatedAt: new Date(row.updated_at),
       createdBy: row.created_by,
     }));
+  } catch (error) {
+    console.error('Fehler beim Abrufen aller Blog-Images:', error);
+    // Wenn Tabelle nicht existiert, leere Liste zurückgeben
+    if (error instanceof Error && error.message.includes('does not exist')) {
+      return [];
+    }
+    throw error;
   } finally {
     client.release();
     if (tempPool) await tempPool.end();

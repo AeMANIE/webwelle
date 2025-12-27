@@ -22,8 +22,9 @@ export async function GET(request: NextRequest) {
     return secureResponse(images);
   } catch (error) {
     console.error('Fehler beim Laden der Bilder:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return secureResponse(
-      { error: 'Fehler beim Laden der Bilder' },
+      { error: 'Fehler beim Laden der Bilder', details: errorMessage },
       500
     );
   }
@@ -104,8 +105,9 @@ export async function POST(request: NextRequest) {
     return secureResponse({ image }, 201);
   } catch (error) {
     console.error('Fehler beim Hochladen des Bildes:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return secureResponse(
-      { error: 'Fehler beim Hochladen des Bildes' },
+      { error: 'Fehler beim Hochladen des Bildes', details: errorMessage },
       500
     );
   }
