@@ -3,6 +3,11 @@
 import { useState, useEffect } from 'react';
 import { Settings, Check } from 'lucide-react';
 import Image from 'next/image';
+import { UMAMI_CONSENT_EVENT } from '@/lib/umami';
+
+function notifyConsentUpdate() {
+  window.dispatchEvent(new CustomEvent(UMAMI_CONSENT_EVENT));
+}
 
 export default function CookieBanner() {
   const [isVisible, setIsVisible] = useState(false);
@@ -45,12 +50,14 @@ export default function CookieBanner() {
     setCookieSettings(allAccepted);
     localStorage.setItem('cookieConsent', JSON.stringify(allAccepted));
     localStorage.setItem('cookieConsentDate', new Date().getTime().toString());
+    notifyConsentUpdate();
     setIsVisible(false);
   };
 
   const acceptSelected = () => {
     localStorage.setItem('cookieConsent', JSON.stringify(cookieSettings));
     localStorage.setItem('cookieConsentDate', new Date().getTime().toString());
+    notifyConsentUpdate();
     setIsVisible(false);
   };
 

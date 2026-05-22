@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import UmamiAnalytics from "./components/UmamiAnalytics";
+import { getUmamiConfig } from "@/lib/umami";
+
+const umamiConfig = getUmamiConfig();
 
 const inter = Inter({
   variable: "--font-inter",
@@ -59,10 +63,17 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Stripe nur prefetch, nicht preconnect (nicht kritisch für initial load) */}
         <link rel="dns-prefetch" href="//js.stripe.com" />
+        {umamiConfig && (
+          <>
+            <link rel="dns-prefetch" href={umamiConfig.origin} />
+            <link rel="preconnect" href={umamiConfig.origin} crossOrigin="anonymous" />
+          </>
+        )}
       </head>
       <body
         className={`${inter.variable} font-sans antialiased bg-background text-foreground`}
       >
+        <UmamiAnalytics />
         {children}
       </body>
     </html>
