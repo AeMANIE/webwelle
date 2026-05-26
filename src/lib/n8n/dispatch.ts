@@ -80,10 +80,6 @@ export async function dispatchAllResearch(payload: N8nDispatchPayload): Promise<
       url: process.env.N8N_WEBHOOK_COMPETITOR_DESIGN_URL,
     },
     { name: 'research', url: process.env.N8N_RESEARCH_WEBHOOK_URL },
-    {
-      name: 'site-performance',
-      url: process.env.N8N_WEBHOOK_SITE_PERFORMANCE_URL,
-    },
   ];
 
   const ready = targets.filter((t) => !!t.url?.trim());
@@ -139,8 +135,10 @@ export async function dispatchSitePerformance(
 export function getCallbackBaseUrl(): string {
   return (
     process.env.WEBWELLE_CALLBACK_BASE_URL ||
+    process.env.COOLIFY_URL ||
+    (process.env.COOLIFY_FQDN ? `https://${process.env.COOLIFY_FQDN}` : undefined) ||
     process.env.WEBWELLE_APP_BASE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    'http://localhost:3000'
+    'https://webwelle.com'
   ).replace(/\/$/, '');
 }
