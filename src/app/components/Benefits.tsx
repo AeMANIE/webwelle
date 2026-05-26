@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { DollarSign, Calendar, Zap, Palette, Wrench, Users } from 'lucide-react';
+import ErfolgswelleHeroPanel from '@/components/funnel/ErfolgswelleHeroPanel';
 
 // Lazy load GSAP - wird nur für Animationen benötigt (spart ~180KB initial)
 let gsapLoaded = false;
@@ -458,6 +459,10 @@ export default function Benefits() {
           <p className="mt-3 text-base md:text-lg text-muted-foreground max-w-3xl mx-auto font-light leading-relaxed">
             Ihre Vorteile mit WebWelle
           </p>
+        </div>
+
+        <div className="mb-10 md:mb-14">
+          <ErfolgswelleHeroPanel />
         </div>
 
         {/* Horizontaler Slider */}

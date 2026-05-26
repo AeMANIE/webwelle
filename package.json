@@ -20,6 +20,7 @@
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.40.0",
     "gsap": "^3.13.0",
     "iconv-lite": "^0.6.3",
     "ioredis": "^5.8.2",

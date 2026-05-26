@@ -1,52 +1,17 @@
-# Dependencies
+.env
+.env.local
+.env*.local
+info/
+
 node_modules/
-/.pnp
-.pnp.js
-
-# Testing
-/coverage
-
-# Next.js
-/.next/
-/out/
-/info/
-/project_plan.md/
-
-# Production
-/build
-
-# Misc
-.DS_Store
-*.pem
-
-# Debug
+.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Local env files
-.env*.local
-.env
-
-# Vercel
-.vercel
-
-# TypeScript
-*.tsbuildinfo
-next-env.d.ts
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-Thumbs.db
-
-# Projekt-Dokumente/Interne Dateien nicht committen/deployen
-/EMAIL_SETUP.md
-/PRICE_IDS_UPDATE.md
-/PRODUCTION_SETUP.md
-/README.md
-/STRIPE_SETUP.md
-/info/
-.env.localechoinfo/database/DATABASE_SCHEMA.md
+.pnpm-debug.log*
+.DS_Store

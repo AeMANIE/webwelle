@@ -10,8 +10,9 @@ import CustomersTab from '../components/admin/CustomersTab';
 import InvoicesTab from '../components/admin/InvoicesTab';
 import BlogTab from '../components/admin/BlogTab';
 import DatabaseTab from '../components/admin/DatabaseTab';
+import OffersTab from '../components/admin/OffersTab';
 
-type TabId = 'bookings' | 'customers' | 'invoices' | 'blog' | 'database';
+type TabId = 'bookings' | 'customers' | 'invoices' | 'offers' | 'blog' | 'database';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabId>('bookings');
@@ -22,7 +23,7 @@ export default function AdminPage() {
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const tab = searchParams.get('tab') as TabId;
-    if (tab && ['bookings', 'customers', 'invoices', 'blog', 'database'].includes(tab)) {
+    if (tab && ['bookings', 'customers', 'invoices', 'offers', 'blog', 'database'].includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
@@ -83,6 +84,7 @@ export default function AdminPage() {
           {activeTab === 'bookings' && <BookingsTab />}
           {activeTab === 'customers' && <CustomersTab />}
           {activeTab === 'invoices' && <InvoicesTab />}
+          {activeTab === 'offers' && <OffersTab />}
           {activeTab === 'blog' && <BlogTab />}
           {activeTab === 'database' && <DatabaseTab />}
         </div>

@@ -189,79 +189,95 @@ export async function createTempPool(
   });
 }
 
-// Hole die beste verfügbare Datenbank-URL
-// In Development: Bevorzugt DATABASE_PUBLICURL
-// In Production: Verwendet DATABASE_URL
-const selectedDbUrl = isDevelopmentEnv && process.env.DATABASE_PUBLICURL 
-  ? process.env.DATABASE_PUBLICURL 
-  : process.env.DATABASE_URL;
+function createPoolConfig(): import('pg').PoolConfig {
+  // Hole die beste verfügbare Datenbank-URL
+  // In Development: Bevorzugt DATABASE_PUBLICURL
+  // In Production: Verwendet DATABASE_URL
+  const selectedDbUrl = isDevelopmentEnv && process.env.DATABASE_PUBLICURL
+    ? process.env.DATABASE_PUBLICURL
+    : process.env.DATABASE_URL;
 
-if (!selectedDbUrl) {
-  throw new Error('DATABASE_URL oder DATABASE_PUBLICURL muss gesetzt sein');
-}
-
-// Korrigiere DATABASE_URL falls nötig (database path)
-const correctedDatabaseUrl = correctDatabaseUrl(selectedDbUrl);
-
-// Parse URL für explizite Parameter
-let poolConfig: import('pg').PoolConfig;
-try {
-  const url = new URL(correctedDatabaseUrl);
-  const database = url.pathname.replace(/^\//, '') || 'postgres';
-  
-  // Passwort: URL.password ist bereits decoded, aber wenn es noch encoded ist, decode es
-  let password = url.password;
-  try {
-    // Versuche zu dekodieren (falls es noch encoded ist)
-    password = decodeURIComponent(password);
-  } catch {
-    // Falls Dekodierung fehlschlägt, verwende Original
-    password = url.password;
+  if (!selectedDbUrl) {
+    throw new Error('DATABASE_URL oder DATABASE_PUBLICURL muss gesetzt sein');
   }
-  
-  poolConfig = {
-    host: url.hostname,
-    port: parseInt(url.port || '5432', 10),
-    database: database, // Explizit setzen, ohne führenden Slash
-    user: url.username,
-    password: password, // Verwende dekodiertes Passwort
-    ssl: selectedDbUrl?.includes('sslmode=require') 
-      ? { 
-          rejectUnauthorized: false
-        } 
-      : sslConfig,
-    // Verbindungs-Timeouts
-    connectionTimeoutMillis: 10000,
-    idleTimeoutMillis: 30000,
-    max: 20,
-  };
-  
-  console.log('🔧 Pool konfiguriert mit expliziten Parametern:', {
-    host: poolConfig.host,
-    port: poolConfig.port,
-    database: poolConfig.database,
-    user: poolConfig.user,
-    hasPassword: !!poolConfig.password,
-    passwordLength: poolConfig.password?.length || 0,
-    sslEnabled: !!poolConfig.ssl
-  });
-} catch (urlError) {
-  // Fallback: Verwende connectionString
-  console.warn('⚠️ URL-Parsing für Pool fehlgeschlagen, verwende connectionString:', urlError);
-  poolConfig = {
-    connectionString: correctedDatabaseUrl,
-    ssl: selectedDbUrl?.includes('sslmode=require') 
-      ? { 
-          rejectUnauthorized: false
-        } 
-      : sslConfig,
-    connectionTimeoutMillis: 10000,
-    idleTimeoutMillis: 30000,
-    max: 20,
-  };
+
+  // Korrigiere DATABASE_URL falls nötig (database path)
+  const correctedDatabaseUrl = correctDatabaseUrl(selectedDbUrl);
+
+  try {
+    const url = new URL(correctedDatabaseUrl);
+    const database = url.pathname.replace(/^\//, '') || 'postgres';
+
+    // Passwort: URL.password ist bereits decoded, aber wenn es noch encoded ist, decode es
+    let password = url.password;
+    try {
+      // Versuche zu dekodieren (falls es noch encoded ist)
+      password = decodeURIComponent(password);
+    } catch {
+      // Falls Dekodierung fehlschlägt, verwende Original
+      password = url.password;
+    }
+
+    const poolConfig: import('pg').PoolConfig = {
+      host: url.hostname,
+      port: parseInt(url.port || '5432', 10),
+      database: database, // Explizit setzen, ohne führenden Slash
+      user: url.username,
+      password: password, // Verwende dekodiertes Passwort
+      ssl: selectedDbUrl.includes('sslmode=require')
+        ? {
+            rejectUnauthorized: false
+          }
+        : sslConfig,
+      // Verbindungs-Timeouts
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      max: 20,
+    };
+
+    console.log('🔧 Pool konfiguriert mit expliziten Parametern:', {
+      host: poolConfig.host,
+      port: poolConfig.port,
+      database: poolConfig.database,
+      user: poolConfig.user,
+      hasPassword: !!poolConfig.password,
+      passwordLength: poolConfig.password?.length || 0,
+      sslEnabled: !!poolConfig.ssl
+    });
+
+    return poolConfig;
+  } catch (urlError) {
+    // Fallback: Verwende connectionString
+    console.warn('⚠️ URL-Parsing für Pool fehlgeschlagen, verwende connectionString:', urlError);
+    return {
+      connectionString: correctedDatabaseUrl,
+      ssl: selectedDbUrl.includes('sslmode=require')
+        ? {
+            rejectUnauthorized: false
+          }
+        : sslConfig,
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      max: 20,
+    };
+  }
 }
 
-export const pool = new Pool(poolConfig);
+let poolInstance: Pool | null = null;
+
+function getPool(): Pool {
+  if (!poolInstance) {
+    poolInstance = new Pool(createPoolConfig());
+  }
+  return poolInstance;
+}
+
+export const pool = new Proxy({} as Pool, {
+  get(_target, prop, receiver) {
+    const value = Reflect.get(getPool(), prop, receiver);
+    return typeof value === 'function' ? value.bind(getPool()) : value;
+  },
+});
 
 // Input-Sanitization für Datenbank-Eingaben
 function sanitizeBookingData(bookingData: BookingData): BookingData {
@@ -1309,6 +1325,14 @@ export async function createTables(): Promise<void> {
     console.log('   - blog_posts');
     console.log('   - blog_images');
     console.log('✅ Alle Indizes und Foreign Keys erstellt');
+
+    try {
+      const { ensureFunnelTables } = await import('./funnel-database');
+      await ensureFunnelTables();
+      console.log('✅ Funnel-Tabellen überprüft');
+    } catch (funnelErr) {
+      console.warn('⚠️ Funnel-Tabellen:', funnelErr);
+    }
   } finally {
     client.release();
   }

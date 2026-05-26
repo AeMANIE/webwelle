@@ -3,6 +3,25 @@
 import { useState, useEffect } from 'react';
 import { Lightbulb, Check } from 'lucide-react';
 import Link from 'next/link';
+import HeroIndustrySearch from '@/components/funnel/HeroIndustrySearch';
+
+/** Gleicher Funnel wie im Hero – nur kompakter im Paket-Kasten */
+function PackageFunnelStart({
+  packageKey,
+  inputId,
+}: {
+  packageKey: 'starterwelle' | 'businesswelle' | 'erfolgswelle';
+  inputId: string;
+}) {
+  return (
+    <HeroIndustrySearch
+      variant="card"
+      inputId={inputId}
+      source={`products_${packageKey}`}
+      className="pb-2"
+    />
+  );
+}
 
 export default function Products() {
   const [isMonthly, setIsMonthly] = useState(true);
@@ -57,7 +76,7 @@ export default function Products() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {/* StarterWelle */}
-          <div className="bg-gradient-to-br from-card to-card/50 rounded-2xl p-8 border-2 border-border relative">
+          <div className="bg-gradient-to-br from-card to-card/50 rounded-2xl p-8 border-2 border-border relative overflow-visible z-10">
             <div className="mb-6">
               <h3 className="text-2xl font-bold text-foreground mb-2 tracking-wide">
                 StarterWelle
@@ -108,16 +127,14 @@ export default function Products() {
               </div>
             </div>
 
-            <Link
-              href={`/buchung/starterwelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
-              className="w-full bg-secondary text-secondary-foreground py-3 px-6 rounded-lg hover:bg-secondary/90 transition-colors font-semibold text-center block"
-            >
-              Wellenstart 
-            </Link>
+            <PackageFunnelStart
+              packageKey="starterwelle"
+              inputId="starterwelle-industry"
+            />
           </div>
 
           {/* BusinessWelle */}
-          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-8 border-2 border-primary/20 relative">
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-8 border-2 border-primary/20 relative overflow-visible z-10">
             <div className="absolute top-4 right-4">
               <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
                 Beliebt
@@ -191,16 +208,14 @@ export default function Products() {
               </div>
             </div>
 
-            <Link
-              href={`/buchung/businesswelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
-              className="w-full bg-primary text-primary-foreground py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-center block"
-            >
-              Wellenstart
-            </Link>
+            <PackageFunnelStart
+              packageKey="businesswelle"
+              inputId="businesswelle-industry"
+            />
           </div>
 
           {/* ErfolgsWelle */}
-          <div className="bg-gradient-to-br from-card to-card/50 rounded-2xl p-8 border-2 border-border relative">
+          <div className="bg-gradient-to-br from-card to-card/50 rounded-2xl p-8 border-2 border-border relative overflow-visible z-10">
             <div className="absolute top-4 right-4">
               <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
                 Premium
@@ -282,12 +297,10 @@ export default function Products() {
               </div>
             </div>
 
-            <Link
-              href={`/buchung/erfolgswelle?billing=${isMonthly ? 'monthly' : 'yearly'}`}
-              className="w-full bg-secondary text-secondary-foreground py-3 px-6 rounded-lg hover:bg-secondary/90 transition-colors font-semibold text-center block"
-            >
-              Wellenstart
-            </Link>
+            <PackageFunnelStart
+              packageKey="erfolgswelle"
+              inputId="erfolgswelle-industry"
+            />
           </div>
         </div>
 

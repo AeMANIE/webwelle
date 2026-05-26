@@ -147,6 +147,12 @@ button {
   animation: fadeInUp 0.6s ease-out;
 }
 
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 /* Print styles */
 @media print {
   .no-print {

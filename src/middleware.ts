@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
+import { countryToMarket } from '@/lib/funnel/market';
 
 // Edge-kompatible Token-Verifizierung mit Signatur-Validierung
 async function verifyTokenEdge(token: string): Promise<{ role: string; exp: number } | null> {
@@ -69,7 +70,33 @@ export async function middleware(request: NextRequest) {
     }
   }
   
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  const tokenFromQuery = url.searchParams.get('t');
+  if (tokenFromQuery && pathname.startsWith('/funnel')) {
+    response.cookies.set('wf_token', tokenFromQuery, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 90,
+    });
+  }
+
+  const countryHeader =
+    request.headers.get('x-vercel-ip-country') ||
+    request.headers.get('cf-ipcountry');
+  const market = countryToMarket(countryHeader);
+  const existingMarket = request.cookies.get('market')?.value;
+  if (market && existingMarket !== market) {
+    response.cookies.set('market', market, {
+      httpOnly: false,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+    });
+  }
+
+  return response;
 }
 
 export const config = {

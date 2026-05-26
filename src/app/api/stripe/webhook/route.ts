@@ -89,6 +89,46 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   
   try {
     const metadata = session.metadata;
+    if (metadata?.offerId) {
+      const { pool } = await import('@/lib/database');
+      const { updateOfferStatus, updateFunnelLead } = await import('@/lib/funnel-database');
+      const client = await pool.connect();
+      try {
+        await client.query(
+          `UPDATE offer_checkout_sessions SET status = 'paid', paid_at = NOW() WHERE stripe_session_id = $1`,
+          [session.id]
+        );
+        await updateOfferStatus(metadata.offerId, 'paid');
+        if (metadata.leadId) {
+          const leadRow = await client.query('SELECT token FROM funnel_leads WHERE id = $1', [
+            metadata.leadId,
+          ]);
+          const token = leadRow.rows[0]?.token as string | undefined;
+          if (token) await updateFunnelLead(token, { status: 'paid' });
+        }
+        const { saveBooking } = await import('@/lib/database');
+        const email = session.customer_email || session.customer_details?.email || '';
+        await saveBooking({
+          session_id: session.id,
+          package_type: (metadata.packageType as 'starterwelle') || 'starterwelle',
+          is_monthly: false,
+          checkout_mode: 'payment',
+          package_price_display: `${(session.amount_total || 0) / 100} €`,
+          currency: 'eur',
+          total_amount_cents: session.amount_total || 0,
+          customer_email: email,
+          customer_name: session.customer_details?.name || undefined,
+          stripe_customer_id: session.customer as string,
+          stripe_payment_intent_id: session.payment_intent as string,
+          status: 'paid',
+          raw_form_data: { offerId: metadata.offerId, leadId: metadata.leadId },
+        });
+        console.log('✅ Offer-Checkout verarbeitet:', metadata.offerId);
+      } finally {
+        client.release();
+      }
+      return;
+    }
     if (metadata) {
       console.log('Kunden-Daten:', {
         packageType: metadata.packageType,
