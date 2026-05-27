@@ -95,11 +95,10 @@ export function Sparkles({
 }) {
   return (
     <div className={`relative flex flex-col items-center ${className}`}>
-      <div className="relative z-20">{children}</div>
-
-      <div className="relative w-full h-40 -mt-1 overflow-hidden">
+      <div className="relative w-full overflow-hidden">
+        {/* Glowing Line */}
         <div
-          className="absolute top-0 inset-x-0 mx-auto"
+          className="absolute top-0 inset-x-0 mx-auto z-10"
           style={{
             height: '2px',
             width: '75%',
@@ -109,11 +108,18 @@ export function Sparkles({
               '0 0 6px 1px #38bdf8cc, 0 0 20px 4px #38bdf866, 0 0 60px 10px #0ea5e922',
           }}
         />
+
+        {/* Particles Canvas */}
         <SparklesCanvas
           className="absolute inset-0"
           particleColor="#ffffff"
           particleDensity={100}
         />
+
+        {/* Content inside effect */}
+        <div className="relative z-20 pb-8">
+          {children}
+        </div>
       </div>
     </div>
   );
