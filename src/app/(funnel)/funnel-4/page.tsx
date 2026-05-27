@@ -247,7 +247,7 @@ function Funnel4Content() {
         {error && <p className="text-amber-400 text-sm mt-4">{error}</p>}
 
         <ShinyButton type="submit" disabled={loading} className="w-full mt-6">
-          {loading ? 'Speichern und Portal-Mail prüfen…' : 'Daten sichern'}
+          {loading ? 'Welle wird gestartet…' : '🌊 Welle starten'}
         </ShinyButton>
       </form>
     </FunnelShell>
