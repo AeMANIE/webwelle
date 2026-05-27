@@ -1,0 +1,162 @@
+'use client';
+
+import { useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { LogIn, Menu, X } from 'lucide-react';
+
+export default function Header() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+  };
+
+  return (
+    <header className="bg-background backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-lg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center py-4">
+          {/* Logo */}
+          <div className="flex-shrink-0 flex items-center">
+            <Link 
+              href="/" 
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity focus:outline-none focus:ring-0"
+            >
+              <Image
+                src="/webwellelogo.svg"
+                alt="WebWelle Logo"
+                width={50}
+                height={50}
+                className="h-12 w-auto"
+                priority
+              />
+              <Image
+                src="/webwellecom-weissihr.svg"
+                alt="WebWelle"
+                width={180}
+                height={48}
+                className="h-12 w-auto"
+                priority
+                fetchPriority="high"
+              />
+            </Link>
+          </div>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link href="/ai-voice" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap py-2 px-1">
+              Telefonassistent AI
+            </Link>
+            <Link 
+              href="/#vorteile" 
+              className="text-foreground hover:text-primary transition-colors font-medium py-2 px-1"
+              onClick={(e) => {
+                e.preventDefault();
+                
+                // Wenn wir nicht auf der Homepage sind, navigiere dorthin
+                if (window.location.pathname !== '/') {
+                  window.location.href = '/#vorteile';
+                  return;
+                }
+                
+                // Wenn wir auf der Homepage sind, scrolle zum Abschnitt
+                const element = document.getElementById('vorteile');
+                if (element) {
+                  const headerHeight = 80;
+                  const elementPosition = element.offsetTop - headerHeight;
+                  window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+                }
+              }}
+            >
+              Webdesign-Pakete
+            </Link>
+            <Link href="/ai-agent" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap py-2 px-1">
+              KI & Automatisierung
+            </Link>
+            <Link href="/app-entwicklung" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap py-2 px-1">
+              App-Entwicklung
+            </Link>
+            <Link href="/blog" className="text-foreground hover:text-primary transition-colors font-medium py-2 px-1">
+              Blog
+            </Link>
+            <Link href="/customer" className="text-primary hover:text-primary/80 transition-colors font-medium border border-primary px-4 py-2 rounded-md flex items-center space-x-1 hover:bg-primary/10">
+              <LogIn className="w-4 h-4" />
+              <span>Login</span>
+            </Link>
+          </nav>
+
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <button
+              onClick={toggleMenu}
+              className="text-foreground hover:text-primary focus:outline-none focus:text-primary p-2"
+              aria-label={isMenuOpen ? "Navigation schließen" : "Navigation öffnen"}
+              aria-expanded={isMenuOpen}
+            >
+              {isMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-card rounded-lg mt-2 border border-border shadow-lg">
+              <Link href="/ai-voice" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
+                Telefonassistent AI
+              </Link>
+              <Link 
+                href="/#vorteile" 
+                className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  closeMenu();
+                  
+                  // Wenn wir nicht auf der Homepage sind, navigiere dorthin
+                  if (window.location.pathname !== '/') {
+                    window.location.href = '/#vorteile';
+                    return;
+                  }
+                  
+                  // Wenn wir auf der Homepage sind, scrolle zum Abschnitt
+                  const element = document.getElementById('vorteile');
+                  if (element) {
+                    const headerHeight = 80;
+                    const elementPosition = element.offsetTop - headerHeight;
+                    window.scrollTo({ top: elementPosition, behavior: 'smooth' });
+                  }
+                }}
+              >
+                Webdesign-Pakete
+              </Link>
+              <Link href="/ai-agent" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
+                KI & Automatisierung
+              </Link>
+              <Link href="/app-entwicklung" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
+                App-Entwicklung
+              </Link>
+              <Link href="/blog" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
+                Blog
+              </Link>
+              <div className="pt-2 border-t border-border">
+                <Link href="/customer" className="flex items-center justify-center space-x-2 px-3 py-2 text-primary hover:text-primary/80 font-medium border border-primary rounded-md hover:bg-primary/5" onClick={closeMenu}>
+                  <LogIn className="w-4 h-4" />
+                  <span>Login</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}

@@ -1,0 +1,48 @@
+/* Reset und Basis-Styling */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+    font-family: 'Arial', sans-serif;
+}
+
+body {
+    position: relative;
+    background: transparent;
+    cursor: default;
+}
+
+/* Canvas Container */
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Performance-Optimierungen */
+canvas {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    image-rendering: -webkit-optimize-contrast;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    body {
+        cursor: default;
+    }
+}
+
+/* Kein Hintergrund - transparent für Webseiten-Integration */
+
