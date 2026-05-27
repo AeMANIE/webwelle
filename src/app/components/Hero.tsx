@@ -98,23 +98,22 @@ export default function Hero() {
       <div className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <ShinyPanel className="relative z-30 max-w-5xl mx-auto overflow-visible p-4 md:p-8">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-extrabold text-foreground leading-tight tracking-tight mb-2 md:mb-4">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-extrabold text-foreground leading-tight tracking-tight mb-6 md:mb-8">
               High-Performance Websites
             </h1>
 
             <div className="relative z-10 mb-6 md:mb-8">
               <Sparkles>
-                <div />
+                <div className="pt-8 md:pt-12">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-extrabold text-foreground leading-tight tracking-tight mb-4 md:mb-6">
+                    für das KI-Zeitalter
+                  </h2>
+                  <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-muted-foreground leading-relaxed font-light">
+                    – gebaut, um Kunden zu gewinnen
+                  </p>
+                </div>
               </Sparkles>
             </div>
-
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-extrabold text-foreground mb-6 md:mb-8 leading-tight tracking-tight">
-              für das KI-Zeitalter
-            </h2>
-
-            <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-muted-foreground leading-relaxed font-light mb-8">
-             – gebaut, um Kunden zu gewinnen
-            </p>
             <div className="mt-6">
               <HeroIndustrySearch />
             </div>
