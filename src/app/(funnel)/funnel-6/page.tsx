@@ -124,7 +124,7 @@ function Funnel6Content() {
                 type="button"
                 onClick={() => toggleModule(m)}
                 className={
-                  `px-3 py-2 rounded-full text-sm border ` +
+                  `px-3 py-2.5 rounded-full text-sm border min-h-[44px] ` +
                   (modules.includes(m)
                     ? 'border-primary bg-primary/15 text-primary'
                     : 'border-border')

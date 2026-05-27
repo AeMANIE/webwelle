@@ -379,7 +379,7 @@ export default function LiveAnalysisDashboard({
         .filter((k) => k.volume != null && Number(k.volume) > 0)
         .slice(0, 10)
         .map((k) => ({
-          keyword: (k.keyword || 'Keyword').slice(0, 22),
+          keyword: (k.keyword || 'Keyword').slice(0, 18),
           volume: Number(k.volume),
         })),
     [keywords]
@@ -508,9 +508,9 @@ export default function LiveAnalysisDashboard({
             type="button"
             onClick={saveResume}
             disabled={saving}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+            className="shrink-0 rounded-lg bg-primary px-4 py-2.5 text-xs sm:text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60 min-h-[44px]"
           >
-            {saving ? 'Speichert...' : 'Analyse speichern und später fortsetzen'}
+            {saving ? 'Speichert…' : '💾 Analyse speichern'}
           </button>
         </div>
 
@@ -565,7 +565,7 @@ export default function LiveAnalysisDashboard({
       </div>
 
       {/* ── Tab bar ── */}
-      <div className="flex flex-wrap gap-2 border-b border-border pb-2">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 border-b border-border pb-2">
         {(
           [
             ['seo', 'SEO'],
@@ -579,7 +579,7 @@ export default function LiveAnalysisDashboard({
             type="button"
             onClick={() => setTab(key)}
             className={
-              `relative px-4 py-2 rounded-lg text-sm font-medium ` +
+              `relative px-4 py-2.5 rounded-lg text-sm font-medium min-h-[44px] ` +
               (tab === key ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80')
             }
           >
@@ -630,7 +630,7 @@ export default function LiveAnalysisDashboard({
                         type="category"
                         dataKey="keyword"
                         tick={{ fill: '#94a3b8', fontSize: 11 }}
-                        width={140}
+                        width={110}
                       />
                       <Tooltip
                         formatter={(v) => [Number(v).toLocaleString('de-DE'), 'Suchvolumen']}
@@ -1055,11 +1055,11 @@ export default function LiveAnalysisDashboard({
                         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                           📱 Mobil
                         </p>
-                        <div className="flex flex-wrap gap-3 justify-center">
-                          <CircleGauge score={mainScore} label="Leistung" size={76} />
-                          <CircleGauge score={site.accessibilityScore} label="Barrierefreiheit" size={70} />
-                          <CircleGauge score={site.bestPracticesScore} label="Best Practices" size={70} />
-                          <CircleGauge score={site.lighthouseSeoScore} label="SEO" size={70} />
+                        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 justify-center">
+                          <CircleGauge score={mainScore} label="Leistung" size={72} />
+                          <CircleGauge score={site.accessibilityScore} label="Barrierefreiheit" size={72} />
+                          <CircleGauge score={site.bestPracticesScore} label="Best Practices" size={72} />
+                          <CircleGauge score={site.lighthouseSeoScore} label="SEO" size={72} />
                         </div>
                       </div>
                       {/* Desktop – Leistungsscore */}
@@ -1067,8 +1067,8 @@ export default function LiveAnalysisDashboard({
                         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                           🖥 Desktop
                         </p>
-                        <div className="flex flex-wrap gap-3 justify-center">
-                          <CircleGauge score={site.desktopScore} label="Leistung" size={76} />
+                        <div className="flex justify-center">
+                          <CircleGauge score={site.desktopScore} label="Leistung" size={72} />
                         </div>
                         {site.desktopScore == null && (
                           <p className="text-xs text-center text-muted-foreground">
@@ -1094,9 +1094,9 @@ export default function LiveAnalysisDashboard({
               <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Wettbewerber-Vergleich
               </h3>
-              <div className="rounded-xl border border-border bg-background/60 p-4">
+              <div className="rounded-xl border border-border bg-background/60 p-4 h-[260px] lg:h-[420px]">
                 {mounted ? (
-                  <ResponsiveContainer width="100%" height={420}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <RadarChart data={radarData}>
                       <PolarGrid stroke="#1e293b" />
                       <PolarAngleAxis
@@ -1124,7 +1124,7 @@ export default function LiveAnalysisDashboard({
                     </RadarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <ChartSkeleton height={420} />
+                  <ChartSkeleton />
                 )}
               </div>
             </div>

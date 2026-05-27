@@ -13,7 +13,7 @@ export function FunnelStepper({ current }: { current: number }) {
         <span
           key={step}
           className={
-            `h-2 w-8 rounded-full transition-colors ` +
+            `h-2.5 w-10 rounded-full transition-colors ` +
             (step <= current ? 'bg-primary' : 'bg-muted')
           }
         />

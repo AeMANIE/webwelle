@@ -61,12 +61,12 @@ function Funnel3Content() {
             <input
               readOnly
               value={resumeLink}
-              className="flex-1 text-xs rounded-lg border border-border bg-background px-3 py-2"
+              className="flex-1 text-xs rounded-lg border border-border bg-background px-3 py-2 min-h-[44px]"
             />
             <button
               type="button"
               onClick={copyLink}
-              className="px-4 py-2 rounded-lg border border-primary text-primary text-sm"
+              className="px-4 py-2.5 rounded-lg border border-primary text-primary text-sm font-medium min-h-[44px] shrink-0"
             >
               {copied ? 'Kopiert!' : 'Link kopieren'}
             </button>
