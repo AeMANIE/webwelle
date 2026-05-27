@@ -692,26 +692,40 @@ export default function LiveAnalysisDashboard({
             </div>
           )}
 
-          {/* Keyword-Karten (Fallback / Ergänzung wenn kein Volumen-Chart) */}
-          {keywords.length > 0 && keywordChartData.length === 0 && (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {keywords.slice(0, 12).map((kw, i) => (
-                <div
-                  key={`${kw.keyword}-${i}`}
-                  className="rounded-xl border border-border bg-background/60 p-4"
-                >
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Keyword</p>
-                  <p className="mt-1 font-semibold">{kw.keyword || 'wird ausgewertet'}</p>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-full bg-primary/10 px-2 py-1 text-primary">
-                      {kw.cluster || 'Cluster offen'}
-                    </span>
-                    <span className="rounded-full bg-muted px-2 py-1">
-                      Volumen {kw.volume ?? 'offen'}
-                    </span>
+          {/* Alle Keywords – immer sichtbar */}
+          {keywords.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Alle Keywords ({keywords.length})
+              </h3>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {keywords.map((kw, i) => (
+                  <div
+                    key={`${kw.keyword}-${i}`}
+                    className="rounded-xl border border-border bg-background/60 p-4"
+                  >
+                    <p className="font-semibold text-sm">{kw.keyword || 'wird ausgewertet'}</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                      {kw.cluster && (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
+                          {kw.cluster}
+                        </span>
+                      )}
+                      <span
+                        className={`rounded-full px-2 py-0.5 ${
+                          Number(kw.volume) > 0
+                            ? 'bg-emerald-500/10 text-emerald-400'
+                            : 'bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {Number(kw.volume) > 0
+                          ? `${Number(kw.volume).toLocaleString('de-DE')} / Monat`
+                          : 'Volumen: —'}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
@@ -984,11 +998,11 @@ export default function LiveAnalysisDashboard({
                     {renderMarkdownish(designPayload.recommendation as string)}
                   </div>
                   {typeof designPayload.summary === 'string' && designPayload.summary && (
-                    <div className="rounded-xl border border-border bg-background/60 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
                         Markt-Zusammenfassung
                       </p>
-                      <p className="text-sm leading-relaxed text-muted-foreground">
+                      <p className="text-base leading-relaxed text-foreground">
                         {designPayload.summary as string}
                       </p>
                     </div>
