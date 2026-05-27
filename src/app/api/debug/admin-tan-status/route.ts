@@ -35,7 +35,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       found: true,
       email: normalizedEmail,
-      tan: entry.tan,
       expiresAt: new Date(entry.expiresAt).toISOString(),
       now: new Date(now).toISOString(),
       isExpired,

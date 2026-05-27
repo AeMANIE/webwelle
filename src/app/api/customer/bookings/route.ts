@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { verifyToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,16 +19,15 @@ export async function GET(request: Request) {
       );
     }
 
-    // Token validieren (vereinfacht)
-    try {
-      JSON.parse(atob(token.split('.')[1]));
-      // userEmail = payload.email; // Wird später für Datenbankabfrage verwendet
-    } catch {
+    // Token kryptographisch verifizieren
+    const user = verifyToken(token);
+    if (!user) {
       return NextResponse.json(
         { error: 'Ungültiger Token' },
         { status: 401 }
       );
     }
+    // user.email ist jetzt verifiziert und kann für die DB-Abfrage verwendet werden
 
     // Für Entwicklung: Leere Buchungen zurückgeben, da keine echten Buchungen vorhanden
     // In Produktion würde hier die Datenbank abgefragt werden

@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
         const entry = getTANMemory(email);
         results[email] = entry ? {
           found: true,
-          tan: entry.tan,
           expiresAt: new Date(entry.expiresAt).toISOString(),
           isExpired: Date.now() > entry.expiresAt
         } : { found: false };
@@ -49,7 +48,6 @@ export async function GET(request: NextRequest) {
       testEmails: results,
       getAdminTANResult: adminTanResult ? {
         found: true,
-        tan: adminTanResult.tan,
         expiresAt: new Date(adminTanResult.expiresAt).toISOString(),
         isExpired: Date.now() > adminTanResult.expiresAt
       } : { found: false },

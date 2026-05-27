@@ -1,9 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createTables } from '@/lib/database';
+import { requireAdminAuth } from '@/lib/api-security';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authResult = await requireAdminAuth(request);
+  if (authResult instanceof NextResponse) {
+    return authResult;
+  }
+
   try {
     await createTables();
     return NextResponse.json({ 

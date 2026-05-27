@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { Calendar, User, ArrowLeft, Tag, Clock } from 'lucide-react';
 import { notFound } from 'next/navigation';
+import sanitizeHtml from 'sanitize-html';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ScrollToTop from '../../components/ScrollToTop';
@@ -139,7 +140,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div 
             className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content, {
+              allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'h1', 'h2']),
+              allowedAttributes: {
+                ...sanitizeHtml.defaults.allowedAttributes,
+                'img': ['src', 'alt', 'width', 'height'],
+                'a': ['href', 'title', 'target', 'rel'],
+              },
+              allowedSchemes: ['http', 'https', 'mailto'],
+            }) }}
           />
         </div>
       </article>

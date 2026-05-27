@@ -3,6 +3,10 @@ import { createCustomer, getCustomerByEmail } from '@/lib/database';
 import { hashPassword } from '@/lib/password';
 
 export async function POST(request: Request) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Route nicht verfügbar' }, { status: 404 });
+  }
+
   try {
     const { email, password, name } = await request.json();
     
