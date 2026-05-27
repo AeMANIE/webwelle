@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import HeroIndustrySearch from '@/components/funnel/HeroIndustrySearch';
 import { ShinyPanel } from '@/components/ui/shiny-panel';
+import { Sparkles } from '@/components/ui/sparkles';
 
 export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -97,9 +98,12 @@ export default function Hero() {
       <div className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <ShinyPanel className="relative z-30 max-w-5xl mx-auto overflow-visible p-4 md:p-8">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-extrabold text-foreground mb-4 md:mb-6 leading-tight tracking-tight">
-            High-Performance Websites für das KI-Zeitalter
-            </h1>
+            <Sparkles>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-extrabold text-foreground leading-tight tracking-tight">
+                <span className="block">High-Performance Websites</span>
+                <span className="block">für das KI-Zeitalter</span>
+              </h1>
+            </Sparkles>
             <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-muted-foreground leading-relaxed font-light">
              – gebaut, um Kunden zu gewinnen
             </p>
