@@ -1,10 +1,11 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import FunnelShell from '@/components/funnel/FunnelShell';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import type { DachMarket } from '@/lib/funnel/types';
+import { detectEmailTypo, validatePhoneDACH } from '@/lib/validation';
 
 function Funnel4Content() {
   const searchParams = useSearchParams();
@@ -26,6 +27,7 @@ function Funnel4Content() {
   const [streets, setStreets] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const streetJustSelected = useRef(false);
 
   useEffect(() => {
     if (!token) return;
@@ -52,6 +54,10 @@ function Funnel4Content() {
 
   useEffect(() => {
     if (form.street.length < 2 || !form.postalCode || !form.city) return;
+    if (streetJustSelected.current) {
+      streetJustSelected.current = false;
+      return;
+    }
     const t = setTimeout(() => {
       fetch(
         `/api/address/street?country=${market}&postalCode=${encodeURIComponent(form.postalCode)}&city=${encodeURIComponent(form.city)}&q=${encodeURIComponent(form.street)}`
@@ -65,6 +71,11 @@ function Funnel4Content() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
+    const phoneResult = validatePhoneDACH(form.phone, market);
+    if (!phoneResult.valid) {
+      setError(phoneResult.hint || 'Bitte eine gültige Telefonnummer eingeben.');
+      return;
+    }
     const normalizedEmail = form.email.trim().toLowerCase();
     setLoading(true);
     setError(null);
@@ -90,6 +101,8 @@ function Funnel4Content() {
   const fieldClass =
     'w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:outline-none';
   const targetEmail = form.email.trim().toLowerCase();
+  const emailTypo = targetEmail.includes('@') ? detectEmailTypo(targetEmail) : null;
+  const phoneCheck = form.phone.length > 3 ? validatePhoneDACH(form.phone, market) : null;
 
   if (!token) return <p>Session fehlt.</p>;
 
@@ -142,9 +155,15 @@ function Funnel4Content() {
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
-            {targetEmail && (
+            {targetEmail && !emailTypo && (
               <p className="mt-1 text-xs text-muted-foreground">
                 Portal-Link wird an <span className="font-semibold text-foreground">{targetEmail}</span> gesendet.
+              </p>
+            )}
+            {emailTypo && (
+              <p className="mt-1 flex items-start gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+                <span className="shrink-0">⚠</span>
+                {emailTypo}
               </p>
             )}
           </div>
@@ -155,7 +174,17 @@ function Funnel4Content() {
               className={fieldClass}
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              placeholder={market === 'CH' ? '+41 44 123 45 67' : market === 'AT' ? '+43 664 123456' : '+49 151 12345678'}
             />
+            {phoneCheck && !phoneCheck.valid && phoneCheck.hint && (
+              <p className="mt-1 flex items-start gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+                <span className="shrink-0">⚠</span>
+                {phoneCheck.hint}
+              </p>
+            )}
+            {phoneCheck?.valid && (
+              <p className="mt-1 text-xs text-emerald-500">✓ Nummer sieht gültig aus.</p>
+            )}
           </div>
           <div>
             <label className="text-sm font-medium">Postleitzahl</label>
@@ -192,6 +221,7 @@ function Funnel4Content() {
                       type="button"
                       className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10"
                       onClick={() => {
+                        streetJustSelected.current = true;
                         setForm({ ...form, street: s });
                         setStreets([]);
                       }}

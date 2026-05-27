@@ -16,6 +16,103 @@ export function validatePhone(phone: string): boolean {
   return phoneRegex.test(phone.replace(/\s/g, ''));
 }
 
+// DACH-Telefonnummer-Validierung mit marktspezifischen Regeln und Hinweisen
+export function validatePhoneDACH(
+  phone: string,
+  market: 'DE' | 'AT' | 'CH' = 'DE'
+): { valid: boolean; hint?: string } {
+  if (!phone) return { valid: false };
+  const cleaned = phone.replace(/[\s\-\(\)\.\/]/g, '');
+  if (!cleaned) return { valid: false };
+
+  const countryConfig = {
+    DE: { code: '+49', alt: '0049', name: 'Deutschland', min: 10, max: 13 },
+    AT: { code: '+43', alt: '0043', name: 'Österreich', min: 9, max: 13 },
+    CH: { code: '+41', alt: '0041', name: 'Schweiz', min: 9, max: 12 },
+  };
+  const cfg = countryConfig[market];
+
+  // Muss mit + oder 0 beginnen
+  if (!cleaned.startsWith('+') && !cleaned.startsWith('0')) {
+    return { valid: false, hint: `Bitte mit Vorwahl eingeben (z. B. ${cfg.code} 151 oder 0151).` };
+  }
+
+  // Nur Ziffern und führendes + erlaubt
+  if (!/^\+?\d+$/.test(cleaned)) {
+    return { valid: false, hint: 'Nur Ziffern, Leerzeichen und Bindestriche erlaubt.' };
+  }
+
+  // Längencheck (Gesamtlänge inkl. Ländervorwahl)
+  const digitCount = cleaned.replace(/^\+/, '').length;
+  if (digitCount < cfg.min) {
+    return { valid: false, hint: `Zu kurz – gültige ${cfg.name}-Nummern haben mindestens ${cfg.min} Ziffern.` };
+  }
+  if (digitCount > cfg.max) {
+    return { valid: false, hint: `Zu lang – bitte nur die Nummer ohne Leerzeichen (max. ${cfg.max} Ziffern).` };
+  }
+
+  return { valid: true };
+}
+
+// Email-Tippfehler-Erkennung – gibt Korrekturvorschlag zurück oder null
+const TYPO_DOMAINS: Record<string, string> = {
+  'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gmail.co': 'gmail.com',
+  'gmail.cm': 'gmail.com', 'gmal.com': 'gmail.com', 'gemail.com': 'gmail.com',
+  'gamil.com': 'gmail.com', 'gnail.com': 'gmail.com',
+  'yahooo.com': 'yahoo.com', 'yaho.com': 'yahoo.com', 'yahoo.cmo': 'yahoo.com',
+  'yahoo.vcom': 'yahoo.com', 'yahoo.co': 'yahoo.com', 'yhoo.com': 'yahoo.com',
+  'yhaoo.com': 'yahoo.com', 'yahoo.de': 'yahoo.de',
+  'hotmai.com': 'hotmail.com', 'hotmail.cmo': 'hotmail.com', 'hotmail.co': 'hotmail.com',
+  'hotmial.com': 'hotmail.com',
+  'outllook.com': 'outlook.com', 'outlok.com': 'outlook.com',
+  'outloook.com': 'outlook.com',
+  'wbe.de': 'web.de', 'web.d': 'web.de',
+  'gxm.de': 'gmx.de', 'gmx.d': 'gmx.de', 'gmx.cmo': 'gmx.com',
+  'ionos.d': 'ionos.de',
+};
+
+const TYPO_TLDS: Array<[string, string]> = [
+  ['.cmo', '.com'], ['.ocm', '.com'], ['.vom', '.com'], ['.vcom', '.com'],
+  ['.con', '.com'], ['.copm', '.com'], ['.comm', '.com'],
+  ['.dee', '.de'], ['.dde', '.de'], ['.ded', '.de'],
+  ['.orrg', '.org'], ['.orgg', '.org'],
+];
+
+export function detectEmailTypo(email: string): string | null {
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed.includes('@')) return null;
+  const atIdx = trimmed.lastIndexOf('@');
+  const local = trimmed.slice(0, atIdx);
+  const domain = trimmed.slice(atIdx + 1);
+
+  if (!local || !domain) return null;
+
+  // Doppelter Punkt
+  if (trimmed.includes('..')) {
+    return 'Doppelter Punkt entdeckt – bitte prüfen.';
+  }
+
+  // Fehlende TLD (kein Punkt in der Domain)
+  if (!domain.includes('.')) {
+    return 'Die Domain scheint unvollständig zu sein (z. B. fehlt .de oder .com).';
+  }
+
+  // Bekannte Domain-Tippfehler
+  if (TYPO_DOMAINS[domain]) {
+    return `Meinten Sie ${local}@${TYPO_DOMAINS[domain]}?`;
+  }
+
+  // TLD-Tippfehler
+  for (const [wrong, correct] of TYPO_TLDS) {
+    if (domain.endsWith(wrong)) {
+      const fixed = domain.slice(0, domain.length - wrong.length) + correct;
+      return `Meinten Sie ${local}@${fixed}?`;
+    }
+  }
+
+  return null;
+}
+
 // Text-Validierung (verhindert XSS)
 export function sanitizeText(text: string): string {
   return text
