@@ -76,6 +76,17 @@ type Recommendation = {
   title?: string;
   description?: string;
   text?: string;
+  // industry-questions-v2 featuresNeeded fields
+  feature?: string;
+  reason?: string;
+  priority?: 'must' | 'should' | 'nice' | string;
+  frequencyInCompetitors?: number;
+};
+
+type N8nQuestion = {
+  q?: string;
+  why?: string;
+  packageHint?: string;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -90,6 +101,19 @@ const TOOLTIP_STYLE = {
   borderRadius: '8px',
   color: '#f8fafc',
   fontSize: '12px',
+};
+
+const PACKAGE_LABELS: Record<string, string> = {
+  individual_offer: 'Individual-Angebot',
+  individual: 'Individual-Lösung',
+  fixed: 'Festpreis-Paket',
+  starter: 'Starter-Paket',
+};
+
+const PRIORITY_CHIP: Record<string, { label: string; bg: string; text: string }> = {
+  must: { label: 'Pflicht', bg: 'bg-red-500/10', text: 'text-red-400' },
+  should: { label: 'Empfohlen', bg: 'bg-amber-500/10', text: 'text-amber-400' },
+  nice: { label: 'Optional', bg: 'bg-blue-500/10', text: 'text-blue-400' },
 };
 
 const MODULES = [
@@ -158,9 +182,35 @@ function siteKey(site: CompetitorRow, idx: number) {
   return site.domain || `site_${idx}`;
 }
 
+function renderMarkdownish(raw: string): React.ReactNode {
+  const lines = raw.split('\n').filter((l) => l.trim());
+  return (
+    <div className="space-y-2">
+      {lines.map((line, i) => {
+        const isBullet = /^\s*\*\s+/.test(line);
+        const text = line.replace(/^\s*\*\s+/, '');
+        const parts = text.split(/\*\*(.*?)\*\*/g);
+        const nodes: React.ReactNode[] = parts.map((p, j) =>
+          j % 2 === 1 ? <strong key={j}>{p}</strong> : p
+        );
+        if (isBullet) {
+          return (
+            <div key={i} className="flex gap-2">
+              <span className="text-primary shrink-0 mt-0.5">•</span>
+              <span>{nodes}</span>
+            </div>
+          );
+        }
+        return <p key={i}>{nodes}</p>;
+      })}
+    </div>
+  );
+}
+
 // Tries all known field names n8n might use for upsell/recommendation data
 function extractRecommendations(payload: Record<string, unknown>): Recommendation[] {
   const keys = [
+    'featuresNeeded',          // industry-questions-v2 primary field
     'upsell_opportunities',
     'recommendations',
     'opportunities',
@@ -299,6 +349,14 @@ export default function LiveAnalysisDashboard({
   ).slice(0, 8);
 
   const recommendations = extractRecommendations(questionsPayload);
+  const complexityScore =
+    typeof questionsPayload.complexityScore === 'number' ? questionsPayload.complexityScore : null;
+  const packageLabel =
+    PACKAGE_LABELS[String(questionsPayload.recommendation || '')] ||
+    (questionsPayload.recommendation ? String(questionsPayload.recommendation) : null);
+  const reasoning =
+    typeof questionsPayload.reasoning === 'string' ? questionsPayload.reasoning : null;
+  const n8nQuestions = asArray<N8nQuestion>(questionsPayload.questions);
 
   const discoveredCount =
     asArray(questionsPayload.discoveredCompetitors).length ||
@@ -579,7 +637,11 @@ export default function LiveAnalysisDashboard({
                         contentStyle={TOOLTIP_STYLE}
                         cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                       />
-                      <Bar dataKey="volume" fill="#DCA441" radius={[0, 6, 6, 0]} />
+                      <Bar dataKey="volume" radius={[0, 6, 6, 0]}>
+                        {keywordChartData.map((_, i) => (
+                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -597,18 +659,16 @@ export default function LiveAnalysisDashboard({
               </h3>
               <div className="rounded-xl border border-border bg-background/60 p-4">
                 {mounted ? (
-                  <ResponsiveContainer width="100%" height={240}>
+                  <ResponsiveContainer width="100%" height={260}>
                     <PieChart>
                       <Pie
                         data={clusterChartData}
                         cx="50%"
-                        cy="50%"
-                        outerRadius={90}
-                        innerRadius={42}
+                        cy="45%"
+                        outerRadius={88}
+                        innerRadius={44}
                         dataKey="value"
-                        label={({ name, percent }) =>
-                          `${name} (${Math.round((percent as number) * 100)}%)`
-                        }
+                        paddingAngle={3}
                       >
                         {clusterChartData.map((_, i) => (
                           <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
@@ -617,6 +677,11 @@ export default function LiveAnalysisDashboard({
                       <Tooltip
                         contentStyle={TOOLTIP_STYLE}
                         formatter={(v) => [Number(v), 'Keywords']}
+                      />
+                      <Legend
+                        formatter={(value: string) => (
+                          <span style={{ color: '#94a3b8', fontSize: 12 }}>{value}</span>
+                        )}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -907,11 +972,29 @@ export default function LiveAnalysisDashboard({
           </div>
 
           {typeof designPayload.recommendation === 'string' && designPayload.recommendation && (
-            <div className="rounded-2xl border border-border bg-background/60 p-5">
-              <p className="text-sm font-semibold">Design-Empfehlung</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {designPayload.recommendation as string}
-              </p>
+            <div className="rounded-2xl border border-primary/40 bg-card overflow-hidden">
+              <div className="flex">
+                <div className="w-1.5 shrink-0 bg-primary" />
+                <div className="p-6 space-y-4 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🤖</span>
+                    <h3 className="text-base font-bold">KI-Designempfehlung für Ihre Branche</h3>
+                  </div>
+                  <div className="text-base leading-relaxed text-foreground">
+                    {renderMarkdownish(designPayload.recommendation as string)}
+                  </div>
+                  {typeof designPayload.summary === 'string' && designPayload.summary && (
+                    <div className="rounded-xl border border-border bg-background/60 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                        Markt-Zusammenfassung
+                      </p>
+                      <p className="text-sm leading-relaxed text-muted-foreground">
+                        {designPayload.summary as string}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -952,12 +1035,33 @@ export default function LiveAnalysisDashboard({
                     <p className="mb-4 text-xs text-muted-foreground">
                       {site.websiteUrl || site.url}
                     </p>
-                    <div className="flex flex-wrap justify-center gap-4">
-                      <CircleGauge score={mainScore} label="Mobile" size={78} />
-                      <CircleGauge score={site.desktopScore} label="Desktop" size={78} />
-                      <CircleGauge score={site.lighthouseSeoScore} label="SEO" size={64} />
-                      <CircleGauge score={site.accessibilityScore} label="A11y" size={64} />
-                      <CircleGauge score={site.bestPracticesScore} label="Best Pr." size={64} />
+                    <div className="mt-4 grid gap-5 md:grid-cols-2">
+                      {/* Mobil – 4 PSI-Kategorien */}
+                      <div className="space-y-3">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                          📱 Mobil
+                        </p>
+                        <div className="flex flex-wrap gap-3 justify-center">
+                          <CircleGauge score={mainScore} label="Leistung" size={76} />
+                          <CircleGauge score={site.accessibilityScore} label="Barrierefreiheit" size={70} />
+                          <CircleGauge score={site.bestPracticesScore} label="Best Practices" size={70} />
+                          <CircleGauge score={site.lighthouseSeoScore} label="SEO" size={70} />
+                        </div>
+                      </div>
+                      {/* Desktop – Leistungsscore */}
+                      <div className="space-y-3 border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-5">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                          🖥 Desktop
+                        </p>
+                        <div className="flex flex-wrap gap-3 justify-center">
+                          <CircleGauge score={site.desktopScore} label="Leistung" size={76} />
+                        </div>
+                        {site.desktopScore == null && (
+                          <p className="text-xs text-center text-muted-foreground">
+                            Desktop-Score wird ermittelt…
+                          </p>
+                        )}
+                      </div>
                     </div>
                     {(site.narrative || site.psiNote) && (
                       <p className="mt-3 text-sm text-muted-foreground">
@@ -978,7 +1082,7 @@ export default function LiveAnalysisDashboard({
               </h3>
               <div className="rounded-xl border border-border bg-background/60 p-4">
                 {mounted ? (
-                  <ResponsiveContainer width="100%" height={290}>
+                  <ResponsiveContainer width="100%" height={420}>
                     <RadarChart data={radarData}>
                       <PolarGrid stroke="#1e293b" />
                       <PolarAngleAxis
@@ -1006,7 +1110,7 @@ export default function LiveAnalysisDashboard({
                     </RadarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <ChartSkeleton height={290} />
+                  <ChartSkeleton height={420} />
                 )}
               </div>
             </div>
@@ -1061,8 +1165,13 @@ export default function LiveAnalysisDashboard({
                   <div>
                     <p className="text-2xl font-bold">{recommendations.length}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Branchen-Chancen erkannt
+                      Features identifiziert
                     </p>
+                    {packageLabel && (
+                      <span className="mt-1 inline-block rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                        {packageLabel}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -1071,44 +1180,86 @@ export default function LiveAnalysisDashboard({
                     <TrendingUp className="h-5 w-5 text-blue-400" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm leading-snug">
-                      {lead.industry_normalized || lead.industry_raw || 'Ihre Branche'}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">Analysierter Markt</p>
+                    {complexityScore != null ? (
+                      <>
+                        <p className="text-2xl font-bold">{complexityScore}<span className="text-sm font-normal text-muted-foreground">/10</span></p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">Projekt-Komplexität</p>
+                        <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden w-24">
+                          <div
+                            className="h-full rounded-full bg-blue-400"
+                            style={{ width: `${(complexityScore / 10) * 100}%` }}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-semibold text-sm leading-snug">
+                          {lead.industry_normalized || lead.industry_raw || 'Ihre Branche'}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">Analysierter Markt</p>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Branchenspezifische Empfehlungen von n8n */}
+              {/* Analyse-Begründung von n8n */}
+              {reasoning && (
+                <div className="rounded-2xl border border-border bg-background/60 overflow-hidden">
+                  <div className="flex">
+                    <div className="w-1 shrink-0 bg-primary/60" />
+                    <div className="p-5">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                        Analyse-Begründung
+                      </p>
+                      <p className="text-sm leading-relaxed">{reasoning}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Branchenspezifische Features von n8n (featuresNeeded) */}
               {recommendations.length > 0 && (
                 <div className="space-y-2">
                   <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    Branchenspezifische Chancen
+                    Empfohlene Website-Features
                   </h3>
                   <div className="grid gap-3 md:grid-cols-2">
-                    {recommendations.slice(0, 6).map((rec, i) => {
-                      const label = rec.label || rec.title || `Empfehlung ${i + 1}`;
-                      const desc = rec.description || rec.text || '';
+                    {recommendations.map((rec, i) => {
+                      const label = rec.feature || rec.label || rec.title || `Feature ${i + 1}`;
+                      const desc = rec.reason || rec.description || rec.text || '';
+                      const prio = rec.priority ? PRIORITY_CHIP[rec.priority] : null;
+                      const freq = rec.frequencyInCompetitors;
                       return (
                         <div
                           key={`${label}-${i}`}
                           className="flex gap-3 rounded-2xl border border-border bg-background/60 p-5"
                         >
                           <div
-                            className="shrink-0 rounded-xl p-2.5"
-                            style={{
-                              backgroundColor: `${CHART_COLORS[i % CHART_COLORS.length]}20`,
-                            }}
+                            className="shrink-0 rounded-xl p-2.5 h-fit"
+                            style={{ backgroundColor: `${CHART_COLORS[i % CHART_COLORS.length]}20` }}
                           >
                             <CheckCircle2
                               className="h-5 w-5"
                               style={{ color: CHART_COLORS[i % CHART_COLORS.length] }}
                             />
                           </div>
-                          <div>
-                            <p className="text-sm font-semibold">{label}</p>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <p className="text-sm font-semibold">{label}</p>
+                              {prio && (
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${prio.bg} ${prio.text}`}>
+                                  {prio.label}
+                                </span>
+                              )}
+                            </div>
                             {desc && (
-                              <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
+                              <p className="text-xs text-muted-foreground leading-snug">{desc}</p>
+                            )}
+                            {freq != null && (
+                              <p className="mt-1.5 text-[10px] text-muted-foreground">
+                                {freq} von {discoveredCount || '?'} Wettbewerbern nutzen dies
+                              </p>
                             )}
                           </div>
                         </div>
@@ -1118,7 +1269,26 @@ export default function LiveAnalysisDashboard({
                 </div>
               )}
 
-              {recommendations.length === 0 && (
+              {/* Persönliche Fragen für die Beratung */}
+              {n8nQuestions.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    Fragen für Ihr Beratungsgespräch
+                  </h3>
+                  <div className="rounded-2xl border border-border bg-background/60 divide-y divide-border">
+                    {n8nQuestions.map((q, i) => (
+                      <div key={i} className="p-4">
+                        <p className="text-sm font-medium">{q.q}</p>
+                        {q.why && (
+                          <p className="mt-1 text-xs text-muted-foreground">{q.why}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {recommendations.length === 0 && !reasoning && n8nQuestions.length === 0 && (
                 <div className="rounded-xl border border-border bg-background/60 p-4 text-sm text-muted-foreground">
                   Die Branchenanalyse wurde abgeschlossen. Ihre Paket-Empfehlungen finden Sie
                   unten.
