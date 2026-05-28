@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import FunnelShell from '@/components/funnel/FunnelShell';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import type { DachMarket } from '@/lib/funnel/types';
-import { detectEmailTypo, validatePhoneDACH } from '@/lib/validation';
+import EmailInputAssist, { isEmailSubmitAllowed } from '@/components/funnel/EmailInputAssist';
+import { emailNeedsTypoConfirmation, validatePhoneDACH } from '@/lib/validation';
 
 function Funnel4Content() {
   const searchParams = useSearchParams();
@@ -77,6 +78,12 @@ function Funnel4Content() {
       return;
     }
     const normalizedEmail = form.email.trim().toLowerCase();
+    if (!isEmailSubmitAllowed(normalizedEmail)) {
+      setError(
+        'Bitte E-Mail vervollständigen (Tab/→) oder Tippfehler in der Domain korrigieren.'
+      );
+      return;
+    }
     setLoading(true);
     setError(null);
     const res = await fetch(`/api/funnel/leads/${token}`, {
@@ -87,6 +94,7 @@ function Funnel4Content() {
         ...form,
         email: normalizedEmail,
         market,
+        confirmEmailTypo: emailNeedsTypoConfirmation(normalizedEmail),
       }),
     });
     setLoading(false);
@@ -100,9 +108,8 @@ function Funnel4Content() {
 
   const fieldClass =
     'w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:outline-none';
-  const targetEmail = form.email.trim().toLowerCase();
-  const emailTypo = targetEmail.includes('@') ? detectEmailTypo(targetEmail) : null;
   const phoneCheck = form.phone.length > 3 ? validatePhoneDACH(form.phone, market) : null;
+  const canSubmitEmail = isEmailSubmitAllowed(form.email.trim().toLowerCase());
 
   if (!token) return <p>Session fehlt.</p>;
 
@@ -146,26 +153,11 @@ function Funnel4Content() {
               onChange={(e) => setForm({ ...form, companyName: e.target.value })}
             />
           </div>
-          <div>
-            <label className="text-sm font-medium">E-Mail</label>
-            <input
-              type="email"
-              required
-              className={fieldClass}
+          <div className="md:col-span-1">
+            <EmailInputAssist
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={(email) => setForm({ ...form, email })}
             />
-            {targetEmail && !emailTypo && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Portal-Link wird an <span className="font-semibold text-foreground">{targetEmail}</span> gesendet.
-              </p>
-            )}
-            {emailTypo && (
-              <p className="mt-1 flex items-start gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-                <span className="shrink-0">⚠</span>
-                {emailTypo}
-              </p>
-            )}
           </div>
           <div>
             <label className="text-sm font-medium">Telefon</label>
@@ -246,7 +238,11 @@ function Funnel4Content() {
 
         {error && <p className="text-amber-400 text-sm mt-4">{error}</p>}
 
-        <ShinyButton type="submit" disabled={loading} className="w-full mt-6">
+        <ShinyButton
+          type="submit"
+          disabled={loading || !canSubmitEmail}
+          className="w-full mt-6"
+        >
           {loading ? 'Welle wird gestartet…' : '🌊 Welle starten'}
         </ShinyButton>
       </form>

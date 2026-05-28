@@ -6,6 +6,7 @@ import { ShinyButton } from '@/components/ui/shiny-button';
 import { ShinyInput } from '@/components/ui/shiny-input';
 import { SHINY_SWEEP_PRESETS } from '@/components/ui/shiny-motion';
 import { persistLeadToken } from '@/lib/funnel/client';
+import { isGenericIndustry } from '@/lib/funnel/industry';
 
 const PLACEHOLDER =
   'Ihre Branche – z. B. Malerbetrieb, Arztpraxis, Online-Shop …';
@@ -42,6 +43,11 @@ export default function HeroIndustrySearch({
   const feedbackRef = useRef<HTMLDivElement>(null);
 
   const leadSource = source ?? 'homepage_hero';
+  const trimmedIndustry = industry.trim();
+  const showGenericHint =
+    trimmedIndustry.length >= 2 &&
+    isGenericIndustry(trimmedIndustry, trimmedIndustry) &&
+    !pendingConfirm;
 
   useEffect(() => {
     if (!isCard || (!pendingConfirm && !error)) return;
@@ -267,6 +273,15 @@ export default function HeroIndustrySearch({
             </button>
           </div>
         </div>
+      )}
+
+      {showGenericHint && !error && (
+        <p
+          className={`mt-2 text-sm text-muted-foreground ${isCard ? 'text-left' : 'text-left sm:text-center'}`}
+        >
+          Im nächsten Schritt bitte genauer beschreiben, was Sie anbieten — so wird Ihre
+          Analyse präziser.
+        </p>
       )}
 
       {error && !pendingConfirm && (

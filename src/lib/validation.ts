@@ -54,14 +54,47 @@ export function validatePhoneDACH(
   return { valid: true };
 }
 
+/** Bekannte Provider (DACH) – Autovervollständigung nach @ */
+export const POPULAR_EMAIL_DOMAINS = [
+  'gmail.com',
+  'googlemail.com',
+  'web.de',
+  'gmx.de',
+  'gmx.net',
+  'gmx.at',
+  'gmx.ch',
+  'yahoo.de',
+  'yahoo.com',
+  'hotmail.com',
+  'hotmail.de',
+  'outlook.com',
+  'outlook.de',
+  'icloud.com',
+  'me.com',
+  't-online.de',
+  'freenet.de',
+  'posteo.de',
+  'proton.me',
+  'protonmail.com',
+  'live.de',
+  'live.com',
+  'aon.at',
+  'chello.at',
+  'bluewin.ch',
+  'sunrise.ch',
+  'gmx.ch',
+  'ionos.de',
+  'mailbox.org',
+] as const;
+
 // Email-Tippfehler-Erkennung – gibt Korrekturvorschlag zurück oder null
 const TYPO_DOMAINS: Record<string, string> = {
   'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gmail.co': 'gmail.com',
   'gmail.cm': 'gmail.com', 'gmal.com': 'gmail.com', 'gemail.com': 'gmail.com',
-  'gamil.com': 'gmail.com', 'gnail.com': 'gmail.com',
+  'gamil.com': 'gmail.com', 'gnail.com': 'gmail.com', 'gmaill.com': 'gmail.com',
   'yahooo.com': 'yahoo.com', 'yaho.com': 'yahoo.com', 'yahoo.cmo': 'yahoo.com',
   'yahoo.vcom': 'yahoo.com', 'yahoo.co': 'yahoo.com', 'yhoo.com': 'yahoo.com',
-  'yhaoo.com': 'yahoo.com', 'yahoo.de': 'yahoo.de',
+  'yhaoo.com': 'yahoo.com',
   'hotmai.com': 'hotmail.com', 'hotmail.cmo': 'hotmail.com', 'hotmail.co': 'hotmail.com',
   'hotmial.com': 'hotmail.com',
   'outllook.com': 'outlook.com', 'outlok.com': 'outlook.com',
@@ -69,7 +102,187 @@ const TYPO_DOMAINS: Record<string, string> = {
   'wbe.de': 'web.de', 'web.d': 'web.de',
   'gxm.de': 'gmx.de', 'gmx.d': 'gmx.de', 'gmx.cmo': 'gmx.com',
   'ionos.d': 'ionos.de',
+  'iclod.com': 'icloud.com', 'iclould.com': 'icloud.com', 'icoud.com': 'icloud.com',
 };
+
+function emailLevenshtein(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+
+function parseEmailParts(email: string): { local: string; domain: string } | null {
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed.includes('@')) return null;
+  const atIdx = trimmed.lastIndexOf('@');
+  const local = trimmed.slice(0, atIdx);
+  const domain = trimmed.slice(atIdx + 1);
+  if (!local || !domain) return null;
+  return { local, domain };
+}
+
+/** Korrigierte E-Mail bei bekanntem Tippfehler, sonst null */
+export function fixEmailTypo(email: string): string | null {
+  const parts = parseEmailParts(email);
+  if (!parts) return null;
+  const { local, domain } = parts;
+
+  if (email.includes('..')) return null;
+
+  // Unvollständige Domain: nur Inline-Vervollständigung, kein Tippfehler-Fix
+  if (!domain.includes('.')) {
+    return null;
+  }
+
+  if (TYPO_DOMAINS[domain]) {
+    return `${local}@${TYPO_DOMAINS[domain]}`;
+  }
+
+  for (const [wrong, correct] of TYPO_TLDS) {
+    if (domain.endsWith(wrong)) {
+      const fixed = domain.slice(0, domain.length - wrong.length) + correct;
+      return `${local}@${fixed}`;
+    }
+  }
+
+  if (domain.length >= 4) {
+    for (const known of POPULAR_EMAIL_DOMAINS) {
+      const dist = emailLevenshtein(domain, known);
+      if (dist > 0 && dist <= 2 && domain !== known) {
+        return `${local}@${known}`;
+      }
+    }
+  }
+
+  return null;
+}
+
+/** Domain-Vorschläge für Autovervollständigung (Teilstring nach @) */
+export function suggestEmailDomains(partialDomain: string, limit = 6): string[] {
+  const p = partialDomain.trim().toLowerCase().replace(/^@/, '');
+  if (!p) return [...POPULAR_EMAIL_DOMAINS].slice(0, limit);
+
+  const startsWith = POPULAR_EMAIL_DOMAINS.filter((d) => d.startsWith(p));
+  if (startsWith.length >= limit) return startsWith.slice(0, limit);
+
+  const fuzzy = POPULAR_EMAIL_DOMAINS.filter(
+    (d) => !startsWith.includes(d) && emailLevenshtein(d, p) <= 2
+  );
+  return [...new Set([...startsWith, ...fuzzy])].slice(0, limit);
+}
+
+/** Inline-Vervollständigung im Eingabefeld (graue Endung, Tab/→ übernehmen) */
+export function getInlineEmailCompletion(email: string): {
+  full: string;
+  suffix: string;
+} | null {
+  const trimmed = email.trim();
+  const atIdx = trimmed.lastIndexOf('@');
+  if (atIdx < 0) return null;
+
+  const local = trimmed.slice(0, atIdx);
+  const domainPart = trimmed.slice(atIdx + 1);
+  if (!local.trim() || domainPart.includes(' ')) return null;
+
+  const domainLower = domainPart.toLowerCase();
+
+  // Erst nach dem ersten Buchstaben nach @ (nicht direkt bei „user@“)
+  if (!domainLower.includes('.')) {
+    if (domainLower.length < 1) return null;
+
+    const best = suggestEmailDomains(domainLower, 1)[0];
+    if (best && best.startsWith(domainLower) && best !== domainLower) {
+      const full = `${local}@${best}`;
+      return { full, suffix: best.slice(domainLower.length) };
+    }
+    return null;
+  }
+
+  // Vollständige Domain mit Tippfehler: Korrektur als Inline-Suffix/Ersatz
+  const fix = fixEmailTypo(trimmed.toLowerCase());
+  if (fix && fix !== trimmed.toLowerCase()) {
+    if (fix.startsWith(trimmed.toLowerCase())) {
+      return { full: fix, suffix: fix.slice(trimmed.length) };
+    }
+    const fixAt = fix.lastIndexOf('@');
+    const fixDomain = fixAt >= 0 ? fix.slice(fixAt + 1) : '';
+    if (fixDomain && fixDomain !== domainLower) {
+      const suffix = fixDomain.slice(domainLower.length);
+      if (suffix) {
+        return { full: fix, suffix };
+      }
+      return { full: fix, suffix: fix.slice(trimmed.length) };
+    }
+  }
+
+  // Bereits korrekte Domain, aber noch tippbar verlängern (selten)
+  const best = suggestEmailDomains(domainLower, 1)[0];
+  if (best && best.startsWith(domainLower) && best !== domainLower) {
+    const full = `${local}@${best}`;
+    return { full, suffix: best.slice(domainLower.length) };
+  }
+
+  return null;
+}
+
+/** Nur bei fertiger Domain mit echtem Tippfehler (nicht beim Tippen von @i) */
+export function emailNeedsTypoConfirmation(email: string): boolean {
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed.includes('@')) return false;
+  const parts = parseEmailParts(trimmed);
+  if (!parts?.domain.includes('.')) return false;
+  const fix = fixEmailTypo(trimmed);
+  return Boolean(fix && fix !== trimmed);
+}
+
+export interface EmailAssistState {
+  typoMessage: string | null;
+  suggestedEmail: string | null;
+  domainSuggestions: string[];
+  localPart: string;
+  domainPart: string;
+  hasAt: boolean;
+}
+
+export function getEmailAssistState(email: string): EmailAssistState {
+  const trimmed = email.trim();
+  const lower = trimmed.toLowerCase();
+  const atIdx = lower.lastIndexOf('@');
+  const hasAt = atIdx >= 0;
+  const localPart = hasAt ? trimmed.slice(0, atIdx) : trimmed;
+  const domainPart = hasAt ? trimmed.slice(atIdx + 1) : '';
+
+  const suggestedEmail = domainPart.includes('.') ? fixEmailTypo(lower) : null;
+  const typoMessage =
+    suggestedEmail && suggestedEmail !== lower
+      ? detectEmailTypo(lower)
+      : lower.includes('@')
+        ? detectEmailTypo(lower)
+        : null;
+
+  const domainSuggestions =
+    hasAt && domainPart.length >= 1 && !domainPart.includes(' ')
+      ? suggestEmailDomains(domainPart)
+      : [];
+
+  return {
+    typoMessage,
+    suggestedEmail: suggestedEmail && suggestedEmail !== lower ? suggestedEmail : null,
+    domainSuggestions,
+    localPart,
+    domainPart,
+    hasAt,
+  };
+}
 
 const TYPO_TLDS: Array<[string, string]> = [
   ['.cmo', '.com'], ['.ocm', '.com'], ['.vom', '.com'], ['.vcom', '.com'],
@@ -81,33 +294,25 @@ const TYPO_TLDS: Array<[string, string]> = [
 export function detectEmailTypo(email: string): string | null {
   const trimmed = email.trim().toLowerCase();
   if (!trimmed.includes('@')) return null;
-  const atIdx = trimmed.lastIndexOf('@');
-  const local = trimmed.slice(0, atIdx);
-  const domain = trimmed.slice(atIdx + 1);
+  const parts = parseEmailParts(trimmed);
+  if (!parts) return null;
+  const { local, domain } = parts;
 
-  if (!local || !domain) return null;
-
-  // Doppelter Punkt
   if (trimmed.includes('..')) {
     return 'Doppelter Punkt entdeckt – bitte prüfen.';
   }
 
-  // Fehlende TLD (kein Punkt in der Domain)
+  const fixed = fixEmailTypo(trimmed);
+  if (fixed && fixed !== trimmed) {
+    return `Meinten Sie ${fixed}?`;
+  }
+
   if (!domain.includes('.')) {
-    return 'Die Domain scheint unvollständig zu sein (z. B. fehlt .de oder .com).';
-  }
-
-  // Bekannte Domain-Tippfehler
-  if (TYPO_DOMAINS[domain]) {
-    return `Meinten Sie ${local}@${TYPO_DOMAINS[domain]}?`;
-  }
-
-  // TLD-Tippfehler
-  for (const [wrong, correct] of TYPO_TLDS) {
-    if (domain.endsWith(wrong)) {
-      const fixed = domain.slice(0, domain.length - wrong.length) + correct;
-      return `Meinten Sie ${local}@${fixed}?`;
+    const suggestions = suggestEmailDomains(domain, 3);
+    if (suggestions.length > 0) {
+      return `Domain unvollständig – z. B. ${local}@${suggestions[0]}?`;
     }
+    return 'Die Domain scheint unvollständig zu sein (z. B. fehlt .de oder .com).';
   }
 
   return null;

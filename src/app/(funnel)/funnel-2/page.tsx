@@ -3,7 +3,13 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import FunnelShell from '@/components/funnel/FunnelShell';
+import IndustryDetailPanel from '@/components/funnel/IndustryDetailPanel';
 import { ShinyButton } from '@/components/ui/shiny-button';
+import {
+  hasValidIndustryDetail,
+  isGenericIndustry,
+  leadRequiresIndustryDetail,
+} from '@/lib/funnel/industry';
 import { marketLabel, validatePostalCode } from '@/lib/funnel/market';
 import type { DachMarket } from '@/lib/funnel/types';
 
@@ -15,11 +21,13 @@ function Funnel2Content() {
   const [lead, setLead] = useState<{
     industry_normalized?: string;
     industry_raw?: string;
+    industry_detail?: string;
     market?: DachMarket;
     market_auto_detected?: boolean;
     postal_code?: string;
     city?: string;
   } | null>(null);
+  const [industryDetail, setIndustryDetail] = useState('');
   const [leadLoaded, setLeadLoaded] = useState(false);
   const [market, setMarket] = useState<DachMarket>('DE');
   const [postalCode, setPostalCode] = useState('');
@@ -51,9 +59,23 @@ function Funnel2Content() {
         }
         if (data.lead.postal_code) setPostalCode(String(data.lead.postal_code));
         if (data.lead.city) setCity(String(data.lead.city));
+        if (data.lead.industry_detail) {
+          setIndustryDetail(String(data.lead.industry_detail));
+        }
       })
       .finally(() => setLeadLoaded(true));
   }, [token]);
+
+  const needsIndustryDetail = leadLoaded
+    ? isGenericIndustry(
+        lead?.industry_normalized,
+        lead?.industry_raw ?? industryInput,
+        industryDetail
+      )
+    : false;
+
+  const canStartAnalysis =
+    !needsIndustryDetail || hasValidIndustryDetail(industryDetail);
 
   async function saveIndustry(acceptNormalized?: string) {
     const trimmed = industryInput.trim();
@@ -96,6 +118,17 @@ function Funnel2Content() {
         setIndustryInput(
           (data.lead.industry_raw || data.lead.industry_normalized || '').trim()
         );
+        if (
+          isGenericIndustry(
+            data.lead.industry_normalized,
+            data.lead.industry_raw,
+            data.lead.industry_detail
+          )
+        ) {
+          setIndustryDetail(data.lead.industry_detail || '');
+        } else {
+          setIndustryDetail('');
+        }
       }
     } catch {
       setIndustryError('Verbindungsfehler. Bitte erneut versuchen.');
@@ -137,8 +170,40 @@ function Funnel2Content() {
       return;
     }
 
+    const leadForCheck = {
+      industry_normalized: lead?.industry_normalized,
+      industry_raw: lead?.industry_raw ?? industryInput,
+      industry_detail: industryDetail,
+    };
+
     setLoading(true);
     setError(null);
+
+    if (leadRequiresIndustryDetail(leadForCheck)) {
+      if (!hasValidIndustryDetail(industryDetail)) {
+        setLoading(false);
+        setError(
+          'Bitte wählen Sie einen Vorschlag oder beschreiben Sie konkret, was Sie anbieten.'
+        );
+        return;
+      }
+
+      const detailRes = await fetch(`/api/funnel/leads/${token}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intent: 'industry-detail',
+          industryDetail: industryDetail.trim(),
+        }),
+      });
+      if (!detailRes.ok) {
+        const detailData = await detailRes.json();
+        setLoading(false);
+        setError(detailData.message || 'Branchen-Details konnten nicht gespeichert werden.');
+        return;
+      }
+    }
+
     const res = await fetch(`/api/funnel/leads/${token}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -319,11 +384,33 @@ function Funnel2Content() {
           />
         )}
 
+        <IndustryDetailPanel
+          token={token}
+          industryNormalized={lead?.industry_normalized ?? null}
+          industryRaw={lead?.industry_raw ?? industryInput}
+          industryDetail={industryDetail}
+          market={market}
+          onDetailChange={setIndustryDetail}
+          onDetailSaved={(detail) => {
+            setLead((prev) => (prev ? { ...prev, industry_detail: detail } : prev));
+          }}
+        />
+
         {error && <p className="text-amber-400 text-sm mb-4">{error}</p>}
 
-        <ShinyButton type="button" onClick={submit} disabled={loading} className="w-full">
+        <ShinyButton
+          type="button"
+          onClick={submit}
+          disabled={loading || !canStartAnalysis}
+          className="w-full"
+        >
           {loading ? 'Analyse wird gestartet…' : 'Analyse starten'}
         </ShinyButton>
+        {needsIndustryDetail && !canStartAnalysis && (
+          <p className="text-xs text-muted-foreground text-center mt-2">
+            Bitte zuerst Ihre Branche konkretisieren.
+          </p>
+        )}
       </div>
     </FunnelShell>
   );

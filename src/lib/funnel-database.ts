@@ -42,6 +42,7 @@ function mapLead(row: Record<string, unknown>): FunnelLead {
     city: row.city as string | null,
     industry_raw: row.industry_raw as string | null,
     industry_normalized: row.industry_normalized as string | null,
+    industry_detail: row.industry_detail as string | null,
     industry_confidence: row.industry_confidence != null ? Number(row.industry_confidence) : null,
     geo_lat: row.geo_lat != null ? Number(row.geo_lat) : null,
     geo_lng: row.geo_lng != null ? Number(row.geo_lng) : null,
@@ -150,6 +151,7 @@ export async function updateFunnelLead(
     customer_id: string;
     industry_raw: string;
     industry_normalized: string;
+    industry_detail?: string;
     industry_confidence: number;
   }>
 ): Promise<FunnelLead | null> {

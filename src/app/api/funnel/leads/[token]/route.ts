@@ -10,11 +10,16 @@ import {
 import { DELIVERY_DISCOUNTS, type DeliveryWindow } from '@/lib/funnel/types';
 import { detectMarketFromHeaders, validatePostalCode } from '@/lib/funnel/market';
 import {
+  buildIndustryForResearch,
+  hasValidIndustryDetail,
+  INDUSTRY_DETAIL_MIN_LENGTH,
+  leadRequiresIndustryDetail,
   needsIndustryConfirmation,
   resolveIndustryNormalization,
 } from '@/lib/funnel/industry';
 import { dispatchAllResearch, getCallbackBaseUrl } from '@/lib/n8n/dispatch';
 import { secureResponse } from '@/lib/api-security';
+import { fixEmailTypo, validateEmail } from '@/lib/validation';
 import type { DachMarket } from '@/lib/funnel/types';
 import {
   ensureCustomerPortalColumns,
@@ -208,7 +213,37 @@ export async function PATCH(
     });
   }
 
+  if (intent === 'industry-detail') {
+    const detail = String(body.industryDetail || body.detail || '').trim();
+    if (!hasValidIndustryDetail(detail)) {
+      return secureResponse(
+        {
+          error: 'invalid_industry_detail',
+          message: `Bitte konkretisieren Sie Ihre Branche (mindestens ${INDUSTRY_DETAIL_MIN_LENGTH} Zeichen).`,
+        },
+        400
+      );
+    }
+
+    const updated = await updateFunnelLead(token, {
+      industry_detail: detail,
+    });
+
+    return secureResponse({ lead: updated });
+  }
+
   if (intent === 'geo') {
+    if (leadRequiresIndustryDetail(lead)) {
+      return secureResponse(
+        {
+          error: 'industry_detail_required',
+          message:
+            'Ihre Branche ist sehr allgemein. Bitte wählen Sie einen Vorschlag oder beschreiben Sie konkret, was Sie anbieten.',
+        },
+        400
+      );
+    }
+
     const market = body.market as DachMarket;
     const postalCode = String(body.postalCode || '').trim();
     const city = String(body.city || '').trim();
@@ -234,17 +269,26 @@ export async function PATCH(
 
     await updateFunnelLead(token, { status: 'research_running' });
 
+    const refreshed = (await getFunnelLeadByToken(token)) || lead;
+    const industryForResearch = buildIndustryForResearch(
+      refreshed.industry_normalized,
+      refreshed.industry_detail,
+      refreshed.industry_raw
+    );
+
     const payload = {
-      leadId: lead.id,
+      leadId: refreshed.id,
       token,
-      industry: lead.industry_normalized || lead.industry_raw || '',
-      industryRaw: lead.industry_raw || '',
+      industry: industryForResearch,
+      industryRaw: refreshed.industry_raw || '',
+      industryDetail: refreshed.industry_detail || undefined,
+      industryForResearch,
       postalCode,
       city,
       market,
       country: market,
-      lat: lead.geo_lat ?? undefined,
-      lng: lead.geo_lng ?? undefined,
+      lat: refreshed.geo_lat ?? undefined,
+      lng: refreshed.geo_lng ?? undefined,
       callbackBaseUrl: getCallbackBaseUrl(),
     };
 
@@ -266,6 +310,23 @@ export async function PATCH(
 
   if (intent === 'contact') {
     const email = String(body.email || '').trim().toLowerCase();
+    if (!validateEmail(email)) {
+      return secureResponse(
+        { error: 'invalid_email', message: 'Bitte eine gültige E-Mail-Adresse eingeben.' },
+        400
+      );
+    }
+    const emailFix = fixEmailTypo(email);
+    if (emailFix && emailFix !== email && body.confirmEmailTypo !== true) {
+      return secureResponse(
+        {
+          error: 'email_typo',
+          message: `Meinten Sie ${emailFix}?`,
+          suggestedEmail: emailFix,
+        },
+        400
+      );
+    }
     const firstName = String(body.firstName || '').trim();
     const lastName = String(body.lastName || '').trim();
     const fullName = `${firstName} ${lastName}`.trim() || email;
@@ -383,11 +444,18 @@ export async function PATCH(
   }
 
   if (intent === 'retry-research') {
+    const industryForResearch = buildIndustryForResearch(
+      lead.industry_normalized,
+      lead.industry_detail,
+      lead.industry_raw
+    );
     const payload = {
       leadId: lead.id,
       token,
-      industry: lead.industry_normalized || '',
+      industry: industryForResearch,
       industryRaw: lead.industry_raw || '',
+      industryDetail: lead.industry_detail || undefined,
+      industryForResearch,
       postalCode: lead.postal_code || '',
       city: lead.city || '',
       market: lead.market || 'DE',

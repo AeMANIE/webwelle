@@ -435,3 +435,377 @@ export function mergeIndustryNormalization(
   }
   return local;
 }
+
+// ─── Generische Branchen (Funnel-2 Präzisierung) ───────────────────────────
+
+export const INDUSTRY_DETAIL_MIN_LENGTH = 8;
+
+/** Normalisierte Bezeichnungen, die trotz Synonym-Mapping noch zu allgemein sind */
+const GENERIC_NORMALIZED_LABELS = new Set([
+  'handwerker',
+  'handwerk',
+  'dienstleister',
+  'dienstleistung',
+  'dienstleistungen',
+  'gewerbe',
+  'unternehmen',
+  'firma',
+  'betrieb',
+  'beratung',
+  'consulting',
+  'handel',
+  'einzelhandel',
+  'service',
+  'services',
+  'freiberufler',
+  'selbstaendig',
+  'selbststaendig',
+  'gewerbetreibender',
+  'einzelunternehmen',
+  'allgemein',
+  'diverse',
+  'verschiedenes',
+  'sonstiges',
+  'sonstige',
+  'gewerbebetrieb',
+  'dienstleistungsunternehmen',
+]);
+
+const GENERIC_INDUSTRY_TERMS = new Set([
+  ...GENERIC_NORMALIZED_LABELS,
+  'dienstleistungsbetrieb',
+  'dienstleistungsfirma',
+  'firmen',
+  'betriebe',
+  'unternehmer',
+  'selbstandig',
+  'selbständig',
+  'freelancer',
+  'agentur',
+  'agenturen',
+  'business',
+  'gewerbe',
+  'branche',
+  'industrie',
+  'wirtschaft',
+  'verkauf',
+  'handel',
+  'online',
+  'shop',
+  'web',
+  'internet',
+  'it',
+  'tech',
+]);
+
+const GENERIC_INDUSTRY_PATTERNS: RegExp[] = [
+  /^(dienstleist|gewerbe|unternehmen|firmen?|betrieb|selbststaend|selbstaend|freiberuf)/i,
+  /^(allgemein|sonstig|divers|verschied)/i,
+];
+
+/** Statische Vorschläge wenn OpenRouter nicht erreichbar */
+const FALLBACK_SUGGESTIONS: Record<string, string[]> = {
+  dienstleister: [
+    'Gebäudereinigung',
+    'IT-Support & EDV',
+    'Steuerberatung',
+    'Marketing-Agentur',
+    'Handwerksmeister (Elektro)',
+  ],
+  dienstleistung: [
+    'Gebäudereinigung',
+    'Hausmeisterservice',
+    'Buchhaltung',
+    'Personalberatung',
+    'Event-Service',
+  ],
+  handwerker: [
+    'Elektriker',
+    'Sanitär & Heizung',
+    'Malerbetrieb',
+    'Dachdecker',
+    'Schreinerei',
+  ],
+  handwerk: [
+    'Elektriker',
+    'Malerbetrieb',
+    'Schreinerei',
+    'Metallbau',
+    'Fliesenleger',
+  ],
+  gewerbe: [
+    'Einzelhandel',
+    'Gastronomie',
+    'Handwerksbetrieb',
+    'Dienstleister vor Ort',
+    'Online-Shop',
+  ],
+  unternehmen: [
+    'B2B-Dienstleister',
+    'Produktion',
+    'Einzelhandel',
+    'Gastronomie',
+    'Handwerk',
+  ],
+  firma: [
+    'Beratung',
+    'Handel',
+    'Handwerk',
+    'Gastronomie',
+    'Dienstleistung vor Ort',
+  ],
+  betrieb: [
+    'Handwerksbetrieb',
+    'Gastronomie',
+    'Einzelhandel',
+    'Produktion',
+    'Dienstleistung',
+  ],
+  beratung: [
+    'Unternehmensberatung',
+    'Steuerberatung',
+    'IT-Beratung',
+    'HR-Beratung',
+    'Marketing-Beratung',
+  ],
+  handel: [
+    'Einzelhandel',
+    'Online-Shop',
+    'Großhandel',
+    'Autohandel',
+    'Lebensmittelhandel',
+  ],
+  default: [
+    'Gebäudereinigung',
+    'Handwerksbetrieb',
+    'Gastronomie',
+    'Einzelhandel',
+    'Online-Shop',
+  ],
+};
+
+export const OPENROUTER_INDUSTRY_SUGGEST_PROMPT = `Du hilfst bei der Konkretisierung vager Branchenangaben für Webdesign-Analysen im DACH-Raum.
+
+Sprache: Deutsch. Vorschläge als kurze Substantiv-Phrasen (2–4 Wörter), konkret und suchbar.
+
+Regeln:
+- Der Kunde hat einen ALLGEMEINEN Begriff genannt (z. B. Dienstleister, Handwerk, Firma).
+- Liefere 4–5 plausible SPEZIFISCHE Unter-Branchen/Gewerke – keine einzelne „richtige“ Branche erfinden.
+- Keine Duplikate, keine englischen Begriffe.
+
+Antworte NUR mit JSON:
+{"generic":true,"suggestions":["...","..."],"question":"Welche Dienstleistung bieten Sie konkret an?"}`;
+
+export function hasValidIndustryDetail(detail: string | null | undefined): boolean {
+  const t = detail?.trim() || '';
+  return t.length >= INDUSTRY_DETAIL_MIN_LENGTH;
+}
+
+export function isGenericIndustry(
+  normalized: string | null | undefined,
+  raw?: string | null,
+  detail?: string | null
+): boolean {
+  if (hasValidIndustryDetail(detail)) return false;
+
+  const norm = (normalized || raw || '').trim();
+  const rawInput = (raw || normalized || '').trim();
+  if (!norm && !rawInput) return false;
+
+  const normKey = industryCompareKey(norm);
+  const rawKey = industryCompareKey(rawInput);
+
+  for (const key of [normKey, rawKey]) {
+    if (!key) continue;
+    if (GENERIC_INDUSTRY_TERMS.has(key)) return true;
+    if (GENERIC_NORMALIZED_LABELS.has(key)) return true;
+    const synonymTarget = SYNONYMS[key];
+    if (synonymTarget && GENERIC_NORMALIZED_LABELS.has(industryCompareKey(synonymTarget))) {
+      return true;
+    }
+    for (const pattern of GENERIC_INDUSTRY_PATTERNS) {
+      if (pattern.test(key)) return true;
+    }
+    const wordCount = key.split(' ').filter(Boolean).length;
+    if (wordCount === 1 && key.length <= 14 && GENERIC_INDUSTRY_TERMS.has(key)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function leadRequiresIndustryDetail(lead: {
+  industry_normalized?: string | null;
+  industry_raw?: string | null;
+  industry_detail?: string | null;
+}): boolean {
+  return isGenericIndustry(
+    lead.industry_normalized,
+    lead.industry_raw,
+    lead.industry_detail
+  );
+}
+
+export function buildIndustryForResearch(
+  normalized: string | null | undefined,
+  detail: string | null | undefined,
+  raw?: string | null
+): string {
+  const base = (normalized || raw || '').trim();
+  const d = detail?.trim() || '';
+  if (base && d) return `${base} – ${d}`;
+  return d || base;
+}
+
+export function getFallbackIndustrySuggestions(
+  normalized: string | null | undefined,
+  raw?: string | null
+): string[] {
+  const keys = [
+    industryCompareKey(normalized || ''),
+    industryCompareKey(raw || ''),
+  ].filter(Boolean);
+
+  for (const key of keys) {
+    if (FALLBACK_SUGGESTIONS[key]) return [...FALLBACK_SUGGESTIONS[key]];
+    const synonym = SYNONYMS[key];
+    if (synonym) {
+      const synKey = industryCompareKey(synonym);
+      if (FALLBACK_SUGGESTIONS[synKey]) return [...FALLBACK_SUGGESTIONS[synKey]];
+    }
+  }
+  return [...FALLBACK_SUGGESTIONS.default];
+}
+
+export interface IndustrySuggestResult {
+  generic: boolean;
+  suggestions: string[];
+  followUpQuestion: string;
+  source: 'openrouter' | 'fallback' | 'local';
+}
+
+function parseSuggestJson(content: string): {
+  generic?: boolean;
+  suggestions?: string[];
+  question?: string;
+} | null {
+  const stripped = content.replace(/```json\n?|\n?```/g, '').trim();
+  const candidates = [stripped];
+  const brace = stripped.match(/\{[\s\S]*\}/);
+  if (brace) candidates.push(brace[0]);
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as {
+        generic?: boolean;
+        suggestions?: string[];
+        question?: string;
+      };
+      if (Array.isArray(parsed.suggestions) && parsed.suggestions.length > 0) {
+        return parsed;
+      }
+    } catch {
+      /* next */
+    }
+  }
+  return null;
+}
+
+export async function suggestIndustryDetails(
+  industry: string,
+  market?: string
+): Promise<IndustrySuggestResult> {
+  const raw = industry.trim();
+  const localGeneric = isGenericIndustry(raw, raw);
+  const fallback = getFallbackIndustrySuggestions(raw, raw);
+  const defaultQuestion = 'Welche Leistung bieten Sie konkret an?';
+
+  if (!localGeneric) {
+    return {
+      generic: false,
+      suggestions: [],
+      followUpQuestion: defaultQuestion,
+      source: 'local',
+    };
+  }
+
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    return {
+      generic: true,
+      suggestions: fallback,
+      followUpQuestion: defaultQuestion,
+      source: 'fallback',
+    };
+  }
+
+  const timeoutMs = parseInt(process.env.OPENROUTER_SUGGEST_TIMEOUT_MS || '5000', 10);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    for (const model of getOpenRouterModels()) {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer':
+            process.env.WEBWELLE_PUBLIC_APP_URL ||
+            process.env.NEXT_PUBLIC_APP_URL ||
+            'https://webwelle.com',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: OPENROUTER_INDUSTRY_SUGGEST_PROMPT },
+            {
+              role: 'user',
+              content: `Vager Branchenbegriff: "${raw}"${market ? `\nMarkt: ${market}` : ''}`,
+            },
+          ],
+          temperature: 0.3,
+          max_tokens: 220,
+        }),
+      });
+
+      if (!res.ok) continue;
+
+      const data = (await res.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) continue;
+
+      const parsed = parseSuggestJson(content);
+      if (!parsed?.suggestions?.length) continue;
+
+      const suggestions = parsed.suggestions
+        .map((s) => String(s).trim())
+        .filter((s) => s.length >= 3 && s.length <= 80)
+        .slice(0, 6);
+
+      if (suggestions.length === 0) continue;
+
+      return {
+        generic: parsed.generic !== false,
+        suggestions,
+        followUpQuestion: parsed.question?.trim() || defaultQuestion,
+        source: 'openrouter',
+      };
+    }
+  } catch (err) {
+    console.warn('OpenRouter industry suggest error:', err);
+  } finally {
+    clearTimeout(timer);
+  }
+
+  return {
+    generic: true,
+    suggestions: fallback,
+    followUpQuestion: defaultQuestion,
+    source: 'fallback',
+  };
+}

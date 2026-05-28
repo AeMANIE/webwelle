@@ -40,6 +40,7 @@ export interface FunnelLead {
   city: string | null;
   industry_raw: string | null;
   industry_normalized: string | null;
+  industry_detail: string | null;
   industry_confidence: number | null;
   geo_lat: number | null;
   geo_lng: number | null;

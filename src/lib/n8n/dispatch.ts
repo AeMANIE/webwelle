@@ -5,6 +5,8 @@ export interface N8nDispatchPayload {
   token: string;
   industry: string;
   industryRaw: string;
+  industryDetail?: string;
+  industryForResearch?: string;
   postalCode: string;
   city?: string;
   market: string;
