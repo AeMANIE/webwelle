@@ -43,6 +43,16 @@ const SYNONYMS: Record<string, string> = {
 
 const BLOCKLIST = new Set(['test', 'asdf', 'xxx', '123', '1234', 'abc', 'none', 'keine']);
 
+/** Erkennt offensichtlich sinnlose Eingaben anhand struktureller Merkmale */
+function isLikelyNonsense(input: string): boolean {
+  const s = input.trim().toLowerCase();
+  if (/^\d+$/.test(s)) return true;
+  if (/^[^a-zA-ZäöüÄÖÜß\s-]+$/.test(s)) return true;
+  if (/^(.)\1{3,}/.test(s)) return true;
+  if (s.length > 4 && !/[aeiouäöü]/i.test(s)) return true;
+  return false;
+}
+
 /** Verwechslungsgefahr bei Tippfehler-Korrektur (1 Zeichen Unterschied, andere Branche) */
 const FUZZY_DENY_PAIRS = new Set([
   'maler|makler',
@@ -208,6 +218,17 @@ export function normalizeIndustry(input: string): IndustryNormalizeResult {
     };
     result.needsConfirmation = needsIndustryConfirmation(result);
     return result;
+  }
+
+  if (isLikelyNonsense(raw)) {
+    return {
+      raw,
+      normalized: raw,
+      confidence: 0,
+      suggestions: [],
+      blocked: true,
+      needsConfirmation: false,
+    };
   }
 
   return {

@@ -42,6 +42,16 @@ export async function POST(request: NextRequest) {
       acceptNormalized.length >= 2 ? acceptNormalized : undefined
     );
 
+    if (normalized.blocked || normalized.confidence < 0.56) {
+      return secureResponse(
+        {
+          error: 'invalid_industry',
+          message: 'Bitte eine gültige Branche eingeben (z. B. Malerbetrieb, Arztpraxis).',
+        },
+        400
+      );
+    }
+
     if (
       !acceptNormalized &&
       needsIndustryConfirmation(normalized)
