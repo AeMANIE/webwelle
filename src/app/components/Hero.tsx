@@ -95,9 +95,9 @@ export default function Hero() {
 
       <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/50 to-background/70 z-10 pointer-events-none" />
 
-      <div className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative z-20 w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
         <div className="text-center">
-          <ShinyPanel className="relative z-30 max-w-5xl mx-auto overflow-visible p-4 md:p-8">
+          <ShinyPanel className="relative z-30 max-w-5xl mx-auto overflow-visible p-6 sm:p-8 md:p-8 w-full">
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-extrabold text-foreground leading-tight tracking-tight mb-6 md:mb-8">
               High-Performance Websites
             </h1>
