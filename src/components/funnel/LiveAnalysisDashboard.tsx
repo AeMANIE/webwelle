@@ -21,8 +21,6 @@ import {
 import {
   Globe,
   Search,
-  LayoutDashboard,
-  ShoppingCart,
   Zap,
   FileText,
   TrendingUp,
@@ -30,7 +28,25 @@ import {
   ArrowUpRight,
   Users,
   Lightbulb,
+  Sparkles,
+  PenLine,
 } from 'lucide-react';
+import {
+  BLOG_BUNDLE_10,
+  BLOG_MIN_COUNT,
+  BLOG_UNIT_PRICE_CENTS,
+  calculateFunnelOfferTotal,
+  formatEuro,
+  INFORMATION_DENSITY_OPTIONS,
+  INTERACTIVE_ELEMENT_OPTIONS,
+  normalizeAddonSelection,
+  normalizeDesignPreferences,
+  SEO_PROFI_ADDON,
+  seoProfiIncluded,
+  VISUAL_STYLE_OPTIONS,
+  type BlogMode,
+  type FunnelAddonSelection,
+} from '@/lib/funnel/packages';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -120,6 +136,18 @@ const TOOLTIP_STYLE = {
   fontSize: '12px',
 };
 
+const TOOLTIP_LABEL_STYLE = {
+  color: '#f8fafc',
+  fontWeight: 600,
+  fontSize: '13px',
+  marginBottom: 4,
+};
+
+const TOOLTIP_ITEM_STYLE = {
+  color: '#e2e8f0',
+  fontSize: '12px',
+};
+
 const PACKAGE_LABELS: Record<string, string> = {
   individual_offer: 'Individual-Angebot',
   individual: 'Individual-Lösung',
@@ -133,42 +161,30 @@ const PRIORITY_CHIP: Record<string, { label: string; bg: string; text: string }>
   nice: { label: 'Optional', bg: 'bg-blue-500/10', text: 'text-blue-400' },
 };
 
-const MODULES = [
+const STARTERWELLE_MODULES = [
   {
     icon: Globe,
-    label: 'Website StarterWelle',
-    desc: 'Der schnelle Einstieg: klare Struktur, lokale Sichtbarkeit und ein professioneller erster Eindruck.',
+    label: 'StarterWelle Onepage',
+    desc: 'Individuell gestaltete Onepage mit Header, Footer und 3 Inhaltsbereichen – optional mit Kontaktformular.',
     color: '#DCA441',
   },
   {
-    icon: Search,
-    label: 'SEO-Landingpages',
-    desc: 'Gezielte Seiten für Leistungen und Orte, damit Google und Kunden Ihr Angebot besser verstehen.',
+    icon: FileText,
+    label: 'Rechtliches Basispaket',
+    desc: 'Impressum, Datenschutz und Cookie-Banner – rechtssicher von Anfang an.',
     color: '#3b82f6',
   },
   {
-    icon: LayoutDashboard,
-    label: 'Admin-Dashboard / Backend',
-    desc: 'Inhalte, Anfragen und Abläufe selbst verwalten – kein Entwickler-Einsatz für Änderungen nötig.',
-    color: '#8b5cf6',
-  },
-  {
-    icon: ShoppingCart,
-    label: 'Online-Shop oder Terminbuchung',
-    desc: 'Direkte Buchungen oder Verkäufe reduzieren Rückfragen und bringen mehr Umsatz aus Besuchern.',
+    icon: Zap,
+    label: 'Hosting & Wartung',
+    desc: '2 Jahre Hosting, Wartung, Backup alle 2 Wochen und Domain (.de/.com) inklusive.',
     color: '#10b981',
   },
   {
-    icon: Zap,
-    label: 'Social-Media & KI-Automatisierung',
-    desc: 'Regelmäßige Inhalte und smarte Automationen sparen Zeit und halten Kundenkontakte warm.',
+    icon: Search,
+    label: 'SEO Profi & Blog',
+    desc: 'Optional im SEO-Tab: SEO Profi Zusatzpaket oder Blog-Pakete für mehr Reichweite bei Google.',
     color: '#f59e0b',
-  },
-  {
-    icon: FileText,
-    label: 'Blog-Paket 5 oder 10 Artikel',
-    desc: 'Blogartikel beantworten echte Kundenfragen und bauen langfristig Google-Reichweite auf.',
-    color: '#ef4444',
   },
 ];
 
@@ -296,6 +312,42 @@ function ChartSkeleton({ height = 200 }: { height?: number }) {
   return <div className="rounded-xl bg-muted/20 animate-pulse" style={{ height }} />;
 }
 
+function PreferenceGroup({
+  title,
+  options,
+  selected,
+  onSelect,
+}: {
+  title: string;
+  options: ReadonlyArray<{ id: string; label: string; description: string }>;
+  selected: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-semibold">{title}</p>
+      <div className="grid gap-2 md:grid-cols-3">
+        {options.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => onSelect(option.id)}
+            className={
+              `rounded-xl border p-3 text-left transition-all ` +
+              (selected === option.id
+                ? 'border-primary bg-primary/15 ring-1 ring-primary/30'
+                : 'border-border bg-background/60 hover:border-primary/40')
+            }
+          >
+            <p className="font-medium text-sm">{option.label}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{option.description}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function LiveAnalysisDashboard({
@@ -311,6 +363,12 @@ export default function LiveAnalysisDashboard({
     city?: string;
     market?: string;
     design_reference_urls?: string[];
+    addon_selection?: FunnelAddonSelection | null;
+    design_preferences?: {
+      interactiveElements?: string;
+      informationDensity?: string;
+      visualStyle?: string;
+    } | null;
     existing_website?: boolean | null;
     existing_website_url?: string | null;
   };
@@ -325,6 +383,18 @@ export default function LiveAnalysisDashboard({
   const [designUrls, setDesignUrls] = useState<string[]>(['', '', '']);
   const [designSaving, setDesignSaving] = useState(false);
   const [designMessage, setDesignMessage] = useState<string | null>(null);
+  const [addonSelection, setAddonSelection] = useState<FunnelAddonSelection>({
+    seoProfi: false,
+    blogMode: 'none',
+    blogCount: BLOG_MIN_COUNT,
+  });
+  const [addonSaving, setAddonSaving] = useState(false);
+  const [addonMessage, setAddonMessage] = useState<string | null>(null);
+  const [interactiveElements, setInteractiveElements] = useState('');
+  const [informationDensity, setInformationDensity] = useState('');
+  const [visualStyle, setVisualStyle] = useState('');
+  const [styleSaving, setStyleSaving] = useState(false);
+  const [styleMessage, setStyleMessage] = useState<string | null>(null);
 
   // recharts uses browser APIs – only render after hydration
   useEffect(() => {
@@ -455,6 +525,27 @@ export default function LiveAnalysisDashboard({
     setDesignUrls([urls[0] || '', urls[1] || '', urls[2] || '']);
   }, [lead.design_reference_urls]);
 
+  useEffect(() => {
+    if (lead.addon_selection) {
+      setAddonSelection(normalizeAddonSelection(lead.addon_selection));
+    }
+  }, [lead.addon_selection]);
+
+  useEffect(() => {
+    if (lead.design_preferences) {
+      const prefs = normalizeDesignPreferences(lead.design_preferences);
+      setInteractiveElements(prefs.interactiveElements || '');
+      setInformationDensity(prefs.informationDensity || '');
+      setVisualStyle(prefs.visualStyle || '');
+    }
+  }, [lead.design_preferences]);
+
+  const addonBreakdown = useMemo(
+    () => calculateFunnelOfferTotal(addonSelection),
+    [addonSelection]
+  );
+  const blogIncludesSeo = seoProfiIncluded(addonSelection);
+
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   async function saveResume() {
@@ -477,6 +568,70 @@ export default function LiveAnalysisDashboard({
     } finally {
       setSaving(false);
     }
+  }
+
+  async function saveAddonSelection() {
+    setAddonSaving(true);
+    setAddonMessage(null);
+    try {
+      const res = await fetch(`/api/funnel/leads/${token}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intent: 'addon-selection',
+          seoProfi: addonSelection.seoProfi,
+          blogMode: addonSelection.blogMode,
+          blogCount: addonSelection.blogCount,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAddonMessage(data.message || 'Zusatzpakete konnten nicht gespeichert werden.');
+        return;
+      }
+      setAddonMessage('Zusatzpakete gespeichert – sie erscheinen in Ihrem Angebot.');
+      onRefresh();
+    } catch {
+      setAddonMessage('Verbindungsfehler beim Speichern.');
+    } finally {
+      setAddonSaving(false);
+    }
+  }
+
+  async function saveDesignStylePreferences() {
+    setStyleSaving(true);
+    setStyleMessage(null);
+    try {
+      const res = await fetch(`/api/funnel/leads/${token}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intent: 'design-style-preferences',
+          interactiveElements,
+          informationDensity,
+          visualStyle,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setStyleMessage(data.message || 'Design-Präferenzen konnten nicht gespeichert werden.');
+        return;
+      }
+      setStyleMessage('Design-Präferenzen gespeichert.');
+      onRefresh();
+    } catch {
+      setStyleMessage('Verbindungsfehler beim Speichern.');
+    } finally {
+      setStyleSaving(false);
+    }
+  }
+
+  function setBlogMode(mode: BlogMode) {
+    setAddonSelection((prev) => ({
+      ...prev,
+      blogMode: mode,
+      seoProfi: mode !== 'none' ? true : prev.seoProfi,
+    }));
   }
 
   async function saveDesignReferences() {
@@ -674,6 +829,8 @@ export default function LiveAnalysisDashboard({
                       <Tooltip
                         formatter={(v) => [Number(v).toLocaleString('de-DE'), 'Suchvolumen']}
                         contentStyle={TOOLTIP_STYLE}
+                        labelStyle={TOOLTIP_LABEL_STYLE}
+                        itemStyle={TOOLTIP_ITEM_STYLE}
                         cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                       />
                       <Bar dataKey="volume" radius={[0, 6, 6, 0]}>
@@ -715,6 +872,8 @@ export default function LiveAnalysisDashboard({
                       </Pie>
                       <Tooltip
                         contentStyle={TOOLTIP_STYLE}
+                        labelStyle={TOOLTIP_LABEL_STYLE}
+                        itemStyle={TOOLTIP_ITEM_STYLE}
                         formatter={(v) => [Number(v), 'Keywords']}
                       />
                       <Legend
@@ -793,18 +952,179 @@ export default function LiveAnalysisDashboard({
             </div>
           )}
 
-          {/* Upsell */}
-          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5">
-            <p className="text-sm font-semibold text-amber-500">
-              SEO Profi Zusatzpaket · zzgl. 69 EUR
-            </p>
-            <h3 className="mt-1 text-lg font-bold">
-              Tiefere Keyword-Recherche für echte Wettbewerbsfähigkeit
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Wir prüfen stärkere Hauptkeywords, profitable Nischenbegriffe und Blog-Themen. Diese
-              Begriffe können später direkt in Ihre Website, Landingpages und Blogartikel einfließen.
-            </p>
+          {/* Zusatzpakete SEO */}
+          <div className="space-y-4 rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-amber-500/5 p-6">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-primary/20 p-2.5">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                  Mehr Sichtbarkeit
+                </p>
+                <h3 className="text-lg font-bold">SEO Profi & Blog-Zusatzpakete</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Wählen Sie optional Zusatzleistungen – wir berücksichtigen sie direkt in Ihrem
+                  individuellen Angebot.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (blogIncludesSeo) return;
+                setAddonSelection((prev) => ({ ...prev, seoProfi: !prev.seoProfi }));
+              }}
+              disabled={blogIncludesSeo}
+              className={
+                `w-full rounded-xl border p-4 text-left transition-all ` +
+                (addonSelection.seoProfi || blogIncludesSeo
+                  ? 'border-primary bg-primary/15 ring-1 ring-primary/30'
+                  : 'border-border bg-background/60 hover:border-primary/40')
+              }
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-bold">{SEO_PROFI_ADDON.name}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{SEO_PROFI_ADDON.description}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  {blogIncludesSeo ? (
+                    <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-400">
+                      Inklusive
+                    </span>
+                  ) : (
+                    <span className="text-lg font-bold text-primary">
+                      {formatEuro(SEO_PROFI_ADDON.priceCents)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </button>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setBlogMode(addonSelection.blogMode === 'bundle_10' ? 'none' : 'bundle_10')
+                }
+                className={
+                  `rounded-xl border p-4 text-left transition-all ` +
+                  (addonSelection.blogMode === 'bundle_10'
+                    ? 'border-amber-500 bg-amber-500/15 ring-1 ring-amber-500/40'
+                    : 'border-border bg-background/60 hover:border-amber-500/40')
+                }
+              >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <PenLine className="h-5 w-5 text-amber-400" />
+                  <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-400">
+                    SEO Profi gratis
+                  </span>
+                </div>
+                <p className="font-bold">{BLOG_BUNDLE_10.name}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{BLOG_BUNDLE_10.description}</p>
+                <p className="mt-3 text-xl font-bold text-amber-400">
+                  {formatEuro(BLOG_BUNDLE_10.priceCents)}
+                </p>
+              </button>
+
+              <div
+                className={
+                  `rounded-xl border p-4 transition-all ` +
+                  (addonSelection.blogMode === 'custom'
+                    ? 'border-amber-500 bg-amber-500/15 ring-1 ring-amber-500/40'
+                    : 'border-border bg-background/60')
+                }
+              >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <FileText className="h-5 w-5 text-amber-400" />
+                  <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-400">
+                    SEO Profi gratis
+                  </span>
+                </div>
+                <p className="font-bold">Blog-Artikel individuell</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Ab {BLOG_MIN_COUNT} Artikeln à {formatEuro(BLOG_UNIT_PRICE_CENTS)} – Sie bestimmen
+                  die Anzahl.
+                </p>
+                <div className="mt-3 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setBlogMode('custom')}
+                    className={
+                      `rounded-lg px-3 py-1.5 text-sm font-medium ` +
+                      (addonSelection.blogMode === 'custom'
+                        ? 'bg-amber-500 text-black'
+                        : 'bg-muted text-foreground')
+                    }
+                  >
+                    Individuell wählen
+                  </button>
+                  {addonSelection.blogMode === 'custom' && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAddonSelection((prev) => ({
+                            ...prev,
+                            blogCount: Math.max(BLOG_MIN_COUNT, prev.blogCount - 1),
+                          }))
+                        }
+                        className="h-8 w-8 rounded-lg border border-border"
+                      >
+                        −
+                      </button>
+                      <span className="min-w-[2rem] text-center font-bold">
+                        {addonSelection.blogCount}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAddonSelection((prev) => ({
+                            ...prev,
+                            blogCount: Math.min(50, prev.blogCount + 1),
+                          }))
+                        }
+                        className="h-8 w-8 rounded-lg border border-border"
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {addonSelection.blogMode === 'custom' && (
+                  <p className="mt-2 text-sm font-semibold text-amber-400">
+                    {formatEuro(addonSelection.blogCount * BLOG_UNIT_PRICE_CENTS)}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-background/70 p-4 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                Zusatzpakete gesamt:{' '}
+                <span className="font-bold text-foreground">
+                  {formatEuro(
+                    addonBreakdown.subtotalCents - 49900 > 0
+                      ? addonBreakdown.subtotalCents - 49900
+                      : 0
+                  )}
+                </span>
+                <span className="text-muted-foreground"> (zzgl. StarterWelle 499 €)</span>
+              </p>
+              <button
+                type="button"
+                onClick={saveAddonSelection}
+                disabled={addonSaving}
+                className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+              >
+                {addonSaving ? 'Speichert…' : 'Zusatzpakete sichern'}
+              </button>
+            </div>
+            {addonMessage && (
+              <p className="text-sm text-primary">{addonMessage}</p>
+            )}
           </div>
         </div>
       )}
@@ -847,6 +1167,8 @@ export default function LiveAnalysisDashboard({
                       />
                       <Tooltip
                         contentStyle={TOOLTIP_STYLE}
+                        labelStyle={TOOLTIP_LABEL_STYLE}
+                        itemStyle={TOOLTIP_ITEM_STYLE}
                         formatter={(v) => [`${Number(v)}/5`, 'Design-Score']}
                         cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                       />
@@ -990,6 +1312,73 @@ export default function LiveAnalysisDashboard({
             ))}
           </div>
 
+          {typeof designPayload.recommendation === 'string' && designPayload.recommendation && (
+            <div className="rounded-2xl border border-primary/40 bg-card overflow-hidden">
+              <div className="flex">
+                <div className="w-1.5 shrink-0 bg-primary" />
+                <div className="p-6 space-y-4 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🤖</span>
+                    <h3 className="text-base font-bold">KI-Designempfehlung für Ihre Branche</h3>
+                  </div>
+                  <div className="text-base leading-relaxed text-foreground">
+                    {renderMarkdownish(designPayload.recommendation as string)}
+                  </div>
+                  {typeof designPayload.summary === 'string' && designPayload.summary && (
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
+                        Markt-Zusammenfassung
+                      </p>
+                      <p className="text-base leading-relaxed text-foreground">
+                        {designPayload.summary as string}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Design-Präferenzen */}
+          <div className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-card p-6 space-y-5">
+            <div>
+              <h3 className="text-lg font-bold">Ihre Design-Wünsche</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Basierend auf Ihrer Branchenanalyse: Wählen Sie, wie Ihre Website wirken soll – wir
+                berücksichtigen das im individuellen Angebot.
+              </p>
+            </div>
+
+            <PreferenceGroup
+              title="Interaktive Elemente"
+              options={INTERACTIVE_ELEMENT_OPTIONS}
+              selected={interactiveElements}
+              onSelect={setInteractiveElements}
+            />
+            <PreferenceGroup
+              title="Informationsdichte"
+              options={INFORMATION_DENSITY_OPTIONS}
+              selected={informationDensity}
+              onSelect={setInformationDensity}
+            />
+            <PreferenceGroup
+              title="Visuelle Gestaltung"
+              options={VISUAL_STYLE_OPTIONS}
+              selected={visualStyle}
+              onSelect={setVisualStyle}
+            />
+
+            <button
+              type="button"
+              onClick={saveDesignStylePreferences}
+              disabled={styleSaving}
+              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+            >
+              {styleSaving ? 'Speichert…' : 'Design-Präferenzen speichern'}
+            </button>
+            {styleMessage && <p className="text-sm text-primary">{styleMessage}</p>}
+          </div>
+
           {/* Lieblings-Webseiten */}
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
             <h3 className="font-semibold">Ihre Lieblings-Webseiten</h3>
@@ -1023,33 +1412,6 @@ export default function LiveAnalysisDashboard({
               <p className="mt-2 text-sm text-primary">{designMessage}</p>
             )}
           </div>
-
-          {typeof designPayload.recommendation === 'string' && designPayload.recommendation && (
-            <div className="rounded-2xl border border-primary/40 bg-card overflow-hidden">
-              <div className="flex">
-                <div className="w-1.5 shrink-0 bg-primary" />
-                <div className="p-6 space-y-4 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🤖</span>
-                    <h3 className="text-base font-bold">KI-Designempfehlung für Ihre Branche</h3>
-                  </div>
-                  <div className="text-base leading-relaxed text-foreground">
-                    {renderMarkdownish(designPayload.recommendation as string)}
-                  </div>
-                  {typeof designPayload.summary === 'string' && designPayload.summary && (
-                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
-                        Markt-Zusammenfassung
-                      </p>
-                      <p className="text-base leading-relaxed text-foreground">
-                        {designPayload.summary as string}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -1170,7 +1532,11 @@ export default function LiveAnalysisDashboard({
                           <span style={{ color: '#94a3b8', fontSize: 11 }}>{value}</span>
                         )}
                       />
-                      <Tooltip contentStyle={TOOLTIP_STYLE} />
+                      <Tooltip
+                        contentStyle={TOOLTIP_STYLE}
+                        labelStyle={TOOLTIP_LABEL_STYLE}
+                        itemStyle={TOOLTIP_ITEM_STYLE}
+                      />
                     </RadarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -1361,13 +1727,13 @@ export default function LiveAnalysisDashboard({
             </div>
           )}
 
-          {/* WebWelle Standardmodule mit Icons */}
+          {/* StarterWelle Festpaket */}
           <div className="space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              WebWelle Paket-Module
+              StarterWelle – 499 € für 2 Jahre
             </h3>
             <div className="grid gap-4 md:grid-cols-2">
-              {MODULES.map(({ icon: Icon, label, desc, color }) => (
+              {STARTERWELLE_MODULES.map(({ icon: Icon, label, desc, color }) => (
                 <div
                   key={label}
                   className="flex gap-4 rounded-2xl border border-border bg-background/60 p-5"

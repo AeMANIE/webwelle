@@ -6,12 +6,11 @@ import {
   updateFunnelLead,
 } from '@/lib/funnel-database';
 import { secureResponse } from '@/lib/api-security';
-
-const PACKAGE_BASE_CENTS: Record<string, number> = {
-  starterwelle: 99000,
-  businesswelle: 199000,
-  erfolgswelle: 299000,
-};
+import {
+  calculateFunnelOfferTotal,
+  normalizeAddonSelection,
+  STARTERWELLE,
+} from '@/lib/funnel/packages';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -21,25 +20,24 @@ export async function POST(request: NextRequest) {
     return secureResponse({ error: 'not_found' }, 404);
   }
 
-  const packageType = String(body.packageType || lead.selected_package || 'starterwelle');
-  const modules = (body.modules as string[]) || (lead.selected_modules as string[]) || [];
+  const addonSelection = normalizeAddonSelection(lead.addon_selection);
   const discount = await getDiscountChoice(lead.id);
   const discountCents = discount?.discount_cents || 0;
-  const subtotal = PACKAGE_BASE_CENTS[packageType] || 99000;
-  const isCustom = modules.length > 0 || lead.wants_custom_offer;
+  const breakdown = calculateFunnelOfferTotal(addonSelection);
 
-  const items = modules.map((label: string) => ({
-    label,
-    unitAmountCents: 0,
-    billing: 'one_time',
+  const items = breakdown.items.map((item) => ({
+    label: item.label,
+    description: item.description,
+    unitAmountCents: item.amountCents,
+    billing: 'one_time' as const,
   }));
 
   const { id: offerId } = await createOfferFromLead({
     leadId: lead.id,
-    packageType: isCustom ? 'custom_offer' : packageType,
-    isCustom,
-    title: `${packageType} – ${lead.company_name || lead.industry_normalized}`,
-    subtotalCents: subtotal,
+    packageType: STARTERWELLE.id,
+    isCustom: items.length > 1,
+    title: `${STARTERWELLE.name} – ${lead.company_name || lead.industry_normalized}`,
+    subtotalCents: breakdown.subtotalCents,
     discountCents,
     items,
     createdBy: 'funnel_auto',
@@ -47,5 +45,10 @@ export async function POST(request: NextRequest) {
 
   await updateFunnelLead(token, { status: 'package_selected' });
 
-  return secureResponse({ offerId, status: 'draft' });
+  return secureResponse({
+    offerId,
+    status: 'draft',
+    subtotalCents: breakdown.subtotalCents,
+    discountCents,
+  });
 }

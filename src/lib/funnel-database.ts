@@ -7,6 +7,12 @@ import type {
   FunnelLeadStatus,
   FunnelResearchResult,
 } from './funnel/types';
+import {
+  normalizeAddonSelection,
+  normalizeDesignPreferences,
+  type FunnelAddonSelection,
+  type FunnelDesignPreferences,
+} from './funnel/packages';
 
 export function generateLeadToken(): string {
   return crypto.randomBytes(24).toString('hex');
@@ -26,6 +32,8 @@ export async function ensureFunnelTables(): Promise<void> {
     await client.query(`
       ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS existing_website BOOLEAN;
       ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS existing_website_url TEXT;
+      ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS addon_selection JSONB;
+      ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS design_preferences JSONB;
     `);
   } catch (e) {
     console.warn('Funnel tables migration:', e);
@@ -65,6 +73,12 @@ function mapLead(row: Record<string, unknown>): FunnelLead {
     selected_modules: (row.selected_modules as unknown[]) || [],
     wants_custom_offer: Boolean(row.wants_custom_offer),
     design_reference_urls: (row.design_reference_urls as string[]) || [],
+    addon_selection: row.addon_selection
+      ? normalizeAddonSelection(row.addon_selection)
+      : null,
+    design_preferences: row.design_preferences
+      ? normalizeDesignPreferences(row.design_preferences)
+      : null,
     existing_website:
       row.existing_website != null ? Boolean(row.existing_website) : null,
     existing_website_url: (row.existing_website_url as string | null) || null,
@@ -156,6 +170,8 @@ export async function updateFunnelLead(
     selected_modules: unknown[];
     wants_custom_offer: boolean;
     design_reference_urls: string[];
+    addon_selection: FunnelAddonSelection | null;
+    design_preferences: FunnelDesignPreferences | null;
     existing_website: boolean | null;
     existing_website_url: string | null;
     customer_id: string;
@@ -173,7 +189,10 @@ export async function updateFunnelLead(
     if (value !== undefined) {
       fields.push(`${key} = $${i++}`);
       values.push(
-        key === 'selected_modules' || key === 'design_reference_urls'
+        key === 'selected_modules' ||
+        key === 'design_reference_urls' ||
+        key === 'addon_selection' ||
+        key === 'design_preferences'
           ? JSON.stringify(value)
           : value
       );

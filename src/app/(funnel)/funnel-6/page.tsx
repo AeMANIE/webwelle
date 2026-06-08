@@ -1,73 +1,86 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FunnelShell from '@/components/funnel/FunnelShell';
 import { ShinyButton } from '@/components/ui/shiny-button';
-
-const PACKAGES = [
-  { id: 'starterwelle', name: 'StarterWelle', desc: 'Professionelle Website zum Festpreis' },
-  { id: 'businesswelle', name: 'BusinessWelle', desc: 'Erweitert mit mehr Seiten & SEO' },
-  { id: 'erfolgswelle', name: 'ErfolgsWelle', desc: 'Premium mit maximaler Sichtbarkeit' },
-];
-
-const MODULES = [
-  'Admin-Dashboard',
-  'Online-Shop',
-  'Terminbuchung',
-  'Social-Media-Werbung',
-  'SEO-Landingpages',
-  'KI-Chatbot / AI-Agent',
-  'Mehrsprachige Website',
-  'Druckmedien',
-];
+import {
+  calculateFunnelOfferTotal,
+  formatEuro,
+  labelForPreference,
+  normalizeAddonSelection,
+  normalizeDesignPreferences,
+  STARTERWELLE,
+  INFORMATION_DENSITY_OPTIONS,
+  INTERACTIVE_ELEMENT_OPTIONS,
+  VISUAL_STYLE_OPTIONS,
+  BLOG_BUNDLE_10,
+  SEO_PROFI_ADDON,
+  BLOG_UNIT_PRICE_CENTS,
+  seoProfiIncluded,
+} from '@/lib/funnel/packages';
 
 function Funnel6Content() {
   const searchParams = useSearchParams();
   const token = searchParams.get('t') || '';
-  const [selectedPackage, setSelectedPackage] = useState('starterwelle');
-  const [modules, setModules] = useState<string[]>([]);
-  const [customOffer, setCustomOffer] = useState(false);
+  const [lead, setLead] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
     fetch(`/api/funnel/leads/${token}`)
       .then((r) => r.json())
       .then((d) => {
-        if (d.lead?.selected_package) setSelectedPackage(d.lead.selected_package);
+        if (d.lead) setLead(d.lead);
       });
   }, [token]);
 
-  function toggleModule(m: string) {
-    setModules((prev) =>
-      prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]
-    );
-  }
+  const addonSelection = useMemo(
+    () => normalizeAddonSelection(lead?.addon_selection),
+    [lead?.addon_selection]
+  );
+  const designPrefs = useMemo(
+    () => normalizeDesignPreferences(lead?.design_preferences),
+    [lead?.design_preferences]
+  );
+  const breakdown = useMemo(
+    () => calculateFunnelOfferTotal(addonSelection),
+    [addonSelection]
+  );
+  const designUrls = ((lead?.design_reference_urls as string[]) || []).filter(Boolean);
 
   async function submit() {
     setLoading(true);
-    const res = await fetch(`/api/funnel/leads/${token}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        intent: 'package',
-        packageType: selectedPackage,
-        modules,
-        wantsCustomOffer: customOffer || modules.length > 0,
-      }),
-    });
-    setLoading(false);
-    if (res.ok) {
-      if (customOffer || modules.length > 2) {
-        await fetch('/api/funnel/offers/request', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, packageType: selectedPackage, modules }),
-        });
+    setError(null);
+    try {
+      const patchRes = await fetch(`/api/funnel/leads/${token}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intent: 'package' }),
+      });
+      if (!patchRes.ok) {
+        const d = await patchRes.json();
+        setError(d.message || 'Speichern fehlgeschlagen');
+        return;
+      }
+
+      const offerRes = await fetch('/api/funnel/offers/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      if (!offerRes.ok) {
+        const d = await offerRes.json();
+        setError(d.message || 'Angebotsanfrage fehlgeschlagen');
+        return;
       }
       setDone(true);
+    } catch {
+      setError('Verbindungsfehler. Bitte erneut versuchen.');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -79,9 +92,8 @@ function Funnel6Content() {
         <div className="rounded-2xl border border-border bg-card p-8 text-center">
           <h1 className="text-2xl font-bold mb-4">Vielen Dank!</h1>
           <p className="text-muted-foreground">
-            {customOffer || modules.length > 0
-              ? 'Wir erstellen Ihr individuelles Angebot und senden es per E-Mail zur Unterschrift (DocuSeal). Nach der Signatur erhalten Sie den Zahlungslink.'
-              : 'Ihr Paket wurde erfasst. Sie erhalten in Kürze Ihr Angebot per E-Mail.'}
+            Wir erstellen Ihr individuelles Angebot auf Basis Ihrer Auswahl und senden es per E-Mail
+            zur Unterschrift (DocuSeal). Nach der Signatur erhalten Sie den Zahlungslink.
           </p>
         </div>
       </FunnelShell>
@@ -91,63 +103,110 @@ function Funnel6Content() {
   return (
     <FunnelShell step={6} token={token}>
       <div className="rounded-2xl border border-border bg-card p-6 md:p-8 shadow-xl space-y-6">
-        <h1 className="text-2xl font-bold">Paket wählen</h1>
-
-        <div className="grid md:grid-cols-3 gap-4">
-          {PACKAGES.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => {
-                setSelectedPackage(p.id);
-                setCustomOffer(false);
-              }}
-              className={
-                `p-4 rounded-xl border text-left transition-colors ` +
-                (selectedPackage === p.id && !customOffer
-                  ? 'border-primary bg-primary/10'
-                  : 'border-border')
-              }
-            >
-              <p className="font-bold">{p.name}</p>
-              <p className="text-sm text-muted-foreground mt-1">{p.desc}</p>
-            </button>
-          ))}
-        </div>
-
         <div>
-          <h2 className="font-semibold mb-3">Zusatzmodule (optional)</h2>
-          <div className="flex flex-wrap gap-2">
-            {MODULES.map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => toggleModule(m)}
-                className={
-                  `px-3 py-2.5 rounded-full text-sm border min-h-[44px] ` +
-                  (modules.includes(m)
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border')
-                }
-              >
-                {m}
-              </button>
-            ))}
-          </div>
+          <h1 className="text-2xl font-bold">Ihr Angebot – Zusammenfassung</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            StarterWelle Festpaket plus Ihre gewählten Zusatzleistungen und Design-Wünsche.
+          </p>
         </div>
 
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={customOffer}
-            onChange={(e) => setCustomOffer(e.target.checked)}
-            className="rounded"
-          />
-          <span className="text-sm">Individuelles Angebot vom Team anfordern</span>
-        </label>
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                {STARTERWELLE.name}
+              </p>
+              <p className="text-sm text-muted-foreground">{STARTERWELLE.termLabel} · Festpreis</p>
+            </div>
+            <p className="text-2xl font-bold">{formatEuro(STARTERWELLE.priceCents)}</p>
+          </div>
+          <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
+            {STARTERWELLE.features.map((feature) => (
+              <li key={feature}>• {feature}</li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="rounded-xl border border-border bg-background/60 p-5 space-y-3">
+          <h2 className="font-semibold">Gewählte Zusatzpakete</h2>
+          {addonSelection.blogMode === 'none' &&
+          !addonSelection.seoProfi ? (
+            <p className="text-sm text-muted-foreground">Keine Zusatzpakete gewählt.</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {(addonSelection.seoProfi || seoProfiIncluded(addonSelection)) && (
+                <li>
+                  • {SEO_PROFI_ADDON.name}
+                  {seoProfiIncluded(addonSelection)
+                    ? ' (inklusive bei Blog-Paket)'
+                    : ` – ${formatEuro(SEO_PROFI_ADDON.priceCents)}`}
+                </li>
+              )}
+              {addonSelection.blogMode === 'bundle_10' && (
+                <li>• {BLOG_BUNDLE_10.name} – {formatEuro(BLOG_BUNDLE_10.priceCents)}</li>
+              )}
+              {addonSelection.blogMode === 'custom' && (
+                <li>
+                  • Blog-Artikel ({addonSelection.blogCount}×) –{' '}
+                  {formatEuro(addonSelection.blogCount * BLOG_UNIT_PRICE_CENTS)}
+                </li>
+              )}
+            </ul>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-border bg-background/60 p-5 space-y-3">
+          <h2 className="font-semibold">Design-Präferenzen</h2>
+          <ul className="text-sm space-y-1 text-muted-foreground">
+            <li>
+              Interaktive Elemente:{' '}
+              {labelForPreference(INTERACTIVE_ELEMENT_OPTIONS, designPrefs.interactiveElements)}
+            </li>
+            <li>
+              Informationsdichte:{' '}
+              {labelForPreference(INFORMATION_DENSITY_OPTIONS, designPrefs.informationDensity)}
+            </li>
+            <li>
+              Visuelle Gestaltung:{' '}
+              {labelForPreference(VISUAL_STYLE_OPTIONS, designPrefs.visualStyle)}
+            </li>
+          </ul>
+          {designUrls.length > 0 && (
+            <div>
+              <p className="text-sm font-medium mb-2">Lieblings-Webseiten</p>
+              <ul className="space-y-1">
+                {designUrls.map((url) => (
+                  <li key={url}>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm text-primary underline break-all"
+                    >
+                      {url}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-xl border-2 border-primary/40 bg-primary/5 p-5 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-lg font-bold">
+            Geschätzter Gesamtpreis: {formatEuro(breakdown.subtotalCents)}
+          </p>
+          <p className="text-xs text-muted-foreground">zzgl. MwSt. · individuelles Angebot folgt</p>
+        </div>
+
+        {error && (
+          <p className="text-sm text-amber-400" role="alert">
+            {error}
+          </p>
+        )}
 
         <ShinyButton type="button" onClick={submit} disabled={loading} className="w-full">
-          {loading ? 'Wird gesendet…' : 'Auswahl bestätigen'}
+          {loading ? 'Wird gesendet…' : 'Individuelles Angebot anfordern'}
         </ShinyButton>
       </div>
     </FunnelShell>
@@ -156,7 +215,11 @@ function Funnel6Content() {
 
 export default function Funnel6Page() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Laden…</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">Laden…</div>
+      }
+    >
       <Funnel6Content />
     </Suspense>
   );

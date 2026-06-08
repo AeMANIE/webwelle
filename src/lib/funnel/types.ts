@@ -1,3 +1,5 @@
+import type { FunnelAddonSelection, FunnelDesignPreferences } from './packages';
+
 export type DachMarket = 'DE' | 'AT' | 'CH';
 
 export type FunnelLeadStatus =
@@ -59,6 +61,8 @@ export interface FunnelLead {
   selected_modules: unknown[];
   wants_custom_offer: boolean;
   design_reference_urls: string[];
+  addon_selection: FunnelAddonSelection | null;
+  design_preferences: FunnelDesignPreferences | null;
   existing_website: boolean | null;
   existing_website_url: string | null;
   customer_id: string | null;

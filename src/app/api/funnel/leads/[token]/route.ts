@@ -25,6 +25,11 @@ import {
 } from '@/lib/n8n/dispatch';
 import { secureResponse } from '@/lib/api-security';
 import { fixEmailTypo, validateEmail, validateUrl } from '@/lib/validation';
+import {
+  BLOG_MIN_COUNT,
+  normalizeAddonSelection,
+  normalizeDesignPreferences,
+} from '@/lib/funnel/packages';
 import type { DachMarket } from '@/lib/funnel/types';
 import {
   ensureCustomerPortalColumns,
@@ -451,6 +456,42 @@ export async function PATCH(
     return secureResponse({ lead: updated, urls });
   }
 
+  if (intent === 'design-style-preferences') {
+    const preferences = normalizeDesignPreferences({
+      interactiveElements: body.interactiveElements,
+      informationDensity: body.informationDensity,
+      visualStyle: body.visualStyle,
+    });
+    const updated = await updateFunnelLead(token, {
+      design_preferences: preferences,
+    });
+    return secureResponse({ lead: updated, preferences });
+  }
+
+  if (intent === 'addon-selection') {
+    const selection = normalizeAddonSelection({
+      seoProfi: body.seoProfi,
+      blogMode: body.blogMode,
+      blogCount: body.blogCount,
+    });
+
+    if (selection.blogMode === 'custom' && selection.blogCount < BLOG_MIN_COUNT) {
+      return secureResponse(
+        {
+          error: 'invalid_blog_count',
+          message: `Bitte mindestens ${BLOG_MIN_COUNT} Blog-Artikel wählen.`,
+        },
+        400
+      );
+    }
+
+    const updated = await updateFunnelLead(token, {
+      addon_selection: selection,
+      selected_package: 'starterwelle',
+    });
+    return secureResponse({ lead: updated, selection });
+  }
+
   if (intent === 'save-resume') {
     if (lead.email) {
       const existingCustomer = await getCustomerByEmail(lead.email);
@@ -484,9 +525,9 @@ export async function PATCH(
 
   if (intent === 'package') {
     const updated = await updateFunnelLead(token, {
-      selected_package: body.packageType,
+      selected_package: 'starterwelle',
       selected_modules: body.modules || [],
-      wants_custom_offer: Boolean(body.wantsCustomOffer),
+      wants_custom_offer: true,
       status: 'package_selected',
     });
     return secureResponse({ lead: updated });
