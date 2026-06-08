@@ -14,6 +14,8 @@ interface EnrichedLead {
     city?: string;
     market?: string;
     selected_package?: string;
+    existing_website?: boolean | null;
+    existing_website_url?: string | null;
   };
   offer?: { id: string; status: string; total_cents: number; package_type?: string };
   research?: Array<{ workflow_key: string; status: string }>;
@@ -84,6 +86,27 @@ export default function OffersTab() {
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {lead.email || '–'} · PLZ {lead.postal_code} {lead.city} · {lead.market}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Website:{' '}
+                    {lead.existing_website === true ? (
+                      lead.existing_website_url ? (
+                        <a
+                          href={lead.existing_website_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary underline"
+                        >
+                          {lead.existing_website_url}
+                        </a>
+                      ) : (
+                        'Bestehend (URL fehlt)'
+                      )
+                    ) : lead.existing_website === false ? (
+                      'Neue Website gewünscht'
+                    ) : (
+                      'Noch nicht angegeben'
+                    )}
                   </p>
                 </div>
                 <span className="text-xs px-2 py-1 rounded bg-muted">{lead.status}</span>

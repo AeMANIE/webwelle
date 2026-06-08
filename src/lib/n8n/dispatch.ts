@@ -1,4 +1,6 @@
 import { signPayload } from './signature';
+import { buildIndustryForResearch } from '@/lib/funnel/industry';
+import type { FunnelLead } from '@/lib/funnel/types';
 
 export interface N8nDispatchPayload {
   leadId: string;
@@ -14,6 +16,8 @@ export interface N8nDispatchPayload {
   lat?: number;
   lng?: number;
   callbackBaseUrl: string;
+  existingWebsite?: boolean;
+  existingWebsiteUrl?: string;
 }
 
 export interface N8nCompetitorPayload {
@@ -28,6 +32,76 @@ export interface N8nSitePerformancePayload extends N8nDispatchPayload {
   competitor: N8nCompetitorPayload;
   siteIndex: number;
   totalSites: number;
+  isOwnSite?: boolean;
+}
+
+type LeadDispatchSource = Pick<
+  FunnelLead,
+  | 'id'
+  | 'token'
+  | 'industry_raw'
+  | 'industry_normalized'
+  | 'industry_detail'
+  | 'postal_code'
+  | 'city'
+  | 'market'
+  | 'country'
+  | 'geo_lat'
+  | 'geo_lng'
+  | 'existing_website'
+  | 'existing_website_url'
+  | 'company_name'
+>;
+
+export function urlToCompetitorPayload(
+  url: string,
+  name?: string | null
+): N8nCompetitorPayload | null {
+  try {
+    const normalized = url.startsWith('http') ? url : `https://${url}`;
+    const parsed = new URL(normalized);
+    return {
+      name: name?.trim() || parsed.hostname.replace(/^www\./, ''),
+      domain: parsed.hostname,
+      websiteUrl: parsed.toString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function buildDispatchPayloadFromLead(lead: LeadDispatchSource): N8nDispatchPayload {
+  const industryForResearch = buildIndustryForResearch(
+    lead.industry_normalized,
+    lead.industry_detail,
+    lead.industry_raw
+  );
+
+  return {
+    leadId: lead.id,
+    token: lead.token,
+    industry: industryForResearch,
+    industryRaw: lead.industry_raw || '',
+    industryDetail: lead.industry_detail || undefined,
+    industryForResearch,
+    postalCode: lead.postal_code || '',
+    city: lead.city || '',
+    market: lead.market || 'DE',
+    country: lead.country || lead.market || 'DE',
+    lat: lead.geo_lat ?? undefined,
+    lng: lead.geo_lng ?? undefined,
+    callbackBaseUrl: getCallbackBaseUrl(),
+    existingWebsite: lead.existing_website === true,
+    existingWebsiteUrl: lead.existing_website_url || undefined,
+  };
+}
+
+export function ownSiteFromLead(lead: LeadDispatchSource): N8nCompetitorPayload | null {
+  if (!lead.existing_website || !lead.existing_website_url) return null;
+  return urlToCompetitorPayload(
+    lead.existing_website_url,
+    lead.company_name || 'Eigene Website'
+  );
 }
 
 async function postWebhook(
@@ -107,31 +181,59 @@ export async function dispatchAllResearch(payload: N8nDispatchPayload): Promise<
 export async function dispatchSitePerformance(
   payload: N8nDispatchPayload,
   competitors: N8nCompetitorPayload[],
-  limit = 5
+  options?: { limit?: number; ownSite?: N8nCompetitorPayload | null }
 ): Promise<void> {
+  const limit = options?.limit ?? 5;
+  const ownSite = options?.ownSite ?? null;
+  const competitorLimit = ownSite ? Math.max(0, limit - 1) : limit;
+
   const selected = competitors
     .filter((c) => c?.domain?.trim() && c?.websiteUrl?.trim())
-    .slice(0, limit);
+    .slice(0, competitorLimit);
 
-  if (selected.length === 0) {
-    console.warn(`n8n site-performance übersprungen: keine Wettbewerber für Lead ${payload.leadId}`);
+  const sites: Array<{ competitor: N8nCompetitorPayload; isOwnSite: boolean }> = [];
+  if (ownSite) {
+    sites.push({ competitor: ownSite, isOwnSite: true });
+  }
+  sites.push(...selected.map((competitor) => ({ competitor, isOwnSite: false })));
+
+  if (sites.length === 0) {
+    console.warn(`n8n site-performance übersprungen: keine Sites für Lead ${payload.leadId}`);
     return;
   }
 
   console.log(
-    `n8n dispatch: site-performance für Lead ${payload.leadId} (${selected.length} Sites)`
+    `n8n dispatch: site-performance für Lead ${payload.leadId} (${sites.length} Sites` +
+      `${ownSite ? ', inkl. eigene Website' : ''})`
   );
 
   await Promise.allSettled(
-    selected.map((competitor, siteIndex) =>
+    sites.map(({ competitor, isOwnSite }, siteIndex) =>
       postWebhook(process.env.N8N_WEBHOOK_SITE_PERFORMANCE_URL, {
         ...payload,
         competitor,
         siteIndex,
-        totalSites: selected.length,
+        totalSites: sites.length,
+        isOwnSite,
       })
     )
   );
+}
+
+export async function dispatchOwnSitePerformance(lead: LeadDispatchSource): Promise<void> {
+  const ownSite = ownSiteFromLead(lead);
+  if (!ownSite) return;
+
+  const payload = buildDispatchPayloadFromLead(lead);
+  console.log(`n8n dispatch: eigene Website für Lead ${payload.leadId} (${ownSite.websiteUrl})`);
+
+  await postWebhook(process.env.N8N_WEBHOOK_SITE_PERFORMANCE_URL, {
+    ...payload,
+    competitor: ownSite,
+    siteIndex: 0,
+    totalSites: 1,
+    isOwnSite: true,
+  });
 }
 
 export function getCallbackBaseUrl(): string {

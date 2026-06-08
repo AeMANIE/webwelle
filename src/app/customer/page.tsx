@@ -64,6 +64,8 @@ interface FunnelAnalysis {
   city?: string;
   market?: string;
   design_reference_urls?: string[];
+  existing_website?: boolean | null;
+  existing_website_url?: string | null;
   updated_at?: string;
   research: Array<{
     workflow_key: string;
@@ -578,6 +580,23 @@ export default function CustomerPortal() {
                           </h3>
                           <p className="text-muted-foreground">
                             {analysis.postal_code} {analysis.city} · {analysis.market || 'DE'}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {analysis.existing_website === true && analysis.existing_website_url ? (
+                              <>
+                                Ihre Website:{' '}
+                                <a
+                                  href={analysis.existing_website_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-primary underline"
+                                >
+                                  {analysis.existing_website_url}
+                                </a>
+                              </>
+                            ) : analysis.existing_website === false ? (
+                              'Ziel: neue Website'
+                            ) : null}
                           </p>
                           <p className="text-sm text-muted-foreground mt-1">
                             Stand: {analysis.updated_at ? new Date(analysis.updated_at).toLocaleString('de-DE') : 'offen'}

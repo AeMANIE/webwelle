@@ -22,6 +22,11 @@ export async function ensureFunnelTables(): Promise<void> {
       const sql = fs.readFileSync(sqlPath, 'utf8');
       await client.query(sql);
     }
+
+    await client.query(`
+      ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS existing_website BOOLEAN;
+      ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS existing_website_url TEXT;
+    `);
   } catch (e) {
     console.warn('Funnel tables migration:', e);
   } finally {
@@ -60,6 +65,9 @@ function mapLead(row: Record<string, unknown>): FunnelLead {
     selected_modules: (row.selected_modules as unknown[]) || [],
     wants_custom_offer: Boolean(row.wants_custom_offer),
     design_reference_urls: (row.design_reference_urls as string[]) || [],
+    existing_website:
+      row.existing_website != null ? Boolean(row.existing_website) : null,
+    existing_website_url: (row.existing_website_url as string | null) || null,
     customer_id: row.customer_id as string | null,
     created_at: new Date(row.created_at as string),
     updated_at: new Date(row.updated_at as string),
@@ -148,6 +156,8 @@ export async function updateFunnelLead(
     selected_modules: unknown[];
     wants_custom_offer: boolean;
     design_reference_urls: string[];
+    existing_website: boolean | null;
+    existing_website_url: string | null;
     customer_id: string;
     industry_raw: string;
     industry_normalized: string;

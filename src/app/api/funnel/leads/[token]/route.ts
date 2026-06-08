@@ -6,6 +6,7 @@ import {
   updateFunnelLead,
   saveDiscountChoice,
   upsertResearchResult,
+  ensureFunnelTables,
 } from '@/lib/funnel-database';
 import { DELIVERY_DISCOUNTS, type DeliveryWindow } from '@/lib/funnel/types';
 import { detectMarketFromHeaders, validatePostalCode } from '@/lib/funnel/market';
@@ -17,9 +18,13 @@ import {
   needsIndustryConfirmation,
   resolveIndustryNormalization,
 } from '@/lib/funnel/industry';
-import { dispatchAllResearch, getCallbackBaseUrl } from '@/lib/n8n/dispatch';
+import {
+  dispatchAllResearch,
+  dispatchOwnSitePerformance,
+  getCallbackBaseUrl,
+} from '@/lib/n8n/dispatch';
 import { secureResponse } from '@/lib/api-security';
-import { fixEmailTypo, validateEmail } from '@/lib/validation';
+import { fixEmailTypo, validateEmail, validateUrl } from '@/lib/validation';
 import type { DachMarket } from '@/lib/funnel/types';
 import {
   ensureCustomerPortalColumns,
@@ -306,6 +311,50 @@ export async function PATCH(
     await saveDiscountChoice(lead.id, window, discountCents);
     const updated = await updateFunnelLead(token, { status: 'discount_selected' });
     return secureResponse({ lead: updated, discountCents });
+  }
+
+  if (intent === 'website-intent') {
+    await ensureFunnelTables();
+    const hasExisting = body.hasExistingWebsite === true;
+
+    if (hasExisting) {
+      const rawUrl = String(body.existingWebsiteUrl || '').trim();
+      if (!rawUrl) {
+        return secureResponse(
+          {
+            error: 'website_url_required',
+            message: 'Bitte geben Sie die Adresse Ihrer aktuellen Website ein.',
+          },
+          400
+        );
+      }
+      const normalizedUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
+      if (!validateUrl(normalizedUrl)) {
+        return secureResponse(
+          {
+            error: 'invalid_website_url',
+            message: 'Bitte geben Sie eine gültige Website-Adresse ein (z. B. https://ihre-firma.de).',
+          },
+          400
+        );
+      }
+      const updated = await updateFunnelLead(token, {
+        existing_website: true,
+        existing_website_url: normalizedUrl,
+        status: 'website_intent_set',
+      });
+      if (updated) {
+        void dispatchOwnSitePerformance(updated);
+      }
+      return secureResponse({ lead: updated, sitePerformanceStarted: true });
+    }
+
+    const updated = await updateFunnelLead(token, {
+      existing_website: false,
+      existing_website_url: null,
+      status: 'website_intent_set',
+    });
+    return secureResponse({ lead: updated });
   }
 
   if (intent === 'contact') {

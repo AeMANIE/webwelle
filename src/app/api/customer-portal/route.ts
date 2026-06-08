@@ -74,6 +74,7 @@ async function getCustomerFunnelAnalysis(request: NextRequest, email: string) {
       const leads = await client.query(
         `SELECT id, token, status, industry_raw, industry_normalized, postal_code, city, market,
                 first_name, last_name, company_name, email, design_reference_urls,
+                existing_website, existing_website_url,
                 created_at, updated_at
          FROM funnel_leads
          WHERE ($2::uuid IS NOT NULL AND customer_id = $2::uuid)

@@ -6,6 +6,7 @@ export type FunnelLeadStatus =
   | 'research_running'
   | 'research_ready'
   | 'discount_selected'
+  | 'website_intent_set'
   | 'contact_complete'
   | 'offer_viewed'
   | 'package_selected'
@@ -58,6 +59,8 @@ export interface FunnelLead {
   selected_modules: unknown[];
   wants_custom_offer: boolean;
   design_reference_urls: string[];
+  existing_website: boolean | null;
+  existing_website_url: string | null;
   customer_id: string | null;
   created_at: Date;
   updated_at: Date;

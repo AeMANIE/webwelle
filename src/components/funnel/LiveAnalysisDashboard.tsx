@@ -93,6 +93,23 @@ type N8nQuestion = {
 
 const TARGET_WEBSITES = 5;
 
+function isOwnPerformanceSite(site: CompetitorRow, ownUrl?: unknown): boolean {
+  if (!ownUrl) return false;
+  try {
+    const own = new URL(
+      String(ownUrl).startsWith('http') ? String(ownUrl) : `https://${String(ownUrl)}`
+    );
+    const siteUrl = site.websiteUrl || site.url || site.domain || '';
+    if (!siteUrl) return false;
+    const parsed = new URL(
+      siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`
+    );
+    return parsed.hostname.replace(/^www\./, '') === own.hostname.replace(/^www\./, '');
+  } catch {
+    return false;
+  }
+}
+
 const CHART_COLORS = ['#DCA441', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
 
 const TOOLTIP_STYLE = {
@@ -294,6 +311,8 @@ export default function LiveAnalysisDashboard({
     city?: string;
     market?: string;
     design_reference_urls?: string[];
+    existing_website?: boolean | null;
+    existing_website_url?: string | null;
   };
   research: ResearchItem[];
   token: string;
@@ -503,6 +522,26 @@ export default function LiveAnalysisDashboard({
               {lead.market || 'DE'}
               {lead.city ? ` · ${lead.city}` : ''}
             </p>
+            {lead.existing_website === true && lead.existing_website_url ? (
+              <p className="mt-2 text-sm">
+                <span className="text-muted-foreground">Ihre Website: </span>
+                <a
+                  href={String(lead.existing_website_url)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline break-all"
+                >
+                  {String(lead.existing_website_url)}
+                </a>
+                <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
+                  Performance-Analyse läuft
+                </span>
+              </p>
+            ) : lead.existing_website === false ? (
+              <p className="mt-2 text-sm text-muted-foreground">
+                Ziel: neue Website von Grund auf
+              </p>
+            ) : null}
           </div>
           <button
             type="button"
@@ -1038,14 +1077,25 @@ export default function LiveAnalysisDashboard({
             <div className="grid gap-4 lg:grid-cols-2">
               {performanceSites.map((site, i) => {
                 const mainScore = site.mobileScore ?? site.performanceScore;
+                const isOwnSite = isOwnPerformanceSite(site, lead.existing_website_url);
                 return (
                   <div
                     key={`${siteKey(site, i)}-card`}
-                    className="rounded-2xl border border-border bg-background/60 p-5"
+                    className={
+                      `rounded-2xl border bg-background/60 p-5 ` +
+                      (isOwnSite ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border')
+                    }
                   >
-                    <p className="font-semibold">
-                      {(site as { name?: string }).name || site.domain || `Website ${i + 1}`}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold">
+                        {(site as { name?: string }).name || site.domain || `Website ${i + 1}`}
+                      </p>
+                      {isOwnSite && (
+                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
+                          Eigene Website
+                        </span>
+                      )}
+                    </div>
                     <p className="mb-4 text-xs text-muted-foreground">
                       {site.websiteUrl || site.url}
                     </p>
