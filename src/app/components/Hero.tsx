@@ -111,6 +111,9 @@ export default function Hero() {
                   <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-muted-foreground leading-relaxed font-light">
                     – gebaut, um Kunden zu gewinnen
                   </p>
+                  <p className="mt-3 text-base sm:text-lg md:text-xl font-semibold text-primary">
+                    Webseite ab 499 €
+                  </p>
                 </div>
               </Sparkles>
             </div>

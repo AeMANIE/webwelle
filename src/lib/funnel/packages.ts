@@ -23,7 +23,7 @@ export const STARTERWELLE = {
     'Rechtliches Basispaket (Impressum, Datenschutz, Cookie-Banner)',
     'Hosting & Wartung inklusive',
     'Backup alle 2 Wochen',
-    'Domain (.de oder .com), ohne E-Mail-Postfach',
+    'Domain (.de oder .com)',
   ],
 };
 
