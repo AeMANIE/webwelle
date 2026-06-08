@@ -41,7 +41,17 @@ export default function EmailInputAssist({
     requestAnimationFrame(() => {
       const el = inputRef.current;
       if (el) {
-        el.selectionStart = el.selectionEnd = completion.full.length;
+        // Für `input[type="email"]` ist das Setzen von selectionStart/Ende in manchen
+        // Browsern nicht erlaubt (InvalidStateError). Daher robust:
+        // - versuchen, per setSelectionRange Cursor ans Ende zu setzen
+        // - wenn das fehlschlägt, mindestens focus setzen
+        try {
+          if (typeof el.setSelectionRange === 'function') {
+            el.setSelectionRange(completion.full.length, completion.full.length);
+          }
+        } catch {
+          // no-op: Cursorposition ist nicht kritisch
+        }
         el.focus();
       }
     });
