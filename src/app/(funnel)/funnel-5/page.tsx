@@ -1,10 +1,11 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import FunnelShell from '@/components/funnel/FunnelShell';
 import LiveAnalysisDashboard from '@/components/funnel/LiveAnalysisDashboard';
 import { ShinyButton } from '@/components/ui/shiny-button';
+import { isFunnelResearchComplete } from '@/lib/funnel/research';
 
 function Funnel5Content() {
   const searchParams = useSearchParams();
@@ -20,7 +21,10 @@ function Funnel5Content() {
       updated_at: string;
     }>
   >([]);
-  const [pollCount, setPollCount] = useState(0);
+  const researchComplete = useMemo(
+    () => isFunnelResearchComplete(research),
+    [research]
+  );
 
   const load = useCallback(() => {
     if (!token) return;
@@ -37,13 +41,22 @@ function Funnel5Content() {
   }, [load]);
 
   useEffect(() => {
-    if (!token || pollCount > 60) return;
+    if (!token || researchComplete) return;
+
+    let polls = 0;
+    const maxPolls = 60;
+
     const id = setInterval(() => {
+      if (polls >= maxPolls) {
+        clearInterval(id);
+        return;
+      }
       load();
-      setPollCount((c) => c + 1);
+      polls += 1;
     }, 2000);
+
     return () => clearInterval(id);
-  }, [token, load, pollCount]);
+  }, [token, load, researchComplete]);
 
   if (!token) return <p>Session fehlt.</p>;
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import LiveAnalysisDashboard from '@/components/funnel/LiveAnalysisDashboard';
+import { isFunnelResearchComplete } from '@/lib/funnel/research';
 
 function AnalyseContent() {
   const params = useParams();
@@ -26,11 +27,32 @@ function AnalyseContent() {
       });
   }, [token]);
 
+  const researchComplete = useMemo(
+    () => isFunnelResearchComplete(research),
+    [research]
+  );
+
   useEffect(() => {
     load();
-    const id = setInterval(load, 5000);
-    return () => clearInterval(id);
   }, [load]);
+
+  useEffect(() => {
+    if (researchComplete) return;
+
+    let polls = 0;
+    const maxPolls = 60;
+
+    const id = setInterval(() => {
+      if (polls >= maxPolls) {
+        clearInterval(id);
+        return;
+      }
+      load();
+      polls += 1;
+    }, 5000);
+
+    return () => clearInterval(id);
+  }, [load, researchComplete]);
 
   return (
     <div className="min-h-screen bg-background py-10 px-4">
