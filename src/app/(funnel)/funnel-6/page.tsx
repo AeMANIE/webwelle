@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FunnelShell from '@/components/funnel/FunnelShell';
+import { StarterWellePrice } from '@/components/funnel/StarterWellePrice';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import {
   getSelectedOptionalItems,
@@ -161,7 +162,7 @@ function Funnel6Content() {
               </p>
               <p className="text-sm text-muted-foreground">{STARTERWELLE.termLabel} · Festpreis</p>
             </div>
-            <p className="text-2xl font-bold">{formatEuro(STARTERWELLE.priceCents)}</p>
+            <StarterWellePrice size="md" align="right" />
           </div>
           <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
             {STARTERWELLE.features.map((feature) => (

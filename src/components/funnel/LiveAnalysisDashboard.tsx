@@ -31,6 +31,7 @@ import {
   Sparkles,
   PenLine,
 } from 'lucide-react';
+import { StarterWellePriceInline } from '@/components/funnel/StarterWellePrice';
 import {
   BLOG_BUNDLE_10,
   BLOG_MIN_COUNT,
@@ -40,6 +41,7 @@ import {
   normalizeAddonSelection,
   normalizeDesignPreferences,
   SEO_PROFI_ADDON,
+  STARTERWELLE,
   seoProfiIncluded,
   type BlogMode,
   type FunnelAddonSelection,
@@ -1156,12 +1158,16 @@ export default function LiveAnalysisDashboard({
                 Zusatzpakete gesamt:{' '}
                 <span className="font-bold text-foreground">
                   {formatEuro(
-                    addonBreakdown.subtotalCents - 49900 > 0
-                      ? addonBreakdown.subtotalCents - 49900
+                    addonBreakdown.subtotalCents - STARTERWELLE.priceCents > 0
+                      ? addonBreakdown.subtotalCents - STARTERWELLE.priceCents
                       : 0
                   )}
                 </span>
-                <span className="text-muted-foreground"> (zzgl. StarterWelle 499 €)</span>
+                <span className="text-muted-foreground inline-flex flex-wrap items-baseline gap-x-1">
+                  {' '}
+                  (zzgl. StarterWelle{' '}
+                  <StarterWellePriceInline />)
+                </span>
               </p>
               <button
                 type="button"
@@ -1813,7 +1819,7 @@ export default function LiveAnalysisDashboard({
           {/* StarterWelle Festpaket */}
           <div className="space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              StarterWelle – 499 € für 2 Jahre
+              StarterWelle – <StarterWellePriceInline /> für {STARTERWELLE.termLabel}
             </h3>
             <div className="grid gap-4 md:grid-cols-2">
               {STARTERWELLE_MODULES.map(({ icon: Icon, label, desc, color }) => (

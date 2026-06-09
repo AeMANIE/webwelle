@@ -9,6 +9,7 @@ import Services from './components/Services';
 import Workflow from './components/Workflow';
 import Products from './components/Products';
 import FAQ from './components/FAQ';
+import HashScrollHandler from './components/HashScrollHandler';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -53,6 +54,7 @@ export default function Home() {
         <FAQ />
       </main>
       <Footer />
+      <HashScrollHandler />
       <ScrollToTop />
       <CookieBanner />
     </div>

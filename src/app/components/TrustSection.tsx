@@ -63,14 +63,14 @@ export default function TrustSection() {
             aria-hidden
           />
           <div
-            className="absolute left-6 top-6 text-5xl font-serif leading-none text-primary/20 select-none md:left-10 md:top-8 md:text-6xl"
+            className="absolute left-4 top-3 text-4xl font-serif leading-none text-primary/15 select-none sm:left-6 sm:top-4 sm:text-5xl md:left-10 md:top-6 md:text-6xl"
             aria-hidden
           >
             „
           </div>
 
-          <blockquote className="relative text-center">
-            <p className="text-base md:text-lg lg:text-xl text-foreground/95 font-light leading-relaxed md:leading-8 tracking-tight">
+          <blockquote className="relative text-center pt-10 sm:pt-8 md:pt-6 lg:pt-4">
+            <p className="text-base md:text-lg lg:text-xl text-foreground/95 font-light leading-relaxed md:leading-8 tracking-tight px-1 sm:px-2">
               {TRUST_TEXT}
             </p>
           </blockquote>

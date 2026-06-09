@@ -2,6 +2,7 @@
 
 import { Lightbulb, Check } from 'lucide-react';
 import HeroIndustrySearch from '@/components/funnel/HeroIndustrySearch';
+import { StarterWellePrice } from '@/components/funnel/StarterWellePrice';
 import { STARTERWELLE } from '@/lib/funnel/packages';
 
 export default function Products() {
@@ -32,7 +33,10 @@ export default function Products() {
             </div>
 
             <div className="mb-6 pb-6 border-b border-border">
-              <div className="text-4xl font-bold text-primary mb-2">499 €</div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-red-500/90 mb-2">
+                Aktionspreis
+              </p>
+              <StarterWellePrice size="lg" className="mb-2" />
               <p className="text-sm text-muted-foreground">
                 für {STARTERWELLE.termLabel} · Nettopreis · kein Monatspreis
               </p>

@@ -5,12 +5,7 @@ import { ShinyButton } from '@/components/ui/shiny-button';
 import { SHINY_SWEEP_PRESETS } from '@/components/ui/shiny-motion';
 import { ShinyPanel } from '@/components/ui/shiny-panel';
 import { Sparkles } from '@/components/ui/sparkles';
-
-function scrollToStarterwelle() {
-  const element = document.getElementById('starterwelle');
-  if (!element) return;
-  element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+import { navigateToStarterwelle } from '@/lib/scroll-to-anchor';
 
 export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -121,7 +116,7 @@ export default function Hero() {
             <div className="mt-6 flex justify-center">
               <ShinyButton
                 type="button"
-                onClick={scrollToStarterwelle}
+                onClick={navigateToStarterwelle}
                 labelClassName="!text-orange-400 uppercase tracking-wide"
                 sweepConfig={SHINY_SWEEP_PRESETS.button}
                 className="w-full sm:w-auto sm:min-w-[240px] shrink-0 px-8"

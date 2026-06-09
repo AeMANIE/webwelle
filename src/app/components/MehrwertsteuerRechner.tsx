@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Calculator, Copy, Check } from 'lucide-react';
+import { ShinyButton } from '@/components/ui/shiny-button';
+import { SHINY_SWEEP_PRESETS } from '@/components/ui/shiny-motion';
+import { navigateToStarterwelle } from '@/lib/scroll-to-anchor';
 
 interface CalculationResult {
   netto: number;
@@ -163,19 +166,16 @@ export default function MehrwertsteuerRechner() {
               <p className="text-lg text-muted-foreground mb-6 font-medium text-center">
                 Festpreis-Webdesign, das messbar wirkt. Individuell. Transparent. Modern.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a
-                  href="/#cta"
-                  className="bg-primary text-primary-foreground px-8 py-4 rounded-lg hover:bg-primary/90 transition-colors font-semibold text-lg text-center"
+              <div className="flex justify-center">
+                <ShinyButton
+                  type="button"
+                  onClick={navigateToStarterwelle}
+                  labelClassName="!text-orange-400 uppercase tracking-wide"
+                  sweepConfig={SHINY_SWEEP_PRESETS.button}
+                  className="w-full sm:w-auto sm:min-w-[240px] shrink-0 px-8"
                 >
-                  Jetzt Festpreis-Angebot sichern!
-                </a>
-                <a
-                  href="/#produkte"
-                  className="border-2 border-primary text-primary px-8 py-4 rounded-lg hover:bg-primary/10 transition-colors font-semibold text-lg text-center"
-                >
-                  Produkte entdecken
-                </a>
+                  Unverbindlich anfragen
+                </ShinyButton>
               </div>
             </div>
           </div>
