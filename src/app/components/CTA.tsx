@@ -5,24 +5,18 @@ export default function CTA() {
     <section id="cta" className="py-20 bg-primary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h2 className="text-3xl md:text-5xl font-extrabold text-primary-foreground mb-6 tracking-tight">
-            Lokal stark, bundesweit sichtbar
+          <h2 className="text-3xl md:text-5xl font-extrabold text-primary-foreground mb-6 tracking-tight max-w-4xl mx-auto">
+            Professionelle Website erstellen lassen und online klarer auftreten
           </h2>
-          <p className="text-xl md:text-2xl text-primary-foreground/90 mb-4 max-w-4xl mx-auto leading-relaxed font-light">
-            WebWelle – Ihre Webdesign-Agentur aus Kempten (Allgäu).
+          <p className="text-lg md:text-xl text-primary-foreground/90 mb-8 max-w-4xl mx-auto leading-relaxed font-light">
+            Wenn Sie eine Website möchten, die seriös wirkt, regional besser gefunden wird und mehr Anfragen unterstützt, ist jetzt der richtige Zeitpunkt für den nächsten Schritt.
           </p>
-          <p className="text-lg md:text-xl text-primary-foreground/90 mb-4 max-w-4xl mx-auto leading-relaxed font-light">
-            Unsere Websites sind technisch, psychologisch und visuell auf Ergebniserfolg ausgelegt.
-          </p>
-          <p className="text-base md:text-lg text-primary-foreground/90 mb-4 max-w-4xl mx-auto leading-relaxed font-light">
-            Wir verbinden Designästhetik, Verkaufspsychologie und SEO-Intelligenz, damit Sie online gefunden und gebucht werden.
-          </p>
-          <p className="text-lg md:text-xl text-primary-foreground font-semibold mb-12 max-w-4xl mx-auto">
-            Ihr Unternehmen verdient Online-Sichtbarkeit.
-          </p>
-          <p className="text-lg md:text-xl text-primary-foreground/90 mb-12 max-w-4xl mx-auto leading-relaxed font-light">
-            Jetzt kostenloses Erstgespräch sichern und erleben, wie aus Besuchern neue Kunden werden.
-          </p>
+          <a
+            href="#produkte"
+            className="inline-block bg-primary-foreground text-primary px-8 py-3 rounded-lg hover:bg-primary-foreground/90 transition-colors font-semibold text-lg mb-12"
+          >
+            Branchenanalyse starten
+          </a>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
             {/* Free Consultation */}

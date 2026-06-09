@@ -1,3 +1,5 @@
+import type { DesignWishItem } from './design-wishes';
+
 export type BlogMode = 'none' | 'bundle_10' | 'custom';
 
 export interface FunnelAddonSelection {
@@ -7,6 +9,11 @@ export interface FunnelAddonSelection {
 }
 
 export interface FunnelDesignPreferences {
+  includedItems: DesignWishItem[];
+  optionalItems: DesignWishItem[];
+  selectedOptionalIds: string[];
+  parsedAt?: string;
+  /** @deprecated Legacy static preference fields */
   interactiveElements?: string;
   informationDensity?: string;
   visualStyle?: string;
@@ -117,15 +124,58 @@ export function normalizeAddonSelection(raw: unknown): FunnelAddonSelection {
   };
 }
 
+function normalizeDesignWishItem(raw: unknown): DesignWishItem | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const obj = raw as Record<string, unknown>;
+  const id = String(obj.id || '').trim();
+  const label = String(obj.label || '').trim();
+  const tier =
+    obj.tier === 'optional' ? 'optional' : obj.tier === 'included' ? 'included' : null;
+  if (!id || !label || !tier) return null;
+
+  const source =
+    obj.source === 'recommendation' || obj.source === 'summary' ? obj.source : undefined;
+
+  return {
+    id,
+    label,
+    description: typeof obj.description === 'string' ? obj.description : undefined,
+    tier,
+    sourceSnippet: typeof obj.sourceSnippet === 'string' ? obj.sourceSnippet : undefined,
+    source,
+  };
+}
+
 export function normalizeDesignPreferences(raw: unknown): FunnelDesignPreferences {
   const obj = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+
+  const includedItems = Array.isArray(obj.includedItems)
+    ? obj.includedItems.map(normalizeDesignWishItem).filter((i): i is DesignWishItem => Boolean(i))
+    : [];
+
+  const optionalItems = Array.isArray(obj.optionalItems)
+    ? obj.optionalItems.map(normalizeDesignWishItem).filter((i): i is DesignWishItem => Boolean(i))
+    : [];
+
+  const selectedOptionalIds = Array.isArray(obj.selectedOptionalIds)
+    ? obj.selectedOptionalIds.map((id) => String(id)).filter(Boolean)
+    : [];
+
   return {
+    includedItems,
+    optionalItems,
+    selectedOptionalIds,
+    parsedAt: typeof obj.parsedAt === 'string' ? obj.parsedAt : undefined,
     interactiveElements:
       typeof obj.interactiveElements === 'string' ? obj.interactiveElements : undefined,
     informationDensity:
       typeof obj.informationDensity === 'string' ? obj.informationDensity : undefined,
     visualStyle: typeof obj.visualStyle === 'string' ? obj.visualStyle : undefined,
   };
+}
+
+export function hasDesignWishSelection(prefs: FunnelDesignPreferences): boolean {
+  return prefs.includedItems.length > 0 || prefs.selectedOptionalIds.length > 0;
 }
 
 export function hasBlogSelection(selection: FunnelAddonSelection): boolean {

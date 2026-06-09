@@ -32,6 +32,7 @@ export default function Header() {
                 width={50}
                 height={50}
                 className="h-12 w-auto"
+                style={{ width: 'auto' }}
                 priority
               />
               <Image
@@ -40,6 +41,7 @@ export default function Header() {
                 width={180}
                 height={48}
                 className="h-12 w-auto"
+                style={{ width: 'auto' }}
                 priority
                 fetchPriority="high"
               />

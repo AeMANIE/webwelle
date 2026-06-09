@@ -21,13 +21,18 @@ export interface HeroIndustrySearchProps {
   className?: string;
   /** Nur Tracking (optional), z. B. homepage_hero oder products_businesswelle */
   source?: string;
+  /** Button-Label (z. B. „Branchenanalyse starten“ auf der Homepage) */
+  submitLabel?: string;
 }
+
+const DEFAULT_SUBMIT_LABEL = 'ANALYSE STARTEN';
 
 export default function HeroIndustrySearch({
   variant = 'hero',
   inputId = 'hero-industry',
   className,
   source,
+  submitLabel = DEFAULT_SUBMIT_LABEL,
 }: HeroIndustrySearchProps) {
   const isCard = variant === 'card';
   const router = useRouter();
@@ -235,7 +240,7 @@ export default function HeroIndustrySearch({
               : 'w-full sm:w-auto sm:min-w-[240px] shrink-0 px-8'
           }
         >
-          {loading ? 'Starte…' : 'ANALYSE STARTEN'}
+          {loading ? 'Starte…' : submitLabel}
         </ShinyButton>
       </div>
 

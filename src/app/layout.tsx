@@ -16,8 +16,9 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://webwelle.com'),
-  title: "Webdesign Kempten (Allgäu) | WebWelle – Sichtbar. Modern. Erfolgreich.",
-  description: "Webdesign aus Kempten im Allgäu. SEO-optimierte Websites mit Festpreis, garantierter Performance & persönlicher Betreuung. Jetzt kostenloses Erstgespräch sichern!",
+  title: "Webdesign Kempten (Allgäu) | WebWelle – Professionelle Websites für mehr Anfragen",
+  description:
+    "WebWelle entwickelt professionelle Websites für Selbstständige und Unternehmen im Allgäu – klar aufgebaut, auf Vertrauen ausgerichtet, für mehr Anfragen.",
   keywords: "Webdesign Kempten, Webdesign Allgäu, Website erstellen Kempten, SEO Agentur Allgäu, Festpreis Webdesign, Webdesign Bayern",
   authors: [{ name: "WebWelle" }],
   robots: {
@@ -37,8 +38,9 @@ export const metadata: Metadata = {
     apple: '/favicon.png',
   },
   openGraph: {
-    title: "Webdesign Kempten (Allgäu) | WebWelle – Websites, die Kunden gewinnen",
-    description: "Professionelles Webdesign mit SEO, Performance & Festpreis. WebWelle – Ihre Agentur aus Kempten für digitalen Erfolg.",
+    title: "Webdesign Kempten (Allgäu) | WebWelle – Professionelle Websites für mehr Anfragen",
+    description:
+      "WebWelle entwickelt professionelle Websites für Selbstständige und Unternehmen im Allgäu – klar aufgebaut, auf Vertrauen ausgerichtet, für mehr Anfragen.",
     type: "website",
     locale: "de_DE",
     url: "https://webwelle.com",

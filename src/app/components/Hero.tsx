@@ -1,9 +1,16 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import HeroIndustrySearch from '@/components/funnel/HeroIndustrySearch';
+import { ShinyButton } from '@/components/ui/shiny-button';
+import { SHINY_SWEEP_PRESETS } from '@/components/ui/shiny-motion';
 import { ShinyPanel } from '@/components/ui/shiny-panel';
 import { Sparkles } from '@/components/ui/sparkles';
+
+function scrollToStarterwelle() {
+  const element = document.getElementById('starterwelle');
+  if (!element) return;
+  element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -99,26 +106,28 @@ export default function Hero() {
         <div className="text-center">
           <ShinyPanel className="relative z-30 max-w-5xl mx-auto overflow-visible p-6 sm:p-8 md:p-8 w-full">
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-extrabold text-foreground leading-tight tracking-tight mb-6 md:mb-8">
-              High-Performance Websites
+              Professionelles Webdesign in Kempten für mehr Anfragen und bessere Sichtbarkeit
             </h1>
 
             <div className="relative z-10 mb-6 md:mb-8">
               <Sparkles>
                 <div className="pt-8 md:pt-12">
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-extrabold text-foreground leading-tight tracking-tight mb-4 md:mb-6">
-                    für das KI-Zeitalter
-                  </h2>
                   <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-muted-foreground leading-relaxed font-light">
-                    – gebaut, um Kunden zu gewinnen
-                  </p>
-                  <p className="mt-3 text-base sm:text-lg md:text-xl font-semibold text-primary">
-                    Webseite ab 499 €
+                    WebWelle entwickelt professionelle Websites für Selbstständige, lokale Dienstleister und kleine bis mittlere Unternehmen im Allgäu. Klar aufgebaut, auf Vertrauen ausgerichtet und so gestaltet, dass Besucher schneller zu Anfragen werden.
                   </p>
                 </div>
               </Sparkles>
             </div>
-            <div className="mt-6">
-              <HeroIndustrySearch />
+            <div className="mt-6 flex justify-center">
+              <ShinyButton
+                type="button"
+                onClick={scrollToStarterwelle}
+                labelClassName="!text-orange-400 uppercase tracking-wide"
+                sweepConfig={SHINY_SWEEP_PRESETS.button}
+                className="w-full sm:w-auto sm:min-w-[240px] shrink-0 px-8"
+              >
+                Unverbindlich anfragen
+              </ShinyButton>
             </div>
           </ShinyPanel>
         </div>

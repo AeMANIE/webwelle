@@ -457,11 +457,23 @@ export async function PATCH(
   }
 
   if (intent === 'design-style-preferences') {
-    const preferences = normalizeDesignPreferences({
-      interactiveElements: body.interactiveElements,
-      informationDensity: body.informationDensity,
-      visualStyle: body.visualStyle,
+    const normalized = normalizeDesignPreferences({
+      includedItems: body.includedItems,
+      optionalItems: body.optionalItems,
+      selectedOptionalIds: body.selectedOptionalIds,
+      parsedAt: new Date().toISOString(),
     });
+
+    const optionalIdSet = new Set(normalized.optionalItems.map((item) => item.id));
+    const selectedOptionalIds = normalized.selectedOptionalIds.filter((id) =>
+      optionalIdSet.has(id)
+    );
+
+    const preferences = {
+      ...normalized,
+      selectedOptionalIds,
+    };
+
     const updated = await updateFunnelLead(token, {
       design_preferences: preferences,
     });

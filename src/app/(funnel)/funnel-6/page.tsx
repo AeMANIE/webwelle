@@ -5,6 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import FunnelShell from '@/components/funnel/FunnelShell';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import {
+  getSelectedOptionalItems,
+  resolveDesignWishes,
+} from '@/lib/funnel/design-wishes';
+import {
   calculateFunnelOfferTotal,
   formatEuro,
   labelForPreference,
@@ -20,10 +24,17 @@ import {
   seoProfiIncluded,
 } from '@/lib/funnel/packages';
 
+type ResearchRow = {
+  workflow_key: string;
+  status: string;
+  payload: Record<string, unknown> | null;
+};
+
 function Funnel6Content() {
   const searchParams = useSearchParams();
   const token = searchParams.get('t') || '';
   const [lead, setLead] = useState<Record<string, unknown> | null>(null);
+  const [research, setResearch] = useState<ResearchRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +45,7 @@ function Funnel6Content() {
       .then((r) => r.json())
       .then((d) => {
         if (d.lead) setLead(d.lead);
+        if (d.research) setResearch(d.research);
       });
   }, [token]);
 
@@ -50,6 +62,37 @@ function Funnel6Content() {
     [addonSelection]
   );
   const designUrls = ((lead?.design_reference_urls as string[]) || []).filter(Boolean);
+
+  const resolvedFromResearch = useMemo(() => {
+    const competitor = research.find((r) => r.workflow_key === 'competitor_design');
+    return resolveDesignWishes(competitor?.payload ?? {});
+  }, [research]);
+
+  const includedItems = useMemo(() => {
+    if (designPrefs.includedItems.length > 0) return designPrefs.includedItems;
+    return resolvedFromResearch.included;
+  }, [designPrefs.includedItems, resolvedFromResearch.included]);
+
+  const optionalItems = useMemo(() => {
+    if (designPrefs.optionalItems.length > 0) return designPrefs.optionalItems;
+    return resolvedFromResearch.optional;
+  }, [designPrefs.optionalItems, resolvedFromResearch.optional]);
+
+  const selectedOptionalItems = useMemo(
+    () => getSelectedOptionalItems(optionalItems, designPrefs.selectedOptionalIds),
+    [optionalItems, designPrefs.selectedOptionalIds]
+  );
+
+  const hasLegacyDesignPrefs = Boolean(
+    designPrefs.interactiveElements ||
+      designPrefs.informationDensity ||
+      designPrefs.visualStyle
+  );
+
+  const hasNewDesignPrefs =
+    includedItems.length > 0 ||
+    selectedOptionalItems.length > 0 ||
+    designPrefs.selectedOptionalIds.length > 0;
 
   async function submit() {
     setLoading(true);
@@ -155,22 +198,70 @@ function Funnel6Content() {
           )}
         </div>
 
-        <div className="rounded-xl border border-border bg-background/60 p-5 space-y-3">
-          <h2 className="font-semibold">Design-Präferenzen</h2>
-          <ul className="text-sm space-y-1 text-muted-foreground">
-            <li>
-              Interaktive Elemente:{' '}
-              {labelForPreference(INTERACTIVE_ELEMENT_OPTIONS, designPrefs.interactiveElements)}
-            </li>
-            <li>
-              Informationsdichte:{' '}
-              {labelForPreference(INFORMATION_DENSITY_OPTIONS, designPrefs.informationDensity)}
-            </li>
-            <li>
-              Visuelle Gestaltung:{' '}
-              {labelForPreference(VISUAL_STYLE_OPTIONS, designPrefs.visualStyle)}
-            </li>
-          </ul>
+        <div className="rounded-xl border border-border bg-background/60 p-5 space-y-4">
+          <h2 className="font-semibold">Design-Wünsche</h2>
+
+          {hasNewDesignPrefs ? (
+            <>
+              <div>
+                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-2">
+                  In StarterWelle enthalten
+                </p>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  {includedItems.map((item) => (
+                    <li key={item.id}>
+                      • {item.label}
+                      {item.sourceSnippet && (
+                        <span className="block text-xs italic mt-0.5">„{item.sourceSnippet}"</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium mb-2">Gewählte Zusatz-Designwünsche</p>
+                {selectedOptionalItems.length > 0 ? (
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    {selectedOptionalItems.map((item) => (
+                      <li key={item.id}>
+                        • {item.label}
+                        {item.sourceSnippet && (
+                          <span className="block text-xs italic mt-0.5">
+                            „{item.sourceSnippet}"
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Keine zusätzlichen Design-Wünsche gewählt.
+                  </p>
+                )}
+              </div>
+            </>
+          ) : hasLegacyDesignPrefs ? (
+            <ul className="text-sm space-y-1 text-muted-foreground">
+              <li>
+                Interaktive Elemente:{' '}
+                {labelForPreference(INTERACTIVE_ELEMENT_OPTIONS, designPrefs.interactiveElements)}
+              </li>
+              <li>
+                Informationsdichte:{' '}
+                {labelForPreference(INFORMATION_DENSITY_OPTIONS, designPrefs.informationDensity)}
+              </li>
+              <li>
+                Visuelle Gestaltung:{' '}
+                {labelForPreference(VISUAL_STYLE_OPTIONS, designPrefs.visualStyle)}
+              </li>
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Noch keine Design-Wünsche gespeichert.
+            </p>
+          )}
+
           {designUrls.length > 0 && (
             <div>
               <p className="text-sm font-medium mb-2">Lieblings-Webseiten</p>

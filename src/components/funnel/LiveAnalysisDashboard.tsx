@@ -37,16 +37,17 @@ import {
   BLOG_UNIT_PRICE_CENTS,
   calculateFunnelOfferTotal,
   formatEuro,
-  INFORMATION_DENSITY_OPTIONS,
-  INTERACTIVE_ELEMENT_OPTIONS,
   normalizeAddonSelection,
   normalizeDesignPreferences,
   SEO_PROFI_ADDON,
   seoProfiIncluded,
-  VISUAL_STYLE_OPTIONS,
   type BlogMode,
   type FunnelAddonSelection,
 } from '@/lib/funnel/packages';
+import {
+  resolveDesignWishes,
+  type DesignWishItem,
+} from '@/lib/funnel/design-wishes';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -312,38 +313,63 @@ function ChartSkeleton({ height = 200 }: { height?: number }) {
   return <div className="rounded-xl bg-muted/20 animate-pulse" style={{ height }} />;
 }
 
-function PreferenceGroup({
-  title,
-  options,
-  selected,
-  onSelect,
+function DesignWishOptionalPicker({
+  items,
+  selectedIds,
+  onToggle,
 }: {
-  title: string;
-  options: ReadonlyArray<{ id: string; label: string; description: string }>;
-  selected: string;
-  onSelect: (id: string) => void;
+  items: DesignWishItem[];
+  selectedIds: string[];
+  onToggle: (id: string) => void;
 }) {
+  if (items.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Keine zusätzlichen Design-Optionen aus der KI-Analyse erkannt.
+      </p>
+    );
+  }
+
   return (
-    <div className="space-y-2">
-      <p className="text-sm font-semibold">{title}</p>
-      <div className="grid gap-2 md:grid-cols-3">
-        {options.map((option) => (
+    <div className="grid gap-2 md:grid-cols-2">
+      {items.map((item) => {
+        const selected = selectedIds.includes(item.id);
+        return (
           <button
-            key={option.id}
+            key={item.id}
             type="button"
-            onClick={() => onSelect(option.id)}
+            onClick={() => onToggle(item.id)}
             className={
-              `rounded-xl border p-3 text-left transition-all ` +
-              (selected === option.id
+              `rounded-xl border p-4 text-left transition-all ` +
+              (selected
                 ? 'border-primary bg-primary/15 ring-1 ring-primary/30'
                 : 'border-border bg-background/60 hover:border-primary/40')
             }
           >
-            <p className="font-medium text-sm">{option.label}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{option.description}</p>
+            <div className="flex items-start gap-2">
+              <span
+                className={
+                  `mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ` +
+                  (selected ? 'border-primary bg-primary text-primary-foreground' : 'border-border')
+                }
+              >
+                {selected ? '✓' : ''}
+              </span>
+              <div className="min-w-0">
+                <p className="font-medium text-sm">{item.label}</p>
+                {item.description && (
+                  <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+                )}
+                {item.sourceSnippet && (
+                  <p className="mt-2 text-xs italic text-muted-foreground/80">
+                    „{item.sourceSnippet}"
+                  </p>
+                )}
+              </div>
+            </div>
           </button>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
@@ -390,9 +416,7 @@ export default function LiveAnalysisDashboard({
   });
   const [addonSaving, setAddonSaving] = useState(false);
   const [addonMessage, setAddonMessage] = useState<string | null>(null);
-  const [interactiveElements, setInteractiveElements] = useState('');
-  const [informationDensity, setInformationDensity] = useState('');
-  const [visualStyle, setVisualStyle] = useState('');
+  const [selectedOptionalIds, setSelectedOptionalIds] = useState<string[]>([]);
   const [styleSaving, setStyleSaving] = useState(false);
   const [styleMessage, setStyleMessage] = useState<string | null>(null);
 
@@ -407,7 +431,16 @@ export default function LiveAnalysisDashboard({
     return map;
   }, [research]);
 
-  const designPayload = byKey.competitor_design?.payload ?? {};
+  const designPayload = useMemo(
+    () => byKey.competitor_design?.payload ?? {},
+    [byKey.competitor_design?.payload]
+  );
+  const designResearchPending =
+    !byKey.competitor_design || byKey.competitor_design.status === 'pending';
+  const liveDesignWishes = useMemo(
+    () => resolveDesignWishes(designPayload),
+    [designPayload]
+  );
   const seoPayload = byKey.seo_keywords?.payload ?? {};
   const perfPayload = byKey.site_performance?.payload ?? {};
   const questionsPayload = byKey.industry_questions?.payload ?? {};
@@ -531,13 +564,24 @@ export default function LiveAnalysisDashboard({
     }
   }, [lead.addon_selection]);
 
-  useEffect(() => {
-    if (lead.design_preferences) {
-      const prefs = normalizeDesignPreferences(lead.design_preferences);
-      setInteractiveElements(prefs.interactiveElements || '');
-      setInformationDensity(prefs.informationDensity || '');
-      setVisualStyle(prefs.visualStyle || '');
+  const savedDesignPrefs = useMemo(
+    () => normalizeDesignPreferences(lead.design_preferences),
+    [lead.design_preferences]
+  );
+
+  const displayDesignWishes = useMemo(() => {
+    if (savedDesignPrefs.includedItems.length > 0 || savedDesignPrefs.optionalItems.length > 0) {
+      return {
+        included: savedDesignPrefs.includedItems,
+        optional: savedDesignPrefs.optionalItems,
+        fromStructuredPayload: liveDesignWishes.fromStructuredPayload,
+      };
     }
+    return liveDesignWishes;
+  }, [savedDesignPrefs, liveDesignWishes]);
+
+  useEffect(() => {
+    setSelectedOptionalIds(savedDesignPrefs.selectedOptionalIds);
   }, [lead.design_preferences]);
 
   const addonBreakdown = useMemo(
@@ -598,6 +642,12 @@ export default function LiveAnalysisDashboard({
     }
   }
 
+  function toggleOptionalDesignWish(id: string) {
+    setSelectedOptionalIds((prev) =>
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
+    );
+  }
+
   async function saveDesignStylePreferences() {
     setStyleSaving(true);
     setStyleMessage(null);
@@ -607,9 +657,9 @@ export default function LiveAnalysisDashboard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           intent: 'design-style-preferences',
-          interactiveElements,
-          informationDensity,
-          visualStyle,
+          selectedOptionalIds,
+          includedItems: displayDesignWishes.included,
+          optionalItems: displayDesignWishes.optional,
         }),
       });
       const data = await res.json();
@@ -617,7 +667,7 @@ export default function LiveAnalysisDashboard({
         setStyleMessage(data.message || 'Design-Präferenzen konnten nicht gespeichert werden.');
         return;
       }
-      setStyleMessage('Design-Präferenzen gespeichert.');
+      setStyleMessage('Design-Wünsche gespeichert – sie erscheinen in Ihrem Angebot.');
       onRefresh();
     } catch {
       setStyleMessage('Verbindungsfehler beim Speichern.');
@@ -1339,7 +1389,7 @@ export default function LiveAnalysisDashboard({
             </div>
           )}
 
-          {/* Design-Präferenzen */}
+          {/* Design-Wünsche aus KI-Analyse */}
           <div className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-card p-6 space-y-5">
             <div>
               <h3 className="text-lg font-bold">Ihre Design-Wünsche</h3>
@@ -1349,32 +1399,65 @@ export default function LiveAnalysisDashboard({
               </p>
             </div>
 
-            <PreferenceGroup
-              title="Interaktive Elemente"
-              options={INTERACTIVE_ELEMENT_OPTIONS}
-              selected={interactiveElements}
-              onSelect={setInteractiveElements}
-            />
-            <PreferenceGroup
-              title="Informationsdichte"
-              options={INFORMATION_DENSITY_OPTIONS}
-              selected={informationDensity}
-              onSelect={setInformationDensity}
-            />
-            <PreferenceGroup
-              title="Visuelle Gestaltung"
-              options={VISUAL_STYLE_OPTIONS}
-              selected={visualStyle}
-              onSelect={setVisualStyle}
-            />
+            {designResearchPending ? (
+              <p className="text-sm text-muted-foreground">
+                Design-Empfehlungen werden analysiert … Bitte einen Moment warten.
+              </p>
+            ) : (
+              <>
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                    In StarterWelle enthalten
+                  </p>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {displayDesignWishes.included.map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4"
+                      >
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm">{item.label}</p>
+                            {item.description && (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {item.description}
+                              </p>
+                            )}
+                            {item.sourceSnippet && (
+                              <p className="mt-2 text-xs italic text-muted-foreground/80">
+                                „{item.sourceSnippet}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold">Optional – Sie wählen</p>
+                  <p className="text-xs text-muted-foreground">
+                    Diese Leistungen gehen über das StarterWelle-Basispaket hinaus und fließen in
+                    Ihr individuelles Angebot ein.
+                  </p>
+                  <DesignWishOptionalPicker
+                    items={displayDesignWishes.optional}
+                    selectedIds={selectedOptionalIds}
+                    onToggle={toggleOptionalDesignWish}
+                  />
+                </div>
+              </>
+            )}
 
             <button
               type="button"
               onClick={saveDesignStylePreferences}
-              disabled={styleSaving}
+              disabled={styleSaving || designResearchPending}
               className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
             >
-              {styleSaving ? 'Speichert…' : 'Design-Präferenzen speichern'}
+              {styleSaving ? 'Speichert…' : 'Design-Wünsche speichern'}
             </button>
             {styleMessage && <p className="text-sm text-primary">{styleMessage}</p>}
           </div>

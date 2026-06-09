@@ -85,6 +85,7 @@ export default function CookieBanner() {
                 width={32}
                 height={32}
                 className="h-8 w-auto"
+                style={{ width: 'auto' }}
               />
               <Image
                 src="/webwellecom-weissihr.svg"
@@ -92,6 +93,7 @@ export default function CookieBanner() {
                 width={120}
                 height={32}
                 className="h-6 w-auto"
+                style={{ width: 'auto' }}
                 loading="lazy"
               />
             </div>

@@ -16,6 +16,7 @@ export default function Footer() {
                   width={40}
                   height={40}
                   className="h-12 sm:h-16 md:h-20 w-auto flex-shrink-0"
+                  style={{ width: 'auto' }}
                 />
                 <Image
                   src="/webwellecom-weissihr.svg"
@@ -23,6 +24,7 @@ export default function Footer() {
                   width={120}
                   height={32}
                   className="h-8 sm:h-12 md:h-16 lg:h-20 w-auto max-w-[200px] sm:max-w-[250px] md:max-w-none"
+                  style={{ width: 'auto' }}
                   loading="lazy"
                 />
               </div>

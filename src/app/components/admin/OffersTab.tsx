@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getSelectedOptionalItems } from '@/lib/funnel/design-wishes';
 import {
   calculateFunnelOfferTotal,
   formatEuro,
@@ -97,6 +98,17 @@ export default function OffersTab() {
           {items.map(({ lead, offer, research, discount }) => {
             const addons = normalizeAddonSelection(lead.addon_selection);
             const prefs = normalizeDesignPreferences(lead.design_preferences);
+            const selectedOptional = getSelectedOptionalItems(
+              prefs.optionalItems,
+              prefs.selectedOptionalIds
+            );
+            const hasNewDesignPrefs =
+              prefs.includedItems.length > 0 ||
+              selectedOptional.length > 0 ||
+              prefs.selectedOptionalIds.length > 0;
+            const hasLegacyDesignPrefs = Boolean(
+              prefs.interactiveElements || prefs.informationDensity || prefs.visualStyle
+            );
             const breakdown = calculateFunnelOfferTotal(addons);
             const designUrls = (lead.design_reference_urls || []).filter(Boolean);
 
@@ -169,27 +181,58 @@ export default function OffersTab() {
                     )}
                   </div>
                   <div className="rounded-lg border border-border bg-background/50 p-3 text-sm">
-                    <p className="font-medium mb-2">Design-Präferenzen</p>
-                    <ul className="space-y-1 text-muted-foreground">
-                      <li>
-                        Interaktiv:{' '}
-                        {labelForPreference(
-                          INTERACTIVE_ELEMENT_OPTIONS,
-                          prefs.interactiveElements
+                    <p className="font-medium mb-2">Design-Wünsche</p>
+                    {hasNewDesignPrefs ? (
+                      <div className="space-y-2 text-muted-foreground">
+                        {prefs.includedItems.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                              Inklusive
+                            </p>
+                            <ul className="space-y-1 mt-1">
+                              {prefs.includedItems.map((item) => (
+                                <li key={item.id}>• {item.label}</li>
+                              ))}
+                            </ul>
+                          </div>
                         )}
-                      </li>
-                      <li>
-                        Dichte:{' '}
-                        {labelForPreference(
-                          INFORMATION_DENSITY_OPTIONS,
-                          prefs.informationDensity
-                        )}
-                      </li>
-                      <li>
-                        Stil:{' '}
-                        {labelForPreference(VISUAL_STYLE_OPTIONS, prefs.visualStyle)}
-                      </li>
-                    </ul>
+                        <div>
+                          <p className="text-xs font-semibold">Gewählt (optional)</p>
+                          {selectedOptional.length > 0 ? (
+                            <ul className="space-y-1 mt-1">
+                              {selectedOptional.map((item) => (
+                                <li key={item.id}>• {item.label}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="mt-1">Keine optionalen Design-Wünsche</p>
+                          )}
+                        </div>
+                      </div>
+                    ) : hasLegacyDesignPrefs ? (
+                      <ul className="space-y-1 text-muted-foreground">
+                        <li>
+                          Interaktiv:{' '}
+                          {labelForPreference(
+                            INTERACTIVE_ELEMENT_OPTIONS,
+                            prefs.interactiveElements
+                          )}
+                        </li>
+                        <li>
+                          Dichte:{' '}
+                          {labelForPreference(
+                            INFORMATION_DENSITY_OPTIONS,
+                            prefs.informationDensity
+                          )}
+                        </li>
+                        <li>
+                          Stil:{' '}
+                          {labelForPreference(VISUAL_STYLE_OPTIONS, prefs.visualStyle)}
+                        </li>
+                      </ul>
+                    ) : (
+                      <p className="text-muted-foreground">Noch keine Design-Wünsche</p>
+                    )}
                   </div>
                 </div>
 
