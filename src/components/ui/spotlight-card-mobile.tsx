@@ -1,21 +1,17 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import './spotlight-card.css';
+import React, { useRef, CSSProperties } from 'react';
 import './spotlight-card-mobile.css';
 import { useServicesMobileGlowCard } from '@/app/components/ServicesMobileGlowContext';
 import {
   type GlowCardProps,
   getGlowCardLayoutClasses,
-  getGlowSpotlightStyles,
   glowCardBaseClasses,
-  syncGlowSpotlightToViewportCenter,
 } from './spotlight-card-shared';
 
 const MobileGlowCard: React.FC<GlowCardProps> = ({
   children,
   className = '',
-  glowColor = 'blueViolet',
   size = 'md',
   width,
   height,
@@ -25,36 +21,31 @@ const MobileGlowCard: React.FC<GlowCardProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const isActive = useServicesMobileGlowCard(glowIndex, cardRef);
 
-  useEffect(() => {
-    if (!isActive || !cardRef.current) return;
-
-    const el = cardRef.current;
-    const sync = () => syncGlowSpotlightToViewportCenter(el);
-
-    sync();
-    window.addEventListener('scroll', sync, { passive: true });
-    window.addEventListener('resize', sync, { passive: true });
-
-    return () => {
-      window.removeEventListener('scroll', sync);
-      window.removeEventListener('resize', sync);
+  const getInlineStyles = (): CSSProperties => {
+    const baseStyles: CSSProperties & Record<string, string | number> = {
+      '--glow-index': glowIndex,
     };
-  }, [isActive]);
+
+    if (width !== undefined) {
+      baseStyles.width = typeof width === 'number' ? `${width}px` : width;
+    }
+    if (height !== undefined) {
+      baseStyles.height = typeof height === 'number' ? `${height}px` : height;
+    }
+
+    return baseStyles;
+  };
 
   return (
     <div
       ref={cardRef}
-      data-glow
       data-glow-mobile
-      style={getGlowSpotlightStyles(glowColor, {
-        width,
-        height,
-        touchAction: 'pan-y',
-        extras: { '--glow-index': glowIndex },
-      })}
+      style={getInlineStyles()}
       className={`${getGlowCardLayoutClasses(customSize, size)} ${glowCardBaseClasses} ${isActive ? 'is-active' : ''} ${className}`}
     >
-      <div data-glow aria-hidden />
+      <div className="glow-mobile-orbit" aria-hidden>
+        <div className="glow-mobile-orbit__spin" />
+      </div>
       {children}
     </div>
   );
