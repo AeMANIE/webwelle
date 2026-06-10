@@ -10,6 +10,7 @@ import TrustSection from './TrustSection';
 import Services from './Services';
 import Workflow from './Workflow';
 import Products from './Products';
+import { WavePath } from '@/components/ui/wave-path';
 import FAQ from './FAQ';
 
 function HomePageView() {
@@ -22,6 +23,11 @@ function HomePageView() {
         <TrustSection />
         <Services />
         <Workflow />
+        <div className="hidden lg:block bg-background py-20 lg:py-28">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
+            <WavePath orientation="horizontal" className="w-full max-w-5xl" />
+          </div>
+        </div>
         <Products />
         <FAQ />
       </main>

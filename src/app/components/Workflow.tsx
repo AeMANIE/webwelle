@@ -1,6 +1,7 @@
 'use client';
 
 import { Search, MessageCircle, Rocket, Target } from 'lucide-react';
+import { WavePath } from '@/components/ui/wave-path';
 
 const FLOAT_DELAYS = ['0s', '0.8s', '1.6s', '2.4s'];
 
@@ -41,7 +42,7 @@ export default function Workflow() {
   ];
 
   return (
-    <section id="arbeitsweise" className="py-20 bg-background">
+    <section id="arbeitsweise" className="pt-20 pb-20 lg:pb-28 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 md:mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
@@ -96,12 +97,16 @@ export default function Workflow() {
               key={index}
               className="bg-card/60 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-lg relative z-10"
             >
-              <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0">
-                  <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold">
+              <div className="relative flex items-stretch gap-4">
+                <div className="flex w-12 flex-shrink-0 flex-col items-center">
+                  <div className="relative z-10 flex-shrink-0 bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold">
                     {step.number}
                   </div>
+                  <div className="relative mt-2 w-px min-h-[4rem] flex-1">
+                    <WavePath orientation="vertical" className="h-full w-px" />
+                  </div>
                 </div>
+
                 <div className="flex-1">
                   <div className="flex justify-center mb-3">
                     <div
