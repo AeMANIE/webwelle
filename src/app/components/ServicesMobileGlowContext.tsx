@@ -15,11 +15,12 @@ import { MOBILE_GLOW_QUERY } from '@/components/ui/spotlight-card-shared';
 type ServicesMobileGlowContextValue = {
   activeIndex: number | null;
   registerCard: (index: number, el: HTMLElement | null) => void;
+  setTappedIndex: (index: number | null) => void;
 };
 
 const ServicesMobileGlowContext = createContext<ServicesMobileGlowContextValue | null>(null);
 
-function computeActiveIndex(
+function computeScrollActiveIndex(
   cards: Map<number, HTMLElement>,
   sectionId: string
 ): number | null {
@@ -67,8 +68,11 @@ export function ServicesMobileGlowProvider({
   sectionId?: string;
 }) {
   const cardsRef = useRef<Map<number, HTMLElement>>(new Map());
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [scrollActiveIndex, setScrollActiveIndex] = useState<number | null>(null);
+  const [tappedIndex, setTappedIndexState] = useState<number | null>(null);
   const rafRef = useRef<number | null>(null);
+
+  const activeIndex = tappedIndex ?? scrollActiveIndex;
 
   const registerCard = useCallback((index: number, el: HTMLElement | null) => {
     if (el) {
@@ -78,12 +82,17 @@ export function ServicesMobileGlowProvider({
     }
   }, []);
 
-  const updateActiveIndex = useCallback(() => {
+  const setTappedIndex = useCallback((index: number | null) => {
+    setTappedIndexState(index);
+  }, []);
+
+  const updateScrollActiveIndex = useCallback(() => {
     if (!window.matchMedia(MOBILE_GLOW_QUERY).matches) {
-      setActiveIndex(null);
+      setScrollActiveIndex(null);
+      setTappedIndexState(null);
       return;
     }
-    setActiveIndex(computeActiveIndex(cardsRef.current, sectionId));
+    setScrollActiveIndex(computeScrollActiveIndex(cardsRef.current, sectionId));
   }, [sectionId]);
 
   useEffect(() => {
@@ -94,16 +103,20 @@ export function ServicesMobileGlowProvider({
       if (rafRef.current !== null) return;
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = null;
-        updateActiveIndex();
+        setTappedIndexState(null);
+        updateScrollActiveIndex();
       });
     };
 
-    const onMqChange = () => updateActiveIndex();
+    const onMqChange = () => {
+      setTappedIndexState(null);
+      updateScrollActiveIndex();
+    };
 
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll, { passive: true });
     mq.addEventListener('change', onMqChange);
-    updateActiveIndex();
+    updateScrollActiveIndex();
 
     return () => {
       window.removeEventListener('scroll', onScroll);
@@ -111,14 +124,14 @@ export function ServicesMobileGlowProvider({
       mq.removeEventListener('change', onMqChange);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [updateActiveIndex]);
+  }, [updateScrollActiveIndex]);
 
   useEffect(() => {
-    updateActiveIndex();
-  }, [registerCard, updateActiveIndex]);
+    updateScrollActiveIndex();
+  }, [registerCard, updateScrollActiveIndex]);
 
   return (
-    <ServicesMobileGlowContext.Provider value={{ activeIndex, registerCard }}>
+    <ServicesMobileGlowContext.Provider value={{ activeIndex, registerCard, setTappedIndex }}>
       {children}
     </ServicesMobileGlowContext.Provider>
   );
@@ -137,6 +150,16 @@ export function useServicesMobileGlowCard(
     return () => ctx.registerCard(glowIndex, null);
   }, [ctx, glowIndex, cardRef]);
 
-  if (!ctx) return false;
-  return ctx.activeIndex === glowIndex;
+  const handleTap = useCallback(() => {
+    ctx?.setTappedIndex(glowIndex);
+  }, [ctx, glowIndex]);
+
+  if (!ctx) {
+    return { isActive: false, handleTap };
+  }
+
+  return {
+    isActive: ctx.activeIndex === glowIndex,
+    handleTap,
+  };
 }
