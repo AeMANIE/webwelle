@@ -35,14 +35,12 @@ export default function Header() {
                 style={{ width: 'auto' }}
                 priority
               />
-              <Image
+              <img
                 src="/webwellecom-weissihr.svg"
                 alt="WebWelle"
                 width={180}
                 height={48}
                 className="h-12 w-auto"
-                style={{ width: 'auto' }}
-                priority
                 fetchPriority="high"
               />
             </Link>

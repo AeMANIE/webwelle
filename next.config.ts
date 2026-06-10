@@ -36,70 +36,57 @@ const nextConfig: NextConfig = {
   },
   // Bundle splitting optimieren
   webpack: (config, { isServer, dev }) => {
-    if (!isServer) {
-      // Modern JavaScript target für bessere Performance
+    if (!isServer && !dev) {
       config.target = ['web', 'es2022'];
-      
-      // Build Performance Optimierungen - Cache nur in Production
-      if (!dev) {
-        config.cache = {
-          type: 'filesystem',
-        };
-      }
-      
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        minSize: 20000,
-        maxSize: 244000,
-        cacheGroups: {
-          // Stripe komplett aus Bundle entfernen - nur on-demand laden
-          stripe: {
-            test: /[\\/]node_modules[\\/]@stripe[\\/]/,
-            name: 'stripe',
-            chunks: 'async', // Nur async chunks - nicht im initial bundle
-            priority: 20,
-          },
-          // GSAP in separaten Chunk - nur async laden
-          gsap: {
-            test: /[\\/]node_modules[\\/]gsap[\\/]/,
-            name: 'gsap',
-            chunks: 'async', // Nur async - nicht im initial bundle
-            priority: 18,
-          },
-          // React und React-DOM
-          react: {
-            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-            name: 'react',
-            chunks: 'all',
-            priority: 16,
-          },
-          // CSS in separaten Chunks
-          styles: {
-            test: /\.(css|scss|sass)$/,
-            name: 'styles',
-            chunks: 'all',
-            priority: 15,
-            enforce: true,
-          },
-          // Vendor libraries
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            chunks: 'all',
-            priority: 10,
-            maxSize: 244000,
-          },
-        },
+
+      config.cache = {
+        type: 'filesystem',
       };
-      
-      // Tree shaking optimieren (nur in Production)
-      if (!dev) {
-        config.optimization.usedExports = true;
-        config.optimization.sideEffects = false;
-        // Build Performance: Parallele Module-Verarbeitung
-        config.optimization.moduleIds = 'deterministic';
-        config.optimization.chunkIds = 'deterministic';
-      }
+
+      config.optimization.splitChunks = {
+          chunks: 'all',
+          minSize: 20000,
+          maxSize: 244000,
+          cacheGroups: {
+            stripe: {
+              test: /[\\/]node_modules[\\/]@stripe[\\/]/,
+              name: 'stripe',
+              chunks: 'async',
+              priority: 20,
+            },
+            gsap: {
+              test: /[\\/]node_modules[\\/]gsap[\\/]/,
+              name: 'gsap',
+              chunks: 'async',
+              priority: 18,
+            },
+            react: {
+              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+              name: 'react',
+              chunks: 'all',
+              priority: 16,
+            },
+            styles: {
+              test: /\.(css|scss|sass)$/,
+              name: 'styles',
+              chunks: 'all',
+              priority: 15,
+              enforce: true,
+            },
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+              priority: 10,
+              maxSize: 244000,
+            },
+          },
+      };
+
+      config.optimization.usedExports = true;
+      config.optimization.sideEffects = false;
+      config.optimization.moduleIds = 'deterministic';
+      config.optimization.chunkIds = 'deterministic';
     }
     return config;
   },

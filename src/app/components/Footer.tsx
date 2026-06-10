@@ -1,3 +1,5 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -18,14 +20,14 @@ export default function Footer() {
                   className="h-12 sm:h-16 md:h-20 w-auto flex-shrink-0"
                   style={{ width: 'auto' }}
                 />
-                <Image
+                <img
                   src="/webwellecom-weissihr.svg"
                   alt="WebWelle"
                   width={120}
                   height={32}
                   className="h-8 sm:h-12 md:h-16 lg:h-20 w-auto max-w-[200px] sm:max-w-[250px] md:max-w-none"
-                  style={{ width: 'auto' }}
                   loading="lazy"
+                  decoding="async"
                 />
               </div>
               <p className="text-muted-foreground text-lg font-light leading-relaxed">

@@ -2,9 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { ChevronUp } from 'lucide-react';
+import {
+  consumePendingScrollTarget,
+  scrollToAnchorWithRetry,
+} from '@/lib/scroll-to-anchor';
 
 export default function ScrollToTop() {
   const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const handleHashScroll = () => {
+      const pending = consumePendingScrollTarget();
+      const hash = window.location.hash.replace(/^#/, '');
+      const target = pending || hash;
+      if (target) scrollToAnchorWithRetry(target);
+    };
+
+    handleHashScroll();
+    window.addEventListener('hashchange', handleHashScroll);
+    return () => window.removeEventListener('hashchange', handleHashScroll);
+  }, []);
 
   useEffect(() => {
     const toggleVisibility = () => {

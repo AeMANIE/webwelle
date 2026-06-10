@@ -1,4 +1,7 @@
+'use client';
+
 import { Palette, Search, Target, FileText, Brush, Bot } from 'lucide-react';
+import { GlowCard } from '@/components/ui/spotlight-card';
 
 export default function Services() {
   const services = [
@@ -49,22 +52,28 @@ export default function Services() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 overflow-visible">
           {services.map((service, index) => {
             const IconComponent = service.icon;
             return (
-              <div key={index} className="group">
-                <div className="h-full bg-card rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border hover:border-primary/50">
-                  <div className="flex justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <IconComponent className="w-8 h-8 text-muted-foreground" />
+              <div key={index} className="group overflow-visible">
+                <GlowCard
+                  glowColor="blueViolet"
+                  customSize
+                  className="h-full w-full p-6"
+                >
+                  <div className="relative z-10 flex h-full flex-col items-center text-center">
+                    <div className="flex justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <IconComponent className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3 text-center">
+                      {service.title}
+                    </h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed font-light text-center">
+                      {service.description}
+                    </p>
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-3 text-center">
-                    {service.title}
-                  </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed font-light text-center">
-                    {service.description}
-                  </p>
-                </div>
+                </GlowCard>
               </div>
             );
           })}

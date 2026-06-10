@@ -87,14 +87,14 @@ export default function CookieBanner() {
                 className="h-8 w-auto"
                 style={{ width: 'auto' }}
               />
-              <Image
+              <img
                 src="/webwellecom-weissihr.svg"
                 alt="WebWelle"
                 width={120}
                 height={32}
                 className="h-6 w-auto"
-                style={{ width: 'auto' }}
                 loading="lazy"
+                decoding="async"
               />
             </div>
           </div>
