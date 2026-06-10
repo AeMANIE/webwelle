@@ -1,0 +1,107 @@
+@property --glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes glow-orbit {
+  to {
+    --glow-angle: 360deg;
+  }
+}
+
+[data-glow-mobile] {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  --glow-angle: 0deg;
+  --glow-index: 0;
+  --radius: 14px;
+  --border-size: 3px;
+  touch-action: pan-y;
+  background-color: hsl(240 28% 16% / 0.18);
+  border: var(--border-size) solid hsl(240 28% 16% / 0.18);
+  border-radius: var(--radius);
+}
+
+[data-glow-mobile]::before {
+  pointer-events: none;
+  content: "";
+  position: absolute;
+  inset: calc(var(--border-size) * -1);
+  border-radius: var(--radius);
+  padding: var(--border-size);
+  background: conic-gradient(
+    from var(--glow-angle),
+    hsl(220 100% 58% / 0.95),
+    hsl(240 95% 52% / 0.9),
+    hsl(265 90% 48% / 0.95),
+    hsl(280 85% 42% / 0.9),
+    hsl(220 100% 58% / 0.15),
+    hsl(220 100% 58% / 0.95)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  filter: brightness(1.4);
+  z-index: 2;
+  opacity: 0;
+  animation: glow-orbit 5s linear infinite;
+  animation-play-state: paused;
+  animation-delay: calc(var(--glow-index) * 0.5s);
+  transition: opacity 0.35s ease;
+}
+
+[data-glow-mobile]::after {
+  pointer-events: none;
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    hsl(240 80% 55% / 0.12),
+    transparent 70%
+  );
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+[data-glow-mobile].is-active::before {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+[data-glow-mobile].is-active::after {
+  opacity: 1;
+}
+
+[data-glow-mobile] [data-glow-mobile-blur] {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: var(--radius);
+  filter: blur(calc(var(--border-size) * 8));
+  opacity: 0;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--glow-angle),
+    hsl(220 100% 50% / 0.35),
+    hsl(280 80% 40% / 0.35),
+    hsl(220 100% 50% / 0.1)
+  );
+  animation: glow-orbit 5s linear infinite;
+  animation-play-state: paused;
+  animation-delay: calc(var(--glow-index) * 0.5s);
+}
+
+[data-glow-mobile].is-active [data-glow-mobile-blur] {
+  opacity: 0.6;
+  animation-play-state: running;
+}

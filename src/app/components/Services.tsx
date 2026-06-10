@@ -60,6 +60,7 @@ export default function Services() {
                 <GlowCard
                   glowColor="blueViolet"
                   customSize
+                  glowIndex={index}
                   className="h-full w-full p-6"
                 >
                   <div className="relative z-10 flex h-full flex-col items-center text-center">
