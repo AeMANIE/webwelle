@@ -1,16 +1,29 @@
 [data-glow-mobile] {
-  position: relative;
-  isolation: isolate;
-  overflow: visible;
   --glow-index: 0;
-  --radius: 14px;
-  --border-size: 3px;
   touch-action: pan-y;
-  background-color: hsl(240 28% 16% / 0.18);
-  border: var(--border-size) solid hsl(240 28% 16% / 0.18);
-  border-radius: var(--radius);
 }
 
+[data-glow-mobile]:not(.is-active) {
+  --bg-spot-opacity: 0;
+  --border-spot-opacity: 0;
+  --border-light-opacity: 0;
+  --outer: 0;
+}
+
+[data-glow-mobile]:not(.is-active)::before,
+[data-glow-mobile]:not(.is-active)::after,
+[data-glow-mobile]:not(.is-active) > [data-glow] {
+  opacity: 0;
+}
+
+[data-glow-mobile].is-active::before,
+[data-glow-mobile].is-active::after,
+[data-glow-mobile].is-active > [data-glow] {
+  opacity: 1;
+  transition: opacity 0.45s ease;
+}
+
+/* Rotierender Conic-Orbit vorübergehend deaktiviert
 .glow-mobile-orbit {
   position: absolute;
   inset: calc(var(--border-size) * -1);
@@ -75,3 +88,4 @@
     -webkit-mask-composite: source-out;
   }
 }
+*/

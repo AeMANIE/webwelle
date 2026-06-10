@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef, CSSProperties } from 'react';
+import React, { useEffect, useRef } from 'react';
 import './spotlight-card.css';
 import {
   type GlowCardProps,
-  glowColorMap,
   getGlowCardLayoutClasses,
+  getGlowSpotlightStyles,
   glowCardBaseClasses,
 } from './spotlight-card-shared';
 
@@ -34,55 +34,11 @@ const DesktopGlowCard: React.FC<GlowCardProps> = ({
     return () => document.removeEventListener('pointermove', syncPointer);
   }, []);
 
-  const { base, spread } = glowColorMap[glowColor];
-
-  const getInlineStyles = (): CSSProperties => {
-    const baseStyles: CSSProperties & Record<string, string | number> = {
-      '--base': base,
-      '--spread': spread,
-      '--radius': '14',
-      '--border': '3',
-      '--backdrop': 'hsl(240 28% 16% / 0.18)',
-      '--backup-border': 'var(--backdrop)',
-      '--size': '200',
-      '--outer': '1',
-      '--bg-spot-opacity': '0.18',
-      '--border-spot-opacity': '1',
-      '--border-light-opacity': '1',
-      '--saturation': '100',
-      '--border-size': 'calc(var(--border, 2) * 1px)',
-      '--spotlight-size': 'calc(var(--size, 150) * 1px)',
-      '--hue': 'calc(var(--base) + (var(--xp, 0) * var(--spread, 0)))',
-      backgroundImage: `radial-gradient(
-        var(--spotlight-size) var(--spotlight-size) at
-        calc(var(--x, 0) * 1px)
-        calc(var(--y, 0) * 1px),
-        hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 70) * 1%) / var(--bg-spot-opacity, 0.1)), transparent
-      )`,
-      backgroundColor: 'var(--backdrop, transparent)',
-      backgroundSize: 'calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)))',
-      backgroundPosition: '50% 50%',
-      backgroundAttachment: 'fixed',
-      border: 'var(--border-size) solid var(--backup-border)',
-      position: 'relative',
-      touchAction: 'none',
-    };
-
-    if (width !== undefined) {
-      baseStyles.width = typeof width === 'number' ? `${width}px` : width;
-    }
-    if (height !== undefined) {
-      baseStyles.height = typeof height === 'number' ? `${height}px` : height;
-    }
-
-    return baseStyles;
-  };
-
   return (
     <div
       ref={cardRef}
       data-glow
-      style={getInlineStyles()}
+      style={getGlowSpotlightStyles(glowColor, { width, height })}
       className={`${getGlowCardLayoutClasses(customSize, size)} ${glowCardBaseClasses} ${className}`}
     >
       <div data-glow />
