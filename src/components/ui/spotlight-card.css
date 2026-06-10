@@ -63,3 +63,11 @@
   filter: brightness(2);
   z-index: 0;
 }
+
+@media (hover: none), (pointer: coarse) {
+  [data-glow],
+  [data-glow]::before,
+  [data-glow]::after {
+    background-attachment: scroll;
+  }
+}

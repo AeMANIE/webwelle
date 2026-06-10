@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, ReactNode, CSSProperties } from 'react';
+import React, { useEffect, useRef, ReactNode, CSSProperties, useState } from 'react';
 import './spotlight-card.css';
 
 interface GlowCardProps {
@@ -28,6 +28,8 @@ const sizeMap = {
   lg: 'w-80 h-96',
 };
 
+const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
+
 const GlowCard: React.FC<GlowCardProps> = ({
   children,
   className = '',
@@ -38,21 +40,43 @@ const GlowCard: React.FC<GlowCardProps> = ({
   customSize = false,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [isFinePointer, setIsFinePointer] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia(FINE_POINTER_QUERY).matches;
+  });
 
   useEffect(() => {
-    const syncPointer = (e: PointerEvent) => {
-      const { clientX: x, clientY: y } = e;
+    const mq = window.matchMedia(FINE_POINTER_QUERY);
+    const update = () => setIsFinePointer(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
-      if (cardRef.current) {
-        cardRef.current.style.setProperty('--x', x.toFixed(2));
-        cardRef.current.style.setProperty('--xp', (x / window.innerWidth).toFixed(2));
-        cardRef.current.style.setProperty('--y', y.toFixed(2));
-        cardRef.current.style.setProperty('--yp', (y / window.innerHeight).toFixed(2));
-      }
+  useEffect(() => {
+    const syncCoords = (x: number, y: number) => {
+      if (!cardRef.current) return;
+      cardRef.current.style.setProperty('--x', x.toFixed(2));
+      cardRef.current.style.setProperty('--xp', (x / window.innerWidth).toFixed(2));
+      cardRef.current.style.setProperty('--y', y.toFixed(2));
+      cardRef.current.style.setProperty('--yp', (y / window.innerHeight).toFixed(2));
+    };
+
+    const syncPointer = (e: PointerEvent) => {
+      syncCoords(e.clientX, e.clientY);
+    };
+
+    const syncTouch = (e: TouchEvent) => {
+      if (e.touches.length === 0) return;
+      syncCoords(e.touches[0].clientX, e.touches[0].clientY);
     };
 
     document.addEventListener('pointermove', syncPointer);
-    return () => document.removeEventListener('pointermove', syncPointer);
+    document.addEventListener('touchmove', syncTouch, { passive: true });
+    return () => {
+      document.removeEventListener('pointermove', syncPointer);
+      document.removeEventListener('touchmove', syncTouch);
+    };
   }, []);
 
   const { base, spread } = glowColorMap[glowColor];
@@ -90,10 +114,10 @@ const GlowCard: React.FC<GlowCardProps> = ({
       backgroundColor: 'var(--backdrop, transparent)',
       backgroundSize: 'calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)))',
       backgroundPosition: '50% 50%',
-      backgroundAttachment: 'fixed',
+      backgroundAttachment: isFinePointer ? 'fixed' : 'scroll',
       border: 'var(--border-size) solid var(--backup-border)',
       position: 'relative',
-      touchAction: 'none',
+      touchAction: isFinePointer ? 'none' : 'pan-y',
     };
 
     if (width !== undefined) {
