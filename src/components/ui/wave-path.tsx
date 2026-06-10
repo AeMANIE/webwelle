@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 
 type WavePathProps = React.ComponentProps<'div'> & {
   orientation?: 'horizontal' | 'vertical';
+  autoAnimateOnVisible?: boolean;
 };
 
 const lerp = (x: number, y: number, a: number) => x * (1 - a) + y * a;
@@ -12,10 +13,12 @@ const lerp = (x: number, y: number, a: number) => x * (1 - a) + y * a;
 export function WavePath({
   className,
   orientation = 'horizontal',
+  autoAnimateOnVisible = false,
   ...props
 }: WavePathProps) {
   const pathRef = useRef<SVGPathElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hasAutoPlayedRef = useRef(false);
   const stateRef = useRef({
     progress: 0,
     anchor: 0.2,
@@ -100,6 +103,56 @@ export function WavePath({
       }
     };
   }, [orientation, setPath]);
+
+  const playGentleWaveOnce = useCallback(() => {
+    if (hasAutoPlayedRef.current) return;
+    hasAutoPlayedRef.current = true;
+
+    const state = stateRef.current;
+    if (state.reqId !== null) {
+      cancelAnimationFrame(state.reqId);
+      state.reqId = null;
+    }
+
+    state.anchor = 0.45;
+    let frame = 0;
+    const totalFrames = 48;
+
+    const animateIn = () => {
+      frame += 1;
+      const t = frame / totalFrames;
+      state.progress = Math.sin(t * Math.PI) * 42;
+      setPath(state.progress);
+
+      if (frame < totalFrames) {
+        state.reqId = requestAnimationFrame(animateIn);
+      } else {
+        state.reqId = null;
+        animateOut();
+      }
+    };
+
+    animateIn();
+  }, [setPath, animateOut]);
+
+  useEffect(() => {
+    if (!autoAnimateOnVisible || orientation !== 'vertical') return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.45) {
+          playGentleWaveOnce();
+        }
+      },
+      { threshold: [0.45, 0.6] },
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [autoAnimateOnVisible, orientation, playGentleWaveOnce]);
 
   const cancelOutAnimation = () => {
     const state = stateRef.current;

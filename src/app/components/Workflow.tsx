@@ -103,12 +103,16 @@ export default function Workflow() {
                     {step.number}
                   </div>
                   <div className="relative mt-2 w-px min-h-[4rem] flex-1">
-                    <WavePath orientation="vertical" className="h-full w-px" />
+                    <WavePath
+                      orientation="vertical"
+                      autoAnimateOnVisible
+                      className="h-full w-px"
+                    />
                   </div>
                 </div>
 
                 <div className="flex-1">
-                  <div className="flex justify-center mb-3">
+                  <div className="mb-3 flex justify-center -ml-8">
                     <div
                       className="animate-gentle-float"
                       style={{ animationDelay: FLOAT_DELAYS[index] }}
