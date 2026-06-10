@@ -50,16 +50,37 @@ export function getGlowCardLayoutClasses(customSize: boolean, size: GlowCardProp
   return `${sizeClasses} ${aspectClass}`.trim();
 }
 
+export const GLOW_CARD_COUNT = 6;
+
+/** Pro Karte eine Farbe im Desktop-Spektrum: Index 0 = Blau, letzte = Violett/Lila. */
+export function getCardGlowHue(
+  glowColor: GlowCardProps['glowColor'] = 'blueViolet',
+  glowIndex = 0,
+  totalCards = GLOW_CARD_COUNT
+): number {
+  const { base, spread } = glowColorMap[glowColor ?? 'blueViolet'];
+  const maxIndex = Math.max(totalCards - 1, 1);
+  const t = glowIndex / maxIndex;
+  const hue = base + t * spread;
+  // Letzte Karte leicht Richtung Lila-Rot (wie Desktop-Spektrum-Ende)
+  const endBoost = glowIndex === maxIndex ? 12 : 0;
+  return Math.round(hue + endBoost);
+}
+
 export function getGlowSpotlightStyles(
   glowColor: GlowCardProps['glowColor'] = 'blueViolet',
   options?: {
     width?: string | number;
     height?: string | number;
     touchAction?: string;
+    forMobile?: boolean;
+    glowIndex?: number;
     extras?: Record<string, string | number>;
   }
 ): CSSProperties {
   const { base, spread } = glowColorMap[glowColor ?? 'blueViolet'];
+  const forMobile = options?.forMobile ?? false;
+  const cardHue = forMobile ? getCardGlowHue(glowColor, options?.glowIndex ?? 0) : base;
 
   const baseStyles: CSSProperties & Record<string, string | number> = {
     '--base': base,
@@ -76,8 +97,10 @@ export function getGlowSpotlightStyles(
     '--saturation': '100',
     '--border-size': 'calc(var(--border, 2) * 1px)',
     '--spotlight-size': 'calc(var(--size, 150) * 1px)',
-    '--hue': 'calc(var(--base) + (var(--xp, 0) * var(--spread, 0)))',
-    backgroundImage: `radial-gradient(
+    '--hue': forMobile ? cardHue : 'calc(var(--base) + (var(--xp, 0) * var(--spread, 0)))',
+    backgroundImage: forMobile
+      ? 'none'
+      : `radial-gradient(
         var(--spotlight-size) var(--spotlight-size) at
         calc(var(--x, 0) * 1px)
         calc(var(--y, 0) * 1px),
@@ -86,7 +109,7 @@ export function getGlowSpotlightStyles(
     backgroundColor: 'var(--backdrop, transparent)',
     backgroundSize: 'calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)))',
     backgroundPosition: '50% 50%',
-    backgroundAttachment: 'fixed',
+    backgroundAttachment: forMobile ? 'scroll' : 'fixed',
     border: 'var(--border-size) solid var(--backup-border)',
     position: 'relative',
     touchAction: options?.touchAction ?? 'none',

@@ -1,77 +1,71 @@
 [data-glow-mobile] {
-  position: relative;
-  isolation: isolate;
-  overflow: visible;
   --glow-index: 0;
-  --radius: 14px;
-  --border-size: 3px;
   touch-action: pan-y;
-  background-color: hsl(240 28% 16% / 0.18);
-  border: var(--border-size) solid hsl(240 28% 16% / 0.18);
-  border-radius: var(--radius);
 }
 
-.glow-mobile-orbit {
-  position: absolute;
-  inset: calc(var(--border-size) * -1);
-  border-radius: var(--radius);
-  overflow: hidden;
-  z-index: 2;
-  pointer-events: none;
+[data-glow-mobile]:not(.is-active) {
+  --bg-spot-opacity: 0;
+  --border-spot-opacity: 0;
+  --border-light-opacity: 0;
+  --outer: 0;
+}
+
+[data-glow-mobile]:not(.is-active)::before,
+[data-glow-mobile]:not(.is-active)::after,
+[data-glow-mobile]:not(.is-active) > .glow-mobile-inner {
   opacity: 0;
-  padding: var(--border-size);
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  mask-composite: exclude;
+}
+
+[data-glow-mobile].is-active::before,
+[data-glow-mobile].is-active::after,
+[data-glow-mobile].is-active > .glow-mobile-inner {
+  opacity: 1;
   transition: opacity 0.45s ease;
 }
 
-.glow-mobile-orbit__spin {
+/* iOS: kartenrelativ unten – pro Karte eine Farbe (Index 0 Blau → 5 Violett/Lila) */
+[data-glow-mobile].is-active {
+  background-image: radial-gradient(
+    calc(var(--spotlight-size) * 0.85) calc(var(--spotlight-size) * 0.45) at 50% 88%,
+    hsl(var(--hue, 220) calc(var(--saturation, 100) * 1%) 70% / var(--bg-spot-opacity, 0.18)),
+    transparent 72%
+  ) !important;
+  background-attachment: scroll !important;
+}
+
+[data-glow-mobile].is-active::before {
+  background-image: radial-gradient(
+    calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at 50% 100%,
+    hsl(var(--hue, 220) calc(var(--saturation, 100) * 1%) 50% / var(--border-spot-opacity, 1)),
+    transparent 100%
+  ) !important;
+  background-attachment: scroll !important;
+  filter: brightness(2);
+}
+
+[data-glow-mobile].is-active::after {
+  background-image: radial-gradient(
+    calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at 50% 100%,
+    hsl(0 100% 100% / var(--border-light-opacity, 1)),
+    transparent 100%
+  ) !important;
+  background-attachment: scroll !important;
+}
+
+.glow-mobile-inner {
   position: absolute;
-  width: 180%;
-  height: 180%;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    transparent 270deg,
-    hsl(220 100% 58% / 0.85) 285deg,
-    hsl(265 90% 50% / 0.8) 315deg,
-    hsl(280 85% 42% / 0.75) 345deg,
-    transparent 360deg
-  );
-  animation: glow-mobile-rotate 7s linear infinite;
-  animation-delay: calc(var(--glow-index) * 0.5s);
-  will-change: transform;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: calc(var(--radius) * 1px);
+  border-width: calc(var(--border-size) * 20);
+  filter: blur(calc(var(--border-size) * 10));
+  background: none;
+  border: none;
+  will-change: filter;
+  opacity: var(--outer, 1);
 }
 
-@keyframes glow-mobile-rotate {
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
-[data-glow-mobile].is-active .glow-mobile-orbit {
-  opacity: 1;
-}
-
-[data-glow-mobile]:not(.is-active) .glow-mobile-orbit {
-  opacity: 0;
-}
-
-[data-glow-mobile]:not(.is-active) .glow-mobile-orbit__spin {
-  animation-play-state: paused;
-}
-
-@supports (-webkit-touch-callout: none) {
-  .glow-mobile-orbit {
-    -webkit-mask-composite: source-out;
-  }
-}
+/* Rotierender Conic-Orbit vorübergehend deaktiviert
+.glow-mobile-orbit { ... }
+*/

@@ -1,17 +1,20 @@
 'use client';
 
-import React, { useRef, CSSProperties } from 'react';
+import React, { useRef } from 'react';
+import './spotlight-card.css';
 import './spotlight-card-mobile.css';
 import { useServicesMobileGlowCard } from '@/app/components/ServicesMobileGlowContext';
 import {
   type GlowCardProps,
   getGlowCardLayoutClasses,
+  getGlowSpotlightStyles,
   glowCardBaseClasses,
 } from './spotlight-card-shared';
 
 const MobileGlowCard: React.FC<GlowCardProps> = ({
   children,
   className = '',
+  glowColor = 'blueViolet',
   size = 'md',
   width,
   height,
@@ -21,31 +24,22 @@ const MobileGlowCard: React.FC<GlowCardProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const isActive = useServicesMobileGlowCard(glowIndex, cardRef);
 
-  const getInlineStyles = (): CSSProperties => {
-    const baseStyles: CSSProperties & Record<string, string | number> = {
-      '--glow-index': glowIndex,
-    };
-
-    if (width !== undefined) {
-      baseStyles.width = typeof width === 'number' ? `${width}px` : width;
-    }
-    if (height !== undefined) {
-      baseStyles.height = typeof height === 'number' ? `${height}px` : height;
-    }
-
-    return baseStyles;
-  };
-
   return (
     <div
       ref={cardRef}
+      data-glow
       data-glow-mobile
-      style={getInlineStyles()}
+      style={getGlowSpotlightStyles(glowColor, {
+        width,
+        height,
+        touchAction: 'pan-y',
+        forMobile: true,
+        glowIndex,
+        extras: { '--glow-index': glowIndex },
+      })}
       className={`${getGlowCardLayoutClasses(customSize, size)} ${glowCardBaseClasses} ${isActive ? 'is-active' : ''} ${className}`}
     >
-      <div className="glow-mobile-orbit" aria-hidden>
-        <div className="glow-mobile-orbit__spin" />
-      </div>
+      <div className="glow-mobile-inner" aria-hidden />
       {children}
     </div>
   );
