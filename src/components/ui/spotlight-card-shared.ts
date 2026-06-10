@@ -27,23 +27,21 @@ export const sizeMap = {
   lg: 'w-80 h-96',
 };
 
-export const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
+/** Desktop: Maus-Spotlight. Alles andere → Mobile-Glow. */
+export const MOBILE_GLOW_QUERY = '(hover: none), (pointer: coarse), (max-width: 767px)';
 
-export function useFinePointer() {
-  const [isFinePointer, setIsFinePointer] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return window.matchMedia(FINE_POINTER_QUERY).matches;
-  });
+export function useMobileGlow() {
+  const [isMobileGlow, setIsMobileGlow] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const mq = window.matchMedia(FINE_POINTER_QUERY);
-    const update = () => setIsFinePointer(mq.matches);
+    const mq = window.matchMedia(MOBILE_GLOW_QUERY);
+    const update = () => setIsMobileGlow(mq.matches);
     update();
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
   }, []);
 
-  return isFinePointer;
+  return isMobileGlow;
 }
 
 export function getGlowCardLayoutClasses(customSize: boolean, size: GlowCardProps['size']) {

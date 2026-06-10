@@ -18,7 +18,7 @@ const MobileGlowCard: React.FC<GlowCardProps> = ({
   glowIndex = 0,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [isActive, setIsActive] = useState(false);
+  const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
     const el = cardRef.current;
@@ -29,8 +29,8 @@ const MobileGlowCard: React.FC<GlowCardProps> = ({
         setIsActive(entry.isIntersecting);
       },
       {
-        threshold: 0.35,
-        rootMargin: '-10% 0px',
+        threshold: 0,
+        rootMargin: '40px 0px 40px 0px',
       }
     );
 
@@ -60,7 +60,10 @@ const MobileGlowCard: React.FC<GlowCardProps> = ({
       style={getInlineStyles()}
       className={`${getGlowCardLayoutClasses(customSize, size)} ${glowCardBaseClasses} ${isActive ? 'is-active' : ''} ${className}`}
     >
-      <div data-glow-mobile-blur aria-hidden />
+      <div className="glow-mobile-orbit" aria-hidden>
+        <div className="glow-mobile-orbit__spin" />
+      </div>
+      <div className="glow-mobile-shine" aria-hidden />
       {children}
     </div>
   );
