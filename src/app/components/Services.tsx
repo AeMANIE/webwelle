@@ -2,6 +2,7 @@
 
 import { Palette, Search, Target, FileText, Brush, Bot } from 'lucide-react';
 import { GlowCard } from '@/components/ui/spotlight-card';
+import { ServicesMobileGlowProvider } from './ServicesMobileGlowContext';
 
 export default function Services() {
   const services = [
@@ -52,6 +53,7 @@ export default function Services() {
           </h2>
         </div>
 
+        <ServicesMobileGlowProvider>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 overflow-visible">
           {services.map((service, index) => {
             const IconComponent = service.icon;
@@ -79,6 +81,7 @@ export default function Services() {
             );
           })}
         </div>
+        </ServicesMobileGlowProvider>
       </div>
     </section>
   );
