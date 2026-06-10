@@ -2,6 +2,8 @@
 
 import { Search, MessageCircle, Rocket, Target } from 'lucide-react';
 
+const FLOAT_DELAYS = ['0s', '0.8s', '1.6s', '2.4s'];
+
 export default function Workflow() {
   const steps = [
     {
@@ -47,22 +49,33 @@ export default function Workflow() {
           </h2>
         </div>
 
-        {/* Desktop Timeline */}
-        <div className="hidden xl:block">
+        {/* Desktop Timeline – ab lg (1024px), nicht erst ab xl */}
+        <div className="hidden lg:block">
           <div className="relative">
             <div className="absolute top-24 left-8 right-8 h-0.5 bg-primary/30" />
 
             <div className="grid grid-cols-4 gap-4">
               {steps.map((step, index) => (
                 <div key={index} className="relative">
-                  <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-primary rounded-full border-4 border-background shadow-lg flex items-center justify-center">
+                  <div className="absolute top-20 left-1/2 -translate-x-1/2 w-8 h-8 bg-primary rounded-full border-4 border-background shadow-lg flex items-center justify-center z-10">
                     <span className="text-primary-foreground text-sm font-bold">{step.number}</span>
                   </div>
 
-                  <div className="text-center pt-16">
-                    <div className="flex justify-center mb-4">
+                  {/* Bewegendes Icon: rechts neben Zahl, 6px höher als top-20 */}
+                  <div
+                    className="absolute top-20 left-1/2 z-0 flex h-8 w-8 items-center justify-center pointer-events-none"
+                    style={{ transform: 'translate(1.5rem, -6px)' }}
+                  >
+                    <div
+                      className="animate-gentle-float"
+                      style={{ animationDelay: FLOAT_DELAYS[index] }}
+                    >
                       <step.icon className="w-8 h-8 text-primary" />
                     </div>
+                  </div>
+
+                  <div className="text-center pt-16">
+                    <div className="mb-4 h-8" aria-hidden="true" />
                     <h3 className="text-lg font-semibold text-foreground mb-3 leading-tight">
                       {step.title}
                     </h3>
@@ -73,35 +86,6 @@ export default function Workflow() {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Tablet Timeline */}
-        <div className="hidden lg:block xl:hidden">
-          <div className="grid grid-cols-2 gap-8">
-            {steps.map((step, index) => (
-              <div
-                key={index}
-                className="bg-card/60 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-lg relative z-10"
-              >
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0">
-                    <div className="bg-primary text-primary-foreground w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold">
-                      {step.number}
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-center mb-3">
-                      <step.icon className="w-6 h-6 text-primary" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">{step.title}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed font-light">
-                      {step.details}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -120,7 +104,12 @@ export default function Workflow() {
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-center mb-3">
-                    <step.icon className="w-6 h-6 text-primary" />
+                    <div
+                      className="animate-gentle-float"
+                      style={{ animationDelay: FLOAT_DELAYS[index] }}
+                    >
+                      <step.icon className="w-6 h-6 text-primary" />
+                    </div>
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">{step.title}</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed font-light">

@@ -153,6 +153,23 @@ button {
   }
 }
 
+@keyframes gentleFloat {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  33% {
+    transform: translate(2px, -2px);
+  }
+  66% {
+    transform: translate(-1px, 2px);
+  }
+}
+
+.animate-gentle-float {
+  animation: gentleFloat 5s ease-in-out infinite;
+}
+
 /* Print styles */
 @media print {
   .no-print {
