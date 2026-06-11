@@ -1,0 +1,12 @@
+# Coolify/Nixpacks: Dev-Dependencies für next build (TypeScript, Tailwind) mitinstallieren
+[variables]
+NPM_CONFIG_PRODUCTION = "false"
+
+[phases.install]
+cmds = ["npm ci --include=dev"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm run start"
