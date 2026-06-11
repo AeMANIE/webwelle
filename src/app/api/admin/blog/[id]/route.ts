@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
+import { requireAdminAuth } from '@/lib/api-security';
 import { getBlogPostById, updateBlogPost, deleteBlogPost } from '@/lib/blog-database';
 import { getRedisClient } from '@/lib/redis';
 
@@ -9,15 +9,8 @@ export async function GET(
 ) {
   try {
     const params = await context.params;
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
-    }
-
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
-    }
+    const auth = await requireAdminAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     const post = await getBlogPostById(params.id);
 
@@ -44,15 +37,8 @@ export async function PUT(
 ) {
   try {
     const params = await context.params;
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
-    }
-
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
-    }
+    const auth = await requireAdminAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     const body = await request.json();
     const {
@@ -129,15 +115,8 @@ export async function DELETE(
 ) {
   try {
     const params = await context.params;
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
-    }
-
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
-    }
+    const auth = await requireAdminAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     const deleted = await deleteBlogPost(params.id);
 

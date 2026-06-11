@@ -5,6 +5,7 @@ import { getSelectedOptionalItems } from '@/lib/funnel/design-wishes';
 import {
   calculateFunnelOfferTotal,
   formatEuro,
+  hasBlogSelection,
   labelForPreference,
   normalizeAddonSelection,
   normalizeDesignPreferences,
@@ -81,6 +82,25 @@ export default function OffersTab() {
       if (res.ok && data.url) window.open(data.url, '_blank');
       else alert(data.message || data.error || 'Fehler');
       await load();
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  async function startBlogPipeline(leadToken: string) {
+    setActionId(`blog-${leadToken}`);
+    try {
+      const res = await fetch('/api/blog/start-pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadToken }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Blog-Pipeline Job #${data.jobId} gestartet.`);
+      } else {
+        alert(data.message || data.error || 'Pipeline-Start fehlgeschlagen');
+      }
     } finally {
       setActionId(null);
     }
@@ -286,14 +306,26 @@ export default function OffersTab() {
                 ) : (
                   <p className="text-sm text-muted-foreground">Noch kein Angebot erstellt</p>
                 )}
-                <a
-                  href={`/analyse/${lead.token}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-primary underline mt-2 inline-block"
-                >
-                  Analyse ansehen
-                </a>
+                <div className="flex flex-wrap gap-2 mt-2 items-center">
+                  <a
+                    href={`/analyse/${lead.token}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-primary underline"
+                  >
+                    Analyse ansehen
+                  </a>
+                  {hasBlogSelection(addons) && (
+                    <button
+                      type="button"
+                      disabled={actionId === `blog-${lead.token}`}
+                      onClick={() => startBlogPipeline(lead.token)}
+                      className="text-xs px-2 py-1 rounded border border-primary text-primary"
+                    >
+                      Blog-Pipeline starten
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}

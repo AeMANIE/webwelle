@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
+import { requireAdminAuth } from '@/lib/api-security';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -7,15 +7,8 @@ import { existsSync } from 'fs';
 // Bild-Upload für Blog-Editor
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
-    }
-
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
-    }
+    const auth = await requireAdminAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     const formData = await request.formData();
     const file = formData.get('file') as File;

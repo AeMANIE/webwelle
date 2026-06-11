@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { blockInProduction } from '@/lib/prod-guard';
 
 /**
  * DEBUG-ROUTE: Zeigt alle TANs im Memory-Store
  * GET /api/debug/admin-tan-debug
  */
 export async function GET(request: NextRequest) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   try {
-    // Nur in Development oder mit ALLOW_DEBUG_ROUTES
-    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEBUG_ROUTES !== 'true') {
-      return NextResponse.json({ error: 'Debug-Route nur in Development verfügbar' }, { status: 403 });
-    }
 
     // Zugriff auf den Memory-Store (intern)
     // @ts-expect-error - Zugriff auf internen Store für Debugging

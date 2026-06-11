@@ -1,76 +1,71 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  getCustomerByEmail, 
-  getBookingsByEmail, 
+import {
+  getCustomerById,
+  getCustomerByEmail,
+  getBookingsByCustomerId,
   getInvoicesByBookingId,
-  getSubscriptionByBookingId
+  getSubscriptionByBookingId,
+  updateCustomerProfile,
+  ensureAddressColumnsExist,
 } from '@/lib/database';
-import { verifyToken } from '@/lib/auth';
+import { requireCustomerAuth, requireMemberAuth, secureResponse } from '@/lib/api-security';
+import {
+  buildFullName,
+  sanitizeText,
+  splitFullName,
+  validateCustomerProfile,
+} from '@/lib/validation';
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireCustomerAuth(request);
+    if (auth instanceof NextResponse) return auth;
+
     const { searchParams } = new URL(request.url);
-    const email = searchParams.get('email');
     const action = searchParams.get('action');
-    const token = request.cookies.get('auth-token')?.value;
-    const user = token ? verifyToken(token) : null;
-    const effectiveEmail =
-      user?.role === 'customer' ? user.email.toLowerCase() : email?.toLowerCase();
-
-    if (!effectiveEmail) {
-      return NextResponse.json({ error: 'E-Mail-Adresse ist erforderlich' }, { status: 400 });
-    }
-
-    if (user?.role === 'customer' && email && email.toLowerCase() !== effectiveEmail) {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
+    const email = auth.user.email.toLowerCase();
+    const customerId = auth.user.customerId;
+    if (!customerId) {
+      return secureResponse({ error: 'Kundenkontext fehlt' }, 403);
     }
 
     switch (action) {
       case 'customer-info':
-        return await getCustomerInfo(effectiveEmail);
+        return await getCustomerInfo(email, customerId);
       case 'bookings':
-        return await getCustomerBookings(effectiveEmail);
+        return await getCustomerBookings(customerId, email);
       case 'addon-orders':
-        return await getCustomerAddonOrders(effectiveEmail);
-      case 'invoices':
+        return await getCustomerAddonOrders(email, customerId);
+      case 'invoices': {
         const bookingId = searchParams.get('bookingId');
         if (!bookingId) {
-          return NextResponse.json({ error: 'Booking-ID ist erforderlich' }, { status: 400 });
+          return secureResponse({ error: 'Booking-ID ist erforderlich' }, 400);
         }
-        return await getBookingInvoices(bookingId);
-      case 'subscription':
+        return await getBookingInvoices(bookingId, customerId, email);
+      }
+      case 'subscription': {
         const subscriptionBookingId = searchParams.get('bookingId');
         if (!subscriptionBookingId) {
-          return NextResponse.json({ error: 'Booking-ID ist erforderlich' }, { status: 400 });
+          return secureResponse({ error: 'Booking-ID ist erforderlich' }, 400);
         }
-        return await getBookingSubscription(subscriptionBookingId);
+        return await getBookingSubscription(subscriptionBookingId, customerId, email);
+      }
       case 'funnel-analysis':
-        return await getCustomerFunnelAnalysis(request, effectiveEmail);
+        return await getCustomerFunnelAnalysis(email, customerId);
       default:
-        return NextResponse.json({ error: 'Ungültige Aktion' }, { status: 400 });
+        return secureResponse({ error: 'Ungültige Aktion' }, 400);
     }
   } catch (error) {
     console.error('Kundenportal API Fehler:', error);
-    return NextResponse.json({ error: 'Interner Serverfehler' }, { status: 500 });
+    return secureResponse({ error: 'Interner Serverfehler' }, 500);
   }
 }
 
-async function getCustomerFunnelAnalysis(request: NextRequest, email: string) {
+async function getCustomerFunnelAnalysis(email: string, customerId: string) {
   try {
-    const token = request.cookies.get('auth-token')?.value;
-    const user = token ? verifyToken(token) : null;
-    const effectiveEmail =
-      user?.role === 'customer' && user.email ? user.email.toLowerCase() : email.toLowerCase();
-
-    if (user?.role === 'customer' && email.toLowerCase() !== effectiveEmail) {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
-    }
-
     const { pool } = await import('@/lib/database');
     const client = await pool.connect();
     try {
-      const customer = user?.role === 'customer' ? await getCustomerByEmail(effectiveEmail) : null;
-      const customerId = customer?.id ? String(customer.id) : null;
       const leads = await client.query(
         `SELECT id, token, status, industry_raw, industry_normalized, postal_code, city, market,
                 first_name, last_name, company_name, email, design_reference_urls,
@@ -81,7 +76,7 @@ async function getCustomerFunnelAnalysis(request: NextRequest, email: string) {
             OR LOWER(email) = LOWER($1)
          ORDER BY updated_at DESC
          LIMIT 10`,
-        [effectiveEmail, customerId]
+        [email, customerId]
       );
 
       const analyses = [];
@@ -99,23 +94,20 @@ async function getCustomerFunnelAnalysis(request: NextRequest, email: string) {
         });
       }
 
-      return NextResponse.json({ analyses });
+      return secureResponse({ analyses });
     } finally {
       client.release();
     }
   } catch (error) {
     console.error('Fehler beim Laden der Funnel-Analyse:', error);
-    return NextResponse.json({ error: 'Fehler beim Laden der Funnel-Analyse' }, { status: 500 });
+    return secureResponse({ error: 'Fehler beim Laden der Funnel-Analyse' }, 500);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value;
-    const user = token ? verifyToken(token) : null;
-    if (!user || (user.role !== 'customer' && user.role !== 'admin')) {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
-    }
+    const auth = await requireMemberAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     const body = await request.json();
     const { action, subscriptionId, reason, vatId } = body;
@@ -123,56 +115,138 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'cancel-subscription':
         if (!subscriptionId) {
-          return NextResponse.json({ error: 'Subscription-ID ist erforderlich' }, { status: 400 });
+          return secureResponse({ error: 'Subscription-ID ist erforderlich' }, 400);
         }
-        return await cancelSubscription(subscriptionId, reason);
+        return await cancelSubscription(
+          subscriptionId,
+          auth.user.customerId!,
+          auth.user.email,
+          reason
+        );
       case 'update-profile-vat':
-        return await updateCustomerVat(request, vatId);
+        return await updateCustomerVat(auth.user.customerId!, auth.user.email, vatId);
+      case 'update-profile':
+        return await updateCustomerProfileData(auth.user.customerId!, body);
       default:
-        return NextResponse.json({ error: 'Ungültige Aktion' }, { status: 400 });
+        return secureResponse({ error: 'Ungültige Aktion' }, 400);
     }
   } catch (error) {
     console.error('Kundenportal API Fehler:', error);
-    return NextResponse.json({ error: 'Interner Serverfehler' }, { status: 500 });
+    return secureResponse({ error: 'Interner Serverfehler' }, 500);
   }
 }
 
-async function getCustomerInfo(email: string) {
+export async function PATCH(request: NextRequest) {
   try {
-    const customer = await getCustomerByEmail(email);
-    return NextResponse.json({
-      customerNumber: customer?.customer_number || null,
-      name: customer?.name || null,
-      vatId: customer?.vat_id || null,
-    });
+    const auth = await requireMemberAuth(request);
+    if (auth instanceof NextResponse) return auth;
+
+    const customerId = auth.user.customerId;
+    if (!customerId) {
+      return secureResponse({ error: 'Kundenkontext fehlt' }, 403);
+    }
+
+    const body = await request.json();
+    return await updateCustomerProfileData(customerId, body);
+  } catch (error) {
+    console.error('Kundenportal API Fehler:', error);
+    return secureResponse({ error: 'Interner Serverfehler' }, 500);
+  }
+}
+
+function formatCustomerProfile(customer: Awaited<ReturnType<typeof getCustomerById>>) {
+  if (!customer) return null;
+  const { firstName, lastName } = splitFullName(customer.name || '');
+  return {
+    customerNumber: customer.customer_number || null,
+    firstName,
+    lastName,
+    name: customer.name || null,
+    companyName: customer.company_name || '',
+    street: customer.street || '',
+    zip: customer.zip || '',
+    city: customer.city || '',
+    country: customer.country || 'DE',
+    phone: customer.phone || '',
+    vatId: customer.vat_id || '',
+  };
+}
+
+async function getCustomerInfo(email: string, customerId: string) {
+  try {
+    await ensureAddressColumnsExist();
+    const customer = await getCustomerById(customerId);
+    if (!customer || customer.email.toLowerCase() !== email.toLowerCase()) {
+      return secureResponse({ error: 'Nicht autorisiert' }, 403);
+    }
+    return secureResponse(formatCustomerProfile(customer));
   } catch (error) {
     console.error('Fehler beim Laden der Kundeninformationen:', error);
-    return NextResponse.json({ error: 'Fehler beim Laden der Kundeninformationen' }, { status: 500 });
+    return secureResponse({ error: 'Fehler beim Laden der Kundeninformationen' }, 500);
   }
 }
 
-async function updateCustomerVat(request: NextRequest, vatId: unknown) {
-  const token = request.cookies.get('auth-token')?.value;
-  const user = token ? verifyToken(token) : null;
-  if (!user || user.role !== 'customer') {
-    return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+async function updateCustomerProfileData(
+  customerId: string,
+  body: Record<string, unknown>
+) {
+  const customer = await getCustomerById(customerId);
+  if (!customer) {
+    return secureResponse({ error: 'Kunde nicht gefunden' }, 404);
   }
 
+  const profileInput = {
+    firstName: String(body.firstName || '').trim(),
+    lastName: String(body.lastName || '').trim(),
+    companyName: String(body.companyName ?? body.company_name ?? '').trim(),
+    street: String(body.street || '').trim(),
+    zip: String(body.zip ?? body.postalCode ?? '').trim(),
+    city: String(body.city || '').trim(),
+    country: String(body.country || 'DE').trim().toUpperCase(),
+    phone: String(body.phone || '').trim(),
+  };
+
+  const validation = validateCustomerProfile(profileInput);
+  if (!validation.isValid) {
+    const firstError = Object.values(validation.errors)[0];
+    return secureResponse(
+      { error: 'validation_failed', message: firstError, errors: validation.errors },
+      400
+    );
+  }
+
+  const updated = await updateCustomerProfile(customerId, {
+    name: buildFullName(profileInput.firstName, profileInput.lastName),
+    phone: profileInput.phone,
+    company_name: sanitizeText(profileInput.companyName) || undefined,
+    street: sanitizeText(profileInput.street),
+    zip: profileInput.zip,
+    city: sanitizeText(profileInput.city),
+    country: profileInput.country,
+  });
+
+  return secureResponse({
+    success: true,
+    profile: formatCustomerProfile(updated),
+  });
+}
+
+async function updateCustomerVat(customerId: string, email: string, vatId: unknown) {
+  void customerId;
   const { updateCustomer, ensureCustomerPortalColumns } = await import('@/lib/database');
   await ensureCustomerPortalColumns();
-  const customer = await updateCustomer(user.email, {
+  const customer = await updateCustomer(email, {
     vat_id: String(vatId || '').trim(),
   });
 
-  return NextResponse.json({ success: true, vatId: customer?.vat_id || null });
+  return secureResponse({ success: true, vatId: customer?.vat_id || null });
 }
 
-async function getCustomerBookings(email: string) {
+async function getCustomerBookings(customerId: string, email: string) {
   try {
-    const bookings = await getBookingsByEmail(email);
-    
-    // Formatiere die Daten für das Frontend
-    const formattedBookings = bookings.map(booking => ({
+    const bookings = await getBookingsByCustomerId(customerId, email);
+
+    const formattedBookings = bookings.map((booking) => ({
       id: String(booking.id),
       packageType: String(booking.package_type),
       packageName: getPackageDisplayName(String(booking.package_type)),
@@ -181,56 +255,36 @@ async function getCustomerBookings(email: string) {
       totalAmount: Number(booking.total_amount_cents) / 100,
       currency: String(booking.currency || 'eur'),
       createdAt: String(booking.created_at),
-      packagePriceDisplay: String(booking.package_price_display || `${Number(booking.total_amount_cents) / 100} €`),
+      packagePriceDisplay: String(
+        booking.package_price_display || `${Number(booking.total_amount_cents) / 100} €`
+      ),
       selectedAddons: Array.isArray(booking.selected_addons) ? booking.selected_addons : [],
     }));
 
-    return NextResponse.json({ bookings: formattedBookings });
+    return secureResponse({ bookings: formattedBookings });
   } catch (error) {
     console.error('Fehler beim Laden der Buchungen:', error);
-    return NextResponse.json({ error: 'Fehler beim Laden der Buchungen' }, { status: 500 });
+    return secureResponse({ error: 'Fehler beim Laden der Buchungen' }, 500);
   }
 }
 
-async function getCustomerAddonOrders(email: string) {
+async function getCustomerAddonOrders(email: string, customerId: string) {
   try {
-    // Add-on Bestellungen aus webwelle_addon_orders laden
-    const { Pool } = await import('pg');
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_URL?.includes('sslmode=require') 
-        ? { rejectUnauthorized: false } 
-        : undefined,
-      connectionTimeoutMillis: 10000,
-    });
+    const { pool } = await import('@/lib/database');
     const client = await pool.connect();
-    
+
     try {
-      // Lade Add-on Bestellungen über customer_email oder customer_id
-      const customer = await getCustomerByEmail(email);
-      let query = `
-        SELECT id, booking_id, addon_key, addon_label, billing, price_id, 
-               amount_cents, currency, checkout_mode, status, session_id, 
-               stripe_invoice_id, stripe_subscription_id, notes, created_at 
-        FROM webwelle_addon_orders 
-        WHERE customer_email = $1
+      const query = `
+        SELECT id, booking_id, addon_key, addon_label, billing, price_id,
+               amount_cents, currency, checkout_mode, status, session_id,
+               stripe_invoice_id, stripe_subscription_id, notes, created_at
+        FROM webwelle_addon_orders
+        WHERE customer_email = $1 OR customer_id = $2::uuid
+        ORDER BY created_at DESC
       `;
-      const params: (string | number)[] = [email];
-      
-      if (customer?.id) {
-        query = `
-          SELECT id, booking_id, addon_key, addon_label, billing, price_id, 
-               amount_cents, currency, checkout_mode, status, session_id, 
-               stripe_invoice_id, stripe_subscription_id, notes, created_at 
-        FROM webwelle_addon_orders 
-          WHERE customer_email = $1 OR customer_id = $2
-        `;
-        params.push(customer.id);
-      }
-      
-      query += ' ORDER BY created_at DESC';
+      const params: (string | number)[] = [email, customerId];
       const result = await client.query(query, params);
-      
+
       interface AddonOrderRow {
         id: string;
         addon_key?: string;
@@ -241,7 +295,7 @@ async function getCustomerAddonOrders(email: string) {
         created_at?: Date;
         checkout_mode?: string;
       }
-      
+
       const formattedAddonOrders = result.rows.map((order: AddonOrderRow) => ({
         id: String(order.id),
         addonKey: String(order.addon_key || ''),
@@ -254,22 +308,34 @@ async function getCustomerAddonOrders(email: string) {
         checkoutMode: String(order.checkout_mode || 'payment'),
       }));
 
-      return NextResponse.json({ addonOrders: formattedAddonOrders });
+      return secureResponse({ addonOrders: formattedAddonOrders });
     } finally {
       client.release();
-      await pool.end();
     }
   } catch (error) {
     console.error('Fehler beim Laden der Add-on Bestellungen:', error);
-    return NextResponse.json({ error: 'Fehler beim Laden der Add-on Bestellungen' }, { status: 500 });
+    return secureResponse({ error: 'Fehler beim Laden der Add-on Bestellungen' }, 500);
   }
 }
 
-async function getBookingInvoices(bookingId: string) {
+async function bookingBelongsToCustomer(
+  bookingId: string,
+  customerId: string,
+  email: string
+): Promise<boolean> {
+  const bookings = await getBookingsByCustomerId(customerId, email);
+  return bookings.some((b) => String(b.id) === bookingId);
+}
+
+async function getBookingInvoices(bookingId: string, customerId: string, email: string) {
+  if (!(await bookingBelongsToCustomer(bookingId, customerId, email))) {
+    return secureResponse({ error: 'Nicht autorisiert' }, 403);
+  }
+
   try {
     const invoices = await getInvoicesByBookingId(bookingId);
-    
-    const formattedInvoices = invoices.map(invoice => ({
+
+    const formattedInvoices = invoices.map((invoice) => ({
       id: String(invoice.id || ''),
       invoiceNumber: String(invoice.invoice_number || ''),
       amount: Number(invoice.amount_cents || 0) / 100,
@@ -281,87 +347,109 @@ async function getBookingInvoices(bookingId: string) {
       hostedInvoiceUrl: invoice.hosted_invoice_url ? String(invoice.hosted_invoice_url) : null,
     }));
 
-    return NextResponse.json({ invoices: formattedInvoices });
+    return secureResponse({ invoices: formattedInvoices });
   } catch (error) {
     console.error('Fehler beim Laden der Rechnungen:', error);
-    return NextResponse.json({ error: 'Fehler beim Laden der Rechnungen' }, { status: 500 });
+    return secureResponse({ error: 'Fehler beim Laden der Rechnungen' }, 500);
   }
 }
 
-async function getBookingSubscription(bookingId: string) {
+async function getBookingSubscription(bookingId: string, customerId: string, email: string) {
+  if (!(await bookingBelongsToCustomer(bookingId, customerId, email))) {
+    return secureResponse({ error: 'Nicht autorisiert' }, 403);
+  }
+
   try {
     const subscription = await getSubscriptionByBookingId(bookingId);
-    
+
     if (!subscription) {
-      return NextResponse.json({ subscription: null });
+      return secureResponse({ subscription: null });
     }
 
     const formattedSubscription = {
       id: String(subscription.id || ''),
       status: String(subscription.status || 'active'),
-      currentPeriodStart: subscription.current_period_start ? String(subscription.current_period_start) : '',
-      currentPeriodEnd: subscription.current_period_end ? String(subscription.current_period_end) : '',
+      currentPeriodStart: subscription.current_period_start
+        ? String(subscription.current_period_start)
+        : '',
+      currentPeriodEnd: subscription.current_period_end
+        ? String(subscription.current_period_end)
+        : '',
       cancelledAt: subscription.cancelled_at ? String(subscription.cancelled_at) : null,
       cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end || false),
-      nextBillingDate: subscription.next_billing_date ? String(subscription.next_billing_date) : null,
+      nextBillingDate: subscription.next_billing_date
+        ? String(subscription.next_billing_date)
+        : null,
       customerCancelled: Boolean(subscription.customer_cancelled || false),
-      cancellationReason: subscription.cancellation_reason ? String(subscription.cancellation_reason) : null,
+      cancellationReason: subscription.cancellation_reason
+        ? String(subscription.cancellation_reason)
+        : null,
     };
 
-    return NextResponse.json({ subscription: formattedSubscription });
+    return secureResponse({ subscription: formattedSubscription });
   } catch (error) {
     console.error('Fehler beim Laden der Subscription:', error);
-    return NextResponse.json({ error: 'Fehler beim Laden der Subscription' }, { status: 500 });
+    return secureResponse({ error: 'Fehler beim Laden der Subscription' }, 500);
   }
 }
 
-async function cancelSubscription(subscriptionId: string, reason?: string) {
+async function cancelSubscription(
+  subscriptionId: string,
+  customerId: string,
+  email: string,
+  reason?: string
+) {
+  void customerId;
   try {
-    // Abonnement in Datenbank aktualisieren
-    const { Pool } = await import('pg');
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_URL?.includes('sslmode=require') 
-        ? { rejectUnauthorized: false } 
-        : undefined,
-      connectionTimeoutMillis: 10000,
-    });
+    const { pool } = await import('@/lib/database');
     const client = await pool.connect();
-    
+
     try {
+      const owned = await client.query(
+        `SELECT s.id
+         FROM webwelle_subscriptions s
+         JOIN webwelle_bookings b ON b.id = s.booking_id
+         WHERE (s.stripe_subscription_id = $1 OR s.id::text = $1)
+           AND LOWER(b.customer_email) = LOWER($2)
+         LIMIT 1`,
+        [subscriptionId, email]
+      );
+      if (owned.rows.length === 0) {
+        return secureResponse({ error: 'Nicht autorisiert' }, 403);
+      }
+
       await client.query(
-        `UPDATE webwelle_subscriptions 
-         SET customer_cancelled = true, 
+        `UPDATE webwelle_subscriptions
+         SET customer_cancelled = true,
              cancellation_reason = $1,
              status = 'cancelled'
-         WHERE stripe_subscription_id = $2 OR id = $2`,
+         WHERE stripe_subscription_id = $2 OR id::text = $2`,
         [reason || null, subscriptionId]
       );
-      
-      return NextResponse.json({ success: true, message: 'Abonnement erfolgreich gekündigt' });
+
+      return secureResponse({ success: true, message: 'Abonnement erfolgreich gekündigt' });
     } finally {
       client.release();
-      await pool.end();
     }
   } catch (error) {
     console.error('Fehler beim Kündigen der Subscription:', error);
-    return NextResponse.json({ error: 'Fehler beim Kündigen des Abonnements' }, { status: 500 });
+    return secureResponse({ error: 'Fehler beim Kündigen des Abonnements' }, 500);
   }
 }
 
 function getPackageDisplayName(packageType: string): string {
   const packageNames: Record<string, string> = {
-    'starterwelle': 'StarterWelle',
-    'businesswelle': 'BusinessWelle',
-    'erfolgswelle': 'ErfolgsWelle',
-    'flowwelle': 'FlowWelle',
-    'powerwelle': 'PowerWelle',
-    'meisterwelle': 'MeisterWelle',
-    'minijob': 'MiniJob',
-    'midijob': 'MidiJob',
-    'festangestellt': 'Festangestellt',
-    'einrichtungspaket': 'Einrichtungspaket',
+    starterwelle: 'StarterWelle',
+    businesswelle: 'BusinessWelle',
+    erfolgswelle: 'ErfolgsWelle',
+    flowwelle: 'FlowWelle',
+    powerwelle: 'PowerWelle',
+    meisterwelle: 'MeisterWelle',
+    minijob: 'MiniJob',
+    midijob: 'MidiJob',
+    festangestellt: 'Festangestellt',
+    einrichtungspaket: 'Einrichtungspaket',
   };
-  
+
   return packageNames[packageType] || packageType;
 }

@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { pool, ensureAddressColumnsExist } from '@/lib/database';
-import { verifyToken } from '@/lib/auth';
+import { pool, ensureAddressColumnsExist, updateCustomerProfile, getCustomerById } from '@/lib/database';
+import { requireAdminAuth, secureResponse } from '@/lib/api-security';
+import {
+  buildFullName,
+  sanitizeText,
+  splitFullName,
+  validateCustomerProfile,
+  validateEmail,
+} from '@/lib/validation';
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -12,10 +19,8 @@ function getStripe(): Stripe {
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const params = await context.params;
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
+    const auth = await requireAdminAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     let client: import('pg').PoolClient;
     let tempPool: import('pg').Pool | null = null;
@@ -187,17 +192,99 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   }
 }
 
-// PUT: Kunde bearbeiten
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    const params = await context.params;
+    const auth = await requireAdminAuth(request);
+    if (auth instanceof NextResponse) return auth;
+
+    const body = await request.json();
+    const existing = await getCustomerById(params.id);
+    if (!existing) {
+      return secureResponse({ error: 'Kunde nicht gefunden' }, 404);
+    }
+
+    const existingSplit = splitFullName(existing.name || '');
+    let firstName = String(body.firstName ?? '').trim();
+    let lastName = String(body.lastName ?? '').trim();
+    if (!firstName && !lastName) {
+      const sourceName = body.name !== undefined ? String(body.name) : existing.name || '';
+      const fromName = splitFullName(sourceName);
+      firstName = fromName.firstName;
+      lastName = fromName.lastName;
+    }
+    const profileInput = {
+      firstName,
+      lastName,
+      companyName: String(body.companyName ?? body.company_name ?? existing.company_name ?? '').trim(),
+      street: String(body.street ?? existing.street ?? '').trim(),
+      zip: String(body.zip ?? existing.zip ?? '').trim(),
+      city: String(body.city ?? existing.city ?? '').trim(),
+      country: String(body.country ?? existing.country ?? 'DE').trim().toUpperCase(),
+      phone: String(body.phone ?? existing.phone ?? '').trim(),
+    };
+
+    const validation = validateCustomerProfile(profileInput);
+    if (!validation.isValid) {
+      const firstError = Object.values(validation.errors)[0];
+      return secureResponse(
+        { error: 'validation_failed', message: firstError, errors: validation.errors },
+        400
+      );
+    }
+
+    let emailUpdate: string | undefined;
+    if (body.email !== undefined) {
+      const email = String(body.email).toLowerCase().trim();
+      if (!validateEmail(email)) {
+        return secureResponse({ error: 'Ungültige E-Mail-Adresse' }, 400);
+      }
+      const client = await pool.connect();
+      try {
+        const emailCheck = await client.query(
+          'SELECT id FROM customers WHERE LOWER(email) = LOWER($1) AND id != $2',
+          [email, params.id]
+        );
+        if (emailCheck.rows.length > 0) {
+          return secureResponse({ error: 'E-Mail-Adresse bereits vergeben' }, 400);
+        }
+      } finally {
+        client.release();
+      }
+      emailUpdate = email;
+    }
+
+    await ensureAddressColumnsExist();
+
+    const updated = await updateCustomerProfile(params.id, {
+      name: buildFullName(profileInput.firstName, profileInput.lastName),
+      phone: profileInput.phone,
+      company_name: sanitizeText(profileInput.companyName) || undefined,
+      street: sanitizeText(profileInput.street),
+      zip: profileInput.zip,
+      city: sanitizeText(profileInput.city),
+      country: profileInput.country,
+      vat_id: body.vat_id !== undefined ? String(body.vat_id).trim() : undefined,
+      email: emailUpdate,
+    });
+
+    if (!updated) {
+      return secureResponse({ error: 'Aktualisierung fehlgeschlagen' }, 500);
+    }
+
+    return secureResponse({ success: true, customer: updated });
+  } catch (error) {
+    console.error('Fehler beim Bearbeiten des Kunden:', error);
+    return secureResponse({ error: 'Fehler beim Bearbeiten des Kunden' }, 500);
+  }
+}
+
+// PUT: Kunde bearbeiten (Legacy)
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const params = await context.params;
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
-    
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
-    }
+    const auth = await requireAdminAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     const body = await request.json();
     const { name, phone, company_name, vat_id, email, street, city, zip, country } = body;
@@ -384,13 +471,8 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const params = await context.params;
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
-    
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
-    }
+    const auth = await requireAdminAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     let client: import('pg').PoolClient;
     let tempPool: import('pg').Pool | null = null;

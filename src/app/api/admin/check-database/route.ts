@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/database';
-import { verifyToken } from '@/lib/auth';
+import { requireAdminAuth } from '@/lib/api-security';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) return NextResponse.json({ success: false, error: 'Nicht autorisiert' }, { status: 401 });
-
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Nicht autorisiert' }, { status: 403 });
-    }
+    const auth = await requireAdminAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     let client;
     try {

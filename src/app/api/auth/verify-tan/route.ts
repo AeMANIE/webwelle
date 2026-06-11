@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { customerLogin2FA } from '@/lib/auth';
 import { verifyTAN } from '@/lib/tan-store';
 import { validateEmail, validateTAN } from '@/lib/validation';
+import { attachSessionToResponse } from '@/lib/session';
+import { secureResponse } from '@/lib/api-security';
 
 export async function POST(request: Request) {
   try {
@@ -60,22 +62,11 @@ export async function POST(request: Request) {
     const result = await customerLogin2FA(normalizedEmail, tan);
     
     if (result) {
-      // HttpOnly Cookie setzen für sichere Token-Speicherung
-      const response = NextResponse.json({ 
-        success: true, 
+      const response = secureResponse({
+        success: true,
         user: result.user,
-        token: result.token // Token auch in Response für Client-Fallback
       });
-
-      response.cookies.set('auth-token', result.token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 24 * 60 * 60, // 24 Stunden
-        path: '/'
-      });
-
-      return response;
+      return attachSessionToResponse(response, result.user);
     } else {
       return NextResponse.json(
         { success: false, error: 'Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.' },

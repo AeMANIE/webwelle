@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { createCustomer, getCustomerByEmail } from '@/lib/database';
 import { hashPassword, validatePassword } from '@/lib/password';
 import { sendVerificationEmail } from '@/lib/email';
-import { createToken } from '@/lib/auth';
+import { buildCustomerSessionUser } from '@/lib/auth';
+import { attachSessionToResponse } from '@/lib/session';
+import { secureResponse } from '@/lib/api-security';
+import { ensureRbacSchema } from '@/lib/database';
 
 export async function POST(request: Request) {
   try {
@@ -112,27 +115,23 @@ export async function POST(request: Request) {
       // E-Mail-Fehler ignorieren, Kunde ist bereits verifiziert
     }
 
-    // JWT-Token erstellen
-    const user = {
-      id: customer.id?.toString() || Date.now().toString(),
-      email: customer.email,
-      role: 'customer' as const,
-      name: customer.name
-    };
+    await ensureRbacSchema();
+    const user = buildCustomerSessionUser({
+      ...customer,
+      portal_role: customer.portal_role || 'MEMBER',
+    });
 
-    const token = createToken(user);
-
-    return NextResponse.json({
+    const response = secureResponse({
       success: true,
       message: 'Konto erfolgreich erstellt. Sie können sich jetzt anmelden.',
       user: {
         id: customer.id,
         email: customer.email,
         name: customer.name,
-        is_verified: customer.is_verified
+        is_verified: customer.is_verified,
       },
-      token
     });
+    return attachSessionToResponse(response, user);
 
   } catch (error) {
     // Detaillierte Fehlerbehandlung

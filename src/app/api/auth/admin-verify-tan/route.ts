@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminLogin2FA } from '@/lib/auth';
 import { verifyAdminTAN } from '@/lib/tan-store';
 import { validateEmail, validateTAN } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
+import { buildStaffSessionUser, getAdminUsers } from '@/lib/auth';
+import { ensureEnvOwnerStaff } from '@/lib/database';
+import { attachSessionToResponse } from '@/lib/session';
+import { secureResponse } from '@/lib/api-security';
+import { logLoginAttempt } from '@/lib/security-logger';
 
 // Rate Limiting: Max. 10 TAN-Verifizierungen pro 15 Minuten pro IP
 // Erhöht, da TANs manchmal falsch eingegeben werden
@@ -110,10 +114,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TAN ist gültig - jetzt Login durchführen
-    // Token direkt erstellen, da TAN bereits verifiziert wurde
-    const { getAdminUsers, createToken } = await import('@/lib/auth');
-    const { logLoginAttempt } = await import('@/lib/security-logger');
     const adminUsers = getAdminUsers();
     const admin = adminUsers.find(u => u.email.toLowerCase() === normalizedEmail);
     
@@ -125,33 +125,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Token erstellen
-    const user = {
-      id: admin.id!,
-      email: admin.email!,
-      role: admin.role,
-      name: admin.name!
-    };
-    
-    const token = createToken(user);
-    logLoginAttempt(normalizedEmail, true);
-    
-    // HttpOnly Cookie setzen für sichere Token-Speicherung
-    const response = NextResponse.json({
-      success: true,
-      user: user,
-      message: 'Login erfolgreich'
-    });
-    
-    response.cookies.set('auth-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60, // 24 Stunden
-      path: '/',
-    });
+    const staff = await ensureEnvOwnerStaff(admin.email!, admin.name!);
+    const user = buildStaffSessionUser(staff);
 
-    // TAN-Cookie löschen (wurde verwendet)
+    logLoginAttempt(normalizedEmail, true);
+
+    const response = secureResponse({
+      success: true,
+      user,
+      message: 'Login erfolgreich',
+    });
+    await attachSessionToResponse(response, user);
+
     response.cookies.delete('admin-tan-pending');
     
     // TAN auch aus Store löschen (falls vorhanden)

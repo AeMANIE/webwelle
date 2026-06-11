@@ -106,10 +106,20 @@ export function ownSiteFromLead(lead: LeadDispatchSource): N8nCompetitorPayload 
 
 async function postWebhook(
   url: string | undefined,
-  payload: N8nDispatchPayload | N8nSitePerformancePayload
+  payload:
+    | N8nDispatchPayload
+    | N8nSitePerformancePayload
+    | N8nSeo01Payload
+    | Record<string, unknown>
 ): Promise<void> {
   if (!url?.trim()) {
-    console.log(`n8n webhook übersprungen (URL leer): ${payload.leadId}`);
+    const ref =
+      'leadId' in payload && payload.leadId != null
+        ? payload.leadId
+        : 'jobId' in payload
+          ? `job ${payload.jobId}`
+          : 'unbekannt';
+    console.log(`n8n webhook übersprungen (URL leer): ${ref}`);
     return;
   }
 
@@ -245,4 +255,69 @@ export function getCallbackBaseUrl(): string {
     process.env.NEXT_PUBLIC_APP_URL ||
     'https://webwelle.com'
   ).replace(/\/$/, '');
+}
+
+export interface N8nBlogOrchestratorPayload extends N8nDispatchPayload {
+  jobId: number;
+  articleCount: number;
+  companyName?: string;
+  keywords?: Array<Record<string, unknown>>;
+}
+
+export function buildBlogOrchestratorPayload(
+  lead: LeadDispatchSource & { company_name?: string | null },
+  jobId: number,
+  articleCount: number,
+  keywords: Array<Record<string, unknown>> = []
+): N8nBlogOrchestratorPayload {
+  const base = buildDispatchPayloadFromLead(lead);
+  return {
+    ...base,
+    jobId,
+    articleCount,
+    companyName: lead.company_name || undefined,
+    keywords,
+  };
+}
+
+/** Payload für seo-01-research-project-setup-discovery (branche/plz/land + WebWelle-Kontext). */
+export interface N8nSeo01Payload {
+  branche: string;
+  plz: string;
+  land: string;
+  jobId: number;
+  token: string;
+  leadToken: string;
+  callbackBaseUrl: string;
+  articleCount: number;
+  companyName?: string;
+  keywords?: Array<Record<string, unknown>>;
+  test_mode?: boolean;
+}
+
+export function buildSeo01Payload(payload: N8nBlogOrchestratorPayload): N8nSeo01Payload {
+  const land = (payload.country || payload.market || 'DE').toUpperCase();
+  return {
+    branche: payload.industry || payload.industryForResearch || payload.industryRaw || '',
+    plz: payload.postalCode || '',
+    land: ['DE', 'AT', 'CH'].includes(land) ? land : 'DE',
+    jobId: payload.jobId,
+    token: payload.token,
+    leadToken: payload.token,
+    callbackBaseUrl: payload.callbackBaseUrl,
+    articleCount: payload.articleCount,
+    companyName: payload.companyName,
+    keywords: payload.keywords,
+  };
+}
+
+export async function dispatchBlogPipeline(
+  payload: N8nBlogOrchestratorPayload
+): Promise<void> {
+  const url =
+    process.env.N8N_WEBHOOK_SEO_01_URL?.trim() ||
+    process.env.N8N_WEBHOOK_BLOG_ORCHESTRATOR_URL?.trim();
+  const seoPayload = buildSeo01Payload(payload);
+  console.log(`n8n dispatch: seo-01 blog-chain für Job ${payload.jobId} (Lead ${payload.leadId})`);
+  await postWebhook(url, seoPayload);
 }

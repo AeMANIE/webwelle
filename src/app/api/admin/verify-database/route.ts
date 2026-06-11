@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/database';
-import { verifyToken } from '@/lib/auth';
+import { requireAdminAuth } from '@/lib/api-security';
 
 interface TableInfo {
   name: string;
@@ -57,49 +57,8 @@ const EXPECTED_TABLES = [
 export async function GET(request: NextRequest) {
   try {
     // Admin-Authentifizierung
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Nicht autorisiert. Bitte melden Sie sich an.',
-        verification: {
-          connection: {
-            success: false,
-            message: 'Kein Authentifizierungs-Token gefunden'
-          },
-          tables: [],
-          summary: {
-            totalTables: EXPECTED_TABLES.length,
-            existingTables: 0,
-            missingTables: [],
-            totalRows: 0
-          },
-          recommendations: ['❌ Bitte melden Sie sich im Admin-Portal an']
-        }
-      }, { status: 401 });
-    }
-
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Nicht autorisiert. Sie benötigen Admin-Rechte.',
-        verification: {
-          connection: {
-            success: false,
-            message: 'Authentifizierung fehlgeschlagen'
-          },
-          tables: [],
-          summary: {
-            totalTables: EXPECTED_TABLES.length,
-            existingTables: 0,
-            missingTables: [],
-            totalRows: 0
-          },
-          recommendations: ['❌ Authentifizierung erforderlich']
-        }
-      }, { status: 403 });
-    }
+    const auth = await requireAdminAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     const verification: DatabaseVerification = {
       connection: {

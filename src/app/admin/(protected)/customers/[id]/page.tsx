@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Header from '../../../components/Header';
-import Footer from '../../../components/Footer';
+import Header from '../../../../components/Header';
+import Footer from '../../../../components/Footer';
+import { splitFullName } from '@/lib/validation';
 
 interface Customer {
   id: string;
@@ -19,6 +20,11 @@ interface Customer {
   country?: string;
   portal_activated?: boolean;
   created_at?: string;
+}
+
+interface CustomerEditData extends Partial<Customer> {
+  firstName?: string;
+  lastName?: string;
 }
 
 interface Booking {
@@ -79,7 +85,7 @@ export default function CustomerDetailPage() {
   
   // Bearbeitungs-Modus
   const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState<Partial<Customer>>({});
+  const [editData, setEditData] = useState<CustomerEditData>({});
   const [saving, setSaving] = useState(false);
   
   // E-Mail-Modus
@@ -104,7 +110,8 @@ export default function CustomerDetailPage() {
         setBookings(data.bookings || []);
         setInvoices(data.invoices || []);
         setFunnelAnalyses(data.funnelAnalyses || []);
-        setEditData(data.customer);
+        const { firstName, lastName } = splitFullName(data.customer?.name || '');
+        setEditData({ ...data.customer, firstName, lastName });
       } else {
         setError('Kunde nicht gefunden');
       }
@@ -119,24 +126,34 @@ export default function CustomerDetailPage() {
     setSaving(true);
     try {
       const response = await fetch(`/api/admin/customers/${customerId}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editData),
+        body: JSON.stringify({
+          firstName: editData.firstName,
+          lastName: editData.lastName,
+          phone: editData.phone,
+          company_name: editData.company_name,
+          vat_id: editData.vat_id,
+          email: editData.email,
+          street: editData.street,
+          city: editData.city,
+          zip: editData.zip,
+          country: editData.country,
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        // Aktualisiere Customer-Daten mit den zurückgegebenen Daten
+        const { firstName, lastName } = splitFullName(data.customer?.name || '');
         setCustomer(data.customer);
-        // Aktualisiere auch editData, damit die Adresse im Bearbeitungsmodus korrekt ist
-        setEditData(data.customer);
+        setEditData({ ...data.customer, firstName, lastName });
         setIsEditing(false);
         setError('');
         // Lade Daten neu, um sicherzustellen, dass alles aktuell ist
         await loadCustomerDetails();
       } else {
         const data = await response.json();
-        setError(data.error || 'Fehler beim Speichern');
+        setError(data.message || data.error || 'Fehler beim Speichern');
       }
     } catch {
       setError('Fehler beim Speichern');
@@ -313,7 +330,8 @@ export default function CustomerDetailPage() {
                   <button
                     onClick={() => {
                       setIsEditing(false);
-                      setEditData(customer || {});
+                      const { firstName, lastName } = splitFullName(customer?.name || '');
+                      setEditData({ ...(customer || {}), firstName, lastName });
                     }}
                     className="px-4 py-2 bg-muted text-foreground rounded-lg"
                   >
@@ -404,16 +422,29 @@ export default function CustomerDetailPage() {
                   )}
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground">Name</label>
+                  <label className="text-sm text-muted-foreground">Vorname</label>
                   {isEditing ? (
                     <input
                       type="text"
-                      value={editData.name || ''}
-                      onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                      value={editData.firstName || ''}
+                      onChange={(e) => setEditData({ ...editData, firstName: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
                     />
                   ) : (
-                    <p className="text-foreground">{customer?.name || '—'}</p>
+                    <p className="text-foreground">{splitFullName(customer?.name || '').firstName || '—'}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Nachname</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editData.lastName || ''}
+                      onChange={(e) => setEditData({ ...editData, lastName: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
+                    />
+                  ) : (
+                    <p className="text-foreground">{splitFullName(customer?.name || '').lastName || '—'}</p>
                   )}
                 </div>
                 <div>
@@ -513,15 +544,25 @@ export default function CustomerDetailPage() {
                 <div>
                   <label className="text-sm text-muted-foreground">Land</label>
                   {isEditing ? (
-                    <input
-                      type="text"
-                      value={editData.country || ''}
+                    <select
+                      value={editData.country || 'DE'}
                       onChange={(e) => setEditData({ ...editData, country: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground mt-1"
-                      placeholder="Land"
-                    />
+                    >
+                      <option value="DE">Deutschland</option>
+                      <option value="AT">Österreich</option>
+                      <option value="CH">Schweiz</option>
+                    </select>
                   ) : (
-                    <p className="text-foreground">{customer?.country || '—'}</p>
+                    <p className="text-foreground">
+                      {customer?.country === 'AT'
+                        ? 'Österreich'
+                        : customer?.country === 'CH'
+                          ? 'Schweiz'
+                          : customer?.country === 'DE'
+                            ? 'Deutschland'
+                            : customer?.country || '—'}
+                    </p>
                   )}
                 </div>
                 <div className="pt-3 border-t border-border">

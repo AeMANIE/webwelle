@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { verifyToken } from '@/lib/auth';
+import { requireAdminAuth } from '@/lib/api-security';
 import { generateInvoicePdf } from '@/lib/invoice-pdf';
 import { getCustomerByEmail } from '@/lib/database';
 
@@ -12,10 +12,8 @@ function getStripe(): Stripe {
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
+    const auth = await requireAdminAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     const invoiceId = request.nextUrl.searchParams.get('id');
     if (!invoiceId) return NextResponse.json({ error: 'id erforderlich' }, { status: 400 });

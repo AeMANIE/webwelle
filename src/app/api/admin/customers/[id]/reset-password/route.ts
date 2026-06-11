@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/database';
-import { verifyToken } from '@/lib/auth';
+import { requireAdminAuth } from '@/lib/api-security';
 import { randomBytes } from 'crypto';
 import { sendEmail } from '@/lib/email';
 
@@ -8,15 +8,8 @@ import { sendEmail } from '@/lib/email';
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const params = await context.params;
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
-    }
-    
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 });
-    }
+    const auth = await requireAdminAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     let client: import('pg').PoolClient;
     let tempPool: import('pg').Pool | null = null;

@@ -1,28 +1,25 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { clearSessionCookies } from '@/lib/auth-cookies';
+import { revokeRefreshToken } from '@/lib/refresh-token-store';
+import { secureResponse } from '@/lib/api-security';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    // HttpOnly Cookie löschen
-    const response = NextResponse.json({
+    const refreshToken = request.cookies.get('refresh-token')?.value;
+    if (refreshToken) {
+      await revokeRefreshToken(refreshToken);
+    }
+
+    const response = secureResponse({
       success: true,
-      message: 'Erfolgreich abgemeldet'
+      message: 'Erfolgreich abgemeldet',
     });
-
-    response.cookies.set('auth-token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 0, // Sofort ablaufen lassen
-      path: '/'
-    });
-
+    clearSessionCookies(response);
     return response;
   } catch (error) {
     console.error('Logout Fehler:', error);
-    return NextResponse.json(
-      { error: 'Ein Fehler ist aufgetreten' },
-      { status: 500 }
-    );
+    const response = secureResponse({ error: 'Ein Fehler ist aufgetreten' }, 500);
+    clearSessionCookies(response);
+    return response;
   }
 }
-

@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import Header from '../../components/Header';
+import Footer from '../../components/Footer';
 import { LogOut, Package, Euro, Calendar, FileText, Eye, Download, X, Plus } from 'lucide-react';
 
 interface CustomerBooking {
@@ -80,10 +80,24 @@ export default function CustomerPortal() {
   const [addonOrders, setAddonOrders] = useState<AddonOrder[]>([]);
   const [funnelAnalyses, setFunnelAnalyses] = useState<FunnelAnalysis[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string; role?: string } | null>(null);
   const [customerNumber, setCustomerNumber] = useState<string | null>(null);
   const [vatId, setVatId] = useState('');
   const [vatSaving, setVatSaving] = useState(false);
+  const [profile, setProfile] = useState({
+    firstName: '',
+    lastName: '',
+    companyName: '',
+    street: '',
+    zip: '',
+    city: '',
+    country: 'DE',
+    phone: '',
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [profileSuccess, setProfileSuccess] = useState('');
+  const isReadOnly = user?.role === 'VIEWER';
   const [selectedBooking, setSelectedBooking] = useState<CustomerBooking | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -104,7 +118,7 @@ export default function CustomerPortal() {
     try {
       const response = await fetch('/api/auth/verify');
       const data = await response.json();
-      if (data.authenticated && data.user?.role === 'customer') {
+      if (data.authenticated && data.user?.role && ['VIEWER', 'MEMBER'].includes(data.user.role)) {
         setUser(data.user);
         return;
       }
@@ -116,7 +130,7 @@ export default function CustomerPortal() {
 
   const fetchCustomerBookings = useCallback(async () => {
     try {
-      const response = await fetch(`/api/customer-portal?email=${encodeURIComponent(user?.email || '')}&action=bookings`);
+      const response = await fetch('/api/customer-portal?action=bookings');
       if (response.ok) {
         const data = await response.json();
         setBookings(data.bookings || []);
@@ -130,7 +144,7 @@ export default function CustomerPortal() {
 
   const fetchAddonOrders = useCallback(async () => {
     try {
-      const response = await fetch(`/api/customer-portal?email=${encodeURIComponent(user?.email || '')}&action=addon-orders`);
+      const response = await fetch('/api/customer-portal?action=addon-orders');
       if (response.ok) {
         const data = await response.json();
         setAddonOrders(data.addonOrders || []);
@@ -143,11 +157,21 @@ export default function CustomerPortal() {
   const fetchCustomerInfo = useCallback(async () => {
     if (!user?.email) return;
     try {
-      const response = await fetch(`/api/customer-portal?email=${encodeURIComponent(user.email)}&action=customer-info`);
+      const response = await fetch('/api/customer-portal?action=customer-info');
       if (response.ok) {
         const data = await response.json();
         setCustomerNumber(data.customerNumber || null);
         setVatId(data.vatId || '');
+        setProfile({
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          companyName: data.companyName || '',
+          street: data.street || '',
+          zip: data.zip || '',
+          city: data.city || '',
+          country: data.country || 'DE',
+          phone: data.phone || '',
+        });
       }
     } catch {
       console.error('Fehler beim Laden der Kundennummer');
@@ -157,7 +181,7 @@ export default function CustomerPortal() {
   const fetchFunnelAnalyses = useCallback(async () => {
     if (!user?.email) return;
     try {
-      const response = await fetch(`/api/customer-portal?email=${encodeURIComponent(user.email)}&action=funnel-analysis`);
+      const response = await fetch('/api/customer-portal?action=funnel-analysis');
       if (response.ok) {
         const data = await response.json();
         setFunnelAnalyses(data.analyses || []);
@@ -177,9 +201,48 @@ export default function CustomerPortal() {
     }
   }, [checkAuth, user?.email, fetchCustomerBookings, fetchAddonOrders, fetchCustomerInfo, fetchFunnelAnalyses]);
 
-  const handleLogout = () => {
-    document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // ignore
+    }
     router.push('/customer/login');
+  };
+
+  const saveProfile = async () => {
+    setProfileSaving(true);
+    setProfileError('');
+    setProfileSuccess('');
+    try {
+      const response = await fetch('/api/customer-portal', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setProfileError(data.message || 'Profil konnte nicht gespeichert werden.');
+        return;
+      }
+      if (data.profile) {
+        setProfile({
+          firstName: data.profile.firstName || '',
+          lastName: data.profile.lastName || '',
+          companyName: data.profile.companyName || '',
+          street: data.profile.street || '',
+          zip: data.profile.zip || '',
+          city: data.profile.city || '',
+          country: data.profile.country || 'DE',
+          phone: data.profile.phone || '',
+        });
+      }
+      setProfileSuccess('Ihre Kontaktdaten wurden gespeichert.');
+    } catch {
+      setProfileError('Profil konnte nicht gespeichert werden.');
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   const saveVatId = async () => {
@@ -206,7 +269,7 @@ export default function CustomerPortal() {
       setShowDetails(true);
 
       // Lade Rechnungen
-      const invoicesResponse = await fetch(`/api/customer-portal?email=${encodeURIComponent(user?.email || '')}&action=invoices&bookingId=${booking.id}`);
+      const invoicesResponse = await fetch(`/api/customer-portal?action=invoices&bookingId=${booking.id}`);
       if (invoicesResponse.ok) {
         const invoicesData = await invoicesResponse.json();
         setInvoices(invoicesData.invoices || []);
@@ -214,7 +277,7 @@ export default function CustomerPortal() {
 
       // Lade Subscription (falls monatlich)
       if (booking.isMonthly) {
-        const subscriptionResponse = await fetch(`/api/customer-portal?email=${encodeURIComponent(user?.email || '')}&action=subscription&bookingId=${booking.id}`);
+        const subscriptionResponse = await fetch(`/api/customer-portal?action=subscription&bookingId=${booking.id}`);
         if (subscriptionResponse.ok) {
           const subscriptionData = await subscriptionResponse.json();
           setSubscription(subscriptionData.subscription);
@@ -357,6 +420,121 @@ export default function CustomerPortal() {
           </div>
 
           <div className="bg-card rounded-lg p-5 border border-border mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-foreground">Meine Kontaktdaten</h2>
+              {isReadOnly && (
+                <span className="text-xs rounded-full bg-muted px-3 py-1 text-muted-foreground">
+                  Nur Lesezugriff
+                </span>
+              )}
+            </div>
+            {profileError && (
+              <p className="mb-4 text-sm text-destructive">{profileError}</p>
+            )}
+            {profileSuccess && (
+              <p className="mb-4 text-sm text-green-600">{profileSuccess}</p>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Vorname</label>
+                <input
+                  type="text"
+                  value={profile.firstName}
+                  onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                  disabled={isReadOnly}
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Nachname</label>
+                <input
+                  type="text"
+                  value={profile.lastName}
+                  onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                  disabled={isReadOnly}
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-2">Firma</label>
+                <input
+                  type="text"
+                  value={profile.companyName}
+                  onChange={(e) => setProfile({ ...profile, companyName: e.target.value })}
+                  disabled={isReadOnly}
+                  placeholder="Optional"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-2">Straße</label>
+                <input
+                  type="text"
+                  value={profile.street}
+                  onChange={(e) => setProfile({ ...profile, street: e.target.value })}
+                  disabled={isReadOnly}
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">PLZ</label>
+                <input
+                  type="text"
+                  value={profile.zip}
+                  onChange={(e) => setProfile({ ...profile, zip: e.target.value })}
+                  disabled={isReadOnly}
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Stadt</label>
+                <input
+                  type="text"
+                  value={profile.city}
+                  onChange={(e) => setProfile({ ...profile, city: e.target.value })}
+                  disabled={isReadOnly}
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Land</label>
+                <select
+                  value={profile.country}
+                  onChange={(e) => setProfile({ ...profile, country: e.target.value })}
+                  disabled={isReadOnly}
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
+                >
+                  <option value="DE">Deutschland</option>
+                  <option value="AT">Österreich</option>
+                  <option value="CH">Schweiz</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Telefon</label>
+                <input
+                  type="tel"
+                  value={profile.phone}
+                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                  disabled={isReadOnly}
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
+                />
+              </div>
+            </div>
+            {!isReadOnly && (
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={saveProfile}
+                  disabled={profileSaving}
+                  className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60"
+                >
+                  {profileSaving ? 'Speichert...' : 'Kontaktdaten speichern'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-card rounded-lg p-5 border border-border mb-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-foreground mb-2">
@@ -367,20 +545,23 @@ export default function CustomerPortal() {
                   value={vatId}
                   onChange={(e) => setVatId(e.target.value)}
                   placeholder="DE123456789"
-                  className="w-full md:max-w-sm px-4 py-2 bg-background border border-border rounded-lg text-foreground"
+                  disabled={isReadOnly}
+                  className="w-full md:max-w-sm px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
                 />
                 <p className="text-xs text-muted-foreground mt-2">
                   Optional für Angebote, Rechnungen und Firmenprofil.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={saveVatId}
-                disabled={vatSaving}
-                className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60"
-              >
-                {vatSaving ? 'Speichert...' : 'USt-ID speichern'}
-              </button>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={saveVatId}
+                  disabled={vatSaving}
+                  className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60"
+                >
+                  {vatSaving ? 'Speichert...' : 'USt-ID speichern'}
+                </button>
+              )}
             </div>
           </div>
 

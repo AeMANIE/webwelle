@@ -79,10 +79,6 @@ export default function Register() {
       const data = await response.json();
 
       if (response.ok) {
-        // Token in Cookie speichern
-        document.cookie = `auth-token=${data.token}; path=/; max-age=86400; secure; samesite=strict`;
-        
-        // Zum Kundenportal weiterleiten
         router.push('/customer');
       } else {
         setError(data.error || 'Registrierung fehlgeschlagen');

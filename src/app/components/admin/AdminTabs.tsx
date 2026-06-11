@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-type TabId = 'bookings' | 'customers' | 'invoices' | 'offers' | 'blog' | 'database';
+type TabId = 'bookings' | 'customers' | 'invoices' | 'offers' | 'blog' | 'blog-jobs' | 'database';
 
 interface AdminTabsProps {
   activeTab: TabId;
@@ -47,6 +47,7 @@ export default function AdminTabs({ activeTab, onTabChange }: AdminTabsProps) {
     { id: 'invoices', label: 'Rechnungen', icon: <FileTextIcon /> },
     { id: 'offers', label: 'Leads & Angebote', icon: <FileTextIcon /> },
     { id: 'blog', label: 'Blog-Editor', icon: <EditIcon /> },
+    { id: 'blog-jobs', label: 'Kunden-Blog', icon: <FileTextIcon /> },
     { id: 'database', label: 'Datenbank', icon: <DatabaseIcon /> },
   ];
 

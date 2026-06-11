@@ -6,7 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, RATE_LIMITS } from './rate-limit';
 import { validateEmail, sanitizeText, validateUrl } from './validation';
-import { verifyToken } from './auth';
+import { verifyAccessToken, type User } from './auth';
+import { AUTH_ACCESS_COOKIE, AUTH_REFRESH_COOKIE } from './auth-cookies';
+import { type AppRole, hasMinRole, isCustomerRole, isStaffRole } from './rbac';
 
 /**
  * Rate Limiting Wrapper für API-Routen
@@ -54,37 +56,92 @@ export async function applyRateLimit(
 }
 
 /**
- * Admin-Authentifizierung mit Rate Limiting
+ * Zentrale RBAC-Prüfung mit Mindest-Rolle
  */
-export async function requireAdminAuth(
+export async function requireRole(
   request: NextRequest,
+  minRole: AppRole,
   applyRateLimitCheck = true
-): Promise<{ user: { id: string; email: string; role: string; name: string } } | NextResponse> {
+): Promise<{ user: User } | NextResponse> {
   try {
-    // Rate Limiting für Admin-Endpunkte
     if (applyRateLimitCheck) {
       const rateLimitResponse = await applyRateLimit(request, RATE_LIMITS.API);
       if (rateLimitResponse) return rateLimitResponse;
     }
 
-    const token = request.cookies.get('auth-token')?.value;
+    const token = request.cookies.get(AUTH_ACCESS_COOKIE)?.value;
     if (!token) {
+      const hasRefresh = Boolean(request.cookies.get(AUTH_REFRESH_COOKIE)?.value);
+      return secureResponse(
+        { error: 'Nicht autorisiert', needsRefresh: hasRefresh },
+        401
+      );
+    }
+
+    const user = verifyAccessToken(token);
+    if (!user) {
       return secureResponse({ error: 'Nicht autorisiert' }, 401);
     }
 
-    const user = verifyToken(token);
-    if (!user || user.role !== 'admin') {
-      return secureResponse({ error: 'Nicht autorisiert' }, 403);
+    if (!hasMinRole(user.role, minRole)) {
+      return secureResponse({ error: 'Unzureichende Berechtigung' }, 403);
     }
 
     return { user };
   } catch (error) {
-    console.error('❌ Fehler in requireAdminAuth:', error);
+    console.error('❌ Fehler in requireRole:', error);
     return secureResponse(
-      { error: 'Authentifizierungsfehler', details: error instanceof Error ? error.message : 'Unbekannter Fehler' },
+      {
+        error: 'Authentifizierungsfehler',
+        details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+      },
       500
     );
   }
+}
+
+export async function requireStaffAuth(
+  request: NextRequest,
+  minRole: AppRole = 'TEAM',
+  applyRateLimitCheck = true
+): Promise<{ user: User } | NextResponse> {
+  const auth = await requireRole(request, minRole, applyRateLimitCheck);
+  if (auth instanceof NextResponse) return auth;
+  if (!isStaffRole(auth.user.role)) {
+    return secureResponse({ error: 'Nicht autorisiert' }, 403);
+  }
+  return auth;
+}
+
+export async function requireAdminAuth(
+  request: NextRequest,
+  applyRateLimitCheck = true
+): Promise<{ user: User } | NextResponse> {
+  return requireStaffAuth(request, 'ADMIN', applyRateLimitCheck);
+}
+
+export async function requireCustomerAuth(
+  request: NextRequest,
+  applyRateLimitCheck = true
+): Promise<{ user: User } | NextResponse> {
+  const auth = await requireRole(request, 'VIEWER', applyRateLimitCheck);
+  if (auth instanceof NextResponse) return auth;
+  if (!isCustomerRole(auth.user.role)) {
+    return secureResponse({ error: 'Nicht autorisiert' }, 403);
+  }
+  return auth;
+}
+
+export async function requireMemberAuth(
+  request: NextRequest,
+  applyRateLimitCheck = true
+): Promise<{ user: User } | NextResponse> {
+  const auth = await requireRole(request, 'MEMBER', applyRateLimitCheck);
+  if (auth instanceof NextResponse) return auth;
+  if (!isCustomerRole(auth.user.role)) {
+    return secureResponse({ error: 'Nicht autorisiert' }, 403);
+  }
+  return auth;
 }
 
 /**

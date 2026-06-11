@@ -1,3 +1,7 @@
+// Data isolation: App-layer via customer_id + RBAC (requireCustomerAuth).
+// Phase 4–5 (organizations, organization_id, RLS) deferred – info/database/phase-4-5-backlog.md
+// Do not add tenant_id or RLS without product decision – info/database/phase-4-5-backlog.md
+
 // WICHTIG: Setze NODE_TLS_REJECT_UNAUTHORIZED für self-signed certificates
 // Dies muss GLOBAL gesetzt werden, BEVOR pg importiert wird
 const isDevelopmentEnv = process.env.NODE_ENV !== 'production';
@@ -430,6 +434,25 @@ export async function getAllBookings(): Promise<BookingData[]> {
   }
 }
 
+// Buchungen nach customer_id (scoped, bevorzugt für RBAC)
+export async function getBookingsByCustomerId(
+  customerId: string,
+  email: string
+): Promise<BookingData[]> {
+  const client = await pool.connect();
+  try {
+    const query = `
+      SELECT * FROM webwelle_bookings
+      WHERE customer_id = $1::uuid OR LOWER(customer_email) = LOWER($2)
+      ORDER BY created_at DESC
+    `;
+    const result = await client.query(query, [customerId, email]);
+    return result.rows;
+  } finally {
+    client.release();
+  }
+}
+
 // Buchungen nach E-Mail abrufen (für Kundenportal)
 // Unterstützt beide Wege: customer_id (wenn registriert) oder customer_email (wenn über Stripe gebucht)
 export async function getBookingsByEmail(email: string): Promise<BookingData[]> {
@@ -519,8 +542,97 @@ export interface CustomerData {
   reset_token_expires?: Date;
   portal_activated?: boolean;
   portal_activated_at?: Date;
+  portal_role?: string;
   created_at?: Date;
   updated_at?: Date;
+}
+
+export interface StaffUser {
+  id: string;
+  email: string;
+  name: string;
+  role: 'TEAM' | 'ADMIN' | 'OWNER';
+  is_active: boolean;
+}
+
+export async function getCustomerById(id: string): Promise<CustomerData | null> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query('SELECT * FROM customers WHERE id = $1', [id]);
+    return result.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+export interface CustomerProfileUpdate {
+  name?: string;
+  phone?: string;
+  company_name?: string;
+  street?: string;
+  city?: string;
+  zip?: string;
+  country?: string;
+  vat_id?: string;
+  email?: string;
+}
+
+export async function updateCustomerProfile(
+  customerId: string,
+  updates: CustomerProfileUpdate
+): Promise<CustomerData | null> {
+  await ensureAddressColumnsExist();
+
+  const client = await pool.connect();
+  try {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+    let paramCount = 1;
+
+    const setField = (column: string, value: unknown) => {
+      fields.push(`${column} = $${paramCount++}`);
+      values.push(value);
+    };
+
+    if (updates.name !== undefined) setField('name', updates.name);
+    if (updates.phone !== undefined) setField('phone', updates.phone);
+    if (updates.company_name !== undefined) setField('company_name', updates.company_name);
+    if (updates.vat_id !== undefined) setField('vat_id', updates.vat_id);
+    if (updates.email !== undefined) setField('email', updates.email.toLowerCase().trim());
+    if (updates.street !== undefined) setField('street', updates.street);
+    if (updates.city !== undefined) setField('city', updates.city);
+    if (updates.zip !== undefined) setField('zip', updates.zip);
+    if (updates.country !== undefined) setField('country', updates.country);
+
+    if (fields.length === 0) {
+      return getCustomerById(customerId);
+    }
+
+    fields.push('updated_at = NOW()');
+    values.push(customerId);
+
+    const result = await client.query(
+      `UPDATE customers SET ${fields.join(', ')} WHERE id = $${paramCount} RETURNING *`,
+      values
+    );
+    const row = result.rows[0];
+    if (row) {
+      const { syncFunnelLeadsFromCustomer } = await import('./customer-funnel-sync');
+      await syncFunnelLeadsFromCustomer(customerId, {
+        email: row.email,
+        name: row.name,
+        phone: row.phone,
+        company_name: row.company_name,
+        street: row.street,
+        city: row.city,
+        zip: row.zip,
+        country: row.country,
+      });
+    }
+    return row || null;
+  } finally {
+    client.release();
+  }
 }
 
 // Kunde nach E-Mail abrufen (mit SSL-Fallback)
@@ -803,6 +915,10 @@ export async function createCustomer(customerData: Omit<CustomerData, 'id' | 'cr
 }
 
 export async function ensureCustomerPortalColumns(): Promise<void> {
+  await ensureRbacSchema();
+}
+
+export async function ensureRbacSchema(): Promise<void> {
   const client = await pool.connect();
   try {
     await client.query(`
@@ -814,10 +930,94 @@ export async function ensureCustomerPortalColumns(): Promise<void> {
       ADD COLUMN IF NOT EXISTS street VARCHAR(255),
       ADD COLUMN IF NOT EXISTS city VARCHAR(255),
       ADD COLUMN IF NOT EXISTS zip VARCHAR(20),
-      ADD COLUMN IF NOT EXISTS country VARCHAR(100);
+      ADD COLUMN IF NOT EXISTS country VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS portal_role VARCHAR(20) DEFAULT 'MEMBER';
+
+      UPDATE customers SET portal_role = 'MEMBER' WHERE portal_role IS NULL;
+
       CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
       CREATE INDEX IF NOT EXISTS idx_customers_portal_activated ON customers(portal_activated);
+      CREATE INDEX IF NOT EXISTS idx_customers_portal_role ON customers(portal_role);
+
+      CREATE TABLE IF NOT EXISTS staff_users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255),
+        role VARCHAR(20) NOT NULL CHECK (role IN ('TEAM', 'ADMIN', 'OWNER')),
+        password_hash VARCHAR(255),
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_staff_users_email ON staff_users(email);
     `);
+  } finally {
+    client.release();
+  }
+}
+
+export async function getStaffByEmail(email: string): Promise<StaffUser | null> {
+  await ensureRbacSchema();
+  const normalizedEmail = email.toLowerCase().trim();
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT id, email, name, role, is_active
+       FROM staff_users
+       WHERE LOWER(email) = $1 AND is_active = true
+       LIMIT 1`,
+      [normalizedEmail]
+    );
+    if (result.rows.length === 0) return null;
+    const row = result.rows[0];
+    return {
+      id: String(row.id),
+      email: String(row.email),
+      name: String(row.name || row.email),
+      role: row.role as StaffUser['role'],
+      is_active: Boolean(row.is_active),
+    };
+  } finally {
+    client.release();
+  }
+}
+
+/** ENV-Admin als OWNER in staff_users (Übergangsphase ohne separates Mitarbeiter-Login) */
+export async function ensureEnvOwnerStaff(
+  email: string,
+  name: string
+): Promise<StaffUser> {
+  await ensureRbacSchema();
+  const normalizedEmail = email.toLowerCase().trim();
+  const client = await pool.connect();
+  try {
+    const existing = await client.query(
+      `SELECT id, email, name, role, is_active FROM staff_users WHERE LOWER(email) = $1 LIMIT 1`,
+      [normalizedEmail]
+    );
+    if (existing.rows.length > 0) {
+      const row = existing.rows[0];
+      return {
+        id: String(row.id),
+        email: String(row.email),
+        name: String(row.name || name),
+        role: row.role as StaffUser['role'],
+        is_active: Boolean(row.is_active),
+      };
+    }
+    const inserted = await client.query(
+      `INSERT INTO staff_users (email, name, role, is_active)
+       VALUES ($1, $2, 'OWNER', true)
+       RETURNING id, email, name, role, is_active`,
+      [normalizedEmail, name]
+    );
+    const row = inserted.rows[0];
+    return {
+      id: String(row.id),
+      email: String(row.email),
+      name: String(row.name),
+      role: row.role as StaffUser['role'],
+      is_active: Boolean(row.is_active),
+    };
   } finally {
     client.release();
   }
@@ -1113,9 +1313,11 @@ export async function createTables(): Promise<void> {
       ADD COLUMN IF NOT EXISTS street VARCHAR(255),
       ADD COLUMN IF NOT EXISTS city VARCHAR(255),
       ADD COLUMN IF NOT EXISTS zip VARCHAR(20),
-      ADD COLUMN IF NOT EXISTS country VARCHAR(100);
+      ADD COLUMN IF NOT EXISTS country VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS portal_role VARCHAR(20) DEFAULT 'MEMBER';
       CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
       CREATE INDEX IF NOT EXISTS idx_customers_portal_activated ON customers(portal_activated);
+      CREATE INDEX IF NOT EXISTS idx_customers_portal_role ON customers(portal_role);
     `;
     
     // =====================================================
@@ -1328,6 +1530,38 @@ export async function createTables(): Promise<void> {
     await client.query(createSubscriptionsTableQuery);
     await client.query(createAddonOrdersTableQuery);
     await client.query(createResetTokensTableQuery);
+
+    const createRefreshTokensTableQuery = `
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id VARCHAR(255) NOT NULL,
+        user_role VARCHAR(20) NOT NULL,
+        user_email VARCHAR(255) NOT NULL,
+        user_name VARCHAR(255) NOT NULL,
+        token_hash VARCHAR(64) NOT NULL UNIQUE,
+        expires_at TIMESTAMPTZ NOT NULL,
+        revoked_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_hash ON refresh_tokens(token_hash);
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id, user_role);
+    `;
+    await client.query(createRefreshTokensTableQuery);
+
+    const createStaffUsersTableQuery = `
+      CREATE TABLE IF NOT EXISTS staff_users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255),
+        role VARCHAR(20) NOT NULL CHECK (role IN ('TEAM', 'ADMIN', 'OWNER')),
+        password_hash VARCHAR(255),
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_staff_users_email ON staff_users(email);
+    `;
+    await client.query(createStaffUsersTableQuery);
+
     await client.query(createPortalTokensTableQuery);
     await client.query(alterCustomersTableQuery);
     await client.query(createInvoicesTableQuery);
@@ -1355,6 +1589,8 @@ export async function createTables(): Promise<void> {
     console.log('   - webwelle_subscriptions');
     console.log('   - webwelle_addon_orders');
     console.log('   - reset_tokens');
+    console.log('   - refresh_tokens');
+    console.log('   - staff_users');
     console.log('   - customer_portal_tokens');
     console.log('   - invoices');
     console.log('   - blog_posts');
@@ -1367,6 +1603,14 @@ export async function createTables(): Promise<void> {
       console.log('✅ Funnel-Tabellen überprüft');
     } catch (funnelErr) {
       console.warn('⚠️ Funnel-Tabellen:', funnelErr);
+    }
+
+    try {
+      const { ensureBlogPipelineTables } = await import('./blog-jobs-database');
+      await ensureBlogPipelineTables();
+      console.log('✅ Blog-Pipeline-Tabellen überprüft');
+    } catch (blogErr) {
+      console.warn('⚠️ Blog-Pipeline-Tabellen:', blogErr);
     }
   } finally {
     client.release();

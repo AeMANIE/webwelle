@@ -1,4 +1,6 @@
 import { parsePhoneNumberFromString } from 'libphonenumber-js/max';
+import { validatePostalCode } from '@/lib/funnel/market';
+import type { DachMarket } from '@/lib/funnel/types';
 
 // Zentrale Input-Validierung für alle Formulare
 export interface ValidationResult {
@@ -600,6 +602,100 @@ export function validateLoginForm(email: string, password: string): ValidationRe
   return {
     isValid: Object.keys(errors).length === 0,
     errors
+  };
+}
+
+const DACH_MARKETS = new Set<string>(['DE', 'AT', 'CH']);
+
+export function splitFullName(name: string): { firstName: string; lastName: string } {
+  const trimmed = name.trim();
+  const spaceIdx = trimmed.indexOf(' ');
+  if (spaceIdx === -1) {
+    return { firstName: trimmed, lastName: '' };
+  }
+  return {
+    firstName: trimmed.slice(0, spaceIdx),
+    lastName: trimmed.slice(spaceIdx + 1).trim(),
+  };
+}
+
+export function buildFullName(firstName: string, lastName: string): string {
+  return `${firstName.trim()} ${lastName.trim()}`.trim();
+}
+
+export interface CustomerProfileInput {
+  firstName: string;
+  lastName: string;
+  companyName?: string;
+  street?: string;
+  zip?: string;
+  city?: string;
+  country?: string;
+  phone?: string;
+}
+
+export function validateCustomerProfile(input: CustomerProfileInput): ValidationResult {
+  const errors: Record<string, string> = {};
+  const market = DACH_MARKETS.has(String(input.country || '').toUpperCase())
+    ? (String(input.country).toUpperCase() as DachMarket)
+    : 'DE';
+
+  const firstNameResult = validatePersonName(input.firstName, 'Vorname');
+  if (!firstNameResult.valid) {
+    errors.firstName = firstNameResult.hint || 'Ungültiger Vorname';
+  }
+
+  const lastNameResult = validatePersonName(input.lastName, 'Nachname');
+  if (!lastNameResult.valid) {
+    errors.lastName = lastNameResult.hint || 'Ungültiger Nachname';
+  }
+
+  const namePairResult = validatePersonNamePair(input.firstName, input.lastName);
+  if (!namePairResult.valid) {
+    errors.lastName = namePairResult.hint || 'Ungültiger Name';
+  }
+
+  const phone = String(input.phone || '').trim();
+  if (!phone) {
+    errors.phone = 'Bitte Ihre Handynummer eingeben.';
+  } else {
+    const phoneResult = validateMobileDACH(phone, market);
+    if (!phoneResult.valid) {
+      errors.phone = phoneResult.hint || 'Ungültige Handynummer';
+    }
+  }
+
+  const street = sanitizeText(String(input.street || '').trim());
+  if (street.length < 3) {
+    errors.street = 'Bitte Straße und Hausnummer eingeben.';
+  }
+
+  const city = sanitizeText(String(input.city || '').trim());
+  if (city.length < 2) {
+    errors.city = 'Bitte eine gültige Stadt eingeben.';
+  }
+
+  const zip = String(input.zip || '').trim();
+  if (!zip || !validatePostalCode(market, zip)) {
+    errors.zip =
+      market === 'DE'
+        ? 'Bitte eine gültige PLZ mit 5 Ziffern eingeben.'
+        : 'Bitte eine gültige PLZ mit 4 Ziffern eingeben.';
+  }
+
+  const country = String(input.country || '').trim().toUpperCase();
+  if (!DACH_MARKETS.has(country)) {
+    errors.country = 'Bitte Deutschland, Österreich oder Schweiz wählen.';
+  }
+
+  const companyName = sanitizeText(String(input.companyName || '').trim());
+  if (companyName && companyName.length < 2) {
+    errors.companyName = 'Bitte einen gültigen Firmennamen eingeben.';
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
   };
 }
 

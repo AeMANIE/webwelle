@@ -7,6 +7,7 @@ import {
 } from '@/lib/funnel/industry';
 import { createFunnelLead, ensureFunnelTables } from '@/lib/funnel-database';
 import { secureResponse } from '@/lib/api-security';
+import { setFunnelTokenCookie } from '@/lib/auth-cookies';
 
 export async function POST(request: NextRequest) {
   try {
@@ -92,12 +93,7 @@ export async function POST(request: NextRequest) {
       marketAutoDetected: lead.market_auto_detected,
     });
 
-    res.cookies.set('wf_token', lead.token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 90,
-    });
+    setFunnelTokenCookie(res, lead.token);
 
     return res;
   } catch (error) {

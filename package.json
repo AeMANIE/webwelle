@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/responsive-layout-mode.test.ts"
+    "test": "tsx --test src/lib/responsive-layout-mode.test.ts",
+    "db:backup": "bash scripts/pg-backup.sh",
+    "db:restore": "bash scripts/pg-restore.sh",
+    "db:ops-health": "tsx scripts/db-ops-health.ts",
+    "db:check-tables": "tsx scripts/check-database-tables.ts"
   },
   "dependencies": {
     "@radix-ui/react-separator": "^1.1.7",

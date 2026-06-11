@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth, secureResponse } from '@/lib/api-security';
 import { correctDatabaseUrl, createTempPool } from '@/lib/database';
+import { blockInProduction } from '@/lib/prod-guard';
 
 export async function GET(request: NextRequest) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   try {
     // Admin-Auth
     const authResult = await requireAdminAuth(request);

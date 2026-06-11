@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { customerLogin } from '@/lib/auth';
+import { attachSessionToResponse } from '@/lib/session';
+import { secureResponse } from '@/lib/api-security';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,21 +23,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // HttpOnly Cookie setzen für sichere Token-Speicherung
-    const response = NextResponse.json({
+    const response = secureResponse({
       success: true,
-      user: result.user
+      user: result.user,
     });
-
-    response.cookies.set('auth-token', result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60, // 24 Stunden
-      path: '/'
-    });
-
-    return response;
+    return attachSessionToResponse(response, result.user);
 
   } catch (error) {
     console.error('Customer Login Fehler:', error);

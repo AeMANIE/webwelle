@@ -77,16 +77,7 @@ export default function CustomerLogin() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Token wird bereits als HttpOnly Cookie gesetzt (vom Server)
-        // Zusätzlich als Fallback im Client (für Kompatibilität)
-        if (data.token) {
-          document.cookie = `auth-token=${data.token}; path=/; max-age=86400; secure; samesite=strict`;
-        }
-        
-        // Kurze Verzögerung, damit Cookie gesetzt wird
-        setTimeout(() => {
-          router.push(getSafeRedirectTo());
-        }, 100);
+        router.push(getSafeRedirectTo());
       } else {
         const errorMsg = data.error || 'TAN-Verifizierung fehlgeschlagen';
         setError(errorMsg);

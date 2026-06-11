@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateActivationToken, markTokenAsUsed } from '@/lib/portal-activation';
-import { createToken } from '@/lib/auth';
+import { buildCustomerSessionUser } from '@/lib/auth';
+import { attachSessionToResponse } from '@/lib/session';
+import { ensureRbacSchema } from '@/lib/database';
 import { pool, getCustomerByEmail, updateCustomer, createCustomer, ensureCustomerPortalColumns } from '@/lib/database';
 import { validatePassword } from '@/lib/password';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
@@ -126,28 +128,20 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    const jwt = createToken({
-      id: String(customer.id),
-      email: customer.email,
-      role: 'customer',
+    await ensureRbacSchema();
+    const user = buildCustomerSessionUser({
+      ...customer,
       name: customer.name || customer.email,
+      portal_role: customer.portal_role || 'MEMBER',
     });
 
-    const response = NextResponse.json({ 
+    const response = NextResponse.json({
       success: true,
       message: 'Portal erfolgreich aktiviert',
       redirectTo: '/customer?tab=analysis',
     });
 
-    response.cookies.set('auth-token', jwt, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60,
-      path: '/'
-    });
-
-    return response;
+    return attachSessionToResponse(response, user);
   } catch (error) {
     console.error('Fehler bei Portal-Aktivierung:', error);
     return NextResponse.json(

@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminTAN } from '@/lib/tan-store';
+import { blockInProduction } from '@/lib/prod-guard';
 
 /**
  * DEBUG-ROUTE: Prüft den Status einer Admin-TAN
  * GET /api/debug/admin-tan-status?email=admin@webwelle.com
  */
 export async function GET(request: NextRequest) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   try {
-    // Nur in Development oder mit ALLOW_DEBUG_ROUTES
-    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEBUG_ROUTES !== 'true') {
-      return NextResponse.json({ error: 'Debug-Route nur in Development verfügbar' }, { status: 403 });
-    }
 
     const email = request.nextUrl.searchParams.get('email');
     if (!email) {

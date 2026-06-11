@@ -2,17 +2,18 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import AdminTabs from '../components/admin/AdminTabs';
-import BookingsTab from '../components/admin/BookingsTab';
-import CustomersTab from '../components/admin/CustomersTab';
-import InvoicesTab from '../components/admin/InvoicesTab';
-import BlogTab from '../components/admin/BlogTab';
-import DatabaseTab from '../components/admin/DatabaseTab';
-import OffersTab from '../components/admin/OffersTab';
+import Header from '../../components/Header';
+import Footer from '../../components/Footer';
+import AdminTabs from '../../components/admin/AdminTabs';
+import BookingsTab from '../../components/admin/BookingsTab';
+import CustomersTab from '../../components/admin/CustomersTab';
+import InvoicesTab from '../../components/admin/InvoicesTab';
+import BlogTab from '../../components/admin/BlogTab';
+import BlogJobsTab from '../../components/admin/BlogJobsTab';
+import DatabaseTab from '../../components/admin/DatabaseTab';
+import OffersTab from '../../components/admin/OffersTab';
 
-type TabId = 'bookings' | 'customers' | 'invoices' | 'offers' | 'blog' | 'database';
+type TabId = 'bookings' | 'customers' | 'invoices' | 'offers' | 'blog' | 'blog-jobs' | 'database';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabId>('bookings');
@@ -23,7 +24,7 @@ export default function AdminPage() {
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const tab = searchParams.get('tab') as TabId;
-    if (tab && ['bookings', 'customers', 'invoices', 'offers', 'blog', 'database'].includes(tab)) {
+    if (tab && ['bookings', 'customers', 'invoices', 'offers', 'blog', 'blog-jobs', 'database'].includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
@@ -33,7 +34,7 @@ export default function AdminPage() {
       const response = await fetch('/api/auth/verify');
       const data = await response.json();
       
-      if (data.authenticated && data.user && data.user.role === 'admin') {
+      if (data.authenticated && data.user?.role && ['TEAM', 'ADMIN', 'OWNER'].includes(data.user.role)) {
         setUser(data.user);
       } else {
         router.push('/admin/login');
@@ -48,8 +49,12 @@ export default function AdminPage() {
     checkAuth();
   }, [checkAuth]);
 
-  const handleLogout = () => {
-    document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // ignore
+    }
     router.push('/admin/login');
   };
 
@@ -86,6 +91,7 @@ export default function AdminPage() {
           {activeTab === 'invoices' && <InvoicesTab />}
           {activeTab === 'offers' && <OffersTab />}
           {activeTab === 'blog' && <BlogTab />}
+          {activeTab === 'blog-jobs' && <BlogJobsTab />}
           {activeTab === 'database' && <DatabaseTab />}
         </div>
       </main>

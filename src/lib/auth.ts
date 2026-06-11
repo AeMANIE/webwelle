@@ -2,6 +2,13 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { validatePassword, verifyPassword as verifyPasswordUtil } from './password';
 import { logLoginAttempt, logFailedAuth } from './security-logger';
+import {
+  type AppRole,
+  ROLE_HIERARCHY,
+  normalizeLegacyJwtRole,
+  normalizePortalRole,
+} from './rbac';
+import type { CustomerData, StaffUser } from './database';
 
 // JWT Secret zur Laufzeit validieren
 function getJWTSecret(): string {
@@ -15,8 +22,35 @@ function getJWTSecret(): string {
 export interface User {
   id: string;
   email: string;
-  role: 'admin' | 'customer';
   name: string;
+  role: AppRole;
+  roleLevel: number;
+  customerId?: string;
+  staffId?: string;
+}
+
+export function buildCustomerSessionUser(customer: CustomerData): User {
+  const portalRole = normalizePortalRole(customer.portal_role);
+  const customerId = String(customer.id);
+  return {
+    id: customerId,
+    email: customer.email,
+    name: customer.name,
+    role: portalRole,
+    roleLevel: ROLE_HIERARCHY[portalRole],
+    customerId,
+  };
+}
+
+export function buildStaffSessionUser(staff: StaffUser): User {
+  return {
+    id: staff.id,
+    email: staff.email,
+    name: staff.name,
+    role: staff.role,
+    roleLevel: ROLE_HIERARCHY[staff.role],
+    staffId: staff.id,
+  };
 }
 
 // Admin-Benutzer (in Produktion aus Datenbank)
@@ -56,33 +90,67 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   return bcrypt.compare(password, hashedPassword);
 }
 
-// JWT Token erstellen
-export function createToken(user: User): string {
+const ACCESS_TOKEN_EXPIRY = '15m';
+
+function decodeUserPayload(decoded: jwt.JwtPayload): User | null {
+  if (!decoded.id || !decoded.email || !decoded.role || !decoded.name) {
+    return null;
+  }
+  if (decoded.typ && decoded.typ !== 'access') return null;
+
+  const role = normalizeLegacyJwtRole(decoded.role);
+  if (!role) return null;
+
+  const roleLevel =
+    typeof decoded.roleLevel === 'number'
+      ? decoded.roleLevel
+      : ROLE_HIERARCHY[role];
+
+  return {
+    id: String(decoded.id),
+    email: String(decoded.email),
+    name: String(decoded.name),
+    role,
+    roleLevel,
+    customerId: decoded.customerId ? String(decoded.customerId) : undefined,
+    staffId: decoded.staffId ? String(decoded.staffId) : undefined,
+  };
+}
+
+export function createAccessToken(user: User): string {
   return jwt.sign(
-    { 
-      id: user.id, 
-      email: user.email, 
+    {
+      id: user.id,
+      email: user.email,
       role: user.role,
-      name: user.name 
+      roleLevel: user.roleLevel,
+      name: user.name,
+      customerId: user.customerId,
+      staffId: user.staffId,
+      typ: 'access',
     },
     getJWTSecret(),
-    { expiresIn: '24h' }
+    { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
 }
 
-// JWT Token verifizieren
-export function verifyToken(token: string): User | null {
+/** @deprecated Use createAccessToken */
+export function createToken(user: User): string {
+  return createAccessToken(user);
+}
+
+export function verifyAccessToken(token: string): User | null {
   try {
-    const decoded = jwt.verify(token, getJWTSecret()) as { id: string; email: string; role: 'admin' | 'customer'; name: string };
-    return {
-      id: decoded.id,
-      email: decoded.email,
-      role: decoded.role,
-      name: decoded.name
-    };
+    const decoded = jwt.verify(token, getJWTSecret()) as jwt.JwtPayload;
+    return decodeUserPayload(decoded);
   } catch {
     return null;
   }
+}
+
+/** @deprecated Use verifyAccessToken */
+export function verifyToken(token: string): User | null {
+  return verifyAccessToken(token);
 }
 
 // Admin-Login (NUR Passwort-Validierung - TAN wird separat angefordert)
@@ -201,14 +269,10 @@ export async function adminLogin2FA(email: string, tan: string): Promise<{ user:
     return null;
   }
   
-  // TAN ist gültig - erstelle Token
-  const user: User = {
-    id: admin.id!,
-    email: admin.email!,
-    role: admin.role,
-    name: admin.name!
-  };
-  
+  const { ensureEnvOwnerStaff } = await import('./database');
+  const staff = await ensureEnvOwnerStaff(admin.email!, admin.name!);
+  const user = buildStaffSessionUser(staff);
+
   const token = createToken(user);
   logLoginAttempt(email, true);
   console.log('✅ Admin 2FA-Login erfolgreich:', user.email);
@@ -228,13 +292,7 @@ export async function customerLogin(email: string, password: string): Promise<{ 
     const isValidPassword = await verifyPasswordUtil(password, customer.password_hash);
     if (!isValidPassword) return null;
     
-    const user: User = {
-      id: customer.id!.toString(),
-      email: customer.email,
-      role: 'customer',
-      name: customer.name
-    };
-    
+    const user = buildCustomerSessionUser(customer);
     const token = createToken(user);
     return { user, token };
   }
@@ -274,10 +332,12 @@ export async function customerLogin(email: string, password: string): Promise<{ 
   const user: User = {
     id: customer.id,
     email: customer.email,
-    role: customer.role,
-    name: customer.name
+    name: customer.name,
+    role: 'MEMBER',
+    roleLevel: ROLE_HIERARCHY.MEMBER,
+    customerId: customer.id,
   };
-  
+
   const token = createToken(user);
   return { user, token };
 }
@@ -430,13 +490,11 @@ export async function customerLogin2FA(email: string, _tan: string): Promise<{ u
   // TAN wurde bereits in der API-Route verifiziert und gelöscht
   // Hier nur noch Kunde validieren und Token erstellen
   
-  const user: User = {
-    id: customer.id?.toString() || '',
-    email: customer.email,
-    role: 'customer' as const,
-    name: customer.name || normalizedEmail.split('@')[0]
-  };
-  
+  const user = buildCustomerSessionUser({
+    ...customer,
+    name: customer.name || normalizedEmail.split('@')[0],
+  });
+
   const token = createToken(user);
   return { user, token };
 }

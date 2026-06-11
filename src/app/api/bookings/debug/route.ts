@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth, secureResponse } from '@/lib/api-security';
-import { verifyToken } from '@/lib/auth';
+import { verifyAccessToken } from '@/lib/auth';
+import { blockInProduction } from '@/lib/prod-guard';
+import { AUTH_ACCESS_COOKIE } from '@/lib/auth-cookies';
 
 export async function GET(request: NextRequest) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
   const debugSteps: Array<{ step: string; success: boolean; error?: string; data?: unknown }> = [];
   
   try {
     // Step 1: Cookie prüfen
     debugSteps.push({ step: '1. Cookie prüfen', success: false });
-    const token = request.cookies.get('auth-token')?.value;
+    const token = request.cookies.get(AUTH_ACCESS_COOKIE)?.value;
     if (!token) {
       debugSteps[0].error = 'Kein auth-token Cookie gefunden';
       return secureResponse({ debugSteps, error: 'Kein Token' }, 401);
@@ -20,13 +24,13 @@ export async function GET(request: NextRequest) {
     debugSteps.push({ step: '2. Token verifizieren', success: false });
     let user;
     try {
-      user = verifyToken(token);
+      user = verifyAccessToken(token);
       if (!user) {
         debugSteps[1].error = 'Token ist ungültig oder abgelaufen';
         return secureResponse({ debugSteps, error: 'Ungültiger Token' }, 401);
       }
-      if (user.role !== 'admin') {
-        debugSteps[1].error = `Token hat Rolle: ${user.role}, erwartet: admin`;
+      if (!['TEAM', 'ADMIN', 'OWNER'].includes(user.role)) {
+        debugSteps[1].error = `Token hat Rolle: ${user.role}, erwartet: Staff-Rolle`;
         return secureResponse({ debugSteps, error: 'Keine Admin-Berechtigung' }, 403);
       }
       debugSteps[1].success = true;
