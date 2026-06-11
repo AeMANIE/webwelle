@@ -69,6 +69,10 @@ export function computeLayoutMode(env: LayoutEnv): LayoutMode {
   return 'mobile';
 }
 
+export function shouldUseTouchGlow(env: LayoutEnv): boolean {
+  return env.coarsePointer || !env.fineHover;
+}
+
 function getViewportSegmentCount(): number {
   if (typeof window === 'undefined') {
     return 1;

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   computeLayoutMode,
   getServicesGridClass,
+  shouldUseTouchGlow,
   type LayoutEnv,
 } from './responsive-layout-mode';
 
@@ -107,6 +108,49 @@ describe('computeLayoutMode', () => {
         })
       ),
       'mobile'
+    );
+  });
+});
+
+describe('shouldUseTouchGlow', () => {
+  it('iPhone → touch glow', () => {
+    assert.equal(
+      shouldUseTouchGlow(env({ cssWidth: 430, cssHeight: 932 })),
+      true
+    );
+  });
+
+  it('iPad Pro coarse pointer → touch glow', () => {
+    assert.equal(
+      shouldUseTouchGlow(
+        env({ cssWidth: 1024, cssHeight: 1366, coarsePointer: true, fineHover: false })
+      ),
+      true
+    );
+  });
+
+  it('iPad Pro desktop layout still uses touch glow when coarse', () => {
+    const tabletEnv = env({
+      cssWidth: 1024,
+      cssHeight: 1366,
+      coarsePointer: true,
+      fineHover: false,
+    });
+    assert.equal(computeLayoutMode(tabletEnv), 'desktop');
+    assert.equal(shouldUseTouchGlow(tabletEnv), true);
+  });
+
+  it('Desktop mouse + keyboard → pointer glow', () => {
+    assert.equal(
+      shouldUseTouchGlow(
+        env({
+          cssWidth: 1440,
+          cssHeight: 900,
+          coarsePointer: false,
+          fineHover: true,
+        })
+      ),
+      false
     );
   });
 });

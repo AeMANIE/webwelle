@@ -10,7 +10,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { useLayoutMode } from '@/hooks/useLayoutMode';
+import { readLayoutEnv, shouldUseTouchGlow } from '@/lib/responsive-layout-mode';
 
 type ServicesMobileGlowContextValue = {
   activeIndex: number | null;
@@ -86,19 +86,48 @@ export function ServicesMobileGlowProvider({
     setTappedIndexState(index);
   }, []);
 
-  const layoutMode = useLayoutMode();
+  const [touchGlowActive, setTouchGlowActive] = useState(
+    () => typeof window !== 'undefined' && shouldUseTouchGlow(readLayoutEnv())
+  );
+
+  useEffect(() => {
+    const syncTouchGlow = () => {
+      setTouchGlowActive(shouldUseTouchGlow(readLayoutEnv()));
+    };
+
+    syncTouchGlow();
+
+    const coarseMq = window.matchMedia('(pointer: coarse)');
+    const fineHoverMq = window.matchMedia('(hover: hover) and (pointer: fine)');
+
+    const onChange = () => syncTouchGlow();
+
+    window.addEventListener('resize', onChange);
+    window.addEventListener('orientationchange', onChange);
+    window.visualViewport?.addEventListener('resize', onChange);
+    coarseMq.addEventListener('change', onChange);
+    fineHoverMq.addEventListener('change', onChange);
+
+    return () => {
+      window.removeEventListener('resize', onChange);
+      window.removeEventListener('orientationchange', onChange);
+      window.visualViewport?.removeEventListener('resize', onChange);
+      coarseMq.removeEventListener('change', onChange);
+      fineHoverMq.removeEventListener('change', onChange);
+    };
+  }, []);
 
   const updateScrollActiveIndex = useCallback(() => {
-    if (layoutMode !== 'mobile') {
+    if (!touchGlowActive) {
       setScrollActiveIndex(null);
       setTappedIndexState(null);
       return;
     }
     setScrollActiveIndex(computeScrollActiveIndex(cardsRef.current, sectionId));
-  }, [layoutMode, sectionId]);
+  }, [touchGlowActive, sectionId]);
 
   useEffect(() => {
-    if (layoutMode !== 'mobile') return;
+    if (!touchGlowActive) return;
 
     const onScroll = () => {
       if (rafRef.current !== null) return;
@@ -118,7 +147,7 @@ export function ServicesMobileGlowProvider({
       window.removeEventListener('resize', onScroll);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [layoutMode, updateScrollActiveIndex]);
+  }, [touchGlowActive, updateScrollActiveIndex]);
 
   useEffect(() => {
     updateScrollActiveIndex();

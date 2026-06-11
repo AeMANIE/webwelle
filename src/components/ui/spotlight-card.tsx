@@ -1,7 +1,7 @@
 'use client';
 
 import type { FC } from 'react';
-import { useLayoutMode } from '@/hooks/useLayoutMode';
+import { useGlowInputMode } from '@/hooks/useGlowInputMode';
 import { type GlowCardProps, glowCardBaseClasses, getGlowCardLayoutClasses } from './spotlight-card-shared';
 import { DesktopGlowCard } from './spotlight-card-desktop';
 import { MobileGlowCard } from './spotlight-card-mobile';
@@ -27,13 +27,13 @@ const GlowCardFallback: FC<GlowCardProps> = ({
 );
 
 const GlowCard: FC<GlowCardProps> = (props) => {
-  const layoutMode = useLayoutMode();
+  const touchGlow = useGlowInputMode();
 
-  if (layoutMode === null) {
+  if (touchGlow === null) {
     return <GlowCardFallback {...props} />;
   }
 
-  return layoutMode === 'mobile' ? <MobileGlowCard {...props} /> : <DesktopGlowCard {...props} />;
+  return touchGlow ? <MobileGlowCard {...props} /> : <DesktopGlowCard {...props} />;
 };
 
 export { GlowCard };
