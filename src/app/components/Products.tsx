@@ -23,8 +23,8 @@ export default function Products() {
           </p>
         </div>
 
-        <div className="relative isolate">
-          <div className="pointer-events-none absolute -inset-x-8 -inset-y-6 sm:-inset-y-8 left-1/2 -translate-x-1/2 w-[calc(100%+4rem)] max-w-[100vw] z-[1] overflow-hidden">
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen max-w-[100vw] -z-0 overflow-hidden">
             <DottedSurface className="h-full w-full" />
           </div>
 
