@@ -1,12 +1,18 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { Lightbulb, Check } from 'lucide-react';
 import HeroIndustrySearch from '@/components/funnel/HeroIndustrySearch';
 import { STARTERWELLE } from '@/lib/funnel/packages';
 
+const DottedSurface = dynamic(
+  () => import('@/components/ui/dotted-surface').then((m) => m.DottedSurface),
+  { ssr: false }
+);
+
 export default function Products() {
   return (
-    <section id="produkte" className="pt-20 pb-20 lg:pt-28 bg-background">
+    <section id="produkte" className="pt-20 pb-20 lg:pt-28 bg-background overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight max-w-4xl mx-auto">
@@ -17,11 +23,16 @@ export default function Products() {
           </p>
         </div>
 
-        <div className="max-w-2xl mx-auto">
-          <div
-            id="starterwelle"
-            className="scroll-mt-28 bg-card rounded-xl p-8 border border-border shadow-md hover:shadow-xl transition-all duration-300 relative overflow-visible"
-          >
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen max-w-[100vw] -z-0 overflow-hidden">
+            <DottedSurface className="h-full w-full" />
+          </div>
+
+          <div className="relative z-10 max-w-2xl mx-auto">
+            <div
+              id="starterwelle"
+              className="scroll-mt-28 bg-card rounded-xl p-8 border border-border shadow-md hover:shadow-xl transition-all duration-300 overflow-visible"
+            >
             <div className="mb-6">
               <h3 className="text-2xl font-bold text-foreground mb-2 tracking-wide">
                 {STARTERWELLE.name}
@@ -56,6 +67,7 @@ export default function Products() {
               submitLabel="ANALYSE STARTEN"
               className="pb-2"
             />
+            </div>
           </div>
         </div>
 
