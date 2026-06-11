@@ -15,6 +15,7 @@ export interface EmailInputAssistProps {
   onChange: (value: string) => void;
   onTypoResolvedChange?: (resolved: boolean) => void;
   id?: string;
+  name?: string;
   required?: boolean;
 }
 
@@ -23,6 +24,7 @@ export default function EmailInputAssist({
   onChange,
   onTypoResolvedChange,
   id = 'funnel-email',
+  name = 'email',
   required = true,
 }: EmailInputAssistProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -78,13 +80,27 @@ export default function EmailInputAssist({
   }
 
   function handleBlur() {
-    if (!completion || !inputRef.current) return;
     const el = inputRef.current;
+    if (!el) return;
+
+    // Browser-Autofill aktualisiert oft nur das DOM, nicht den React-State.
+    if (el.value !== value) {
+      onChange(el.value);
+      return;
+    }
+
+    if (!completion) return;
     const atEnd = el.selectionStart === value.length;
     if (!atEnd) return;
 
     if (needsTypoConfirm && completion.full !== value.trim().toLowerCase()) {
       onChange(completion.full);
+    }
+  }
+
+  function syncFromDom(el: HTMLInputElement) {
+    if (el.value !== value) {
+      onChange(el.value);
     }
   }
 
@@ -108,14 +124,17 @@ export default function EmailInputAssist({
         <input
           ref={inputRef}
           id={id}
+          name={name}
           type="email"
           required={required}
-          autoComplete="off"
+          autoComplete="email"
+          inputMode="email"
           autoCorrect="off"
           spellCheck={false}
           className={inputClass}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onInput={(e) => syncFromDom(e.currentTarget)}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
         />

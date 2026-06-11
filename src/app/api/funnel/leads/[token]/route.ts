@@ -24,7 +24,14 @@ import {
   getCallbackBaseUrl,
 } from '@/lib/n8n/dispatch';
 import { secureResponse } from '@/lib/api-security';
-import { fixEmailTypo, validateEmail, validateUrl } from '@/lib/validation';
+import {
+  fixEmailTypo,
+  validateEmail,
+  validateMobileDACH,
+  validatePersonName,
+  validatePersonNamePair,
+  validateUrl,
+} from '@/lib/validation';
 import {
   BLOG_MIN_COUNT,
   normalizeAddonSelection,
@@ -383,6 +390,40 @@ export async function PATCH(
     }
     const firstName = String(body.firstName || '').trim();
     const lastName = String(body.lastName || '').trim();
+    const contactMarket = (body.market || lead.market || 'DE') as DachMarket;
+
+    const firstNameResult = validatePersonName(firstName, 'Vorname');
+    if (!firstNameResult.valid) {
+      return secureResponse(
+        { error: 'invalid_first_name', message: firstNameResult.hint },
+        400
+      );
+    }
+
+    const lastNameResult = validatePersonName(lastName, 'Nachname');
+    if (!lastNameResult.valid) {
+      return secureResponse(
+        { error: 'invalid_last_name', message: lastNameResult.hint },
+        400
+      );
+    }
+
+    const namePairResult = validatePersonNamePair(firstName, lastName);
+    if (!namePairResult.valid) {
+      return secureResponse(
+        { error: 'invalid_name_pair', message: namePairResult.hint },
+        400
+      );
+    }
+
+    const phoneResult = validateMobileDACH(String(body.phone || ''), contactMarket);
+    if (!phoneResult.valid) {
+      return secureResponse(
+        { error: 'invalid_phone', message: phoneResult.hint },
+        400
+      );
+    }
+
     const fullName = `${firstName} ${lastName}`.trim() || email;
     const companyName = String(body.companyName || '').trim();
     let customerId: string | undefined;

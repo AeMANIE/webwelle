@@ -1,7 +1,61 @@
+import { parsePhoneNumberFromString } from 'libphonenumber-js/max';
+
 // Zentrale Input-Validierung für alle Formulare
 export interface ValidationResult {
   isValid: boolean;
   errors: Record<string, string>;
+}
+
+export type FieldValidationResult = { valid: boolean; hint?: string };
+
+const PERSON_NAME_ALLOWED = /^[a-zA-ZäöüÄÖÜß\s\-']+$/;
+const PERSON_NAME_VOWEL = /[aeiouäöüAEIOUÄÖÜ]/;
+
+const PERSON_NAME_BLOCKLIST = new Set([
+  'test',
+  'asd',
+  'asdf',
+  'qwe',
+  'xxx',
+  'muster',
+  'demo',
+  'null',
+  'abc',
+  'as',
+  'ab',
+  'xy',
+  'xx',
+]);
+
+const PERSON_NAME_KEYBOARD_PATTERNS = [
+  'asd',
+  'qwe',
+  'zxc',
+  'qwer',
+  'asdf',
+  '123',
+  '1234',
+];
+
+const MOBILE_MARKET_NAMES: Record<'DE' | 'AT' | 'CH', string> = {
+  DE: 'Deutschland',
+  AT: 'Österreich',
+  CH: 'Schweiz',
+};
+
+const MOBILE_EXAMPLE_HINT: Record<'DE' | 'AT' | 'CH', string> = {
+  DE: 'z. B. 0151 … oder +49 151 …',
+  AT: 'z. B. 0664 … oder +43 664 …',
+  CH: 'z. B. 079 … oder +41 79 …',
+};
+
+function hasRepeatingDigits(digits: string): boolean {
+  return /(\d)\1{6,}/.test(digits);
+}
+
+function hasObviousDigitSequence(digits: string): boolean {
+  const sequences = ['0123456789', '1234567890', '9876543210', '0987654321'];
+  return sequences.some((seq) => digits.includes(seq));
 }
 
 // E-Mail-Validierung
@@ -49,6 +103,132 @@ export function validatePhoneDACH(
   }
   if (digitCount > cfg.max) {
     return { valid: false, hint: `Zu lang – bitte nur die Nummer ohne Leerzeichen (max. ${cfg.max} Ziffern).` };
+  }
+
+  return { valid: true };
+}
+
+export function validatePersonName(
+  name: string,
+  fieldLabel = 'Name'
+): FieldValidationResult {
+  const trimmed = name.trim();
+  if (trimmed.length < 3) {
+    return {
+      valid: false,
+      hint: `Bitte ${fieldLabel} mit mindestens 3 Buchstaben eingeben.`,
+    };
+  }
+
+  if (!PERSON_NAME_ALLOWED.test(trimmed)) {
+    return {
+      valid: false,
+      hint: `${fieldLabel} darf nur Buchstaben, Bindestrich und Apostroph enthalten.`,
+    };
+  }
+
+  if (/(.)\1{2,}/.test(trimmed)) {
+    return {
+      valid: false,
+      hint: `Bitte einen echten ${fieldLabel} eingeben.`,
+    };
+  }
+
+  if (!PERSON_NAME_VOWEL.test(trimmed)) {
+    return {
+      valid: false,
+      hint: `Bitte einen gültigen ${fieldLabel} eingeben.`,
+    };
+  }
+
+  const normalized = trimmed.toLowerCase().replace(/[\s\-']/g, '');
+  if (PERSON_NAME_BLOCKLIST.has(normalized)) {
+    return {
+      valid: false,
+      hint: `Bitte Ihren echten ${fieldLabel} eingeben.`,
+    };
+  }
+
+  if (
+    PERSON_NAME_KEYBOARD_PATTERNS.some(
+      (pattern) => normalized === pattern || normalized.includes(pattern)
+    )
+  ) {
+    return {
+      valid: false,
+      hint: `Bitte Ihren echten ${fieldLabel} eingeben.`,
+    };
+  }
+
+  return { valid: true };
+}
+
+export function validatePersonNamePair(
+  firstName: string,
+  lastName: string
+): FieldValidationResult {
+  const first = firstName.trim().toLowerCase();
+  const last = lastName.trim().toLowerCase();
+  if (first && last && first === last) {
+    return {
+      valid: false,
+      hint: 'Vor- und Nachname dürfen nicht identisch sein.',
+    };
+  }
+  return { valid: true };
+}
+
+const MOBILE_MIN_DIGITS: Record<'DE' | 'AT' | 'CH', number> = {
+  DE: 10,
+  AT: 9,
+  CH: 9,
+};
+
+/** Live-Hinweise erst, wenn die Nummer vollständig genug wirkt (nicht schon bei „0172“). */
+export function isPhoneReadyForLiveValidation(
+  phone: string,
+  market: 'DE' | 'AT' | 'CH' = 'DE'
+): boolean {
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= MOBILE_MIN_DIGITS[market];
+}
+
+export function validateMobileDACH(
+  phone: string,
+  market: 'DE' | 'AT' | 'CH' = 'DE'
+): FieldValidationResult {
+  if (!phone.trim()) {
+    return { valid: false, hint: 'Bitte Ihre Handynummer eingeben.' };
+  }
+
+  const digits = phone.replace(/\D/g, '');
+  if (hasRepeatingDigits(digits) || hasObviousDigitSequence(digits)) {
+    return {
+      valid: false,
+      hint: `Bitte eine gültige Handynummer eingeben (${MOBILE_EXAMPLE_HINT[market]}).`,
+    };
+  }
+
+  const parsed = parsePhoneNumberFromString(phone, market);
+  if (!parsed?.isValid()) {
+    return {
+      valid: false,
+      hint: `Bitte eine gültige Handynummer für ${MOBILE_MARKET_NAMES[market]} eingeben (${MOBILE_EXAMPLE_HINT[market]}).`,
+    };
+  }
+
+  if (parsed.getType() !== 'MOBILE') {
+    return {
+      valid: false,
+      hint: `Bitte eine Handynummer eingeben – Festnetznummern werden hier nicht akzeptiert (${MOBILE_EXAMPLE_HINT[market]}).`,
+    };
+  }
+
+  if (parsed.country && parsed.country !== market) {
+    return {
+      valid: false,
+      hint: `Die Nummer passt nicht zum gewählten Markt (${MOBILE_MARKET_NAMES[market]}).`,
+    };
   }
 
   return { valid: true };

@@ -7,9 +7,7 @@ import { ShinyInput } from '@/components/ui/shiny-input';
 import { SHINY_SWEEP_PRESETS } from '@/components/ui/shiny-motion';
 import { persistLeadToken } from '@/lib/funnel/client';
 import { isGenericIndustry } from '@/lib/funnel/industry';
-
-const PLACEHOLDER =
-  'Ihre Branche – z. B. Malerbetrieb, Arztpraxis, Online-Shop …';
+import AnimatedIndustryPlaceholder from '@/components/funnel/AnimatedIndustryPlaceholder';
 
 export interface HeroIndustrySearchProps {
   /**
@@ -43,6 +41,7 @@ export default function HeroIndustrySearch({
     raw: string;
     proposed: string;
   } | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
@@ -198,24 +197,34 @@ export default function HeroIndustrySearch({
             : 'relative flex flex-col sm:flex-row gap-3 items-stretch'
         }
       >
-        <ShinyInput
-          ref={inputRef}
-          id={inputId}
-          type="text"
-          value={industry}
-          onChange={(e) => {
-            setIndustry(e.target.value);
-            if (pendingConfirm) setPendingConfirm(null);
-          }}
-          placeholder={PLACEHOLDER}
-          autoComplete="off"
-          disabled={loading}
-          sweepConfig={{
-            ...SHINY_SWEEP_PRESETS.input,
-            paused: loading,
-          }}
-          wrapperClassName="flex-1"
-        />
+        <div className="relative flex-1 min-w-0">
+          <ShinyInput
+            ref={inputRef}
+            id={inputId}
+            type="text"
+            value={industry}
+            onChange={(e) => {
+              setIndustry(e.target.value);
+              if (pendingConfirm) setPendingConfirm(null);
+            }}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            placeholder=" "
+            aria-label="Ihre Branche eingeben"
+            autoComplete="off"
+            disabled={loading}
+            sweepConfig={{
+              ...SHINY_SWEEP_PRESETS.input,
+              paused: loading,
+            }}
+            wrapperClassName="w-full"
+          />
+          {!industry && !isFocused && (
+            <div className="pointer-events-none absolute inset-0 z-30 flex items-center px-4">
+              <AnimatedIndustryPlaceholder />
+            </div>
+          )}
+        </div>
         <ShinyButton
           type={isCard ? 'button' : 'submit'}
           disabled={loading || Boolean(pendingConfirm)}
