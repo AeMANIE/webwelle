@@ -24,14 +24,14 @@ export const STARTERWELLE = {
   name: 'StarterWelle',
   priceCents: 69900,
   compareAtPriceCents: 99900,
-  termLabel: '2 Jahre',
+  termLabel: '24 Monate',
   features: [
-    'Individuell gestaltete Onepage-Website (Header, Footer, 3 Inhaltsbereiche)',
-    'Optional: Kontaktformular',
-    'Rechtliches Basispaket (Impressum, Datenschutz, Cookie-Banner)',
-    'Hosting & Wartung inklusive',
-    'Backup alle 2 Wochen',
-    'Domain (.de oder .com)',
+    'Individuell gestaltete Onepage-Website für einen professionellen Unternehmensauftritt',
+    'Inklusive Header, Footer und 3 Inhaltsbereichen für Unternehmen, Leistungen und Anfrage',
+    'Optional mit Kontaktformular für direkte Kundenanfragen',
+    'Mit grundlegender SEO-Einrichtung für eine bessere Sichtbarkeit bei Google',
+    'Impressum, Datenschutz und Cookie-Banner inklusive',
+    'Hosting, Wartung, Domain (.de oder .com) und Backups inklusive',
   ],
 };
 
