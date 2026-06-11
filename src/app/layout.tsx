@@ -60,10 +60,7 @@ export default function RootLayout({
         {/* Stripe nur prefetch, nicht preconnect (nicht kritisch für initial load) */}
         <link rel="dns-prefetch" href="//js.stripe.com" />
         {umamiConfig && (
-          <>
-            <link rel="dns-prefetch" href={umamiConfig.origin} />
-            <link rel="preconnect" href={umamiConfig.origin} crossOrigin="anonymous" />
-          </>
+          <link rel="dns-prefetch" href={umamiConfig.origin} />
         )}
       </head>
       <body

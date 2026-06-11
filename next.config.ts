@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
   // Performance Optimierungen
   experimental: {
     // lucide-react entfernt, da es Probleme mit Icon-Imports verursacht
-    optimizePackageImports: ['@stripe/stripe-js'],
+    optimizePackageImports: ['@stripe/stripe-js', 'lucide-react', 'framer-motion'],
     // Modern bundling
     esmExternals: true,
     // Build Performance Optimierungen

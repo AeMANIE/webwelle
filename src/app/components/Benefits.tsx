@@ -1,13 +1,9 @@
 "use client";
 
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Search, Users, DollarSign } from 'lucide-react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger);
-}
+import type gsap from 'gsap';
+import type { ScrollTrigger as ScrollTriggerType } from 'gsap/ScrollTrigger';
 
 const TRUST_COPIES = 3;
 
@@ -29,17 +25,19 @@ function measureTrackSetWidth(track: HTMLDivElement, copies: number): number {
 
 function initMarquee(
   track: HTMLDivElement,
-  container: HTMLDivElement | null
+  container: HTMLDivElement | null,
+  gsapLib: typeof gsap,
+  ScrollTrigger: typeof ScrollTriggerType
 ): (() => void) | undefined {
   const loopWidth = measureTrackSetWidth(track, TRUST_COPIES);
   if (loopWidth <= 0) return undefined;
 
   let touchTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  const ctx = gsap.context(() => {
-    gsap.set(track, { x: 0, force3D: true });
+  const ctx = gsapLib.context(() => {
+    gsapLib.set(track, { x: 0, force3D: true });
 
-    const tween = gsap.to(track, {
+    const tween = gsapLib.to(track, {
       x: -loopWidth,
       duration: Math.max(18, loopWidth / 70),
       ease: 'none',
@@ -61,14 +59,14 @@ function initMarquee(
     const handleTouchStart = (e: TouchEvent) => {
       tween.pause();
       touchStartX = e.touches[0].clientX;
-      currentX = (gsap.getProperty(track, 'x') as number) || 0;
+      currentX = (gsapLib.getProperty(track, 'x') as number) || 0;
       isDragging = true;
       if (touchTimeout) clearTimeout(touchTimeout);
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (!isDragging) return;
-      gsap.set(track, { x: currentX + (e.touches[0].clientX - touchStartX) });
+      gsapLib.set(track, { x: currentX + (e.touches[0].clientX - touchStartX) });
     };
 
     const handleTouchEnd = () => {
@@ -138,82 +136,115 @@ const benefits = [
 ];
 
 export default function Benefits() {
+  const sectionRef = useRef<HTMLElement>(null);
   const trustTrackRef = useRef<HTMLDivElement>(null);
   const trustContainerRef = useRef<HTMLDivElement>(null);
   const benefitsRef = useRef<HTMLDivElement>(null);
+  const [gsapReady, setGsapReady] = useState(false);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setGsapReady(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '150px' }
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
 
   useLayoutEffect(() => {
+    if (!gsapReady) return;
+
     const track = trustTrackRef.current;
     const container = trustContainerRef.current;
+    const scope = benefitsRef.current;
     if (!track) return;
 
-    let cleanup: (() => void) | undefined;
+    let marqueeCleanup: (() => void) | undefined;
+    let cardsCleanup: (() => void) | undefined;
     let cancelled = false;
 
-    const setupMarquee = () => {
+    const setup = async () => {
+      const [{ default: gsapLib }, { ScrollTrigger }] = await Promise.all([
+        import('gsap'),
+        import('gsap/ScrollTrigger'),
+      ]);
+
       if (cancelled) return;
-      cleanup = initMarquee(track, container);
+
+      gsapLib.registerPlugin(ScrollTrigger);
+
+      const startMarquee = () => {
+        if (cancelled) return;
+        marqueeCleanup = initMarquee(track, container, gsapLib, ScrollTrigger);
+        ScrollTrigger.refresh();
+      };
+
+      if (document.fonts?.ready) {
+        document.fonts.ready.then(startMarquee);
+      } else {
+        requestAnimationFrame(startMarquee);
+      }
+
+      if (!scope) return;
+
+      const cards = scope.querySelectorAll<HTMLElement>('[data-benefit-card]');
+      if (cards.length === 0) return;
+
+      const ctx = gsapLib.context(() => {
+        gsapLib.from(cards, {
+          opacity: 0,
+          y: 28,
+          duration: 0.7,
+          ease: 'power2.out',
+          stagger: 0.15,
+          immediateRender: false,
+          force3D: true,
+          scrollTrigger: {
+            trigger: scope,
+            start: 'top 85%',
+            toggleActions: 'play none none none',
+            once: true,
+          },
+        });
+
+        cards.forEach((card) => {
+          ScrollTrigger.create({
+            trigger: card,
+            start: 'top 80%',
+            end: 'bottom 20%',
+            onEnter: () => card.classList.add('is-in-view'),
+            onEnterBack: () => card.classList.add('is-in-view'),
+            onLeave: () => card.classList.remove('is-in-view'),
+            onLeaveBack: () => card.classList.remove('is-in-view'),
+          });
+        });
+      }, scope);
+
       ScrollTrigger.refresh();
+      cardsCleanup = () => ctx.revert();
     };
 
-    if (document.fonts?.ready) {
-      document.fonts.ready.then(setupMarquee);
-    } else {
-      requestAnimationFrame(setupMarquee);
-    }
+    void setup();
 
     return () => {
       cancelled = true;
-      cleanup?.();
+      marqueeCleanup?.();
+      cardsCleanup?.();
     };
-  }, []);
-
-  useLayoutEffect(() => {
-    const scope = benefitsRef.current;
-    if (!scope) return;
-
-    const cards = scope.querySelectorAll<HTMLElement>('[data-benefit-card]');
-    if (cards.length === 0) return;
-
-    const ctx = gsap.context(() => {
-      gsap.from(cards, {
-        opacity: 0,
-        y: 28,
-        duration: 0.7,
-        ease: 'power2.out',
-        stagger: 0.15,
-        immediateRender: false,
-        force3D: true,
-        scrollTrigger: {
-          trigger: scope,
-          start: 'top 85%',
-          toggleActions: 'play none none none',
-          once: true,
-        },
-      });
-
-      cards.forEach((card) => {
-        ScrollTrigger.create({
-          trigger: card,
-          start: 'top 80%',
-          end: 'bottom 20%',
-          onEnter: () => card.classList.add('is-in-view'),
-          onEnterBack: () => card.classList.add('is-in-view'),
-          onLeave: () => card.classList.remove('is-in-view'),
-          onLeaveBack: () => card.classList.remove('is-in-view'),
-        });
-      });
-    }, scope);
-
-    ScrollTrigger.refresh();
-
-    return () => ctx.revert();
-  }, []);
+  }, [gsapReady]);
 
   return (
-    <section id="vorteile" className="py-20 bg-background">
+    <section ref={sectionRef} id="vorteile" className="py-20 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Vertrauensleiste – GSAP Marquee */}
         <div ref={trustContainerRef} className="relative overflow-hidden mb-10 md:mb-14">
           <div className="pointer-events-none absolute inset-y-0 left-0 w-16 md:w-24 bg-gradient-to-r from-background to-transparent z-10" />
           <div className="pointer-events-none absolute inset-y-0 right-0 w-16 md:w-24 bg-gradient-to-l from-background to-transparent z-10" />
@@ -235,7 +266,6 @@ export default function Benefits() {
           </div>
         </div>
 
-        {/* Nutzenblöcke – Editorial-Stack */}
         <div ref={benefitsRef} className="max-w-4xl mx-auto space-y-5 md:space-y-6">
           {benefits.map((benefit, index) => {
             const IconComponent = benefit.icon;

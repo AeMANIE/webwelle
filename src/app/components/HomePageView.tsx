@@ -1,5 +1,3 @@
-'use client';
-
 import Header from './Header';
 import Hero from './Hero';
 import Footer from './Footer';
@@ -13,7 +11,7 @@ import Products from './Products';
 import { WavePath } from '@/components/ui/wave-path';
 import FAQ from './FAQ';
 
-function HomePageView() {
+export default function HomePageView() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -37,5 +35,3 @@ function HomePageView() {
     </div>
   );
 }
-
-export default HomePageView;

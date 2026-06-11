@@ -80,7 +80,7 @@ export default function CookieBanner() {
           <div className="flex items-center justify-center mb-4">
             <div className="flex items-center space-x-3">
               <Image
-                src="/logo75.png"
+                src="/logo75.webp"
                 alt="WebWelle Logo"
                 width={32}
                 height={32}
