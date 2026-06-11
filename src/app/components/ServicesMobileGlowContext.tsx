@@ -10,7 +10,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { MOBILE_GLOW_QUERY } from '@/components/ui/spotlight-card-shared';
+import { useLayoutMode } from '@/hooks/useLayoutMode';
 
 type ServicesMobileGlowContextValue = {
   activeIndex: number | null;
@@ -86,18 +86,19 @@ export function ServicesMobileGlowProvider({
     setTappedIndexState(index);
   }, []);
 
+  const layoutMode = useLayoutMode();
+
   const updateScrollActiveIndex = useCallback(() => {
-    if (!window.matchMedia(MOBILE_GLOW_QUERY).matches) {
+    if (layoutMode !== 'mobile') {
       setScrollActiveIndex(null);
       setTappedIndexState(null);
       return;
     }
     setScrollActiveIndex(computeScrollActiveIndex(cardsRef.current, sectionId));
-  }, [sectionId]);
+  }, [layoutMode, sectionId]);
 
   useEffect(() => {
-    const mq = window.matchMedia(MOBILE_GLOW_QUERY);
-    if (!mq.matches) return;
+    if (layoutMode !== 'mobile') return;
 
     const onScroll = () => {
       if (rafRef.current !== null) return;
@@ -108,23 +109,16 @@ export function ServicesMobileGlowProvider({
       });
     };
 
-    const onMqChange = () => {
-      setTappedIndexState(null);
-      updateScrollActiveIndex();
-    };
-
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll, { passive: true });
-    mq.addEventListener('change', onMqChange);
     updateScrollActiveIndex();
 
     return () => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
-      mq.removeEventListener('change', onMqChange);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [updateScrollActiveIndex]);
+  }, [layoutMode, updateScrollActiveIndex]);
 
   useEffect(() => {
     updateScrollActiveIndex();

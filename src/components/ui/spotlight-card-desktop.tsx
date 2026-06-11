@@ -34,11 +34,18 @@ const DesktopGlowCard: React.FC<GlowCardProps> = ({
     return () => document.removeEventListener('pointermove', syncPointer);
   }, []);
 
+  const coarsePointer =
+    typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
   return (
     <div
       ref={cardRef}
       data-glow
-      style={getGlowSpotlightStyles(glowColor, { width, height })}
+      style={getGlowSpotlightStyles(glowColor, {
+        width,
+        height,
+        touchAction: coarsePointer ? 'pan-y' : 'none',
+      })}
       className={`${getGlowCardLayoutClasses(customSize, size)} ${glowCardBaseClasses} ${className}`}
     >
       <div data-glow />

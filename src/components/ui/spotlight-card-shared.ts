@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 
 export interface GlowCardProps {
@@ -26,23 +25,6 @@ export const sizeMap = {
   md: 'w-64 h-80',
   lg: 'w-80 h-96',
 };
-
-/** Desktop: Maus-Spotlight. Alles andere → Mobile-Glow. */
-export const MOBILE_GLOW_QUERY = '(hover: none), (pointer: coarse), (max-width: 767px)';
-
-export function useMobileGlow() {
-  const [isMobileGlow, setIsMobileGlow] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const mq = window.matchMedia(MOBILE_GLOW_QUERY);
-    const update = () => setIsMobileGlow(mq.matches);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, []);
-
-  return isMobileGlow;
-}
 
 export function getGlowCardLayoutClasses(customSize: boolean, size: GlowCardProps['size']) {
   const sizeClasses = customSize ? '' : sizeMap[size ?? 'md'];

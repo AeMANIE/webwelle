@@ -2,9 +2,14 @@
 
 import { Palette, Search, Target, FileText, Brush, Bot } from 'lucide-react';
 import { GlowCard } from '@/components/ui/spotlight-card';
+import { useLayoutCssWidth, useLayoutMode } from '@/hooks/useLayoutMode';
+import { getServicesGridClass } from '@/lib/responsive-layout-mode';
 import { ServicesMobileGlowProvider } from './ServicesMobileGlowContext';
 
 export default function Services() {
+  const layoutMode = useLayoutMode();
+  const cssWidth = useLayoutCssWidth();
+  const gridClass = getServicesGridClass(layoutMode, cssWidth);
   const services = [
     {
       icon: Palette,
@@ -54,7 +59,7 @@ export default function Services() {
         </div>
 
         <ServicesMobileGlowProvider>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 overflow-visible">
+        <div className={`grid ${gridClass} gap-8 overflow-visible`}>
           {services.map((service, index) => {
             const IconComponent = service.icon;
             return (
