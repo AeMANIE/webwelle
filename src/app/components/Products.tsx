@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { Lightbulb, Check } from 'lucide-react';
 import HeroIndustrySearch from '@/components/funnel/HeroIndustrySearch';
+import type { DottedSurfaceVariant } from '@/components/ui/dotted-surface';
 import { STARTERWELLE } from '@/lib/funnel/packages';
 
 const DottedSurface = dynamic(
@@ -14,11 +15,11 @@ const DottedSurface = dynamic(
 const DESKTOP_QUERY = '(min-width: 1024px)';
 
 export default function Products() {
-  const [showDots, setShowDots] = useState(false);
+  const [dotVariant, setDotVariant] = useState<DottedSurfaceVariant>('mobile');
 
   useEffect(() => {
     const mq = window.matchMedia(DESKTOP_QUERY);
-    const sync = () => setShowDots(mq.matches);
+    const sync = () => setDotVariant(mq.matches ? 'desktop' : 'mobile');
     sync();
     mq.addEventListener('change', sync);
     return () => mq.removeEventListener('change', sync);
@@ -37,11 +38,15 @@ export default function Products() {
         </div>
 
         <div className="relative isolate">
-          {showDots && (
-            <div className="pointer-events-none absolute -inset-y-6 sm:-inset-y-8 lg:-inset-y-12 left-1/2 -translate-x-1/2 w-screen max-w-[100vw] z-[1] overflow-hidden">
-              <DottedSurface className="h-full w-full" />
-            </div>
-          )}
+          <div
+            className={
+              dotVariant === 'desktop'
+                ? 'pointer-events-none absolute inset-0 left-1/2 -translate-x-1/2 w-screen max-w-[100vw] z-[1] overflow-hidden'
+                : 'pointer-events-none absolute inset-0 left-1/2 -translate-x-1/2 w-[calc(100%+2rem)] max-w-[100vw] z-[1] overflow-hidden'
+            }
+          >
+            <DottedSurface variant={dotVariant} className="h-full w-full" />
+          </div>
 
           <div className="relative z-10 max-w-2xl mx-auto">
             <div
