@@ -1,13 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogIn, Menu, X } from 'lucide-react';
+import { useLayoutMode } from '@/hooks/useLayoutMode';
 import { navigateToHomeTop } from '@/lib/scroll-to-anchor';
 
 export default function Header() {
+  const layoutMode = useLayoutMode();
+  const isMobileHeader = layoutMode !== 'desktop';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (layoutMode === 'desktop') {
+      setIsMenuOpen(false);
+    }
+  }, [layoutMode]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -56,7 +65,8 @@ export default function Header() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
+          {!isMobileHeader && (
+          <nav className="flex items-center space-x-6">
             <Link href="/ai-voice" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap py-2 px-1">
               Telefonassistent AI
             </Link>
@@ -97,10 +107,11 @@ export default function Header() {
               <span>Login</span>
             </Link>
           </nav>
-
+          )}
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden">
+          {isMobileHeader && (
+          <div>
             <button
               onClick={toggleMenu}
               className="text-foreground hover:text-primary focus:outline-none focus:text-primary p-2"
@@ -114,11 +125,12 @@ export default function Header() {
               )}
             </button>
           </div>
+          )}
         </div>
 
         {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden">
+        {isMobileHeader && isMenuOpen && (
+          <div>
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-card rounded-lg mt-2 border border-border shadow-lg">
               <Link href="/ai-voice" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
                 Telefonassistent AI
