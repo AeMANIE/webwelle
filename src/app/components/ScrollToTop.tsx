@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { ChevronUp } from 'lucide-react';
 import {
   consumePendingScrollTarget,
+  HOME_TOP_TARGET,
   scrollToAnchorWithRetry,
+  scrollToTop,
 } from '@/lib/scroll-to-anchor';
 
 export default function ScrollToTop() {
@@ -13,6 +15,11 @@ export default function ScrollToTop() {
   useEffect(() => {
     const handleHashScroll = () => {
       const pending = consumePendingScrollTarget();
+      if (pending === HOME_TOP_TARGET) {
+        scrollToTop('smooth');
+        return;
+      }
+
       const hash = window.location.hash.replace(/^#/, '');
       const target = pending || hash;
       if (target) scrollToAnchorWithRetry(target);
@@ -38,11 +45,8 @@ export default function ScrollToTop() {
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+  const handleScrollToTop = () => {
+    scrollToTop('smooth');
   };
 
   if (!isVisible) {
@@ -51,7 +55,7 @@ export default function ScrollToTop() {
 
   return (
     <button
-      onClick={scrollToTop}
+      onClick={handleScrollToTop}
       className="fixed bottom-8 right-8 z-50 bg-primary text-primary-foreground p-3 rounded-full shadow-lg hover:bg-primary/90 transition-all duration-300 hover:scale-110 group focus:outline-none focus:ring-0"
       aria-label="Nach oben scrollen"
     >

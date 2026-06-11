@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogIn, Menu, X } from 'lucide-react';
+import { navigateToHomeTop } from '@/lib/scroll-to-anchor';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -16,15 +17,23 @@ export default function Header() {
     setIsMenuOpen(false);
   };
 
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    closeMenu();
+    navigateToHomeTop();
+  };
+
   return (
     <header className="bg-background backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
-            <Link 
-              href="/" 
+            <Link
+              href="/"
+              onClick={handleLogoClick}
               className="flex items-center space-x-3 hover:opacity-80 transition-opacity focus:outline-none focus:ring-0"
+              aria-label="Zur Startseite"
             >
               <Image
                 src="/webwellelogo.svg"

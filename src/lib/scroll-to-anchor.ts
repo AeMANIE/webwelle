@@ -1,5 +1,24 @@
 export const STARTERWELLE_ANCHOR_ID = 'starterwelle';
+export const HOME_TOP_TARGET = 'top';
 const SCROLL_TARGET_KEY = 'webwelle:scroll-target';
+
+export function scrollToTop(behavior: ScrollBehavior = 'smooth'): void {
+  if (typeof window === 'undefined') return;
+  window.scrollTo({ top: 0, behavior });
+}
+
+export function navigateToHomeTop(): void {
+  if (typeof window === 'undefined') return;
+
+  if (window.location.pathname === '/') {
+    window.history.replaceState(null, '', '/');
+    scrollToTop('smooth');
+    return;
+  }
+
+  sessionStorage.setItem(SCROLL_TARGET_KEY, HOME_TOP_TARGET);
+  window.location.assign('/');
+}
 
 export function scrollToElementById(
   id: string,
