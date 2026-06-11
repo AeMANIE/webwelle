@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useEffect, useState } from 'react';
 import { Lightbulb, Check } from 'lucide-react';
 import HeroIndustrySearch from '@/components/funnel/HeroIndustrySearch';
 import { STARTERWELLE } from '@/lib/funnel/packages';
@@ -10,7 +11,19 @@ const DottedSurface = dynamic(
   { ssr: false }
 );
 
+const DESKTOP_QUERY = '(min-width: 1024px)';
+
 export default function Products() {
+  const [showDots, setShowDots] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia(DESKTOP_QUERY);
+    const sync = () => setShowDots(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
   return (
     <section id="produkte" className="pt-20 pb-20 lg:pt-28 bg-background overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -23,10 +36,12 @@ export default function Products() {
           </p>
         </div>
 
-        <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen max-w-[100vw] -z-0 overflow-hidden">
-            <DottedSurface className="h-full w-full" />
-          </div>
+        <div className="relative isolate">
+          {showDots && (
+            <div className="pointer-events-none absolute -inset-y-6 sm:-inset-y-8 lg:-inset-y-12 left-1/2 -translate-x-1/2 w-screen max-w-[100vw] z-[1] overflow-hidden">
+              <DottedSurface className="h-full w-full" />
+            </div>
+          )}
 
           <div className="relative z-10 max-w-2xl mx-auto">
             <div

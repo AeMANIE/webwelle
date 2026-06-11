@@ -77,8 +77,7 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
         const z = iy * SEPARATION - (AMOUNTY * SEPARATION) / 2;
 
         positions.push(x, y, z);
-        // Weiß mit leichtem Blaustich
-        colors.push(0.9, 0.94, 1);
+        colors.push(1, 1, 1);
       }
     }
 
@@ -89,7 +88,7 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
       size: 8,
       vertexColors: true,
       transparent: true,
-      opacity: 0.65,
+      opacity: 0.75,
       sizeAttenuation: true,
     });
 
