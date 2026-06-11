@@ -11,7 +11,6 @@ const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   weight: ["300", "400", "500", "600", "700", "800"],
-  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -58,11 +57,6 @@ export default function RootLayout({
         {/* Preload critical resources - nur einmal */}
         <link rel="preload" href="/webwellelogo.svg" as="image" type="image/svg+xml" />
         <link rel="preload" href="/webwellecom-weissihr.svg" as="image" type="image/svg+xml" />
-        {/* DNS prefetch und preconnect für externe Ressourcen - optimiert für kritische Ressourcen */}
-        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Stripe nur prefetch, nicht preconnect (nicht kritisch für initial load) */}
         <link rel="dns-prefetch" href="//js.stripe.com" />
         {umamiConfig && (

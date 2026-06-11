@@ -1,6 +1,5 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import Header from './Header';
 import Hero from './Hero';
 import Footer from './Footer';
@@ -10,10 +9,9 @@ import Benefits from './Benefits';
 import TrustSection from './TrustSection';
 import Services from './Services';
 import Workflow from './Workflow';
+import Products from './Products';
 import { WavePath } from '@/components/ui/wave-path';
 import FAQ from './FAQ';
-
-const Products = dynamic(() => import('./Products'), { ssr: false });
 
 function HomePageView() {
   return (

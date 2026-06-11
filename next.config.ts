@@ -162,13 +162,23 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // Bilder - mittlere Cache-Zeit
+      // Videos aus /public
+      {
+        source: '/:path*\\.(mp4|webm)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Bilder aus /public
       {
         source: '/:path*\\.(png|jpg|jpeg|gif|webp|svg|ico)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=86400',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },

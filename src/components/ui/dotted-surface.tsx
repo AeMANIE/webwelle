@@ -1,9 +1,14 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
-import { useEffect, useRef, useState, type ComponentType } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DottedSurfaceStatic } from './dotted-surface-static';
-import type { DottedSurfaceVariantProps } from './dotted-surface-types';
+
+const DottedSurfaceWebGL = dynamic(
+  () => import('./dotted-surface-webgl').then((m) => m.DottedSurfaceWebGL),
+  { ssr: false }
+);
 
 type DottedSurfaceProps = Omit<React.ComponentProps<'div'>, 'ref'>;
 
@@ -12,13 +17,10 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
   const gateRef = useRef<HTMLDivElement>(null);
-  const [shouldLoad, setShouldLoad] = useState(false);
+  const [isNearViewport, setIsNearViewport] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [Variant, setVariant] = useState<ComponentType<DottedSurfaceVariantProps> | null>(
-    null
-  );
 
   useEffect(() => {
     const el = gateRef.current;
@@ -29,7 +31,7 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
         const intersecting = entry?.isIntersecting ?? false;
         setIsVisible(intersecting);
         if (intersecting) {
-          setShouldLoad(true);
+          setIsNearViewport(true);
         }
       },
       { rootMargin: '200px', threshold: 0 }
@@ -58,31 +60,8 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!shouldLoad || prefersReducedMotion) {
-      setVariant(null);
-      return;
-    }
-
-    let cancelled = false;
-
-    const loadVariant = async () => {
-      if (isDesktop) {
-        const mod = await import('./dotted-surface-webgl');
-        if (!cancelled) setVariant(() => mod.DottedSurfaceWebGL);
-        return;
-      }
-
-      const mod = await import('./dotted-surface-canvas');
-      if (!cancelled) setVariant(() => mod.DottedSurfaceCanvas);
-    };
-
-    void loadVariant();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [shouldLoad, prefersReducedMotion, isDesktop]);
+  const useStatic = prefersReducedMotion || !isDesktop;
+  const showWebGL = isNearViewport && isDesktop && !prefersReducedMotion;
 
   return (
     <div
@@ -90,10 +69,8 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
       className={cn('pointer-events-none absolute inset-0 z-0', className)}
       {...props}
     >
-      {shouldLoad && prefersReducedMotion && <DottedSurfaceStatic />}
-      {shouldLoad && !prefersReducedMotion && Variant && (
-        <Variant active={isVisible} className="h-full w-full" />
-      )}
+      {useStatic && <DottedSurfaceStatic className="h-full w-full" />}
+      {showWebGL && <DottedSurfaceWebGL active={isVisible} className="h-full w-full" />}
     </div>
   );
 }
