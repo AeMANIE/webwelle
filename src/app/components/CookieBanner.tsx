@@ -82,8 +82,8 @@ export default function CookieBanner() {
               <Image
                 src="/logo75.webp"
                 alt="WebWelle Logo"
-                width={32}
-                height={32}
+                width={48}
+                height={48}
                 className="h-8 w-auto"
                 style={{ width: 'auto' }}
               />

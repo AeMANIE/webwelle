@@ -73,6 +73,13 @@ export function HeroVideo() {
       >
         <source src="/Aa90.mp4" type="video/mp4" media="(max-width: 767px)" />
         <source src="/Aa.mp4" type="video/mp4" />
+        <track
+          kind="captions"
+          srcLang="de"
+          label="Deutsch"
+          src="/hero-captions.vtt"
+          default
+        />
       </video>
     </div>
   );

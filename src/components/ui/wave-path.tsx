@@ -163,27 +163,33 @@ export function WavePath({
     }
   };
 
+  const applyWaveFromClient = useCallback(
+    (clientX: number, clientY: number, deltaX: number, deltaY: number) => {
+      const state = stateRef.current;
+      const path = pathRef.current;
+      if (!path) return;
+
+      const pathBound = path.getBoundingClientRect();
+
+      if (orientation === 'horizontal') {
+        state.anchor = (clientX - pathBound.left) / pathBound.width;
+        state.progress += deltaY;
+      } else {
+        state.anchor = (clientY - pathBound.top) / pathBound.height;
+        state.progress += deltaX;
+      }
+
+      setPath(state.progress);
+    },
+    [orientation, setPath],
+  );
+
   const handleMouseEnter = () => {
     cancelOutAnimation();
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const state = stateRef.current;
-    const path = pathRef.current;
-    if (!path) return;
-
-    const { movementY, movementX, clientX, clientY } = e;
-    const pathBound = path.getBoundingClientRect();
-
-    if (orientation === 'horizontal') {
-      state.anchor = (clientX - pathBound.left) / pathBound.width;
-      state.progress += movementY;
-    } else {
-      state.anchor = (clientY - pathBound.top) / pathBound.height;
-      state.progress += movementX;
-    }
-
-    setPath(state.progress);
+    applyWaveFromClient(e.clientX, e.clientY, e.movementX, e.movementY);
   };
 
   const handleMouseLeave = () => {
@@ -191,6 +197,8 @@ export function WavePath({
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (orientation === 'horizontal' && e.pointerType === 'mouse') return;
+
     const state = stateRef.current;
     state.isPointerDown = true;
     state.lastPointerX = e.clientX;
@@ -205,19 +213,13 @@ export function WavePath({
     const state = stateRef.current;
     if (!state.isPointerDown) return;
 
-    const path = pathRef.current;
-    if (!path) return;
+    const deltaX = e.clientX - state.lastPointerX;
+    const deltaY = e.clientY - state.lastPointerY;
 
-    const pathBound = path.getBoundingClientRect();
-
-    if (orientation === 'vertical') {
-      state.anchor = (e.clientY - pathBound.top) / pathBound.height;
-      state.progress += e.clientX - state.lastPointerX;
-    }
+    applyWaveFromClient(e.clientX, e.clientY, deltaX, deltaY);
 
     state.lastPointerX = e.clientX;
     state.lastPointerY = e.clientY;
-    setPath(state.progress);
   };
 
   const handlePointerUp = () => {
@@ -241,18 +243,18 @@ export function WavePath({
         onMouseEnter={isHorizontal ? handleMouseEnter : undefined}
         onMouseMove={isHorizontal ? handleMouseMove : undefined}
         onMouseLeave={isHorizontal ? handleMouseLeave : undefined}
-        onPointerDown={!isHorizontal ? handlePointerDown : undefined}
-        onPointerMove={!isHorizontal ? handlePointerMove : undefined}
-        onPointerUp={!isHorizontal ? handlePointerUp : undefined}
-        onPointerLeave={!isHorizontal ? handlePointerUp : undefined}
-        onPointerCancel={!isHorizontal ? handlePointerUp : undefined}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         className={cn(
           'relative z-10',
           isHorizontal
-            ? '-top-5 h-10 w-full hover:-top-[150px] hover:h-[300px]'
+            ? '-top-5 h-10 w-full hover:-top-[150px] hover:h-[300px] [@media(pointer:coarse)]:-top-[150px] [@media(pointer:coarse)]:h-[300px]'
             : 'absolute inset-y-0 -left-5 h-full w-10',
         )}
-        style={!isHorizontal ? { touchAction: 'none' } : undefined}
+        style={{ touchAction: 'none' }}
       />
       <svg
         className={cn(

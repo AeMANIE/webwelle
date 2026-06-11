@@ -81,7 +81,7 @@ export default function Footer() {
 
           {/* Services */}
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-foreground">Leistungen</h4>
+            <h2 className="text-lg font-semibold mb-4 text-foreground">Leistungen</h2>
             <ul className="space-y-2">
               <li><Link href="/ai-voice" className="text-muted-foreground hover:text-primary transition-colors font-light">Telefonassistent AI</Link></li>
               <li><Link href={{ pathname: '/', hash: 'produkte' }} className="text-muted-foreground hover:text-primary transition-colors font-light">Webdesign</Link></li>
@@ -97,7 +97,7 @@ export default function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-foreground">Rechtliches</h4>
+            <h2 className="text-lg font-semibold mb-4 text-foreground">Rechtliches</h2>
             <ul className="space-y-2">
               <li><Link href="/impressum" className="text-muted-foreground hover:text-primary transition-colors font-light">Impressum</Link></li>
               <li><Link href="/datenschutz" className="text-muted-foreground hover:text-primary transition-colors font-light">Datenschutz</Link></li>

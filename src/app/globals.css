@@ -95,6 +95,10 @@
   }
 }
 
+.text-primary-on-card {
+  color: #6eb1ff;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

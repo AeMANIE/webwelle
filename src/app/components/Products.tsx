@@ -38,7 +38,7 @@ export default function Products() {
               <h3 className="text-2xl font-bold text-foreground mb-2 tracking-wide">
                 {STARTERWELLE.name}
               </h3>
-              <p className="text-sm text-primary font-semibold mb-2">
+              <p className="text-sm text-primary-on-card font-semibold mb-2">
                 Ihre professionelle Firmenwebsite zum Festpreis.
               </p>
             </div>
