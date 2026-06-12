@@ -3,6 +3,9 @@ import { pool } from '@/lib/database';
 import { requireAdminAuth } from '@/lib/api-security';
 import { randomBytes } from 'crypto';
 import { sendEmail } from '@/lib/email';
+import { WW_COLORS } from '@/lib/design-tokens';
+
+const C = WW_COLORS;
 
 // POST: Passwort für Kunde zurücksetzen (Admin-initiiert)
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -82,13 +85,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         to: customer.email,
         subject: 'WebWelle - Passwort zurücksetzen (Admin-Anfrage)',
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0e141f; color: #ffffff; padding: 20px;">
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${C.background}; color: ${C.foreground}; padding: 20px;">
             <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #DCA441; margin: 0;">WebWelle</h1>
-              <p style="color: #a0a0a0; margin: 5px 0;">Ihr Partner für Festpreis-Webdesign</p>
+              <h1 style="color: ${C.brand}; margin: 0;">WebWelle</h1>
+              <p style="color: ${C.mutedForeground}; margin: 5px 0;">Ihr Partner für Festpreis-Webdesign</p>
             </div>
             
-            <div style="background: #1a2332; padding: 30px; border-radius: 10px;">
+            <div style="background: ${C.card}; padding: 30px; border-radius: 10px;">
               <h2 style="color: #ffffff; margin-bottom: 20px;">🔐 Passwort zurücksetzen</h2>
               <p style="color: #a0a0a0; margin-bottom: 20px;">
                 Hallo ${customer.name || 'Kunde'},
@@ -99,7 +102,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
               </p>
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${resetLink}" 
-                   style="background: #DCA441; color: #0e141f; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                   style="background: ${C.brand}; color: ${C.brandForeground}; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
                   Passwort zurücksetzen
                 </a>
               </div>

@@ -268,7 +268,7 @@ export default function CustomerDetailPage() {
             </div>
             <button
               onClick={() => router.push('/admin?tab=customers')}
-              className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+              className="mt-4 px-4 py-2 bg-brand text-brand-foreground rounded-lg"
             >
               Zurück zur Kundenliste
             </button>
@@ -289,7 +289,7 @@ export default function CustomerDetailPage() {
             <div>
               <button
                 onClick={() => router.push('/admin?tab=customers')}
-                className="text-primary hover:underline mb-2"
+                className="text-brand hover:underline mb-2"
               >
                 ← Zurück zur Kundenliste
               </button>
@@ -302,7 +302,7 @@ export default function CustomerDetailPage() {
                 <>
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+                    className="px-4 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand/90"
                   >
                     Bearbeiten
                   </button>
@@ -314,7 +314,7 @@ export default function CustomerDetailPage() {
                   </button>
                   <button
                     onClick={() => setShowEmailForm(!showEmailForm)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-4 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand/90"
                   >
                     E-Mail senden
                   </button>
@@ -340,7 +340,7 @@ export default function CustomerDetailPage() {
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                    className="px-4 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand/90 disabled:opacity-50"
                   >
                     {saving ? 'Speichern...' : 'Speichern'}
                   </button>
@@ -394,7 +394,7 @@ export default function CustomerDetailPage() {
                   <button
                     onClick={handleSendEmail}
                     disabled={sendingEmail}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                    className="px-4 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand/90 disabled:opacity-50"
                   >
                     {sendingEmail ? 'Wird gesendet...' : 'E-Mail senden'}
                   </button>
@@ -617,7 +617,7 @@ export default function CustomerDetailPage() {
                                   href={analysis.existing_website_url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="text-primary underline"
+                                  className="text-brand underline"
                                 >
                                   {analysis.existing_website_url}
                                 </a>
@@ -636,7 +636,7 @@ export default function CustomerDetailPage() {
                         </div>
                         <a
                           href={`/funnel-5?t=${encodeURIComponent(analysis.token)}`}
-                          className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground hover:bg-primary/90"
+                          className="rounded bg-brand px-3 py-2 text-sm text-brand-foreground hover:bg-brand/90"
                         >
                           Funnel öffnen
                         </a>
@@ -727,7 +727,7 @@ export default function CustomerDetailPage() {
                             href={invoice.pdf_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-primary text-sm hover:underline"
+                            className="text-brand text-sm hover:underline"
                           >
                             PDF öffnen
                           </a>

@@ -88,8 +88,8 @@ export default function ImageInsertModal({ imageUrl, onInsert, onClose }: ImageI
                     onClick={() => setSize(option.value)}
                     className={`p-3 rounded-lg border transition-colors flex flex-col items-center gap-2 ${
                       size === option.value
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background text-foreground border-border hover:border-primary'
+                        ? 'bg-brand text-brand-foreground border-brand'
+                        : 'bg-background text-foreground border-border hover:border-brand'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -113,8 +113,8 @@ export default function ImageInsertModal({ imageUrl, onInsert, onClose }: ImageI
                     onClick={() => setAlign(option.value)}
                     className={`flex-1 p-3 rounded-lg border transition-colors flex items-center justify-center gap-2 ${
                       align === option.value
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-background text-foreground border-border hover:border-primary'
+                        ? 'bg-brand text-brand-foreground border-brand'
+                        : 'bg-background text-foreground border-border hover:border-brand'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -126,8 +126,8 @@ export default function ImageInsertModal({ imageUrl, onInsert, onClose }: ImageI
           </div>
 
           {/* Hinweis */}
-          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <p className="text-sm text-blue-600 dark:text-blue-400">
+          <div className="mb-4 p-3 bg-info/10 border border-info/20 rounded-lg">
+            <p className="text-sm text-info">
               💡 <strong>Tipp:</strong> Klicken Sie zuerst im Text-Editor an die gewünschte Stelle, bevor Sie das Bild einfügen. 
               Das Bild wird dann genau an dieser Position eingefügt.
             </p>
@@ -140,7 +140,7 @@ export default function ImageInsertModal({ imageUrl, onInsert, onClose }: ImageI
                 onInsert(imageUrl, size, align);
                 onClose();
               }}
-              className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+              className="flex-1 px-4 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand/90 transition-colors font-medium"
             >
               An Cursor-Position einfügen
             </button>

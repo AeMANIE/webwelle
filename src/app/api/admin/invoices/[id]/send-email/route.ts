@@ -3,6 +3,9 @@ import Stripe from 'stripe';
 import { pool } from '@/lib/database';
 import { requireAdminAuth } from '@/lib/api-security';
 import { sendEmail } from '@/lib/email';
+import { WW_COLORS } from '@/lib/design-tokens';
+
+const C = WW_COLORS;
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -99,13 +102,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
       // E-Mail-Inhalt
       const emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0e141f; color: #ffffff; padding: 20px;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${C.background}; color: ${C.foreground}; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #DCA441; margin: 0;">WebWelle</h1>
+            <h1 style="color: ${C.brand}; margin: 0;">WebWelle</h1>
             <p style="color: #a0a0a0; margin: 5px 0;">Ihre Rechnung</p>
           </div>
           
-          <div style="background: #1a2332; padding: 30px; border-radius: 10px;">
+          <div style="background: ${C.card}; padding: 30px; border-radius: 10px;">
             <h2 style="color: #ffffff; margin-bottom: 20px;">Rechnung ${invoiceNumber}</h2>
             <p style="color: #a0a0a0; margin-bottom: 20px;">
               Sehr ${customerName ? customerName : 'geehrter Kunde'},
@@ -120,7 +123,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
               </div>
               <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                 <span style="color: #a0a0a0;">Betrag:</span>
-                <span style="color: #DCA441; font-weight: bold; font-size: 18px;">${amount} ${currency}</span>
+                <span style="color: ${C.brand}; font-weight: bold; font-size: 18px;">${amount} ${currency}</span>
               </div>
               <div style="display: flex; justify-content: space-between;">
                 <span style="color: #a0a0a0;">Status:</span>
@@ -132,7 +135,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
             ${pdfUrl ? `
               <div style="text-align: center; margin-top: 30px;">
                 <a href="${pdfUrl}" 
-                   style="display: inline-block; background: #DCA441; color: #0e141f; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                   style="display: inline-block; background: ${C.brand}; color: ${C.brandForeground}; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
                   Rechnung herunterladen
                 </a>
               </div>

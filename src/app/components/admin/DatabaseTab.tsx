@@ -87,7 +87,7 @@ export default function DatabaseTab() {
   if (loading && !verification) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
         <p className="ml-4 text-muted-foreground">Lade Datenbank-Informationen...</p>
       </div>
     );
@@ -111,7 +111,7 @@ export default function DatabaseTab() {
         <button
           onClick={fetchVerification}
           disabled={loading}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand/90 transition-colors disabled:opacity-50"
         >
           {loading ? 'Lädt...' : 'Neu laden'}
         </button>

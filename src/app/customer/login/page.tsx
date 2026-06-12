@@ -103,11 +103,11 @@ export default function CustomerLogin() {
         <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-card rounded-2xl p-8 border border-border">
             <div className="text-center mb-8">
-              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+              <div className="mx-auto w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mb-4">
                 {step === 'login' ? (
-                  <User className="w-8 h-8 text-primary" />
+                  <User className="w-8 h-8 text-brand" />
                 ) : (
-                  <Shield className="w-8 h-8 text-primary" />
+                  <Shield className="w-8 h-8 text-brand" />
                 )}
               </div>
               <h1 className="text-2xl font-bold text-foreground">
@@ -140,7 +140,7 @@ export default function CustomerLogin() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-brand focus:border-transparent"
                     placeholder="ihre@email.com"
                   />
                 </div>
@@ -157,7 +157,7 @@ export default function CustomerLogin() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full pl-10 pr-10 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-brand focus:border-transparent"
                     placeholder="••••••••"
                   />
                   <button
@@ -173,7 +173,7 @@ export default function CustomerLogin() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-lg hover:bg-primary/90 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-brand text-brand-foreground py-3 px-4 rounded-lg hover:bg-brand/90 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'TAN wird gesendet...' : 'TAN anfordern'}
                 </button>
@@ -203,7 +203,7 @@ export default function CustomerLogin() {
                       required
                       value={tan}
                       onChange={(e) => setTan(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent text-center text-2xl tracking-widest"
+                      className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-brand focus:border-transparent text-center text-2xl tracking-widest"
                       placeholder="123456"
                       maxLength={6}
                     />
@@ -225,7 +225,7 @@ export default function CustomerLogin() {
                   <button
                     type="submit"
                     disabled={loading || tan.length !== 6}
-                    className="flex-1 bg-primary text-primary-foreground py-3 px-4 rounded-lg hover:bg-primary/90 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-brand text-brand-foreground py-3 px-4 rounded-lg hover:bg-brand/90 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? 'Wird verifiziert...' : 'Verifizieren'}
                   </button>
@@ -239,11 +239,11 @@ export default function CustomerLogin() {
                   ? (
                     <>
                       Noch kein Konto?{' '}
-                      <a href="/register" className="text-primary hover:underline">
+                      <a href="/register" className="text-brand hover:underline">
                         Hier registrieren
                       </a>
                       <br />
-                      <a href="/forgot-password" className="text-primary hover:underline text-sm">
+                      <a href="/forgot-password" className="text-brand hover:underline text-sm">
                         Passwort vergessen?
                       </a>
                     </>

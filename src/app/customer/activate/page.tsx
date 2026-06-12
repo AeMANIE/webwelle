@@ -125,7 +125,7 @@ function ActivateContent() {
   if (loading || validating) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
       </div>
     );
   }
@@ -141,7 +141,7 @@ function ActivateContent() {
               <p className="text-muted-foreground">{error}</p>
               <a 
                 href="/customer/login" 
-                className="mt-4 inline-block text-primary hover:underline"
+                className="mt-4 inline-block text-brand hover:underline"
               >
                 Zum Login
               </a>
@@ -166,7 +166,7 @@ function ActivateContent() {
               </p>
               <a 
                 href="/customer?tab=analysis" 
-                className="inline-block mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                className="inline-block mt-4 px-4 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand/90 transition-colors"
               >
                 Zur Website-Analyse
               </a>
@@ -202,7 +202,7 @@ function ActivateContent() {
                 </div>
               )}
               {activationInfo?.customerExists && (
-                <div className="rounded-xl border border-primary/30 bg-primary/10 p-4 text-sm text-muted-foreground">
+                <div className="rounded-xl border border-brand/30 bg-brand/10 p-4 text-sm text-muted-foreground">
                   {isActiveExistingCustomer
                     ? 'Dieses Konto ist bereits aktiv. Ihre Analyse wurde mit dem bestehenden Portal verbunden. Sie können sich einloggen oder bei Bedarf ein neues Passwort setzen.'
                     : 'Dieses Konto existiert bereits. Sie können hier Ihr Portal mit der Analyse verbinden und bei Bedarf ein neues Passwort setzen. Bestehende Buchungen und Rechnungen bleiben erhalten.'}
@@ -220,7 +220,7 @@ function ActivateContent() {
               <div className="space-y-3">
                 <a
                   href="/customer/login?redirectTo=%2Fcustomer%3Ftab%3Danalysis"
-                  className="block w-full rounded-lg bg-primary px-4 py-3 text-center font-semibold text-primary-foreground hover:bg-primary/90"
+                  className="block w-full rounded-lg bg-brand px-4 py-3 text-center font-semibold text-brand-foreground hover:bg-brand/90"
                 >
                   Einloggen & Analyse ansehen
                 </a>
@@ -231,7 +231,7 @@ function ActivateContent() {
                 >
                   Neues Passwort setzen
                 </button>
-                <a href="/forgot-password" className="block text-center text-sm text-primary hover:underline">
+                <a href="/forgot-password" className="block text-center text-sm text-brand hover:underline">
                   Passwort vergessen?
                 </a>
               </div>
@@ -286,7 +286,7 @@ function ActivateContent() {
               
               <button
                 type="submit"
-                className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-lg hover:bg-primary/90 transition-colors font-semibold"
+                className="w-full bg-brand text-brand-foreground py-3 px-4 rounded-lg hover:bg-brand/90 transition-colors font-semibold"
               >
                 {isActiveExistingCustomer ? 'Passwort aktualisieren & Analyse ansehen' : 'Kundenportal aktivieren & Analyse ansehen'}
               </button>
@@ -304,7 +304,7 @@ export default function ActivatePage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
       </div>
     }>
       <ActivateContent />

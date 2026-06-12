@@ -86,7 +86,7 @@ export default function InvoicesTab() {
             <option value="void">Ungültig</option>
             <option value="uncollectible">Uneinbringlich</option>
           </select>
-          <button onClick={exportCsv} className="px-3 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">CSV Export</button>
+          <button onClick={exportCsv} className="px-3 py-2 bg-brand text-brand-foreground rounded hover:bg-brand/90">CSV Export</button>
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -105,12 +105,12 @@ export default function InvoicesTab() {
           <tbody>
             {filtered.map(inv => (
               <tr key={inv.id} className="border-b border-border hover:bg-card/50">
-                <td className="p-4"><div className="flex items-center gap-2"><FileText className="w-4 h-4 text-primary" /><span className="font-mono text-sm">{inv.invoiceNumber}</span></div></td>
+                <td className="p-4"><div className="flex items-center gap-2"><FileText className="w-4 h-4 text-brand" /><span className="font-mono text-sm">{inv.invoiceNumber}</span></div></td>
                 <td className="p-4">
                   <div>{inv.customerName && <div className="font-medium text-foreground">{inv.customerName}</div>}</div>
                   <div className="text-sm text-muted-foreground">{inv.customerEmail || 'N/A'}</div>
                 </td>
-                <td className="p-4"><div className="flex items-center gap-2"><Euro className="w-4 h-4 text-primary" /><span className="font-semibold">{inv.amount.toFixed(2)} {inv.currency}</span></div></td>
+                <td className="p-4"><div className="flex items-center gap-2"><Euro className="w-4 h-4 text-brand" /><span className="font-semibold">{inv.amount.toFixed(2)} {inv.currency}</span></div></td>
                 <td className="p-4">
                   <div className="flex items-center gap-2">
                     {inv.status === 'paid' ? (<><CheckCircle className="w-4 h-4 text-green-500" /><span className="text-green-500">Bezahlt</span></>) : (<><XCircle className="w-4 h-4 text-red-500" /><span className="text-red-500">{inv.status}</span></>)}
@@ -126,13 +126,13 @@ export default function InvoicesTab() {
                 </td>
                 <td className="p-4">
                   {inv.pdfUrl && (
-                    <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors text-sm">
+                    <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-1 bg-brand text-brand-foreground rounded hover:bg-brand/90 transition-colors text-sm">
                       <Download className="w-4 h-4" /> PDF
                     </a>
                   )}
                   <a
                     href={`/api/admin/invoices/pdf?id=${inv.id}`}
-                    className="inline-flex items-center gap-2 px-3 py-1 border border-primary text-primary rounded hover:bg-primary/10 transition-colors text-sm ml-2"
+                    className="inline-flex items-center gap-2 px-3 py-1 border border-brand text-brand rounded hover:bg-brand/10 transition-colors text-sm ml-2"
                   >
                     <Download className="w-4 h-4" /> Branded PDF
                   </a>

@@ -150,7 +150,7 @@ export default function OffersTab() {
                             href={lead.existing_website_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-primary underline"
+                            className="text-brand underline"
                           >
                             {lead.existing_website_url}
                           </a>
@@ -257,7 +257,7 @@ export default function OffersTab() {
                 </div>
 
                 {designUrls.length > 0 && (
-                  <div className="mb-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+                  <div className="mb-3 rounded-lg border border-brand/20 bg-brand/5 p-3 text-sm">
                     <p className="font-medium mb-1">Lieblings-Webseiten</p>
                     <ul className="space-y-1">
                       {designUrls.map((url) => (
@@ -266,7 +266,7 @@ export default function OffersTab() {
                             href={url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-primary underline break-all"
+                            className="text-brand underline break-all"
                           >
                             {url}
                           </a>
@@ -276,7 +276,7 @@ export default function OffersTab() {
                   </div>
                 )}
 
-                <p className="text-sm font-semibold text-primary mb-3">
+                <p className="text-sm font-semibold text-brand mb-3">
                   Preis-Vorschau: {formatEuro(breakdown.subtotalCents)} (StarterWelle + Add-ons)
                 </p>
 
@@ -290,7 +290,7 @@ export default function OffersTab() {
                       type="button"
                       disabled={actionId === offer.id}
                       onClick={() => sendDocuseal(offer.id)}
-                      className="text-sm px-3 py-1 rounded bg-primary text-primary-foreground"
+                      className="text-sm px-3 py-1 rounded bg-brand text-brand-foreground"
                     >
                       DocuSeal senden
                     </button>
@@ -298,7 +298,7 @@ export default function OffersTab() {
                       type="button"
                       disabled={actionId === offer.id || offer.status !== 'signed'}
                       onClick={() => createCheckout(offer.id)}
-                      className="text-sm px-3 py-1 rounded border border-primary text-primary"
+                      className="text-sm px-3 py-1 rounded border border-brand text-brand"
                     >
                       Stripe Checkout
                     </button>
@@ -311,7 +311,7 @@ export default function OffersTab() {
                     href={`/analyse/${lead.token}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-primary underline"
+                    className="text-xs text-brand underline"
                   >
                     Analyse ansehen
                   </a>
@@ -320,7 +320,7 @@ export default function OffersTab() {
                       type="button"
                       disabled={actionId === `blog-${lead.token}`}
                       onClick={() => startBlogPipeline(lead.token)}
-                      className="text-xs px-2 py-1 rounded border border-primary text-primary"
+                      className="text-xs px-2 py-1 rounded border border-brand text-brand"
                     >
                       Blog-Pipeline starten
                     </button>

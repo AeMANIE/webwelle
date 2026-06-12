@@ -1,3 +1,7 @@
+import { WW_COLORS } from './design-tokens';
+
+const C = WW_COLORS;
+
 // TAN generieren (6-stellig)
 export function generateTAN(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -73,24 +77,24 @@ export async function sendAdminTANEmail(email: string, tan: string, adminName: s
       to: email,
       subject: 'WebWelle Admin - Ihr TAN-Code für die Anmeldung',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0e141f; color: #ffffff; padding: 20px;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${C.background}; color: ${C.foreground}; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #DCA441; margin: 0;">WebWelle Admin</h1>
-            <p style="color: #a0a0a0; margin: 5px 0;">Admin-Bereich Zugang</p>
+            <h1 style="color: ${C.brand}; margin: 0;">WebWelle Admin</h1>
+            <p style="color: ${C.mutedForeground}; margin: 5px 0;">Admin-Bereich Zugang</p>
           </div>
           
-          <div style="background: #1a2332; padding: 30px; border-radius: 10px; text-align: center;">
-            <h2 style="color: #ffffff; margin-bottom: 20px;">🔐 Ihr Admin-TAN-Code</h2>
-            <p style="color: #a0a0a0; margin-bottom: 20px;">
+          <div style="background: ${C.card}; padding: 30px; border-radius: 10px; text-align: center;">
+            <h2 style="color: ${C.foreground}; margin-bottom: 20px;">🔐 Ihr Admin-TAN-Code</h2>
+            <p style="color: ${C.mutedForeground}; margin-bottom: 20px;">
               Hallo ${adminName},
             </p>
-            <p style="color: #a0a0a0; margin-bottom: 30px;">
+            <p style="color: ${C.mutedForeground}; margin-bottom: 30px;">
               Hier ist Ihr TAN-Code für die Admin-Anmeldung:
             </p>
-            <div style="background: #DCA441; color: #0e141f; font-size: 32px; font-weight: bold; padding: 20px; border-radius: 8px; letter-spacing: 5px; margin: 20px 0;">
+            <div style="background: ${C.brand}; color: ${C.brandForeground}; font-size: 32px; font-weight: bold; padding: 20px; border-radius: 8px; letter-spacing: 5px; margin: 20px 0;">
               ${tan}
             </div>
-            <p style="color: #a0a0a0; font-size: 14px; margin-top: 20px;">
+            <p style="color: ${C.mutedForeground}; font-size: 14px; margin-top: 20px;">
               Dieser Code ist 10 Minuten gültig.
             </p>
             <p style="color: #ff6b6b; font-size: 12px; margin-top: 20px;">
@@ -98,7 +102,7 @@ export async function sendAdminTANEmail(email: string, tan: string, adminName: s
             </p>
           </div>
           
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #374151;">
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid ${C.border};">
             <p style="color: #a0a0a0; font-size: 12px;">
               WebWelle | Allgäu | Bayern<br>
               E-Mail: info@webwelle.com
@@ -141,29 +145,29 @@ export async function sendTANEmail(email: string, tan: string, customerName: str
       to: email,
       subject: 'WebWelle - Ihr TAN-Code für die Anmeldung',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0e141f; color: #ffffff; padding: 20px;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${C.background}; color: ${C.foreground}; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #DCA441; margin: 0;">WebWelle</h1>
-            <p style="color: #a0a0a0; margin: 5px 0;">Ihr Partner für Festpreis-Webdesign</p>
+            <h1 style="color: ${C.brand}; margin: 0;">WebWelle</h1>
+            <p style="color: ${C.mutedForeground}; margin: 5px 0;">Ihr Partner für Festpreis-Webdesign</p>
           </div>
           
-          <div style="background: #1a2332; padding: 30px; border-radius: 10px; text-align: center;">
-            <h2 style="color: #ffffff; margin-bottom: 20px;">🔐 Ihr TAN-Code</h2>
-            <p style="color: #a0a0a0; margin-bottom: 20px;">
+          <div style="background: ${C.card}; padding: 30px; border-radius: 10px; text-align: center;">
+            <h2 style="color: ${C.foreground}; margin-bottom: 20px;">🔐 Ihr TAN-Code</h2>
+            <p style="color: ${C.mutedForeground}; margin-bottom: 20px;">
               Hallo ${customerName},
             </p>
-            <p style="color: #a0a0a0; margin-bottom: 30px;">
+            <p style="color: ${C.mutedForeground}; margin-bottom: 30px;">
               Hier ist Ihr TAN-Code für die Anmeldung:
             </p>
-            <div style="background: #DCA441; color: #0e141f; font-size: 32px; font-weight: bold; padding: 20px; border-radius: 8px; letter-spacing: 5px; margin: 20px 0;">
+            <div style="background: ${C.brand}; color: ${C.brandForeground}; font-size: 32px; font-weight: bold; padding: 20px; border-radius: 8px; letter-spacing: 5px; margin: 20px 0;">
               ${tan}
             </div>
-            <p style="color: #a0a0a0; font-size: 14px; margin-top: 20px;">
+            <p style="color: ${C.mutedForeground}; font-size: 14px; margin-top: 20px;">
               Dieser Code ist 10 Minuten gültig.
             </p>
           </div>
           
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #374151;">
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid ${C.border};">
             <p style="color: #a0a0a0; font-size: 12px;">
               WebWelle | Allgäu | Bayern<br>
               E-Mail: info@webwelle.com
@@ -208,29 +212,29 @@ export async function sendVerificationEmail(email: string, name: string, token: 
       to: email,
       subject: 'WebWelle - E-Mail-Adresse bestätigen',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0e141f; color: #ffffff; padding: 20px;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${C.background}; color: ${C.foreground}; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #DCA441; margin: 0;">WebWelle</h1>
-            <p style="color: #a0a0a0; margin: 5px 0;">Ihr Partner für Festpreis-Webdesign</p>
+            <h1 style="color: ${C.brand}; margin: 0;">WebWelle</h1>
+            <p style="color: ${C.mutedForeground}; margin: 5px 0;">Ihr Partner für Festpreis-Webdesign</p>
           </div>
           
-          <div style="background: #1a2332; padding: 30px; border-radius: 10px; text-align: center;">
-            <h2 style="color: #ffffff; margin-bottom: 20px;">✅ E-Mail-Adresse bestätigen</h2>
-            <p style="color: #a0a0a0; margin-bottom: 20px;">
+          <div style="background: ${C.card}; padding: 30px; border-radius: 10px; text-align: center;">
+            <h2 style="color: ${C.foreground}; margin-bottom: 20px;">✅ E-Mail-Adresse bestätigen</h2>
+            <p style="color: ${C.mutedForeground}; margin-bottom: 20px;">
               Hallo ${name},
             </p>
-            <p style="color: #a0a0a0; margin-bottom: 30px;">
+            <p style="color: ${C.mutedForeground}; margin-bottom: 30px;">
               Vielen Dank für Ihre Registrierung bei WebWelle! Bitte bestätigen Sie Ihre E-Mail-Adresse, um Ihr Konto zu aktivieren.
             </p>
-            <a href="${baseUrl}/verify-email?token=${token}" style="background: #DCA441; color: #0e141f; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; margin: 20px 0;">
+            <a href="${baseUrl}/verify-email?token=${token}" style="background: ${C.brand}; color: ${C.brandForeground}; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; margin: 20px 0;">
               E-Mail-Adresse bestätigen
             </a>
-            <p style="color: #a0a0a0; font-size: 14px; margin-top: 20px;">
+            <p style="color: ${C.mutedForeground}; font-size: 14px; margin-top: 20px;">
               Dieser Link ist 24 Stunden gültig.
             </p>
           </div>
           
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #374151;">
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid ${C.border};">
             <p style="color: #a0a0a0; font-size: 12px;">
               WebWelle | Allgäu | Bayern<br>
               E-Mail: info@webwelle.com
@@ -283,23 +287,23 @@ export async function sendTestEmail(email: string): Promise<boolean> {
       to: email,
       subject: 'WebWelle Test-E-Mail',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0e141f; color: #ffffff; padding: 20px;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${C.background}; color: ${C.foreground}; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #DCA441; margin: 0;">WebWelle</h1>
-            <p style="color: #a0a0a0; margin: 5px 0;">Ihr Partner für Festpreis-Webdesign</p>
+            <h1 style="color: ${C.brand}; margin: 0;">WebWelle</h1>
+            <p style="color: ${C.mutedForeground}; margin: 5px 0;">Ihr Partner für Festpreis-Webdesign</p>
           </div>
           
-          <div style="background: #1a2332; padding: 30px; border-radius: 10px; text-align: center;">
-            <h2 style="color: #ffffff; margin-bottom: 20px;">✅ Test-E-Mail erfolgreich!</h2>
-            <p style="color: #a0a0a0; margin-bottom: 20px;">
+          <div style="background: ${C.card}; padding: 30px; border-radius: 10px; text-align: center;">
+            <h2 style="color: ${C.foreground}; margin-bottom: 20px;">✅ Test-E-Mail erfolgreich!</h2>
+            <p style="color: ${C.mutedForeground}; margin-bottom: 20px;">
               Die E-Mail-Konfiguration funktioniert korrekt.
             </p>
-            <p style="color: #a0a0a0; font-size: 14px;">
+            <p style="color: ${C.mutedForeground}; font-size: 14px;">
               Sie können jetzt TAN-Codes per E-Mail empfangen.
             </p>
           </div>
           
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #374151;">
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid ${C.border};">
             <p style="color: #a0a0a0; font-size: 12px;">
               WebWelle | Allgäu | Bayern<br>
               E-Mail: info@webwelle.com

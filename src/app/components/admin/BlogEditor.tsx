@@ -325,7 +325,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
             onClick={() => setActiveTab('content')}
             className={`pb-3 px-2 border-b-2 transition-colors ${
               activeTab === 'content'
-                ? 'border-primary text-primary font-semibold'
+                ? 'border-brand text-brand font-semibold'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -336,7 +336,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
             onClick={() => setActiveTab('seo')}
             className={`pb-3 px-2 border-b-2 transition-colors ${
               activeTab === 'seo'
-                ? 'border-primary text-primary font-semibold'
+                ? 'border-brand text-brand font-semibold'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -347,7 +347,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
             onClick={() => setActiveTab('images')}
             className={`pb-3 px-2 border-b-2 transition-colors ${
               activeTab === 'images'
-                ? 'border-primary text-primary font-semibold'
+                ? 'border-brand text-brand font-semibold'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -358,7 +358,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
             onClick={() => setActiveTab('settings')}
             className={`pb-3 px-2 border-b-2 transition-colors ${
               activeTab === 'settings'
-                ? 'border-primary text-primary font-semibold'
+                ? 'border-brand text-brand font-semibold'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -478,7 +478,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                       // Wechsle zum Bilder-Tab
                       setActiveTab('images');
                     }}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-brand text-brand-foreground rounded-lg hover:bg-brand/90 transition-colors"
                   >
                     <Images className="w-4 h-4" />
                     Bild aus Galerie einfügen
@@ -533,8 +533,8 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                       onClick={() => setSelectedImageFormat('landscape')}
                       className={`px-4 py-2 rounded-lg border transition-colors ${
                         selectedImageFormat === 'landscape'
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background text-foreground border-border hover:border-primary'
+                          ? 'bg-brand text-brand-foreground border-brand'
+                          : 'bg-background text-foreground border-border hover:border-brand'
                       }`}
                     >
                       Landscape (16:9)
@@ -544,8 +544,8 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                       onClick={() => setSelectedImageFormat('square')}
                       className={`px-4 py-2 rounded-lg border transition-colors ${
                         selectedImageFormat === 'square'
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background text-foreground border-border hover:border-primary'
+                          ? 'bg-brand text-brand-foreground border-brand'
+                          : 'bg-background text-foreground border-border hover:border-brand'
                       }`}
                     >
                       Quadratisch (1:1)
@@ -555,8 +555,8 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                       onClick={() => setSelectedImageFormat('portrait')}
                       className={`px-4 py-2 rounded-lg border transition-colors ${
                         selectedImageFormat === 'portrait'
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background text-foreground border-border hover:border-primary'
+                          ? 'bg-brand text-brand-foreground border-brand'
+                          : 'bg-background text-foreground border-border hover:border-brand'
                       }`}
                     >
                       Portrait (3:4)
@@ -566,8 +566,8 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                       onClick={() => setSelectedImageFormat(undefined)}
                       className={`px-4 py-2 rounded-lg border transition-colors ${
                         !selectedImageFormat
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background text-foreground border-border hover:border-primary'
+                          ? 'bg-brand text-brand-foreground border-brand'
+                          : 'bg-background text-foreground border-border hover:border-brand'
                       }`}
                     >
                       Auto
@@ -754,7 +754,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
                       onChange={(e) => setFeatured(e.target.checked)}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
                   </label>
                 </div>
 
@@ -866,7 +866,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
         <button
           onClick={() => handleSave(false)}
           disabled={saving || !title || !content}
-          className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-6 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand/90 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Save className="w-4 h-4" />
           {saving ? 'Speichern...' : 'Speichern'}

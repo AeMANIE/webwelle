@@ -3,6 +3,13 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * WebWelle 3-Farben-Referenz (Homepage/Funnel – nicht redesignen):
+   *   1 Hintergrund  #0e141f  (--background)
+   *   2 Hellblau     #6699ff  (Glow-Anfang, --info; Ziel --primary für Marketing/Funnel)
+   *   3 Dunkellila   #8C36C9  (--brand für Admin/Portal/E-Mails)
+   * Funnel/Marketing nutzen text-primary/bg-primary → --primary nicht mit Lila überschreiben.
+   */
   :root {
   --radius: 0.625rem;
   --background: #0e141f;
@@ -11,32 +18,47 @@
   --card-foreground: #ffffff;
   --popover: #1a2332;
   --popover-foreground: #ffffff;
-  --primary: #3B82F6;
+  /* Hellblau – Marketing/Funnel (text-primary, bg-primary) */
+  --primary: #6699ff;
   --primary-foreground: #0e141f;
+  --brand: #8C36C9;
+  --brand-foreground: #0e141f;
+  --brand-muted: rgba(140, 54, 201, 0.18);
   --secondary: #2a3441;
   --secondary-foreground: #ffffff;
   --muted: #2a3441;
   --muted-foreground: #a0a0a0;
-  --accent: #3B82F6;
+  --accent: #8C36C9;
   --accent-foreground: #0e141f;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --info: #6699ff;
   --border: #374151;
   --input: #374151;
-  --ring: #3B82F6;
-  --chart-1: #3B82F6;
+  --ring: #8C36C9;
+  --chart-1: #8C36C9;
   --chart-2: #f59e0b;
   --chart-3: #10b981;
-  --chart-4: #3b82f6;
-  --chart-5: #8b5cf6;
+  --chart-4: #6699ff;
+  --chart-5: #b366ff;
+  --badge-success-bg: rgba(16, 185, 129, 0.12);
+  --badge-success-fg: #34d399;
+  --badge-warning-bg: rgba(245, 158, 11, 0.12);
+  --badge-warning-fg: #fbbf24;
+  --badge-error-bg: rgba(239, 68, 68, 0.12);
+  --badge-error-fg: #f87171;
+  --badge-info-bg: rgba(102, 153, 255, 0.12);
+  --badge-info-fg: #93c5fd;
   --sidebar: #0e141f;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #3B82F6;
+  --sidebar-primary: #8C36C9;
   --sidebar-primary-foreground: #0e141f;
   --sidebar-accent: #2a3441;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #374151;
-  --sidebar-ring: #3B82F6;
+  --sidebar-ring: #8C36C9;
   }
   
   .dark {
@@ -46,32 +68,46 @@
     --card-foreground: #ffffff;
     --popover: #1a2332;
     --popover-foreground: #ffffff;
-    --primary: #3B82F6;
+    --primary: #6699ff;
     --primary-foreground: #0e141f;
+    --brand: #8C36C9;
+    --brand-foreground: #0e141f;
+    --brand-muted: rgba(140, 54, 201, 0.18);
     --secondary: #2a3441;
     --secondary-foreground: #ffffff;
     --muted: #2a3441;
     --muted-foreground: #a0a0a0;
-    --accent: #3B82F6;
+    --accent: #8C36C9;
     --accent-foreground: #0e141f;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --info: #6699ff;
     --border: #374151;
     --input: #374151;
-    --ring: #3B82F6;
-    --chart-1: #3B82F6;
+    --ring: #8C36C9;
+    --chart-1: #8C36C9;
     --chart-2: #f59e0b;
     --chart-3: #10b981;
-    --chart-4: #3b82f6;
-    --chart-5: #8b5cf6;
+    --chart-4: #6699ff;
+    --chart-5: #b366ff;
+    --badge-success-bg: rgba(16, 185, 129, 0.12);
+    --badge-success-fg: #34d399;
+    --badge-warning-bg: rgba(245, 158, 11, 0.12);
+    --badge-warning-fg: #fbbf24;
+    --badge-error-bg: rgba(239, 68, 68, 0.12);
+    --badge-error-fg: #f87171;
+    --badge-info-bg: rgba(102, 153, 255, 0.12);
+    --badge-info-fg: #93c5fd;
     --sidebar: #0e141f;
     --sidebar-foreground: #ffffff;
-    --sidebar-primary: #3B82F6;
+    --sidebar-primary: #8C36C9;
     --sidebar-primary-foreground: #0e141f;
     --sidebar-accent: #2a3441;
     --sidebar-accent-foreground: #ffffff;
     --sidebar-border: #374151;
-    --sidebar-ring: #3B82F6;
+    --sidebar-ring: #8C36C9;
   }
   
   * {

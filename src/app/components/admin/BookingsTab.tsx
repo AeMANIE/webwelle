@@ -184,12 +184,12 @@ export default function BookingsTab() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <Package className="w-5 h-5 text-primary" />
+                    <Package className="w-5 h-5 text-brand" />
                     <h3 className="text-xl font-semibold text-foreground">
                       {getPackageName(booking.package_type)}
                     </h3>
                     {booking.is_monthly && (
-                      <span className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded text-xs">
+                      <span className="bg-brand/10 text-brand px-2 py-1 rounded text-xs">
                         Monatlich
                       </span>
                     )}
@@ -229,13 +229,13 @@ export default function BookingsTab() {
 
                   <div className="flex items-center gap-6 text-sm">
                     <div className="flex items-center gap-2">
-                      <Euro className="w-4 h-4 text-primary" />
+                      <Euro className="w-4 h-4 text-brand" />
                       <span className="font-semibold text-foreground">
                         {(booking.total_amount_cents / 100).toFixed(2)} {booking.currency?.toUpperCase() || 'EUR'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-primary" />
+                      <Calendar className="w-4 h-4 text-brand" />
                       <span>
                         {new Date(booking.created_at).toLocaleDateString('de-DE', {
                           year: 'numeric',

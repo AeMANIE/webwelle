@@ -1,3 +1,7 @@
+import { WW_COLORS, WW_EMAIL } from '../design-tokens';
+
+const C = WW_COLORS;
+
 interface WebWellePortalMailParams {
   customerName: string;
   customerEmail?: string;
@@ -62,11 +66,11 @@ export function renderWebWellePortalActivationEmail(params: WebWellePortalMailPa
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${title} | WebWelle</title>
   </head>
-  <body style="margin:0;padding:0;background:#0e141f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#f8fafc;">
+  <body style="margin:0;padding:0;background:${C.background};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#f8fafc;">
     <div style="max-width:680px;margin:0 auto;padding:28px 16px;">
-      <div style="border:1px solid rgba(220,164,65,.28);border-radius:24px;overflow:hidden;background:linear-gradient(180deg,#151d2b 0%,#0e141f 100%);box-shadow:0 24px 80px rgba(0,0,0,.35);">
-        <div style="padding:34px 32px 22px;border-bottom:1px solid rgba(220,164,65,.18);">
-          <div style="letter-spacing:.18em;text-transform:uppercase;color:#DCA441;font-size:12px;font-weight:700;">WebWelle</div>
+      <div style="border:1px solid ${WW_EMAIL.brandBorder};border-radius:24px;overflow:hidden;background:${WW_EMAIL.cardGradient};box-shadow:0 24px 80px rgba(0,0,0,.35);">
+        <div style="padding:34px 32px 22px;border-bottom:1px solid ${WW_EMAIL.brandBorderLight};">
+          <div style="letter-spacing:.18em;text-transform:uppercase;color:${C.brand};font-size:12px;font-weight:700;">WebWelle</div>
           <h1 style="margin:12px 0 10px;font-size:30px;line-height:1.2;color:#ffffff;">${title}</h1>
           <p style="margin:0;color:#cbd5e1;font-size:16px;line-height:1.65;">Hallo ${safeName}, ${intro}</p>
           ${safeEmail ? `<p style="margin:14px 0 0;color:#94a3b8;font-size:14px;">Diese Nachricht wurde fuer <strong style="color:#f8fafc;">${safeEmail}</strong> erstellt.</p>` : ''}
@@ -81,12 +85,12 @@ export function renderWebWellePortalActivationEmail(params: WebWellePortalMailPa
           </div>
 
           <div style="text-align:center;margin:28px 0 20px;">
-            <a href="${params.activationLink}" style="display:inline-block;background:#DCA441;color:#0e141f;text-decoration:none;font-weight:800;padding:16px 26px;border-radius:999px;box-shadow:0 10px 26px rgba(220,164,65,.28);">
+            <a href="${params.activationLink}" style="display:inline-block;background:${C.brand};color:${C.brandForeground};text-decoration:none;font-weight:800;padding:16px 26px;border-radius:999px;box-shadow:0 10px 26px ${WW_EMAIL.brandShadow};">
               ${copy.cta}
             </a>
           </div>
 
-          ${resumeLink ? `<p style="text-align:center;margin:0 0 24px;color:#94a3b8;font-size:14px;">Oder ohne Portal fortsetzen: <a href="${resumeLink}" style="color:#DCA441;text-decoration:none;font-weight:700;">Analyse später fortsetzen</a></p>` : ''}
+          ${resumeLink ? `<p style="text-align:center;margin:0 0 24px;color:#94a3b8;font-size:14px;">Oder ohne Portal fortsetzen: <a href="${resumeLink}" style="color:${C.brand};text-decoration:none;font-weight:700;">Analyse später fortsetzen</a></p>` : ''}
 
           <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:18px;color:#94a3b8;font-size:13px;line-height:1.6;">
             ${copy.note}

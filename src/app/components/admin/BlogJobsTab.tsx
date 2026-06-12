@@ -141,7 +141,7 @@ export default function BlogJobsTab() {
           <button
             type="submit"
             disabled={starting || !leadToken.trim()}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+            className="bg-brand text-brand-foreground px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
           >
             {starting ? 'Startet…' : 'Pipeline starten'}
           </button>

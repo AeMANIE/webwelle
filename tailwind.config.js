@@ -31,6 +31,14 @@ module.exports = {
           DEFAULT: 'var(--primary)',
           foreground: 'var(--primary-foreground)',
         },
+        brand: {
+          DEFAULT: 'var(--brand)',
+          foreground: 'var(--brand-foreground)',
+          muted: 'var(--brand-muted)',
+        },
+        success: 'var(--success)',
+        warning: 'var(--warning)',
+        info: 'var(--info)',
         secondary: {
           DEFAULT: 'var(--secondary)',
           foreground: 'var(--secondary-foreground)',
