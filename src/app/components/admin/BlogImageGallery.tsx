@@ -197,7 +197,7 @@ export default function BlogImageGallery({ postId, onSelectImage, selectedFormat
             />
             <label
               htmlFor="gallery-upload"
-              className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-brand transition-colors"
+              className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors"
             >
               <Upload className="w-8 h-8 text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">
@@ -225,7 +225,7 @@ export default function BlogImageGallery({ postId, onSelectImage, selectedFormat
           {images.map((image) => (
             <div
               key={image.id}
-              className="relative group border border-border rounded-lg overflow-hidden hover:border-brand transition-colors cursor-pointer"
+              className="relative group border border-border rounded-lg overflow-hidden hover:border-primary transition-colors cursor-pointer"
               onClick={() => {
                 setSelectedImage(image);
                 onSelectImage(image.fileUrl, image.format !== 'auto' ? image.format : undefined);

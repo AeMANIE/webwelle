@@ -385,7 +385,7 @@ export default function CustomerPortal() {
   if (!user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -573,7 +573,7 @@ export default function CustomerPortal() {
                   <p className="text-sm text-muted-foreground">Meine Buchungen</p>
                   <p className="text-2xl font-bold text-foreground">{bookings.length}</p>
                 </div>
-                <Package className="w-8 h-8 text-brand" />
+                <Package className="w-8 h-8 text-primary" />
               </div>
             </div>
             <div className="bg-card rounded-lg p-6 border border-border">
@@ -582,7 +582,7 @@ export default function CustomerPortal() {
                   <p className="text-sm text-muted-foreground">Add-on Bestellungen</p>
                   <p className="text-2xl font-bold text-foreground">{addonOrders.length}</p>
                 </div>
-                <FileText className="w-8 h-8 text-brand" />
+                <FileText className="w-8 h-8 text-primary" />
               </div>
             </div>
             <div className="bg-card rounded-lg p-6 border border-border">
@@ -617,7 +617,7 @@ export default function CustomerPortal() {
                   onClick={() => setActiveTab('bookings')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'bookings'
-                      ? 'border-brand text-brand'
+                      ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300'
                   }`}
                 >
@@ -627,7 +627,7 @@ export default function CustomerPortal() {
                   onClick={() => setActiveTab('addons')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'addons'
-                      ? 'border-brand text-brand'
+                      ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300'
                   }`}
                 >
@@ -637,7 +637,7 @@ export default function CustomerPortal() {
                   onClick={() => setActiveTab('analysis')}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     activeTab === 'analysis'
-                      ? 'border-brand text-brand'
+                      ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300'
                   }`}
                 >
@@ -649,7 +649,7 @@ export default function CustomerPortal() {
 
           {loading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
               <p className="text-foreground">Lade Daten...</p>
             </div>
           ) : activeTab === 'bookings' ? (
@@ -677,7 +677,7 @@ export default function CustomerPortal() {
                           {booking.isMonthly ? ' Monatlich' : ' Einmalzahlung'}
                         </p>
                         {booking.selectedAddons && booking.selectedAddons.length > 0 && (
-                          <p className="text-sm text-brand mt-1">
+                          <p className="text-sm text-primary mt-1">
                             +{booking.selectedAddons.length} Zusatzoptionen
                           </p>
                         )}
@@ -706,7 +706,7 @@ export default function CustomerPortal() {
                         </button>
                         {booking.status === 'paid' && (
                           <>
-                            <button className="flex items-center gap-2 border border-brand text-brand px-4 py-2 rounded hover:bg-brand/10 transition-colors text-sm">
+                            <button className="flex items-center gap-2 border border-primary text-primary px-4 py-2 rounded hover:bg-primary/10 transition-colors text-sm">
                               <FileText className="w-4 h-4" />
                               Rechnungen
                             </button>
@@ -770,7 +770,7 @@ export default function CustomerPortal() {
                                   href={analysis.existing_website_url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="text-brand underline"
+                                  className="text-primary underline"
                                 >
                                   {analysis.existing_website_url}
                                 </a>
@@ -827,7 +827,7 @@ export default function CustomerPortal() {
                           <p className="text-sm font-medium mb-2">Gespeicherte Lieblings-Webseiten</p>
                           <div className="flex flex-wrap gap-2">
                             {(analysis.design_reference_urls || []).map((url) => (
-                              <span key={url} className="rounded-full bg-brand/10 px-3 py-1 text-sm text-brand">
+                              <span key={url} className="rounded-full bg-primary/10 px-3 py-1 text-sm text-primary">
                                 {url}
                               </span>
                             ))}
@@ -882,7 +882,7 @@ export default function CustomerPortal() {
                       </div>
                       <div className="flex gap-2">
                         {order.status === 'paid' && (
-                          <button className="flex items-center gap-2 border border-brand text-brand px-4 py-2 rounded hover:bg-brand/10 transition-colors text-sm">
+                          <button className="flex items-center gap-2 border border-primary text-primary px-4 py-2 rounded hover:bg-primary/10 transition-colors text-sm">
                             <FileText className="w-4 h-4" />
                             Rechnung anzeigen
                           </button>
@@ -947,7 +947,7 @@ export default function CustomerPortal() {
                         {selectedBooking.selectedAddons.map((addon, index) => (
                           <div key={index} className="flex justify-between items-center py-2 border-b border-border last:border-b-0">
                             <span className="text-foreground">{String(addon.label || addon.key)}</span>
-                            <span className="text-brand font-medium">{String(addon.price || 'Preis nicht verfügbar')}</span>
+                            <span className="text-primary font-medium">{String(addon.price || 'Preis nicht verfügbar')}</span>
                           </div>
                         ))}
                       </div>
@@ -968,7 +968,7 @@ export default function CustomerPortal() {
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-brand font-medium">
+                              <span className="text-primary font-medium">
                                 {invoice.amount.toFixed(2)} {invoice.currency.toUpperCase()}
                               </span>
                               {invoice.pdfUrl && (
@@ -976,7 +976,7 @@ export default function CustomerPortal() {
                                   href={invoice.pdfUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-brand hover:text-brand/80"
+                                  className="text-primary hover:text-primary/80"
                                 >
                                   <Download className="w-4 h-4" />
                                 </a>
@@ -1064,7 +1064,7 @@ export default function CustomerPortal() {
                         Intelligenter Chatbot für Ihre Website
                       </p>
                       <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-brand">299,99 €</span>
+                        <span className="text-lg font-bold text-primary">299,99 €</span>
                         <button
                           onClick={() => orderAddon('ai-agent', 'AI-Agent', 'price_ai_agent', 29999, 'oneTime')}
                           className="bg-brand text-brand-foreground px-4 py-2 rounded hover:bg-brand/90 transition-colors text-sm"
@@ -1083,11 +1083,11 @@ export default function CustomerPortal() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Einmalig</span>
-                          <span className="font-bold text-brand">1.599 €</span>
+                          <span className="font-bold text-primary">1.599 €</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Monatlich</span>
-                          <span className="font-bold text-brand">149 € mtl.</span>
+                          <span className="font-bold text-primary">149 € mtl.</span>
                         </div>
                       </div>
                       <div className="flex gap-2 mt-3">
@@ -1115,11 +1115,11 @@ export default function CustomerPortal() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Einmalig</span>
-                          <span className="font-bold text-brand">2.999 €</span>
+                          <span className="font-bold text-primary">2.999 €</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Monatlich</span>
-                          <span className="font-bold text-brand">274,99 € mtl.</span>
+                          <span className="font-bold text-primary">274,99 € mtl.</span>
                         </div>
                       </div>
                       <div className="flex gap-2 mt-3">
@@ -1147,11 +1147,11 @@ export default function CustomerPortal() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Einmalig</span>
-                          <span className="font-bold text-brand">1.999 €</span>
+                          <span className="font-bold text-primary">1.999 €</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Monatlich</span>
-                          <span className="font-bold text-brand">199 € mtl.</span>
+                          <span className="font-bold text-primary">199 € mtl.</span>
                         </div>
                       </div>
                       <div className="flex gap-2 mt-3">
@@ -1179,11 +1179,11 @@ export default function CustomerPortal() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Einmalig</span>
-                          <span className="font-bold text-brand">1.299 €</span>
+                          <span className="font-bold text-primary">1.299 €</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Monatlich</span>
-                          <span className="font-bold text-brand">129 € mtl.</span>
+                          <span className="font-bold text-primary">129 € mtl.</span>
                         </div>
                       </div>
                       <div className="flex gap-2 mt-3">
@@ -1209,7 +1209,7 @@ export default function CustomerPortal() {
                         Komplettservice für Google My Business
                       </p>
                       <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-brand">399 €</span>
+                        <span className="text-lg font-bold text-primary">399 €</span>
                         <button
                           onClick={() => orderAddon('google-my-business', 'Google My Business', 'price_google_my_business', 39900, 'oneTime')}
                           className="bg-brand text-brand-foreground px-4 py-2 rounded hover:bg-brand/90 transition-colors text-sm"

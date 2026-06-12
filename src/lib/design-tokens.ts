@@ -2,9 +2,10 @@
  * WebWelle design tokens for contexts without CSS variables (e-mails, PDFs).
  * Keep in sync with src/app/globals.css :root.
  *
- * 3-Farben-Referenz (Homepage/Funnel unverändert lassen):
- *   background #0e141f | secondaryBlue #6699ff | brand (Lila) #8C36C9
- * Admin/Portal/E-Mails: brand. Marketing/Funnel: secondaryBlue (--info/--primary Ziel).
+ * 3-Farben-Hierarchie (Homepage/Funnel unverändert lassen):
+ *   1 background #0e141f
+ *   2 primary/secondaryBlue #6699ff – Links, sekundäre Akzente, Info
+ *   3 brand #8C36C9 – primäre CTAs, wichtigste Highlights (sparsam)
  */
 export const WW_COLORS = {
   background: '#0e141f',
@@ -32,6 +33,8 @@ export type WwColorKey = keyof typeof WW_COLORS;
 
 /** Inline-HTML-Helfer für E-Mails (kein CSS-Var-Support in Clients) */
 export const WW_EMAIL = {
+  primaryBorder: 'rgba(102, 153, 255, 0.28)',
+  primaryBorderLight: 'rgba(102, 153, 255, 0.18)',
   brandBorder: 'rgba(140, 54, 201, 0.28)',
   brandBorderLight: 'rgba(140, 54, 201, 0.18)',
   brandShadow: 'rgba(140, 54, 201, 0.28)',

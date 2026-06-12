@@ -88,8 +88,8 @@ export default function ImageInsertModal({ imageUrl, onInsert, onClose }: ImageI
                     onClick={() => setSize(option.value)}
                     className={`p-3 rounded-lg border transition-colors flex flex-col items-center gap-2 ${
                       size === option.value
-                        ? 'bg-brand text-brand-foreground border-brand'
-                        : 'bg-background text-foreground border-border hover:border-brand'
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-foreground border-border hover:border-primary'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -113,8 +113,8 @@ export default function ImageInsertModal({ imageUrl, onInsert, onClose }: ImageI
                     onClick={() => setAlign(option.value)}
                     className={`flex-1 p-3 rounded-lg border transition-colors flex items-center justify-center gap-2 ${
                       align === option.value
-                        ? 'bg-brand text-brand-foreground border-brand'
-                        : 'bg-background text-foreground border-border hover:border-brand'
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-foreground border-border hover:border-primary'
                     }`}
                   >
                     <Icon className="w-5 h-5" />

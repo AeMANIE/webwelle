@@ -104,7 +104,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${C.background}; color: ${C.foreground}; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: ${C.brand}; margin: 0;">WebWelle</h1>
+            <h1 style="color: ${C.primary}; margin: 0;">WebWelle</h1>
             <p style="color: #a0a0a0; margin: 5px 0;">Ihre Rechnung</p>
           </div>
           
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
               </div>
               <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                 <span style="color: #a0a0a0;">Betrag:</span>
-                <span style="color: ${C.brand}; font-weight: bold; font-size: 18px;">${amount} ${currency}</span>
+                <span style="color: ${C.primary}; font-weight: bold; font-size: 18px;">${amount} ${currency}</span>
               </div>
               <div style="display: flex; justify-content: space-between;">
                 <span style="color: #a0a0a0;">Status:</span>

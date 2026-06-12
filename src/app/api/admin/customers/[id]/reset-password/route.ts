@@ -87,7 +87,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${C.background}; color: ${C.foreground}; padding: 20px;">
             <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: ${C.brand}; margin: 0;">WebWelle</h1>
+              <h1 style="color: ${C.primary}; margin: 0;">WebWelle</h1>
               <p style="color: ${C.mutedForeground}; margin: 5px 0;">Ihr Partner für Festpreis-Webdesign</p>
             </div>
             

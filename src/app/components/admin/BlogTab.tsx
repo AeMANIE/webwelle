@@ -135,7 +135,7 @@ export default function BlogTab() {
           {filtered.map((post) => (
             <div
               key={post.id}
-              className="bg-card border border-border rounded-lg p-6 hover:border-brand/50 transition-colors"
+              className="bg-card border border-border rounded-lg p-6 hover:border-primary/50 transition-colors"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -144,7 +144,7 @@ export default function BlogTab() {
                       {post.title}
                     </h3>
                     {post.featured && (
-                      <span className="px-2 py-1 bg-brand/10 text-brand text-xs font-medium rounded">
+                      <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded">
                         Featured
                       </span>
                     )}
@@ -188,7 +188,7 @@ export default function BlogTab() {
                       setEditingPost(post);
                       setShowEditor(true);
                     }}
-                    className="p-2 text-brand hover:bg-brand/10 rounded transition-colors"
+                    className="p-2 text-primary hover:bg-primary/10 rounded transition-colors"
                     title="Bearbeiten"
                   >
                     <Edit className="w-4 h-4" />
@@ -197,7 +197,7 @@ export default function BlogTab() {
                     href={`/blog/${post.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 text-brand hover:bg-brand/10 rounded transition-colors"
+                    className="p-2 text-primary hover:bg-primary/10 rounded transition-colors"
                     title="Vorschau"
                   >
                     <Eye className="w-4 h-4" />

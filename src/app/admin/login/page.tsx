@@ -129,7 +129,7 @@ export default function AdminLogin() {
         <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-card rounded-2xl p-8 border border-border">
             <div className="text-center mb-8">
-              <div className="mx-auto w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mb-4">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                 {step === 'tan' ? <ShieldIcon /> : <LockIcon />}
               </div>
               <h1 className="text-2xl font-bold text-foreground">
@@ -166,7 +166,7 @@ export default function AdminLogin() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     autoComplete="email"
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-brand focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="Ihre Admin-E-Mail-Adresse"
                   />
                 </div>
@@ -182,7 +182,7 @@ export default function AdminLogin() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       autoComplete="current-password"
-                      className="w-full px-3 py-2 pr-10 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-brand focus:border-transparent"
+                      className="w-full px-3 py-2 pr-10 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="••••••••"
                     />
                     <button
@@ -227,7 +227,7 @@ export default function AdminLogin() {
                     value={tan}
                     onChange={(e) => setTan(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     autoComplete="one-time-code"
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground text-center text-2xl font-mono tracking-widest focus:ring-2 focus:ring-brand focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground text-center text-2xl font-mono tracking-widest focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="000000"
                     maxLength={6}
                     autoFocus

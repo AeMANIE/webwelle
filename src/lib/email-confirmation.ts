@@ -32,7 +32,7 @@ export async function sendBookingConfirmation(data: BookingConfirmationData) {
           <li style="padding: 8px 0; border-bottom: 1px solid ${C.border};">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span style="color: #cbd5e1;">${addon.label}</span>
-              <span style="color: ${C.brand}; font-weight: 600;">${addon.price} ${addon.billing === 'monthly' ? 'mtl.' : addon.billing === 'yearly' ? 'jährlich' : ''}</span>
+              <span style="color: ${C.primary}; font-weight: 600;">${addon.price} ${addon.billing === 'monthly' ? 'mtl.' : addon.billing === 'yearly' ? 'jährlich' : ''}</span>
             </div>
           </li>
         `).join('')}
@@ -53,7 +53,7 @@ export async function sendBookingConfirmation(data: BookingConfirmationData) {
         <div style="border: 1px solid ${WW_EMAIL.brandBorder}; border-radius: 16px; overflow: hidden; background: ${WW_EMAIL.cardGradient}; box-shadow: 0 24px 80px rgba(0,0,0,.35);">
           
           <div style="padding: 34px 30px 22px; border-bottom: 1px solid ${WW_EMAIL.brandBorderLight}; text-align: center;">
-            <div style="letter-spacing: .18em; text-transform: uppercase; color: ${C.brand}; font-size: 12px; font-weight: 700;">WebWelle</div>
+            <div style="letter-spacing: .18em; text-transform: uppercase; color: ${C.primary}; font-size: 12px; font-weight: 700;">WebWelle</div>
             <h1 style="color: ${C.foreground}; font-size: 26px; font-weight: 700; margin: 12px 0 6px 0;">Ihre Buchungsbestätigung</h1>
           </div>
 
@@ -113,7 +113,7 @@ export async function sendBookingConfirmation(data: BookingConfirmationData) {
               <p style="color: ${C.mutedForeground}; font-size: 14px; margin: 0 0 10px 0;">
                 Bei Fragen stehen wir Ihnen gerne zur Verfügung:
               </p>
-              <p style="color: ${C.brand}; font-size: 16px; font-weight: 600; margin: 0;">
+              <p style="color: ${C.primary}; font-size: 16px; font-weight: 600; margin: 0;">
                 📧 info@webwelle.com
               </p>
             </div>

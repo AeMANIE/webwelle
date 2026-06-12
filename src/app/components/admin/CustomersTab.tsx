@@ -124,14 +124,14 @@ export default function CustomersTab() {
           customers.map((customer) => (
           <div 
             key={customer.id} 
-            className="bg-card rounded-lg p-6 border border-border hover:border-brand/50 transition-all"
+            className="bg-card rounded-lg p-6 border border-border hover:border-primary/50 transition-all"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="text-xl font-semibold text-foreground">{customer.name || 'Kein Name'}</h3>
                   {customer.customerNumber && (
-                    <span className="bg-brand/10 text-brand px-2 py-1 rounded text-xs font-mono">{customer.customerNumber}</span>
+                    <span className="bg-primary/10 text-primary px-2 py-1 rounded text-xs font-mono">{customer.customerNumber}</span>
                   )}
                   {customer.portalActivated && (
                     <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded text-xs">Portal aktiviert</span>

@@ -289,7 +289,7 @@ export default function CustomerDetailPage() {
             <div>
               <button
                 onClick={() => router.push('/admin?tab=customers')}
-                className="text-brand hover:underline mb-2"
+                className="text-primary hover:underline mb-2"
               >
                 ← Zurück zur Kundenliste
               </button>
@@ -302,7 +302,7 @@ export default function CustomerDetailPage() {
                 <>
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="px-4 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand/90"
+                    className="px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10"
                   >
                     Bearbeiten
                   </button>
@@ -617,7 +617,7 @@ export default function CustomerDetailPage() {
                                   href={analysis.existing_website_url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="text-brand underline"
+                                  className="text-primary underline"
                                 >
                                   {analysis.existing_website_url}
                                 </a>
@@ -727,7 +727,7 @@ export default function CustomerDetailPage() {
                             href={invoice.pdf_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-brand text-sm hover:underline"
+                            className="text-primary text-sm hover:underline"
                           >
                             PDF öffnen
                           </a>

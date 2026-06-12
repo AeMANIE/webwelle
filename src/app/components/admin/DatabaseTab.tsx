@@ -87,7 +87,7 @@ export default function DatabaseTab() {
   if (loading && !verification) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         <p className="ml-4 text-muted-foreground">Lade Datenbank-Informationen...</p>
       </div>
     );

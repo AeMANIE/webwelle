@@ -105,12 +105,12 @@ export default function InvoicesTab() {
           <tbody>
             {filtered.map(inv => (
               <tr key={inv.id} className="border-b border-border hover:bg-card/50">
-                <td className="p-4"><div className="flex items-center gap-2"><FileText className="w-4 h-4 text-brand" /><span className="font-mono text-sm">{inv.invoiceNumber}</span></div></td>
+                <td className="p-4"><div className="flex items-center gap-2"><FileText className="w-4 h-4 text-primary" /><span className="font-mono text-sm">{inv.invoiceNumber}</span></div></td>
                 <td className="p-4">
                   <div>{inv.customerName && <div className="font-medium text-foreground">{inv.customerName}</div>}</div>
                   <div className="text-sm text-muted-foreground">{inv.customerEmail || 'N/A'}</div>
                 </td>
-                <td className="p-4"><div className="flex items-center gap-2"><Euro className="w-4 h-4 text-brand" /><span className="font-semibold">{inv.amount.toFixed(2)} {inv.currency}</span></div></td>
+                <td className="p-4"><div className="flex items-center gap-2"><Euro className="w-4 h-4 text-primary" /><span className="font-semibold">{inv.amount.toFixed(2)} {inv.currency}</span></div></td>
                 <td className="p-4">
                   <div className="flex items-center gap-2">
                     {inv.status === 'paid' ? (<><CheckCircle className="w-4 h-4 text-green-500" /><span className="text-green-500">Bezahlt</span></>) : (<><XCircle className="w-4 h-4 text-red-500" /><span className="text-red-500">{inv.status}</span></>)}
@@ -132,7 +132,7 @@ export default function InvoicesTab() {
                   )}
                   <a
                     href={`/api/admin/invoices/pdf?id=${inv.id}`}
-                    className="inline-flex items-center gap-2 px-3 py-1 border border-brand text-brand rounded hover:bg-brand/10 transition-colors text-sm ml-2"
+                    className="inline-flex items-center gap-2 px-3 py-1 border border-primary text-primary rounded hover:bg-primary/10 transition-colors text-sm ml-2"
                   >
                     <Download className="w-4 h-4" /> Branded PDF
                   </a>

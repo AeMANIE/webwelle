@@ -31,7 +31,7 @@ export async function sendAddonConfirmation(data: AddonConfirmationData) {
         <div style="border: 1px solid ${WW_EMAIL.brandBorder}; border-radius: 16px; overflow: hidden; background: ${WW_EMAIL.cardGradient}; box-shadow: 0 24px 80px rgba(0,0,0,.35);">
           
           <div style="padding: 34px 30px 22px; border-bottom: 1px solid ${WW_EMAIL.brandBorderLight}; text-align: center;">
-            <div style="letter-spacing: .18em; text-transform: uppercase; color: ${C.brand}; font-size: 12px; font-weight: 700;">WebWelle</div>
+            <div style="letter-spacing: .18em; text-transform: uppercase; color: ${C.primary}; font-size: 12px; font-weight: 700;">WebWelle</div>
             <h1 style="color: ${C.foreground}; font-size: 26px; font-weight: 700; margin: 12px 0 6px 0;">Add-on Bestätigung</h1>
           </div>
 
@@ -61,7 +61,7 @@ export async function sendAddonConfirmation(data: AddonConfirmationData) {
               
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid ${C.border};">
                 <span style="color: ${C.mutedForeground}; font-weight: 500;">Preis</span>
-                <span style="color: ${C.brand}; font-weight: 600;">${addonPrice}</span>
+                <span style="color: ${C.primary}; font-weight: 600;">${addonPrice}</span>
               </div>
               
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
@@ -84,7 +84,7 @@ export async function sendAddonConfirmation(data: AddonConfirmationData) {
               <p style="color: ${C.mutedForeground}; font-size: 14px; margin: 0 0 10px 0;">
                 Bei Fragen stehen wir Ihnen gerne zur Verfügung:
               </p>
-              <p style="color: ${C.brand}; font-size: 16px; font-weight: 600; margin: 0;">
+              <p style="color: ${C.primary}; font-size: 16px; font-weight: 600; margin: 0;">
                 📧 info@webwelle.com
               </p>
             </div>

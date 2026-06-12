@@ -64,7 +64,7 @@ export default function AdminTabs({ activeTab, onTabChange }: AdminTabsProps) {
               className={
                 `flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ` +
                 (isActive
-                  ? 'border-brand text-brand'
+                  ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border')
               }
             >

@@ -70,7 +70,7 @@ export function renderWebWellePortalActivationEmail(params: WebWellePortalMailPa
     <div style="max-width:680px;margin:0 auto;padding:28px 16px;">
       <div style="border:1px solid ${WW_EMAIL.brandBorder};border-radius:24px;overflow:hidden;background:${WW_EMAIL.cardGradient};box-shadow:0 24px 80px rgba(0,0,0,.35);">
         <div style="padding:34px 32px 22px;border-bottom:1px solid ${WW_EMAIL.brandBorderLight};">
-          <div style="letter-spacing:.18em;text-transform:uppercase;color:${C.brand};font-size:12px;font-weight:700;">WebWelle</div>
+          <div style="letter-spacing:.18em;text-transform:uppercase;color:${C.primary};font-size:12px;font-weight:700;">WebWelle</div>
           <h1 style="margin:12px 0 10px;font-size:30px;line-height:1.2;color:#ffffff;">${title}</h1>
           <p style="margin:0;color:#cbd5e1;font-size:16px;line-height:1.65;">Hallo ${safeName}, ${intro}</p>
           ${safeEmail ? `<p style="margin:14px 0 0;color:#94a3b8;font-size:14px;">Diese Nachricht wurde fuer <strong style="color:#f8fafc;">${safeEmail}</strong> erstellt.</p>` : ''}
@@ -90,7 +90,7 @@ export function renderWebWellePortalActivationEmail(params: WebWellePortalMailPa
             </a>
           </div>
 
-          ${resumeLink ? `<p style="text-align:center;margin:0 0 24px;color:#94a3b8;font-size:14px;">Oder ohne Portal fortsetzen: <a href="${resumeLink}" style="color:${C.brand};text-decoration:none;font-weight:700;">Analyse später fortsetzen</a></p>` : ''}
+          ${resumeLink ? `<p style="text-align:center;margin:0 0 24px;color:#94a3b8;font-size:14px;">Oder ohne Portal fortsetzen: <a href="${resumeLink}" style="color:${C.primary};text-decoration:none;font-weight:700;">Analyse später fortsetzen</a></p>` : ''}
 
           <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:18px;color:#94a3b8;font-size:13px;line-height:1.6;">
             ${copy.note}

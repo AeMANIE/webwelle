@@ -103,11 +103,11 @@ export default function CustomerLogin() {
         <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-card rounded-2xl p-8 border border-border">
             <div className="text-center mb-8">
-              <div className="mx-auto w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center mb-4">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                 {step === 'login' ? (
-                  <User className="w-8 h-8 text-brand" />
+                  <User className="w-8 h-8 text-primary" />
                 ) : (
-                  <Shield className="w-8 h-8 text-brand" />
+                  <Shield className="w-8 h-8 text-primary" />
                 )}
               </div>
               <h1 className="text-2xl font-bold text-foreground">
@@ -140,7 +140,7 @@ export default function CustomerLogin() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-brand focus:border-transparent"
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="ihre@email.com"
                   />
                 </div>
@@ -157,7 +157,7 @@ export default function CustomerLogin() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-brand focus:border-transparent"
+                    className="w-full pl-10 pr-10 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="••••••••"
                   />
                   <button
@@ -203,7 +203,7 @@ export default function CustomerLogin() {
                       required
                       value={tan}
                       onChange={(e) => setTan(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-brand focus:border-transparent text-center text-2xl tracking-widest"
+                      className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent text-center text-2xl tracking-widest"
                       placeholder="123456"
                       maxLength={6}
                     />
@@ -239,11 +239,11 @@ export default function CustomerLogin() {
                   ? (
                     <>
                       Noch kein Konto?{' '}
-                      <a href="/register" className="text-brand hover:underline">
+                      <a href="/register" className="text-primary hover:underline">
                         Hier registrieren
                       </a>
                       <br />
-                      <a href="/forgot-password" className="text-brand hover:underline text-sm">
+                      <a href="/forgot-password" className="text-primary hover:underline text-sm">
                         Passwort vergessen?
                       </a>
                     </>

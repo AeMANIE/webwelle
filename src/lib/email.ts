@@ -79,7 +79,7 @@ export async function sendAdminTANEmail(email: string, tan: string, adminName: s
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${C.background}; color: ${C.foreground}; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: ${C.brand}; margin: 0;">WebWelle Admin</h1>
+            <h1 style="color: ${C.primary}; margin: 0;">WebWelle Admin</h1>
             <p style="color: ${C.mutedForeground}; margin: 5px 0;">Admin-Bereich Zugang</p>
           </div>
           
@@ -147,7 +147,7 @@ export async function sendTANEmail(email: string, tan: string, customerName: str
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${C.background}; color: ${C.foreground}; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: ${C.brand}; margin: 0;">WebWelle</h1>
+            <h1 style="color: ${C.primary}; margin: 0;">WebWelle</h1>
             <p style="color: ${C.mutedForeground}; margin: 5px 0;">Ihr Partner für Festpreis-Webdesign</p>
           </div>
           
@@ -214,7 +214,7 @@ export async function sendVerificationEmail(email: string, name: string, token: 
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${C.background}; color: ${C.foreground}; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: ${C.brand}; margin: 0;">WebWelle</h1>
+            <h1 style="color: ${C.primary}; margin: 0;">WebWelle</h1>
             <p style="color: ${C.mutedForeground}; margin: 5px 0;">Ihr Partner für Festpreis-Webdesign</p>
           </div>
           
@@ -289,7 +289,7 @@ export async function sendTestEmail(email: string): Promise<boolean> {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${C.background}; color: ${C.foreground}; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: ${C.brand}; margin: 0;">WebWelle</h1>
+            <h1 style="color: ${C.primary}; margin: 0;">WebWelle</h1>
             <p style="color: ${C.mutedForeground}; margin: 5px 0;">Ihr Partner für Festpreis-Webdesign</p>
           </div>
           

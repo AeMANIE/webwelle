@@ -4,11 +4,10 @@
 
 @layer base {
   /*
-   * WebWelle 3-Farben-Referenz (Homepage/Funnel – nicht redesignen):
+   * WebWelle 3-Farben-Hierarchie (Homepage/Funnel – nicht redesignen):
    *   1 Hintergrund  #0e141f  (--background)
-   *   2 Hellblau     #6699ff  (Glow-Anfang, --info; Ziel --primary für Marketing/Funnel)
-   *   3 Dunkellila   #8C36C9  (--brand für Admin/Portal/E-Mails)
-   * Funnel/Marketing nutzen text-primary/bg-primary → --primary nicht mit Lila überschreiben.
+   *   2 Hellblau     #6699ff  (--primary: Links, Tabs, Fokus, sekundäre Akzente, Info-Badges)
+   *   3 Dunkellila   #8C36C9  (--brand: primäre CTAs, wichtigste Highlights – sparsam!)
    */
   :root {
   --radius: 0.625rem;
@@ -28,7 +27,7 @@
   --secondary-foreground: #ffffff;
   --muted: #2a3441;
   --muted-foreground: #a0a0a0;
-  --accent: #8C36C9;
+  --accent: #6699ff;
   --accent-foreground: #0e141f;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
@@ -37,7 +36,7 @@
   --info: #6699ff;
   --border: #374151;
   --input: #374151;
-  --ring: #8C36C9;
+  --ring: #6699ff;
   --chart-1: #8C36C9;
   --chart-2: #f59e0b;
   --chart-3: #10b981;
@@ -53,12 +52,12 @@
   --badge-info-fg: #93c5fd;
   --sidebar: #0e141f;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #8C36C9;
+  --sidebar-primary: #6699ff;
   --sidebar-primary-foreground: #0e141f;
   --sidebar-accent: #2a3441;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #374151;
-  --sidebar-ring: #8C36C9;
+  --sidebar-ring: #6699ff;
   }
   
   .dark {
@@ -77,7 +76,7 @@
     --secondary-foreground: #ffffff;
     --muted: #2a3441;
     --muted-foreground: #a0a0a0;
-    --accent: #8C36C9;
+    --accent: #6699ff;
     --accent-foreground: #0e141f;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
@@ -86,7 +85,7 @@
     --info: #6699ff;
     --border: #374151;
     --input: #374151;
-    --ring: #8C36C9;
+    --ring: #6699ff;
     --chart-1: #8C36C9;
     --chart-2: #f59e0b;
     --chart-3: #10b981;
