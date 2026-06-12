@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Eye, Calendar, Tag } from 'lucide-react';
 import BlogEditor from './BlogEditor';
+import { DashboardPanel } from '../dashboard/DashboardPanel';
 
 interface BlogPost {
   id: string;
@@ -98,44 +99,45 @@ export default function BlogTab() {
   );
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">
-          Blog-Artikel ({posts.length})
-        </h2>
+    <DashboardPanel
+      title={`Blog-Artikel (${posts.length})`}
+      description="Veröffentlichte und Entwurfs-Artikel verwalten"
+      noPadding
+      action={
         <div className="flex items-center gap-3">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as 'all' | 'draft' | 'published')}
-            className="px-3 py-2 bg-background border border-border rounded text-foreground"
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
           >
             <option value="all">Alle</option>
             <option value="published">Veröffentlicht</option>
             <option value="draft">Entwürfe</option>
           </select>
           <button
+            type="button"
             onClick={() => {
               setEditingPost(null);
               setShowEditor(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-brand text-brand-foreground rounded-lg hover:bg-brand/90 transition-colors"
+            className="flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-brand-foreground hover:bg-brand/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Neuer Artikel
           </button>
         </div>
-      </div>
-
+      }
+    >
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="px-6 py-12 text-center text-muted-foreground">
           Keine Blog-Artikel gefunden.
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="divide-y divide-border">
           {filtered.map((post) => (
             <div
               key={post.id}
-              className="bg-card border border-border rounded-lg p-6 hover:border-primary/50 transition-colors"
+              className="px-6 py-5 transition-colors hover:bg-muted/20"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -215,6 +217,6 @@ export default function BlogTab() {
           ))}
         </div>
       )}
-    </div>
+    </DashboardPanel>
   );
 }

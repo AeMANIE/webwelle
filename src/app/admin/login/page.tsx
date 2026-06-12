@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
+import DashboardAuthLayout from '../../components/dashboard/DashboardAuthLayout';
 import { Shield } from 'lucide-react';
 
 // Einfache SVG-Icons ohne externe Abhängigkeiten
@@ -123,30 +122,26 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="py-20">
-        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-card rounded-2xl p-8 border border-border">
-            <div className="text-center mb-8">
-              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+    <DashboardAuthLayout
+      variant="admin"
+      title={step === 'tan' ? 'TAN-Code eingeben' : 'Admin Login'}
+      subtitle={
+        step === 'tan'
+          ? 'Geben Sie den TAN-Code ein, der an Ihre E-Mail gesendet wurde'
+          : 'Melden Sie sich an, um auf den Admin-Bereich zuzugreifen'
+      }
+    >
+            <div className="mb-6 flex justify-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
                 {step === 'tan' ? <ShieldIcon /> : <LockIcon />}
               </div>
-              <h1 className="text-2xl font-bold text-foreground">
-                {step === 'tan' ? 'TAN-Code eingeben' : 'Admin Login'}
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                {step === 'tan' 
-                  ? 'Geben Sie den TAN-Code ein, der an Ihre E-Mail gesendet wurde'
-                  : 'Melden Sie sich an, um auf den Admin-Bereich zuzugreifen'}
-              </p>
-              {step === 'tan' && (
-                <div className="mt-3 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Shield className="w-4 h-4" />
-                  <span>Zwei-Faktor-Authentifizierung aktiviert</span>
-                </div>
-              )}
             </div>
+            {step === 'tan' && (
+              <div className="mb-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Shield className="h-4 w-4" />
+                <span>Zwei-Faktor-Authentifizierung aktiviert</span>
+              </div>
+            )}
 
             {step === 'credentials' ? (
               <form onSubmit={handleRequestTAN} className="space-y-6">
@@ -264,10 +259,6 @@ export default function AdminLogin() {
                 </p>
               </div>
             )}
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
+    </DashboardAuthLayout>
   );
 }

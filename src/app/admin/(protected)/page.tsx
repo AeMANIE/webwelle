@@ -1,10 +1,16 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
-import AdminTabs from '../../components/admin/AdminTabs';
+import {
+  Package,
+  Users,
+  FileText,
+  PenLine,
+  Newspaper,
+  Database,
+} from 'lucide-react';
+import DashboardShell from '../../components/dashboard/DashboardShell';
 import BookingsTab from '../../components/admin/BookingsTab';
 import CustomersTab from '../../components/admin/CustomersTab';
 import InvoicesTab from '../../components/admin/InvoicesTab';
@@ -15,16 +21,46 @@ import OffersTab from '../../components/admin/OffersTab';
 
 type TabId = 'bookings' | 'customers' | 'invoices' | 'offers' | 'blog' | 'blog-jobs' | 'database';
 
+const TAB_META: Record<TabId, { title: string; subtitle: string }> = {
+  bookings: {
+    title: 'Bestellungen',
+    subtitle: 'Alle Paketbuchungen und Zahlungsstatus im Überblick',
+  },
+  customers: {
+    title: 'Kunden',
+    subtitle: 'Kundenstammdaten, Portal-Zugang und Buchungshistorie',
+  },
+  invoices: {
+    title: 'Rechnungen',
+    subtitle: 'Rechnungsstellung, PDFs und Versand verwalten',
+  },
+  offers: {
+    title: 'Leads & Angebote',
+    subtitle: 'Funnel-Leads, Angebote und DocuSeal-Workflows',
+  },
+  blog: {
+    title: 'Blog-Editor',
+    subtitle: 'Artikel erstellen, bearbeiten und veröffentlichen',
+  },
+  'blog-jobs': {
+    title: 'Kunden-Blog',
+    subtitle: 'SEO-Pipeline-Jobs und generierte Artikel',
+  },
+  database: {
+    title: 'Datenbank',
+    subtitle: 'Tabellenstatus, Migrationen und Systemchecks',
+  },
+};
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabId>('bookings');
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const router = useRouter();
 
-  // Prüfe URL-Parameter für Tab
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const tab = searchParams.get('tab') as TabId;
-    if (tab && ['bookings', 'customers', 'invoices', 'offers', 'blog', 'blog-jobs', 'database'].includes(tab)) {
+    if (tab && Object.keys(TAB_META).includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
@@ -33,7 +69,7 @@ export default function AdminPage() {
     try {
       const response = await fetch('/api/auth/verify');
       const data = await response.json();
-      
+
       if (data.authenticated && data.user?.role && ['TEAM', 'ADMIN', 'OWNER'].includes(data.user.role)) {
         setUser(data.user);
       } else {
@@ -58,44 +94,56 @@ export default function AdminPage() {
     router.push('/admin/login');
   };
 
+  const handleNavChange = (id: string) => {
+    const tab = id as TabId;
+    setActiveTab(tab);
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState({}, '', url.toString());
+  };
+
+  const navItems = useMemo(
+    () => [
+      { id: 'bookings', label: 'Bestellungen', icon: <Package className="h-4 w-4" /> },
+      { id: 'customers', label: 'Kunden', icon: <Users className="h-4 w-4" /> },
+      { id: 'invoices', label: 'Rechnungen', icon: <FileText className="h-4 w-4" /> },
+      { id: 'offers', label: 'Leads & Angebote', icon: <FileText className="h-4 w-4" /> },
+      { id: 'blog', label: 'Blog-Editor', icon: <PenLine className="h-4 w-4" /> },
+      { id: 'blog-jobs', label: 'Kunden-Blog', icon: <Newspaper className="h-4 w-4" /> },
+      { id: 'database', label: 'Datenbank', icon: <Database className="h-4 w-4" /> },
+    ],
+    []
+  );
+
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
 
+  const meta = TAB_META[activeTab];
+
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Admin-Dashboard</h1>
-              <p className="text-muted-foreground">Verwalten Sie Bestellungen, Kunden, Rechnungen und Blog-Artikel</p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-destructive text-destructive-foreground px-4 py-2 rounded-lg hover:bg-destructive/90 transition-colors"
-            >
-              Abmelden
-            </button>
-          </div>
-
-          <AdminTabs activeTab={activeTab} onTabChange={setActiveTab} />
-
-          {activeTab === 'bookings' && <BookingsTab />}
-          {activeTab === 'customers' && <CustomersTab />}
-          {activeTab === 'invoices' && <InvoicesTab />}
-          {activeTab === 'offers' && <OffersTab />}
-          {activeTab === 'blog' && <BlogTab />}
-          {activeTab === 'blog-jobs' && <BlogJobsTab />}
-          {activeTab === 'database' && <DatabaseTab />}
-        </div>
-      </main>
-      <Footer />
-    </div>
+    <DashboardShell
+      variant="admin"
+      title={meta.title}
+      subtitle={meta.subtitle}
+      user={user}
+      navItems={navItems}
+      activeNavId={activeTab}
+      onNavChange={handleNavChange}
+      onLogout={handleLogout}
+      breadcrumbs={[{ label: 'Dashboard' }, { label: meta.title }]}
+    >
+      {activeTab === 'bookings' && <BookingsTab />}
+      {activeTab === 'customers' && <CustomersTab />}
+      {activeTab === 'invoices' && <InvoicesTab />}
+      {activeTab === 'offers' && <OffersTab />}
+      {activeTab === 'blog' && <BlogTab />}
+      {activeTab === 'blog-jobs' && <BlogJobsTab />}
+      {activeTab === 'database' && <DatabaseTab />}
+    </DashboardShell>
   );
 }

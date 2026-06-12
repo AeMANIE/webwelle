@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
+import DashboardAuthLayout from '../../components/dashboard/DashboardAuthLayout';
 import { User, Eye, EyeOff, Mail, Lock, Shield, ArrowLeft } from 'lucide-react';
 
 export default function CustomerLogin() {
@@ -97,28 +96,23 @@ export default function CustomerLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="py-20">
-        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-card rounded-2xl p-8 border border-border">
-            <div className="text-center mb-8">
-              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+    <DashboardAuthLayout
+      variant="customer"
+      title={step === 'login' ? 'Kundenportal' : 'Zwei-Faktor-Authentifizierung'}
+      subtitle={
+        step === 'login'
+          ? 'Melden Sie sich an, um Ihre Buchungen und Rechnungen einzusehen'
+          : 'Geben Sie den 6-stelligen Code ein, den wir Ihnen per E-Mail gesendet haben'
+      }
+    >
+            <div className="mb-6 flex justify-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
                 {step === 'login' ? (
-                  <User className="w-8 h-8 text-primary" />
+                  <User className="h-7 w-7" />
                 ) : (
-                  <Shield className="w-8 h-8 text-primary" />
+                  <Shield className="h-7 w-7" />
                 )}
               </div>
-              <h1 className="text-2xl font-bold text-foreground">
-                {step === 'login' ? 'Kundenportal' : 'Zwei-Faktor-Authentifizierung'}
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                {step === 'login' 
-                  ? 'Melden Sie sich an, um Ihre Buchungen und Rechnungen einzusehen'
-                  : 'Geben Sie den 6-stelligen Code ein, den wir Ihnen per E-Mail gesendet haben'
-                }
-              </p>
             </div>
 
             {step === 'login' ? (
@@ -252,10 +246,6 @@ export default function CustomerLogin() {
                 }
               </p>
             </div>
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
+    </DashboardAuthLayout>
   );
 }

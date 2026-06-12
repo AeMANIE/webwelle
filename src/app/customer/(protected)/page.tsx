@@ -1,10 +1,27 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
-import { LogOut, Package, Euro, Calendar, FileText, Eye, Download, X, Plus } from 'lucide-react';
+import DashboardShell from '../../components/dashboard/DashboardShell';
+import { DashboardStatCard } from '../../components/dashboard/DashboardPanel';
+import { Package, Euro, Calendar, FileText, Eye, Download, X, Plus } from 'lucide-react';
+
+type CustomerTabId = 'bookings' | 'addons' | 'analysis';
+
+const CUSTOMER_TAB_META: Record<CustomerTabId, { title: string; subtitle: string }> = {
+  bookings: {
+    title: 'Meine Buchungen',
+    subtitle: 'Ihre Pakete, Zahlungsstatus und Projektdetails',
+  },
+  addons: {
+    title: 'Add-on Bestellungen',
+    subtitle: 'Zusatzleistungen und Erweiterungen zu Ihren Paketen',
+  },
+  analysis: {
+    title: 'Website-Analysen',
+    subtitle: 'Funnel-Forschung und SEO-Ergebnisse',
+  },
+};
 
 interface CustomerBooking {
   id: string;
@@ -103,7 +120,7 @@ export default function CustomerPortal() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [cancellingSubscription, setCancellingSubscription] = useState(false);
-  const [activeTab, setActiveTab] = useState<'bookings' | 'addons' | 'analysis'>('bookings');
+  const [activeTab, setActiveTab] = useState<CustomerTabId>('bookings');
   const [showAddonModal, setShowAddonModal] = useState(false);
   const [selectedBookingForAddon, setSelectedBookingForAddon] = useState<CustomerBooking | null>(null);
   const router = useRouter();
@@ -382,44 +399,56 @@ export default function CustomerPortal() {
     }
   };
 
+  const navItems = useMemo(
+    () => [
+      {
+        id: 'bookings',
+        label: 'Meine Buchungen',
+        icon: <Package className="h-4 w-4" />,
+        badge: bookings.length > 0 ? bookings.length : undefined,
+      },
+      {
+        id: 'addons',
+        label: 'Add-ons',
+        icon: <FileText className="h-4 w-4" />,
+        badge: addonOrders.length > 0 ? addonOrders.length : undefined,
+      },
+      {
+        id: 'analysis',
+        label: 'Website-Analysen',
+        icon: <Calendar className="h-4 w-4" />,
+        badge: funnelAnalyses.length > 0 ? funnelAnalyses.length : undefined,
+      },
+    ],
+    [bookings.length, addonOrders.length, funnelAnalyses.length]
+  );
+
+  const tabMeta = CUSTOMER_TAB_META[activeTab];
+  const shellSubtitle = customerNumber
+    ? `Willkommen, ${user?.name ?? ''} · Kd.-Nr. ${customerNumber}`
+    : `Willkommen, ${user?.name ?? ''}`;
+
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Customer Header */}
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                Mein Kundenportal
-              </h1>
-              <p className="text-muted-foreground">
-                Willkommen, {user.name}
-              </p>
-              {customerNumber && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Kundennummer: <span className="font-mono font-semibold text-foreground">{customerNumber}</span>
-                </p>
-              )}
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-destructive text-destructive-foreground px-4 py-2 rounded-lg hover:bg-destructive/90 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Abmelden
-            </button>
-          </div>
-
-          <div className="bg-card rounded-lg p-5 border border-border mb-8">
+    <DashboardShell
+      variant="customer"
+      title={tabMeta.title}
+      subtitle={shellSubtitle}
+      user={user}
+      navItems={navItems}
+      activeNavId={activeTab}
+      onNavChange={(id) => setActiveTab(id as CustomerTabId)}
+      onLogout={handleLogout}
+      breadcrumbs={[{ label: 'Kundenportal' }, { label: tabMeta.title }]}
+    >
+          <div className="rounded-xl border border-border bg-card p-5 sm:p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-foreground">Meine Kontaktdaten</h2>
               {isReadOnly && (
@@ -565,86 +594,29 @@ export default function CustomerPortal() {
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-card rounded-lg p-6 border border-border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Meine Buchungen</p>
-                  <p className="text-2xl font-bold text-foreground">{bookings.length}</p>
-                </div>
-                <Package className="w-8 h-8 text-primary" />
-              </div>
-            </div>
-            <div className="bg-card rounded-lg p-6 border border-border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Add-on Bestellungen</p>
-                  <p className="text-2xl font-bold text-foreground">{addonOrders.length}</p>
-                </div>
-                <FileText className="w-8 h-8 text-primary" />
-              </div>
-            </div>
-            <div className="bg-card rounded-lg p-6 border border-border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Bezahlte Projekte</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {bookings.filter(b => b.status === 'paid').length}
-                  </p>
-                </div>
-                <Euro className="w-8 h-8 text-green-500" />
-              </div>
-            </div>
-            <div className="bg-card rounded-lg p-6 border border-border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Website-Analysen</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {funnelAnalyses.length}
-                  </p>
-                </div>
-                <Calendar className="w-8 h-8 text-yellow-500" />
-              </div>
-            </div>
-          </div>
-
-          {/* Tab Navigation */}
-          <div className="mb-8">
-            <div className="border-b border-border">
-              <nav className="-mb-px flex space-x-8">
-                <button
-                  onClick={() => setActiveTab('bookings')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'bookings'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300'
-                  }`}
-                >
-                  Meine Buchungen ({bookings.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('addons')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'addons'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300'
-                  }`}
-                >
-                  Add-on Bestellungen ({addonOrders.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('analysis')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'analysis'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300'
-                  }`}
-                >
-                  Meine Website-Analyse ({funnelAnalyses.length})
-                </button>
-              </nav>
-            </div>
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <DashboardStatCard
+              label="Meine Buchungen"
+              value={bookings.length}
+              icon={<Package className="h-5 w-5" />}
+            />
+            <DashboardStatCard
+              label="Add-on Bestellungen"
+              value={addonOrders.length}
+              icon={<FileText className="h-5 w-5" />}
+            />
+            <DashboardStatCard
+              label="Bezahlte Projekte"
+              value={bookings.filter((b) => b.status === 'paid').length}
+              icon={<Euro className="h-5 w-5" />}
+              iconClassName="bg-green-500/10 text-green-400"
+            />
+            <DashboardStatCard
+              label="Website-Analysen"
+              value={funnelAnalyses.length}
+              icon={<Calendar className="h-5 w-5" />}
+              iconClassName="bg-yellow-500/10 text-yellow-400"
+            />
           </div>
 
           {loading ? (
@@ -1223,9 +1195,6 @@ export default function CustomerPortal() {
               </div>
             </div>
           )}
-        </div>
-      </main>
-      <Footer />
-    </div>
+    </DashboardShell>
   );
 }

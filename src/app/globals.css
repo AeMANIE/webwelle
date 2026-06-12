@@ -101,12 +101,12 @@
     --badge-info-fg: #93c5fd;
     --sidebar: #0e141f;
     --sidebar-foreground: #ffffff;
-    --sidebar-primary: #8C36C9;
+    --sidebar-primary: #6699ff;
     --sidebar-primary-foreground: #0e141f;
     --sidebar-accent: #2a3441;
     --sidebar-accent-foreground: #ffffff;
     --sidebar-border: #374151;
-    --sidebar-ring: #8C36C9;
+    --sidebar-ring: #6699ff;
   }
   
   * {
@@ -127,6 +127,21 @@
     margin: 0 !important;
     padding: 0 !important;
     min-height: 100vh !important;
+  }
+}
+
+.dashboard-content {
+  animation: dashboard-fade-in 0.35s ease-out;
+}
+
+@keyframes dashboard-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

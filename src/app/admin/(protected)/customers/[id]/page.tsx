@@ -1,10 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Header from '../../../../components/Header';
-import Footer from '../../../../components/Footer';
+import {
+  Package,
+  Users,
+  FileText,
+  PenLine,
+  Newspaper,
+  Database,
+} from 'lucide-react';
+import DashboardShell from '../../../../components/dashboard/DashboardShell';
 import { splitFullName } from '@/lib/validation';
+
+const ADMIN_NAV = [
+  { id: 'bookings', label: 'Bestellungen', icon: <Package className="h-4 w-4" /> },
+  { id: 'customers', label: 'Kunden', icon: <Users className="h-4 w-4" /> },
+  { id: 'invoices', label: 'Rechnungen', icon: <FileText className="h-4 w-4" /> },
+  { id: 'offers', label: 'Leads & Angebote', icon: <FileText className="h-4 w-4" /> },
+  { id: 'blog', label: 'Blog-Editor', icon: <PenLine className="h-4 w-4" /> },
+  { id: 'blog-jobs', label: 'Kunden-Blog', icon: <Newspaper className="h-4 w-4" /> },
+  { id: 'database', label: 'Datenbank', icon: <Database className="h-4 w-4" /> },
+];
 
 interface Customer {
   id: string;
@@ -93,6 +110,43 @@ export default function CustomerDetailPage() {
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+
+  const checkAuth = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/verify');
+      const data = await response.json();
+      if (data.authenticated && data.user?.role && ['TEAM', 'ADMIN', 'OWNER'].includes(data.user.role)) {
+        setUser(data.user);
+      } else {
+        router.push('/admin/login');
+      }
+    } catch {
+      router.push('/admin/login');
+    }
+  }, [router]);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // ignore
+    }
+    router.push('/admin/login');
+  };
+
+  const handleNavChange = (id: string) => {
+    router.push(`/admin?tab=${id}`);
+  };
+
+  const shellUser = useMemo(
+    () => user ?? { name: 'Admin', email: '' },
+    [user]
+  );
 
   useEffect(() => {
     if (customerId) {
@@ -243,61 +297,71 @@ export default function CustomerDetailPage() {
     }
   };
 
-  if (loading) {
+  if (!user || loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="py-20">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center">Lade Kundendaten...</div>
-          </div>
-        </main>
-        <Footer />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
 
   if (error && !customer) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="py-20">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
-              {error}
-            </div>
-            <button
-              onClick={() => router.push('/admin?tab=customers')}
-              className="mt-4 px-4 py-2 bg-brand text-brand-foreground rounded-lg"
-            >
-              Zurück zur Kundenliste
-            </button>
-          </div>
-        </main>
-        <Footer />
-      </div>
+      <DashboardShell
+        variant="admin"
+        title="Kunde nicht gefunden"
+        subtitle={error}
+        user={shellUser}
+        navItems={ADMIN_NAV}
+        activeNavId="customers"
+        onNavChange={handleNavChange}
+        onLogout={handleLogout}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/admin?tab=customers' },
+          { label: 'Kunden', href: '/admin?tab=customers' },
+          { label: 'Fehler' },
+        ]}
+      >
+        <button
+          type="button"
+          onClick={() => router.push('/admin?tab=customers')}
+          className="rounded-lg bg-brand px-4 py-2 text-brand-foreground hover:bg-brand/90"
+        >
+          Zurück zur Kundenliste
+        </button>
+      </DashboardShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <button
-                onClick={() => router.push('/admin?tab=customers')}
-                className="text-primary hover:underline mb-2"
-              >
-                ← Zurück zur Kundenliste
-              </button>
-              <h1 className="text-3xl font-bold text-foreground">
-                {isEditing ? 'Kunde bearbeiten' : 'Kundendetails'}
-              </h1>
-            </div>
-            <div className="flex gap-2">
+    <DashboardShell
+      variant="admin"
+      title={customer?.name || customer?.email || 'Kundendetails'}
+      subtitle={
+        customer?.customer_number
+          ? `Kundennummer ${customer.customer_number}${customer.company_name ? ` · ${customer.company_name}` : ''}`
+          : customer?.company_name || 'Stammdaten und Buchungshistorie'
+      }
+      user={shellUser}
+      navItems={ADMIN_NAV}
+      activeNavId="customers"
+      onNavChange={handleNavChange}
+      onLogout={handleLogout}
+      breadcrumbs={[
+        { label: 'Dashboard', href: '/admin' },
+        { label: 'Kunden', href: '/admin?tab=customers' },
+        { label: customer?.name || 'Detail' },
+      ]}
+    >
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => router.push('/admin?tab=customers')}
+              className="text-sm text-primary hover:underline"
+            >
+              ← Zurück zur Kundenliste
+            </button>
+            <div className="flex flex-wrap gap-2">
               {!isEditing ? (
                 <>
                   <button
@@ -741,10 +805,7 @@ export default function CustomerDetailPage() {
               <p className="text-muted-foreground">Keine Rechnungen</p>
             )}
           </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
+    </DashboardShell>
   );
 }
 
