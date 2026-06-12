@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   BENEFITS_DESKTOP_SCROLL_BAR_GLOW,
   BENEFITS_TOUCH_SCROLL_BAR_GLOW,
+  computeBenefitsScrollActiveIndex,
   getBenefitsHoverGlowClasses,
   getBenefitsScrollGlowClasses,
   getBenefitsScrollGlowPrefix,
@@ -39,5 +40,52 @@ describe('benefits-card-glow', () => {
   it('touch and desktop scroll bar literals differ by breakpoint prefix', () => {
     assert.match(BENEFITS_TOUCH_SCROLL_BAR_GLOW, /^group-\[\.is-in-view\]/);
     assert.match(BENEFITS_DESKTOP_SCROLL_BAR_GLOW, /^max-md:group-\[\.is-in-view\]/);
+  });
+
+  it('computeBenefitsScrollActiveIndex picks one card when three overlap in viewport', () => {
+    const viewH = 800;
+    const cardH = 180;
+    const gap = 20;
+    const centerY = viewH / 2;
+
+    const makeEl = (top: number) =>
+      ({
+        getBoundingClientRect: () => ({
+          top,
+          left: 16,
+          width: 360,
+          height: cardH,
+          bottom: top + cardH,
+          right: 376,
+          x: 16,
+          y: top,
+          toJSON: () => ({}),
+        }),
+      }) as HTMLElement;
+
+    const section = {
+      getBoundingClientRect: () => ({
+        top: centerY - cardH - gap,
+        bottom: centerY + cardH + gap,
+        left: 0,
+        width: 400,
+        height: 3 * cardH + 2 * gap,
+        right: 400,
+        x: 0,
+        y: centerY - cardH - gap,
+        toJSON: () => ({}),
+      }),
+    } as HTMLElement;
+
+    const cards = new Map<number, HTMLElement>([
+      [0, makeEl(centerY - cardH - gap)],
+      [1, makeEl(centerY - cardH / 2)],
+      [2, makeEl(centerY + gap)],
+    ]);
+
+    const active = computeBenefitsScrollActiveIndex(cards, section, 390, viewH);
+    assert.equal(active, 1);
+    assert.notEqual(active, 0);
+    assert.notEqual(active, 2);
   });
 });

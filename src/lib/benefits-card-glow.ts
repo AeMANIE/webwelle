@@ -1,3 +1,36 @@
+import { computeScrollActiveIndexFromRects, type CardRect } from './services-scroll-glow';
+
+/** Pick the single benefit card closest to the viewport center (exclusive scroll glow). */
+export function computeBenefitsScrollActiveIndex(
+  cards: Map<number, HTMLElement>,
+  section: HTMLElement,
+  viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0,
+  viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0
+): number | null {
+  const sectionRect = section.getBoundingClientRect();
+  const cardRects: CardRect[] = [];
+
+  for (const [index, el] of cards.entries()) {
+    const rect = el.getBoundingClientRect();
+    cardRects.push({
+      index,
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    });
+  }
+
+  return computeScrollActiveIndexFromRects(
+    cardRects,
+    viewportWidth,
+    viewportHeight,
+    sectionRect.top,
+    sectionRect.bottom,
+    1
+  );
+}
+
 /** Touch scroll/tap glow at all breakpoints — full literals for Tailwind scanner. */
 export const BENEFITS_TOUCH_SCROLL_CARD_GLOW =
   'group-[.is-in-view]:border-primary/40 group-[.is-in-view]:shadow-lg group-[.is-in-view]:shadow-primary/5 group-[.is-tapped]:border-primary/40 group-[.is-tapped]:shadow-lg group-[.is-tapped]:shadow-primary/5';

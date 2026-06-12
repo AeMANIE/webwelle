@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Pointer
 import { Search, Users, DollarSign } from 'lucide-react';
 import { useGlowInputMode } from '@/hooks/useGlowInputMode';
 import {
+  computeBenefitsScrollActiveIndex,
   getBenefitsHoverGlowClasses,
   getBenefitsScrollGlowClasses,
 } from '@/lib/benefits-card-glow';
@@ -145,7 +146,10 @@ export default function Benefits() {
   const trustTrackRef = useRef<HTMLDivElement>(null);
   const trustContainerRef = useRef<HTMLDivElement>(null);
   const benefitsRef = useRef<HTMLDivElement>(null);
+  const cardsRef = useRef<Map<number, HTMLElement>>(new Map());
+  const scrollRafRef = useRef<number | null>(null);
   const [gsapReady, setGsapReady] = useState(false);
+  const [scrollActiveIndex, setScrollActiveIndex] = useState<number | null>(null);
   const [tappedIndex, setTappedIndex] = useState<number | null>(null);
   const tapStartRef = useRef<{ x: number; y: number } | null>(null);
   const touchGlow = useGlowInputMode();
@@ -175,14 +179,40 @@ export default function Benefits() {
     tapStartRef.current = null;
   }, []);
 
+  const registerCard = useCallback((index: number, el: HTMLElement | null) => {
+    if (el) {
+      cardsRef.current.set(index, el);
+    } else {
+      cardsRef.current.delete(index);
+    }
+  }, []);
+
+  const updateScrollActiveIndex = useCallback(() => {
+    const section = sectionRef.current;
+    if (!section || cardsRef.current.size === 0) return;
+    setScrollActiveIndex(computeBenefitsScrollActiveIndex(cardsRef.current, section));
+  }, []);
+
   useEffect(() => {
-    if (!touchGlow) return;
+    const onScroll = () => {
+      if (scrollRafRef.current !== null) return;
+      scrollRafRef.current = requestAnimationFrame(() => {
+        scrollRafRef.current = null;
+        if (touchGlow) setTappedIndex(null);
+        updateScrollActiveIndex();
+      });
+    };
 
-    const clearTap = () => setTappedIndex(null);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    updateScrollActiveIndex();
 
-    window.addEventListener('scroll', clearTap, { passive: true });
-    return () => window.removeEventListener('scroll', clearTap);
-  }, [touchGlow]);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (scrollRafRef.current !== null) cancelAnimationFrame(scrollRafRef.current);
+    };
+  }, [touchGlow, updateScrollActiveIndex]);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -258,17 +288,6 @@ export default function Benefits() {
           },
         });
 
-        cards.forEach((card) => {
-          ScrollTrigger.create({
-            trigger: card,
-            start: 'top 80%',
-            end: 'bottom 20%',
-            onEnter: () => card.classList.add('is-in-view'),
-            onEnterBack: () => card.classList.add('is-in-view'),
-            onLeave: () => card.classList.remove('is-in-view'),
-            onLeaveBack: () => card.classList.remove('is-in-view'),
-          });
-        });
       }, scope);
 
       ScrollTrigger.refresh();
@@ -316,8 +335,9 @@ export default function Benefits() {
             return (
               <article
                 key={benefit.title}
+                ref={(el) => registerCard(index, el)}
                 data-benefit-card
-                className={`group relative ${tappedIndex === index ? 'is-tapped' : ''}`}
+                className={`group relative ${scrollActiveIndex === index ? 'is-in-view' : ''} ${tappedIndex === index ? 'is-tapped' : ''}`}
                 onPointerDown={handleCardPointerDown}
                 onPointerUp={(e) => handleCardPointerUp(index, e)}
                 onPointerCancel={handleCardPointerCancel}
