@@ -3,10 +3,13 @@ import { NextResponse } from 'next/server';
 export const AUTH_ACCESS_COOKIE = 'auth-token';
 export const AUTH_REFRESH_COOKIE = 'refresh-token';
 export const FUNNEL_TOKEN_COOKIE = 'wf_token';
+export const CUSTOMER_TAN_TRUST_COOKIE = 'customer-tan-trust';
+export const ADMIN_TAN_TRUST_COOKIE = 'admin-tan-trust';
 
 export const ACCESS_MAX_AGE = 15 * 60;
 export const REFRESH_MAX_AGE = 30 * 24 * 60 * 60;
 export const FUNNEL_TOKEN_MAX_AGE = 30 * 24 * 60 * 60;
+export const TAN_TRUST_MAX_AGE = 7 * 24 * 60 * 60;
 
 function isProduction(): boolean {
   return process.env.NODE_ENV === 'production';

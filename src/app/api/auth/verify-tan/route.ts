@@ -4,6 +4,7 @@ import { verifyTAN, deleteTAN } from '@/lib/tan-store';
 import { validateEmail, validateTAN } from '@/lib/validation';
 import { attachSessionToResponse } from '@/lib/session';
 import { secureResponse } from '@/lib/api-security';
+import { issueTanTrustCookie, resolveCustomerPasswordMaterial } from '@/lib/tan-trust';
 
 export async function POST(request: NextRequest) {
   try {
@@ -97,6 +98,12 @@ export async function POST(request: NextRequest) {
       user: result.user,
     });
     await attachSessionToResponse(response, result.user);
+
+    const passwordMaterial = await resolveCustomerPasswordMaterial(normalizedEmail);
+    if (passwordMaterial) {
+      issueTanTrustCookie(response, 'customer', result.user, passwordMaterial);
+    }
+
     response.cookies.delete('customer-tan-pending');
 
     try {

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardAuthLayout from '../../components/dashboard/DashboardAuthLayout';
+import { navigateToStarterwelle } from '@/lib/scroll-to-anchor';
 import { User, Eye, EyeOff, Mail, Lock, Shield, ArrowLeft } from 'lucide-react';
 
 export default function CustomerLogin() {
@@ -29,7 +30,7 @@ export default function CustomerLogin() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/request-tan', {
+      const response = await fetch('/api/auth/customer-login', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -40,12 +41,14 @@ export default function CustomerLogin() {
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok && data.success && !data.requiresTan) {
+        router.push(getSafeRedirectTo());
+        return;
+      }
+
+      if (response.ok && data.requiresTan) {
         setTanSent(true);
         setStep('tan');
-        
-        // TAN wird NICHT mehr angezeigt (Sicherheit)
-        // Kunde muss TAN aus E-Mail eingeben
       } else {
         setError(data.error || 'Login fehlgeschlagen');
       }
@@ -235,7 +238,14 @@ export default function CustomerLogin() {
                   ? (
                     <>
                       Noch kein Konto?{' '}
-                      <a href="/#starterwelle" className="text-primary hover:underline">
+                      <a
+                        href="/#starterwelle"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigateToStarterwelle();
+                        }}
+                        className="text-primary hover:underline"
+                      >
                         Branche analysieren und registrieren
                       </a>
                       <br />

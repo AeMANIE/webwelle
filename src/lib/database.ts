@@ -14,8 +14,20 @@ if (dbUrlForSSL?.includes('sslmode=require') && process.env.NODE_TLS_REJECT_UNAU
   console.log('⚠️ NODE_TLS_REJECT_UNAUTHORIZED auf 0 gesetzt für VPS-Datenbank');
 }
 
-import { Pool } from 'pg';
+import crypto from 'crypto';
+import { Pool, type PoolClient } from 'pg';
 import { sanitizeText } from './validation';
+
+const CUSTOMER_NUMBER_MAX_ATTEMPTS = 20;
+
+function isPgUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: string }).code === '23505'
+  );
+}
 
 // PostgreSQL Verbindung mit SSL-Konfiguration für VPS
 const getSSLConfig = () => {
@@ -529,7 +541,7 @@ export interface CustomerData {
   phone?: string;
   company_name?: string;
   vat_id?: string;
-  customer_number?: string; // Eindeutige Kundennummer (WEB-YYYY-NNNNN)
+  customer_number?: string; // Eindeutige Kundennummer (WEB-YYYY-RRRRR, R = Zufall 10000–99999)
   // Adressfelder
   street?: string;
   city?: string;
@@ -675,83 +687,54 @@ export async function getCustomerByEmail(email: string): Promise<CustomerData | 
   }
 }
 
-// Kundennummer generieren (Format: WEB-YYYY-NNNNN) - mit SSL-Fallback
+async function generateRandomCustomerNumberWithClient(client: PoolClient): Promise<string> {
+  const year = new Date().getFullYear();
+  const prefix = `WEB-${year}-`;
+
+  for (let attempt = 0; attempt < CUSTOMER_NUMBER_MAX_ATTEMPTS; attempt++) {
+    const suffix = crypto.randomInt(10000, 100000).toString();
+    const candidate = `${prefix}${suffix}`;
+    const exists = await client.query(
+      'SELECT 1 FROM customers WHERE customer_number = $1 LIMIT 1',
+      [candidate]
+    );
+    if ((exists.rowCount ?? 0) === 0) {
+      return candidate;
+    }
+  }
+
+  throw new Error('Keine freie Kundennummer nach mehreren Versuchen');
+}
+
+// Kundennummer generieren (Format: WEB-YYYY-RRRRR, Zufall 10000–99999) - mit SSL-Fallback
 export async function generateCustomerNumber(): Promise<string> {
-  let client;
+  let client: PoolClient | undefined;
+  let tempPool: Pool | null = null;
+
   try {
     client = await pool.connect();
   } catch (connectionError) {
-    // Bei SSL-Fehler: Erstelle temporären Pool
     const errorMsg = connectionError instanceof Error ? connectionError.message : '';
-    if (errorMsg.includes('certificate') || errorMsg.includes('SSL') || errorMsg.includes('TLS') || errorMsg.includes('unable to verify')) {
-      const tempPool = await createTempPool({ rejectUnauthorized: false });
+    if (
+      errorMsg.includes('certificate') ||
+      errorMsg.includes('SSL') ||
+      errorMsg.includes('TLS') ||
+      errorMsg.includes('unable to verify')
+    ) {
+      tempPool = await createTempPool({ rejectUnauthorized: false });
       client = await tempPool.connect();
-      
-      try {
-        const year = new Date().getFullYear();
-        const prefix = `WEB-${year}-`;
-        
-        const result = await client.query(
-          `SELECT customer_number FROM customers 
-           WHERE customer_number LIKE $1 
-           ORDER BY customer_number DESC 
-           LIMIT 1`,
-          [`${prefix}%`]
-        );
-        
-        let nextNumber = 1;
-        if (result.rows.length > 0) {
-          const lastNumber = result.rows[0].customer_number;
-          if (lastNumber) {
-            const match = lastNumber.match(/\d+$/);
-            if (match) {
-              nextNumber = parseInt(match[0], 10) + 1;
-            }
-          }
-        }
-        
-        const formattedNumber = `${prefix}${nextNumber.toString().padStart(5, '0')}`;
-        client.release();
-        await tempPool.end();
-        return formattedNumber;
-      } catch (error) {
-        if (client) client.release();
-        await tempPool.end();
-        throw error;
-      }
+    } else {
+      throw connectionError;
     }
-    throw connectionError;
   }
-  
+
   try {
-    const year = new Date().getFullYear();
-    const prefix = `WEB-${year}-`;
-    
-    // Finde die höchste Nummer für das aktuelle Jahr
-    const result = await client.query(
-      `SELECT customer_number FROM customers 
-       WHERE customer_number LIKE $1 
-       ORDER BY customer_number DESC 
-       LIMIT 1`,
-      [`${prefix}%`]
-    );
-    
-    let nextNumber = 1;
-    if (result.rows.length > 0) {
-      const lastNumber = result.rows[0].customer_number;
-      if (lastNumber) {
-        const match = lastNumber.match(/\d+$/);
-        if (match) {
-          nextNumber = parseInt(match[0], 10) + 1;
-        }
-      }
-    }
-    
-    // Format: WEB-YYYY-00001
-    const formattedNumber = `${prefix}${nextNumber.toString().padStart(5, '0')}`;
-    return formattedNumber;
+    return await generateRandomCustomerNumberWithClient(client);
   } finally {
     client.release();
+    if (tempPool) {
+      await tempPool.end();
+    }
   }
 }
 
@@ -771,22 +754,27 @@ export async function getOrCreateCustomerWithNumber(
     if (customer) {
       // Wenn Kunde existiert aber keine Kundennummer hat, generiere eine
       if (!customer.customer_number) {
-        const customerNumber = await generateCustomerNumber();
-        await client.query(
-          'UPDATE customers SET customer_number = $1 WHERE email = $2',
-          [customerNumber, email]
-        );
-        const updatedCustomer = await getCustomerByEmail(email);
-        if (updatedCustomer) {
-          return updatedCustomer;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const customerNumber = await generateCustomerNumber();
+          try {
+            await client.query(
+              'UPDATE customers SET customer_number = $1 WHERE email = $2',
+              [customerNumber, email]
+            );
+            const updatedCustomer = await getCustomerByEmail(email);
+            if (updatedCustomer) {
+              return updatedCustomer;
+            }
+            break;
+          } catch (error) {
+            if (isPgUniqueViolation(error) && attempt === 0) continue;
+            throw error;
+          }
         }
       }
       return customer;
     }
-    
-    // Neuer Kunde - generiere Kundennummer
-    const customerNumber = await generateCustomerNumber();
-    
+
     const query = `
       INSERT INTO customers (
         email, name, phone, company_name, is_verified,
@@ -794,19 +782,33 @@ export async function getOrCreateCustomerWithNumber(
       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `;
-    
-    const values = [
-      email,
-      name,
-      phone || null,
-      companyName || null,
-      true, // is_verified
-      customerNumber,
-      false // portal_activated
-    ];
-    
-    const result = await client.query(query, values);
-    return result.rows[0];
+
+    let customerNumber = await generateCustomerNumber();
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const values = [
+        email,
+        name,
+        phone || null,
+        companyName || null,
+        true, // is_verified
+        customerNumber,
+        false, // portal_activated
+      ];
+
+      try {
+        const result = await client.query(query, values);
+        return result.rows[0];
+      } catch (error) {
+        if (isPgUniqueViolation(error) && attempt === 0) {
+          customerNumber = await generateCustomerNumber();
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new Error('Kunde konnte nicht mit eindeutiger Kundennummer angelegt werden');
   } finally {
     client.release();
   }

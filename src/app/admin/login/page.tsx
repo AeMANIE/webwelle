@@ -51,8 +51,9 @@ export default function AdminLogin() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/admin-request-tan', {
+      const response = await fetch('/api/auth/admin-login', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -61,10 +62,17 @@ export default function AdminLogin() {
 
       const data = await response.json();
 
-      if (response.ok && data.success) {
+      if (response.ok && data.success && !data.requiresTan) {
+        setTimeout(() => {
+          router.push('/admin');
+          router.refresh();
+        }, 100);
+        return;
+      }
+
+      if (response.ok && data.success && data.requiresTan) {
         setTanSent(true);
         setStep('tan');
-        // In Development: TAN in Console anzeigen
         if (data.tan) {
           console.log('🔑 TAN für Entwicklung:', data.tan);
         }
@@ -87,6 +95,7 @@ export default function AdminLogin() {
     try {
       const response = await fetch('/api/auth/admin-verify-tan', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },

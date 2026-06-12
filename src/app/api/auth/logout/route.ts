@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Erfolgreich abgemeldet',
     });
+    // Session-Cookies löschen; TAN-Trust-Cookies bleiben für 7-Tage-Passwort-Login
     clearSessionCookies(response);
     return response;
   } catch (error) {

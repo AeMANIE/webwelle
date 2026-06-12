@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminRequestTAN } from '@/lib/auth';
+import { attachAdminTanPendingCookie } from '@/lib/tan-pending-cookies';
 import { rateLimit } from '@/lib/rate-limit';
 
 // Rate Limiting: Max. 3 TAN-Anfragen pro 15 Minuten pro IP
@@ -51,47 +52,11 @@ export async function POST(request: Request) {
       ...(process.env.NODE_ENV !== 'production' && result.tan ? { tan: result.tan } : {})
     });
 
-    // TAN in HttpOnly Cookie speichern (10 Minuten Gültigkeit)
-    // WICHTIG: result.tan ist nur in Development verfügbar, aber wir müssen die TAN trotzdem speichern
-    // Lösung: Die TAN wird bereits in storeAdminTAN gespeichert, wir holen sie aus dem Store
-    if (result.tan) {
-      const tanData = JSON.stringify({ 
-        email: normalizedEmail, 
-        tan: result.tan, 
-        expiresAt: Date.now() + (10 * 60 * 1000) 
-      });
-      response.cookies.set('admin-tan-pending', tanData, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 10 * 60, // 10 Minuten
-        path: '/',
-      });
-      console.log('✅ Admin-TAN in Cookie gespeichert für:', normalizedEmail);
-    } else {
-      // In Production: TAN aus Store holen und in Cookie speichern
-      try {
-        const { getAdminTAN } = await import('@/lib/tan-store');
-        const tanEntry = await getAdminTAN(normalizedEmail);
-        if (tanEntry) {
-          const tanData = JSON.stringify({ 
-            email: normalizedEmail, 
-            tan: tanEntry.tan, 
-            expiresAt: tanEntry.expiresAt 
-          });
-          response.cookies.set('admin-tan-pending', tanData, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: Math.floor((tanEntry.expiresAt - Date.now()) / 1000),
-            path: '/',
-          });
-          console.log('✅ Admin-TAN aus Store in Cookie gespeichert für:', normalizedEmail);
-        }
-      } catch (error) {
-        console.error('⚠️ Fehler beim Speichern der TAN in Cookie:', error);
-      }
-    }
+    await attachAdminTanPendingCookie(
+      response,
+      normalizedEmail,
+      process.env.NODE_ENV !== 'production' ? result.tan : undefined
+    );
 
     return response;
   } catch (error) {

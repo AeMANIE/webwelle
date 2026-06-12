@@ -1,26 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requestTAN } from '@/lib/auth';
-import { getTAN } from '@/lib/tan-store';
-
-function attachCustomerTanCookie(
-  response: NextResponse,
-  normalizedEmail: string,
-  tan: string,
-  expiresAt: number
-): void {
-  const tanData = JSON.stringify({
-    email: normalizedEmail,
-    tan,
-    expiresAt,
-  });
-  response.cookies.set('customer-tan-pending', tanData, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: Math.max(60, Math.floor((expiresAt - Date.now()) / 1000)),
-    path: '/',
-  });
-}
+import { attachCustomerTanPendingCookie } from '@/lib/tan-pending-cookies';
 
 export async function POST(request: Request) {
   try {
@@ -50,14 +30,11 @@ export async function POST(request: Request) {
       ...(process.env.NODE_ENV !== 'production' && result.tan ? { tan: result.tan } : {}),
     });
 
-    // Cookie für Serverless/Multi-Instanz (wie Admin-TAN)
-    const tanEntry = result.tan
-      ? { tan: result.tan, expiresAt: Date.now() + 10 * 60 * 1000 }
-      : await getTAN(normalizedEmail);
-
-    if (tanEntry) {
-      attachCustomerTanCookie(response, normalizedEmail, tanEntry.tan, tanEntry.expiresAt);
-    }
+    await attachCustomerTanPendingCookie(
+      response,
+      normalizedEmail,
+      process.env.NODE_ENV !== 'production' ? result.tan : undefined
+    );
 
     return response;
   } catch (error) {

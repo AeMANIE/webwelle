@@ -7,6 +7,7 @@ import { ensureEnvOwnerStaff } from '@/lib/database';
 import { attachSessionToResponse } from '@/lib/session';
 import { secureResponse } from '@/lib/api-security';
 import { logLoginAttempt } from '@/lib/security-logger';
+import { getAdminPasswordMaterial, issueTanTrustCookie } from '@/lib/tan-trust';
 
 // Rate Limiting: Max. 10 TAN-Verifizierungen pro 15 Minuten pro IP
 // Erhöht, da TANs manchmal falsch eingegeben werden
@@ -136,6 +137,11 @@ export async function POST(request: NextRequest) {
       message: 'Login erfolgreich',
     });
     await attachSessionToResponse(response, user);
+
+    const passwordMaterial = getAdminPasswordMaterial();
+    if (passwordMaterial) {
+      issueTanTrustCookie(response, 'admin', user, passwordMaterial);
+    }
 
     response.cookies.delete('admin-tan-pending');
     
