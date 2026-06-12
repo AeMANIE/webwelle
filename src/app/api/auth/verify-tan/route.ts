@@ -1,29 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { customerLogin2FA } from '@/lib/auth';
-import { verifyTAN } from '@/lib/tan-store';
+import { verifyTAN, deleteTAN } from '@/lib/tan-store';
 import { validateEmail, validateTAN } from '@/lib/validation';
 import { attachSessionToResponse } from '@/lib/session';
 import { secureResponse } from '@/lib/api-security';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { email, tan } = await request.json();
-    
-    console.log('📥 Verify-TAN API Request:', { 
-      originalEmail: email, 
-      tanLength: tan?.length 
-    });
-    
-    // E-Mail normalisieren (toLowerCase für konsistente Speicherung/Abruf)
+
     const normalizedEmail = email?.toLowerCase().trim();
     const normalizedTan = tan?.trim();
-    
-    console.log('📥 Normalisiert:', { 
-      normalizedEmail, 
-      tanLength: normalizedTan?.length 
-    });
-    
-    // Input-Validierung
+
     if (!normalizedEmail) {
       return NextResponse.json(
         { success: false, error: 'E-Mail ist erforderlich' },
@@ -46,33 +34,78 @@ export async function POST(request: Request) {
       );
     }
 
-    // TAN gegen Store validieren (Redis) - mit normalisierter E-Mail
-    console.log('🔍 Rufe verifyTAN auf mit:', { normalizedEmail, tanLength: normalizedTan.length });
-    const tanStoreValidation = await verifyTAN(normalizedEmail, normalizedTan);
-    console.log('🔍 verifyTAN Ergebnis:', { valid: tanStoreValidation.valid, message: tanStoreValidation.message });
-    
-    if (!tanStoreValidation.valid) {
+    let tanValid = false;
+    let tanErrorMessage = '';
+
+    // Cookie zuerst (Serverless/Multi-Instanz – wie Admin)
+    const tanCookie = request.cookies.get('customer-tan-pending')?.value;
+    if (tanCookie) {
+      try {
+        const tanData = JSON.parse(tanCookie) as {
+          email?: string;
+          tan?: string;
+          expiresAt?: number;
+        };
+        const cookieEmail = tanData.email?.toLowerCase().trim();
+
+        if (cookieEmail === normalizedEmail) {
+          if (tanData.expiresAt && Date.now() > tanData.expiresAt) {
+            tanErrorMessage = 'TAN ist abgelaufen. Bitte fordern Sie eine neue TAN an.';
+          } else if (tanData.tan === normalizedTan) {
+            tanValid = true;
+          } else {
+            tanErrorMessage = 'Ungültiger TAN-Code. Bitte überprüfen Sie die Eingabe.';
+          }
+        } else {
+          tanErrorMessage = 'TAN wurde für eine andere E-Mail-Adresse angefordert.';
+        }
+      } catch {
+        tanErrorMessage = 'Fehler beim Lesen der TAN. Bitte fordern Sie eine neue TAN an.';
+      }
+    }
+
+    // Fallback: Redis/In-Memory Store
+    if (!tanValid && !tanErrorMessage) {
+      const tanStoreValidation = await verifyTAN(normalizedEmail, normalizedTan);
+      if (tanStoreValidation.valid) {
+        tanValid = true;
+      } else {
+        tanErrorMessage = tanStoreValidation.message;
+      }
+    } else if (tanValid) {
+      await deleteTAN(normalizedEmail);
+    }
+
+    if (!tanValid) {
       return NextResponse.json(
-        { success: false, error: tanStoreValidation.message },
+        { success: false, error: tanErrorMessage || 'Ungültiger TAN-Code' },
         { status: 401 }
       );
     }
 
-    // Login durchführen (TAN wurde bereits verifiziert und gelöscht)
-    const result = await customerLogin2FA(normalizedEmail, tan);
-    
-    if (result) {
-      const response = secureResponse({
-        success: true,
-        user: result.user,
-      });
-      return attachSessionToResponse(response, result.user);
-    } else {
+    const result = await customerLogin2FA(normalizedEmail, normalizedTan);
+
+    if (!result) {
       return NextResponse.json(
         { success: false, error: 'Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.' },
         { status: 401 }
       );
     }
+
+    const response = secureResponse({
+      success: true,
+      user: result.user,
+    });
+    await attachSessionToResponse(response, result.user);
+    response.cookies.delete('customer-tan-pending');
+
+    try {
+      await deleteTAN(normalizedEmail);
+    } catch {
+      // ignore
+    }
+
+    return response;
   } catch (error) {
     console.error('TAN-Verifizierung Fehler:', error instanceof Error ? error.message : 'Unbekannter Fehler');
     return NextResponse.json(

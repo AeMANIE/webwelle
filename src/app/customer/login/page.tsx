@@ -31,6 +31,7 @@ export default function CustomerLogin() {
     try {
       const response = await fetch('/api/auth/request-tan', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -67,6 +68,7 @@ export default function CustomerLogin() {
     try {
       const response = await fetch('/api/auth/verify-tan', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },

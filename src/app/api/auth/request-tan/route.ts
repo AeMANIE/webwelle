@@ -1,11 +1,31 @@
 import { NextResponse } from 'next/server';
 import { requestTAN } from '@/lib/auth';
-import { storeTAN } from '@/lib/tan-store';
+import { getTAN } from '@/lib/tan-store';
+
+function attachCustomerTanCookie(
+  response: NextResponse,
+  normalizedEmail: string,
+  tan: string,
+  expiresAt: number
+): void {
+  const tanData = JSON.stringify({
+    email: normalizedEmail,
+    tan,
+    expiresAt,
+  });
+  response.cookies.set('customer-tan-pending', tanData, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: Math.max(60, Math.floor((expiresAt - Date.now()) / 1000)),
+    path: '/',
+  });
+}
 
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
-    
+
     if (!email || !password) {
       return NextResponse.json(
         { success: false, error: 'E-Mail und Passwort sind erforderlich' },
@@ -13,38 +33,33 @@ export async function POST(request: Request) {
       );
     }
 
-    // E-Mail normalisieren (toLowerCase für konsistente Speicherung)
     const normalizedEmail = email.toLowerCase().trim();
-    
+
     const result = await requestTAN(normalizedEmail, password);
-    
-    if (result.success) {
-      const tan = (result as { tan?: string }).tan;
-      
-      // TAN im gemeinsamen Store speichern (Redis)
-      if (tan) {
-        await storeTAN(normalizedEmail, tan);
-      }
-      
-      // TAN wird NICHT mehr in Response zurückgegeben (Sicherheit)
-      // Nur in Entwicklung, wenn explizit gewünscht
-      const response: { success: boolean; message: string; tan?: string } = { 
-        success: true, 
-        message: result.message
-      };
-      
-      // Nur in Entwicklung: TAN zurückgeben (wenn NODE_ENV !== 'production')
-      if (process.env.NODE_ENV !== 'production' && tan) {
-        response.tan = tan;
-      }
-      
-      return NextResponse.json(response);
-    } else {
+
+    if (!result.success) {
       return NextResponse.json(
         { success: false, error: result.message },
         { status: 401 }
       );
     }
+
+    const response = NextResponse.json({
+      success: true,
+      message: result.message,
+      ...(process.env.NODE_ENV !== 'production' && result.tan ? { tan: result.tan } : {}),
+    });
+
+    // Cookie für Serverless/Multi-Instanz (wie Admin-TAN)
+    const tanEntry = result.tan
+      ? { tan: result.tan, expiresAt: Date.now() + 10 * 60 * 1000 }
+      : await getTAN(normalizedEmail);
+
+    if (tanEntry) {
+      attachCustomerTanCookie(response, normalizedEmail, tanEntry.tan, tanEntry.expiresAt);
+    }
+
+    return response;
   } catch (error) {
     console.error('TAN-Anfrage Fehler:', error);
     return NextResponse.json(
