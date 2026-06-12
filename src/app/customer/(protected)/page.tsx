@@ -3,10 +3,10 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardShell from '../../components/dashboard/DashboardShell';
-import { DashboardStatCard } from '../../components/dashboard/DashboardPanel';
-import { Package, Euro, Calendar, FileText, Eye, Download, X, Plus } from 'lucide-react';
+import { DashboardPanel, DashboardStatCard } from '../../components/dashboard/DashboardPanel';
+import { Package, Euro, Calendar, FileText, Eye, Download, X, Plus, Settings } from 'lucide-react';
 
-type CustomerTabId = 'bookings' | 'addons' | 'analysis';
+type CustomerTabId = 'bookings' | 'addons' | 'analysis' | 'settings';
 
 const CUSTOMER_TAB_META: Record<CustomerTabId, { title: string; subtitle: string }> = {
   bookings: {
@@ -20,6 +20,10 @@ const CUSTOMER_TAB_META: Record<CustomerTabId, { title: string; subtitle: string
   analysis: {
     title: 'Website-Analysen',
     subtitle: 'Funnel-Forschung und SEO-Ergebnisse',
+  },
+  settings: {
+    title: 'Einstellungen',
+    subtitle: 'Kontodaten, USt-ID und Abonnement verwalten',
   },
 };
 
@@ -127,9 +131,21 @@ export default function CustomerPortal() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const tab = new URLSearchParams(window.location.search).get('tab');
-    if (tab === 'analysis') setActiveTab('analysis');
+    const tab = new URLSearchParams(window.location.search).get('tab') as CustomerTabId;
+    if (tab && Object.keys(CUSTOMER_TAB_META).includes(tab)) {
+      setActiveTab(tab);
+    }
   }, []);
+
+  const handleNavChange = (id: string) => {
+    const tab = id as CustomerTabId;
+    setActiveTab(tab);
+    setProfileSuccess('');
+    setProfileError('');
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState({}, '', url.toString());
+  };
 
   const checkAuth = useCallback(async () => {
     try {
@@ -423,6 +439,17 @@ export default function CustomerPortal() {
     [bookings.length, addonOrders.length, funnelAnalyses.length]
   );
 
+  const footerNavItems = useMemo(
+    () => [
+      {
+        id: 'settings',
+        label: 'Einstellungen',
+        icon: <Settings className="h-4 w-4" />,
+      },
+    ],
+    []
+  );
+
   const tabMeta = CUSTOMER_TAB_META[activeTab];
   const shellSubtitle = customerNumber
     ? `Willkommen, ${user?.name ?? ''} · Kd.-Nr. ${customerNumber}`
@@ -443,157 +470,187 @@ export default function CustomerPortal() {
       subtitle={shellSubtitle}
       user={user}
       navItems={navItems}
+      footerNavItems={footerNavItems}
       activeNavId={activeTab}
-      onNavChange={(id) => setActiveTab(id as CustomerTabId)}
+      onNavChange={handleNavChange}
       onLogout={handleLogout}
       breadcrumbs={[{ label: 'Kundenportal' }, { label: tabMeta.title }]}
     >
-          <div className="rounded-xl border border-border bg-card p-5 sm:p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Meine Kontaktdaten</h2>
-              {isReadOnly && (
-                <span className="text-xs rounded-full bg-muted px-3 py-1 text-muted-foreground">
-                  Nur Lesezugriff
-                </span>
-              )}
-            </div>
-            {profileError && (
-              <p className="mb-4 text-sm text-destructive">{profileError}</p>
-            )}
-            {profileSuccess && (
-              <p className="mb-4 text-sm text-green-600">{profileSuccess}</p>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Vorname</label>
-                <input
-                  type="text"
-                  value={profile.firstName}
-                  onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
-                  disabled={isReadOnly}
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Nachname</label>
-                <input
-                  type="text"
-                  value={profile.lastName}
-                  onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
-                  disabled={isReadOnly}
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-foreground mb-2">Firma</label>
-                <input
-                  type="text"
-                  value={profile.companyName}
-                  onChange={(e) => setProfile({ ...profile, companyName: e.target.value })}
-                  disabled={isReadOnly}
-                  placeholder="Optional"
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-foreground mb-2">Straße</label>
-                <input
-                  type="text"
-                  value={profile.street}
-                  onChange={(e) => setProfile({ ...profile, street: e.target.value })}
-                  disabled={isReadOnly}
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">PLZ</label>
-                <input
-                  type="text"
-                  value={profile.zip}
-                  onChange={(e) => setProfile({ ...profile, zip: e.target.value })}
-                  disabled={isReadOnly}
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Stadt</label>
-                <input
-                  type="text"
-                  value={profile.city}
-                  onChange={(e) => setProfile({ ...profile, city: e.target.value })}
-                  disabled={isReadOnly}
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Land</label>
-                <select
-                  value={profile.country}
-                  onChange={(e) => setProfile({ ...profile, country: e.target.value })}
-                  disabled={isReadOnly}
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
-                >
-                  <option value="DE">Deutschland</option>
-                  <option value="AT">Österreich</option>
-                  <option value="CH">Schweiz</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Telefon</label>
-                <input
-                  type="tel"
-                  value={profile.phone}
-                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                  disabled={isReadOnly}
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
-                />
-              </div>
-            </div>
-            {!isReadOnly && (
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="button"
-                  onClick={saveProfile}
-                  disabled={profileSaving}
-                  className="bg-brand text-brand-foreground px-4 py-2 rounded-lg hover:bg-brand/90 transition-colors disabled:opacity-60"
-                >
-                  {profileSaving ? 'Speichert...' : 'Kontaktdaten speichern'}
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-card rounded-lg p-5 border border-border mb-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  USt-ID
-                </label>
-                <input
-                  type="text"
-                  value={vatId}
-                  onChange={(e) => setVatId(e.target.value)}
-                  placeholder="DE123456789"
-                  disabled={isReadOnly}
-                  className="w-full md:max-w-sm px-4 py-2 bg-background border border-border rounded-lg text-foreground disabled:opacity-60"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Optional für Angebote, Rechnungen und Firmenprofil.
+          {activeTab === 'settings' ? (
+            <div className="space-y-6">
+              {profileError && (
+                <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                  {profileError}
                 </p>
-              </div>
-              {!isReadOnly && (
-                <button
-                  type="button"
-                  onClick={saveVatId}
-                  disabled={vatSaving}
-                  className="bg-brand text-brand-foreground px-4 py-2 rounded-lg hover:bg-brand/90 transition-colors disabled:opacity-60"
-                >
-                  {vatSaving ? 'Speichert...' : 'USt-ID speichern'}
-                </button>
               )}
-            </div>
-          </div>
+              {profileSuccess && (
+                <p className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400">
+                  {profileSuccess}
+                </p>
+              )}
 
+              <DashboardPanel
+                title="Meine Kontaktdaten"
+                description="Name, Adresse und Erreichbarkeit für Rechnungen und Angebote"
+                action={
+                  isReadOnly ? (
+                    <span className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
+                      Nur Lesezugriff
+                    </span>
+                  ) : undefined
+                }
+              >
+                <div className="mb-4 rounded-lg bg-muted/30 px-4 py-3 text-sm">
+                  <p className="text-muted-foreground">E-Mail (Anmeldung)</p>
+                  <p className="font-medium text-foreground">{user.email}</p>
+                  {customerNumber && (
+                    <p className="mt-2 text-muted-foreground">
+                      Kundennummer:{' '}
+                      <span className="font-mono text-foreground">{customerNumber}</span>
+                    </p>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-foreground">Vorname</label>
+                    <input
+                      type="text"
+                      value={profile.firstName}
+                      onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                      disabled={isReadOnly}
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground disabled:opacity-60"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-foreground">Nachname</label>
+                    <input
+                      type="text"
+                      value={profile.lastName}
+                      onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                      disabled={isReadOnly}
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground disabled:opacity-60"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm font-medium text-foreground">Firma</label>
+                    <input
+                      type="text"
+                      value={profile.companyName}
+                      onChange={(e) => setProfile({ ...profile, companyName: e.target.value })}
+                      disabled={isReadOnly}
+                      placeholder="Optional"
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground disabled:opacity-60"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm font-medium text-foreground">Straße</label>
+                    <input
+                      type="text"
+                      value={profile.street}
+                      onChange={(e) => setProfile({ ...profile, street: e.target.value })}
+                      disabled={isReadOnly}
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground disabled:opacity-60"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-foreground">PLZ</label>
+                    <input
+                      type="text"
+                      value={profile.zip}
+                      onChange={(e) => setProfile({ ...profile, zip: e.target.value })}
+                      disabled={isReadOnly}
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground disabled:opacity-60"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-foreground">Stadt</label>
+                    <input
+                      type="text"
+                      value={profile.city}
+                      onChange={(e) => setProfile({ ...profile, city: e.target.value })}
+                      disabled={isReadOnly}
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground disabled:opacity-60"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-foreground">Land</label>
+                    <select
+                      value={profile.country}
+                      onChange={(e) => setProfile({ ...profile, country: e.target.value })}
+                      disabled={isReadOnly}
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground disabled:opacity-60"
+                    >
+                      <option value="DE">Deutschland</option>
+                      <option value="AT">Österreich</option>
+                      <option value="CH">Schweiz</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-foreground">Telefon</label>
+                    <input
+                      type="tel"
+                      value={profile.phone}
+                      onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                      disabled={isReadOnly}
+                      className="w-full rounded-lg border border-border bg-background px-4 py-2 text-foreground disabled:opacity-60"
+                    />
+                  </div>
+                </div>
+                {!isReadOnly && (
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={saveProfile}
+                      disabled={profileSaving}
+                      className="rounded-lg bg-brand px-4 py-2 text-brand-foreground hover:bg-brand/90 transition-colors disabled:opacity-60"
+                    >
+                      {profileSaving ? 'Speichert...' : 'Kontaktdaten speichern'}
+                    </button>
+                  </div>
+                )}
+              </DashboardPanel>
+
+              <DashboardPanel
+                title="USt-ID"
+                description="Optional für Angebote, Rechnungen und Firmenprofil"
+              >
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={vatId}
+                      onChange={(e) => setVatId(e.target.value)}
+                      placeholder="DE123456789"
+                      disabled={isReadOnly}
+                      className="w-full max-w-sm rounded-lg border border-border bg-background px-4 py-2 text-foreground disabled:opacity-60"
+                    />
+                  </div>
+                  {!isReadOnly && (
+                    <button
+                      type="button"
+                      onClick={saveVatId}
+                      disabled={vatSaving}
+                      className="rounded-lg bg-brand px-4 py-2 text-brand-foreground hover:bg-brand/90 transition-colors disabled:opacity-60"
+                    >
+                      {vatSaving ? 'Speichert...' : 'USt-ID speichern'}
+                    </button>
+                  )}
+                </div>
+              </DashboardPanel>
+
+              <DashboardPanel
+                title="Abonnement"
+                description="Verwaltung Ihrer monatlichen Pakete und Kündigungen"
+              >
+                <p className="text-sm text-muted-foreground">
+                  Die Abo-Verwaltung und Kündigung wird hier in Kürze ergänzt. Bis dahin können Sie
+                  monatliche Abos in den Buchungsdetails unter „Meine Buchungen“ verwalten.
+                </p>
+              </DashboardPanel>
+            </div>
+          ) : (
+            <>
+          {activeTab === 'bookings' && (
           <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <DashboardStatCard
               label="Meine Buchungen"
@@ -618,6 +675,7 @@ export default function CustomerPortal() {
               iconClassName="bg-yellow-500/10 text-yellow-400"
             />
           </div>
+          )}
 
           {loading ? (
             <div className="text-center py-12">
@@ -1194,6 +1252,8 @@ export default function CustomerPortal() {
                 </div>
               </div>
             </div>
+          )}
+            </>
           )}
     </DashboardShell>
   );

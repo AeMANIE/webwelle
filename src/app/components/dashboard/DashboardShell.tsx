@@ -24,6 +24,8 @@ interface DashboardShellProps {
   subtitle?: string;
   user: { name: string; email: string };
   navItems: DashboardNavItem[];
+  /** Zusätzliche Links unten in der Sidebar (z. B. Einstellungen) */
+  footerNavItems?: DashboardNavItem[];
   activeNavId: string;
   onNavChange: (id: string) => void;
   onLogout: () => void;
@@ -37,6 +39,7 @@ export default function DashboardShell({
   subtitle,
   user,
   navItems,
+  footerNavItems,
   activeNavId,
   onNavChange,
   onLogout,
@@ -47,13 +50,7 @@ export default function DashboardShell({
   const portalLabel = variant === 'admin' ? 'Admin' : 'Kundenportal';
 
   const sidebar = (
-    <aside
-      className={cn(
-        'flex h-full w-[260px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar',
-        'lg:relative lg:translate-x-0',
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      )}
-    >
+    <aside className="flex h-full w-[260px] shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar">
       <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-5">
         <Link href="/" className="flex items-center gap-2.5 min-w-0">
           <Image
@@ -80,7 +77,7 @@ export default function DashboardShell({
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+      <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 space-y-0.5">
         {navItems.map((item) => {
           const isActive = activeNavId === item.id;
           return (
@@ -119,7 +116,43 @@ export default function DashboardShell({
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-4">
+      {footerNavItems && footerNavItems.length > 0 && (
+        <div className="shrink-0 space-y-0.5 border-t border-sidebar-border px-3 py-2">
+          {footerNavItems.map((item) => {
+            const isActive = activeNavId === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  onNavChange(item.id);
+                  setSidebarOpen(false);
+                }}
+                className={cn(
+                  'group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
+                  isActive
+                    ? 'bg-sidebar-accent text-sidebar-primary shadow-[inset_3px_0_0_0_var(--sidebar-primary)]'
+                    : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground'
+                )}
+              >
+                <span
+                  className={cn(
+                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors',
+                    isActive
+                      ? 'bg-primary/15 text-primary'
+                      : 'bg-sidebar-accent/50 text-muted-foreground group-hover:text-primary'
+                  )}
+                >
+                  {item.icon}
+                </span>
+                <span className="truncate flex-1 text-left">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="shrink-0 border-t border-sidebar-border p-4">
         <div className="rounded-lg bg-sidebar-accent/40 px-3 py-2.5">
           <p className="truncate text-sm font-medium text-sidebar-foreground">{user.name}</p>
           <p className="truncate text-xs text-muted-foreground">{user.email}</p>
@@ -129,7 +162,7 @@ export default function DashboardShell({
   );
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-dvh max-h-dvh overflow-hidden bg-background">
       {sidebarOpen && (
         <button
           type="button"
@@ -141,15 +174,15 @@ export default function DashboardShell({
 
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-50 transition-transform duration-200 lg:static lg:z-auto',
+          'fixed inset-y-0 left-0 z-50 h-dvh w-[260px] transition-transform duration-200 lg:static lg:z-auto lg:shrink-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         {sidebar}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-md sm:px-6">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="z-30 flex h-16 shrink-0 items-center gap-4 border-b border-border bg-card px-4 sm:px-6">
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
@@ -192,7 +225,7 @@ export default function DashboardShell({
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8">
             <div className="mb-6 sm:mb-8">
               <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
