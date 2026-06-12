@@ -235,8 +235,8 @@ export default function CustomerLogin() {
                   ? (
                     <>
                       Noch kein Konto?{' '}
-                      <a href="/register" className="text-primary hover:underline">
-                        Hier registrieren
+                      <a href="/#starterwelle" className="text-primary hover:underline">
+                        Branche analysieren und registrieren
                       </a>
                       <br />
                       <a href="/forgot-password" className="text-primary hover:underline text-sm">

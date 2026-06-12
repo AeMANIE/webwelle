@@ -17,6 +17,10 @@ export default function DashboardAuthLayout({
   variant = 'customer',
 }: DashboardAuthLayoutProps) {
   const portalLabel = variant === 'admin' ? 'Admin-Bereich' : 'Kundenportal';
+  const sideDescription =
+    variant === 'admin'
+      ? 'Ihr geschützter Bereich für Bestellungen, Kunden, Rechnungen und Blog-Inhalte.'
+      : 'Ihr geschützter Bereich für Bestellungen, Rechnungen und Projektdaten.';
 
   return (
     <div className="relative flex min-h-screen bg-background">
@@ -41,8 +45,7 @@ export default function DashboardAuthLayout({
             <span className="text-primary">Sicher eingeloggt.</span>
           </h2>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
-            Ihr geschützter Bereich für Bestellungen, Rechnungen und Projektdaten – im WebWelle
-            Corporate Design.
+            {sideDescription}
           </p>
         </div>
         <p className="text-xs text-muted-foreground">© WebWelle · Alle Rechte vorbehalten</p>
