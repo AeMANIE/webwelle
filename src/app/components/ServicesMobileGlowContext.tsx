@@ -11,6 +11,7 @@ import {
   type RefObject,
 } from 'react';
 import { readLayoutEnv, shouldUseTouchGlow } from '@/lib/responsive-layout-mode';
+import { computeScrollActiveIndex } from '@/lib/services-scroll-glow';
 
 type ServicesMobileGlowContextValue = {
   activeIndex: number | null;
@@ -19,46 +20,6 @@ type ServicesMobileGlowContextValue = {
 };
 
 const ServicesMobileGlowContext = createContext<ServicesMobileGlowContextValue | null>(null);
-
-function computeScrollActiveIndex(
-  cards: Map<number, HTMLElement>,
-  sectionId: string
-): number | null {
-  const section = document.getElementById(sectionId);
-  if (!section) return null;
-
-  const sectionRect = section.getBoundingClientRect();
-  if (sectionRect.bottom < 0 || sectionRect.top > window.innerHeight) {
-    return null;
-  }
-
-  const viewportCenterY = window.innerHeight / 2;
-  const sorted = Array.from(cards.entries()).sort((a, b) => a[0] - b[0]);
-
-  let activeIndex: number | null = null;
-
-  for (const [index, el] of sorted) {
-    const rect = el.getBoundingClientRect();
-    const visible = rect.bottom > 0 && rect.top < window.innerHeight;
-    if (!visible) continue;
-
-    const centerY = rect.top + rect.height / 2;
-    if (centerY <= viewportCenterY) {
-      activeIndex = index;
-    }
-  }
-
-  if (activeIndex === null) {
-    for (const [index, el] of sorted) {
-      const rect = el.getBoundingClientRect();
-      if (rect.bottom > 0 && rect.top < window.innerHeight) {
-        return index;
-      }
-    }
-  }
-
-  return activeIndex;
-}
 
 export function ServicesMobileGlowProvider({
   children,
