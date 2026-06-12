@@ -156,3 +156,19 @@ export function getServicesGridClass(mode: LayoutMode | null, cssWidth: number):
 
   return 'grid-cols-3';
 }
+
+export function getServicesGridColumnCount(mode: LayoutMode | null, cssWidth: number): number {
+  if (mode !== 'desktop') {
+    return 1;
+  }
+
+  if (cssWidth < 640) {
+    return 1;
+  }
+
+  if (cssWidth < 1024) {
+    return 2;
+  }
+
+  return 3;
+}

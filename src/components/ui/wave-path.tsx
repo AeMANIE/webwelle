@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo } from 'react';
+import { useGlowInputMode } from '@/hooks/useGlowInputMode';
+import { readLayoutEnv } from '@/lib/responsive-layout-mode';
+import { shouldAutoAnimateWaveOnScroll } from '@/lib/wave-path-auto-animate';
 import { cn } from '@/lib/utils';
 
 type WavePathProps = React.ComponentProps<'div'> & {
@@ -16,9 +19,18 @@ export function WavePath({
   autoAnimateOnVisible = false,
   ...props
 }: WavePathProps) {
+  const touchGlow = useGlowInputMode();
   const pathRef = useRef<SVGPathElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hasAutoPlayedRef = useRef(false);
+  const isHorizontal = orientation === 'horizontal';
+  const enableScrollAutoAnimate = useMemo(() => {
+    if (autoAnimateOnVisible) return true;
+    if (touchGlow !== true) return false;
+    return shouldAutoAnimateWaveOnScroll(readLayoutEnv());
+  }, [autoAnimateOnVisible, touchGlow]);
+  const useMouseWave = isHorizontal && touchGlow === false;
+  const usePointerWave = !enableScrollAutoAnimate || !isHorizontal;
   const stateRef = useRef({
     progress: 0,
     anchor: 0.2,
@@ -136,23 +148,23 @@ export function WavePath({
   }, [setPath, animateOut]);
 
   useEffect(() => {
-    if (!autoAnimateOnVisible || orientation !== 'vertical') return;
+    if (!enableScrollAutoAnimate) return;
 
     const container = containerRef.current;
     if (!container) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.45) {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.35) {
           playGentleWaveOnce();
         }
       },
-      { threshold: [0.45, 0.6] },
+      { threshold: [0.35, 0.5, 0.65] },
     );
 
     observer.observe(container);
     return () => observer.disconnect();
-  }, [autoAnimateOnVisible, orientation, playGentleWaveOnce]);
+  }, [enableScrollAutoAnimate, playGentleWaveOnce]);
 
   const cancelOutAnimation = () => {
     const state = stateRef.current;
@@ -197,6 +209,7 @@ export function WavePath({
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!usePointerWave) return;
     if (orientation === 'horizontal' && e.pointerType === 'mouse') return;
 
     const state = stateRef.current;
@@ -208,6 +221,7 @@ export function WavePath({
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!usePointerWave) return;
     if (orientation === 'horizontal' && e.pointerType === 'mouse') return;
 
     const state = stateRef.current;
@@ -223,11 +237,10 @@ export function WavePath({
   };
 
   const handlePointerUp = () => {
+    if (!usePointerWave) return;
     stateRef.current.isPointerDown = false;
     animateOut();
   };
-
-  const isHorizontal = orientation === 'horizontal';
 
   return (
     <div
@@ -240,21 +253,29 @@ export function WavePath({
       {...props}
     >
       <div
-        onMouseEnter={isHorizontal ? handleMouseEnter : undefined}
-        onMouseMove={isHorizontal ? handleMouseMove : undefined}
-        onMouseLeave={isHorizontal ? handleMouseLeave : undefined}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onMouseEnter={useMouseWave ? handleMouseEnter : undefined}
+        onMouseMove={useMouseWave ? handleMouseMove : undefined}
+        onMouseLeave={useMouseWave ? handleMouseLeave : undefined}
+        onPointerDown={usePointerWave ? handlePointerDown : undefined}
+        onPointerMove={usePointerWave ? handlePointerMove : undefined}
+        onPointerUp={usePointerWave ? handlePointerUp : undefined}
+        onPointerLeave={usePointerWave ? handlePointerUp : undefined}
+        onPointerCancel={usePointerWave ? handlePointerUp : undefined}
         className={cn(
           'relative z-10',
           isHorizontal
-            ? '-top-5 h-10 w-full hover:-top-[150px] hover:h-[300px] [@media(pointer:coarse)]:-top-[150px] [@media(pointer:coarse)]:h-[300px]'
+            ? cn(
+                '-top-5 h-10 w-full',
+                useMouseWave &&
+                  'hover:-top-[150px] hover:h-[300px]',
+                enableScrollAutoAnimate &&
+                  '-top-[150px] h-[300px]',
+              )
             : 'absolute inset-y-0 -left-5 h-full w-10',
         )}
-        style={{ touchAction: 'none' }}
+        style={{
+          touchAction: usePointerWave ? 'none' : 'pan-y',
+        }}
       />
       <svg
         className={cn(

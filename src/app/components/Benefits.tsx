@@ -2,6 +2,11 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Search, Users, DollarSign } from 'lucide-react';
+import { useGlowInputMode } from '@/hooks/useGlowInputMode';
+import {
+  getBenefitsScrollGlowPrefix,
+  shouldEnableBenefitsHoverGlow,
+} from '@/lib/benefits-card-glow';
 import type gsap from 'gsap';
 import type { ScrollTrigger as ScrollTriggerType } from 'gsap/ScrollTrigger';
 
@@ -141,6 +146,15 @@ export default function Benefits() {
   const trustContainerRef = useRef<HTMLDivElement>(null);
   const benefitsRef = useRef<HTMLDivElement>(null);
   const [gsapReady, setGsapReady] = useState(false);
+  const touchGlow = useGlowInputMode();
+  const scrollGlowPrefix = getBenefitsScrollGlowPrefix(touchGlow);
+  const hoverCardGlow = shouldEnableBenefitsHoverGlow(touchGlow)
+    ? 'md:hover:border-primary/40 md:hover:shadow-lg md:hover:shadow-primary/5'
+    : '';
+  const hoverBarGlow = shouldEnableBenefitsHoverGlow(touchGlow)
+    ? 'md:group-hover:w-1.5 md:group-hover:bg-primary'
+    : '';
+  const hoverIconGlow = shouldEnableBenefitsHoverGlow(touchGlow) ? 'md:group-hover:scale-105' : '';
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -281,15 +295,15 @@ export default function Benefits() {
                   className={[
                     'relative overflow-hidden rounded-2xl border bg-card/90 backdrop-blur-sm',
                     'transition-all duration-300',
-                    'max-md:group-[.is-in-view]:border-primary/40 max-md:group-[.is-in-view]:shadow-lg max-md:group-[.is-in-view]:shadow-primary/5',
-                    'md:hover:border-primary/40 md:hover:shadow-lg md:hover:shadow-primary/5',
+                    `${scrollGlowPrefix}group-[.is-in-view]:border-primary/40 ${scrollGlowPrefix}group-[.is-in-view]:shadow-lg ${scrollGlowPrefix}group-[.is-in-view]:shadow-primary/5`,
+                    hoverCardGlow,
                     isAccent
                       ? 'border-primary/25 bg-gradient-to-br from-card via-card to-primary/10'
                       : 'border-border',
                   ].join(' ')}
                 >
                   <div
-                    className="absolute left-0 top-0 h-full w-1 bg-primary/80 transition-all duration-300 max-md:group-[.is-in-view]:w-1.5 max-md:group-[.is-in-view]:bg-primary md:group-hover:w-1.5 md:group-hover:bg-primary"
+                    className={`absolute left-0 top-0 h-full w-1 bg-primary/80 transition-all duration-300 ${scrollGlowPrefix}group-[.is-in-view]:w-1.5 ${scrollGlowPrefix}group-[.is-in-view]:bg-primary ${hoverBarGlow}`}
                     aria-hidden
                   />
 
@@ -298,7 +312,7 @@ export default function Benefits() {
                       <span className="text-xs font-semibold tracking-[0.2em] text-primary/70">
                         {benefit.step}
                       </span>
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 transition-transform duration-300 max-md:group-[.is-in-view]:scale-105 md:group-hover:scale-105 md:h-14 md:w-14">
+                      <div className={`flex h-12 w-12 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 transition-transform duration-300 ${scrollGlowPrefix}group-[.is-in-view]:scale-105 ${hoverIconGlow} md:h-14 md:w-14`}>
                         <IconComponent className="h-6 w-6 text-primary md:h-7 md:w-7" />
                       </div>
                     </div>

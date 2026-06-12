@@ -10,7 +10,12 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { readLayoutEnv, shouldUseTouchGlow } from '@/lib/responsive-layout-mode';
+import {
+  computeLayoutMode,
+  getServicesGridColumnCount,
+  readLayoutEnv,
+  shouldUseTouchGlow,
+} from '@/lib/responsive-layout-mode';
 import { computeScrollActiveIndex } from '@/lib/services-scroll-glow';
 
 type ServicesMobileGlowContextValue = {
@@ -84,7 +89,9 @@ export function ServicesMobileGlowProvider({
       setTappedIndexState(null);
       return;
     }
-    setScrollActiveIndex(computeScrollActiveIndex(cardsRef.current, sectionId));
+    const env = readLayoutEnv();
+    const columnCount = getServicesGridColumnCount(computeLayoutMode(env), env.cssWidth);
+    setScrollActiveIndex(computeScrollActiveIndex(cardsRef.current, sectionId, columnCount));
   }, [touchGlowActive, sectionId]);
 
   useEffect(() => {

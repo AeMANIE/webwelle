@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   computeLayoutMode,
   getServicesGridClass,
+  getServicesGridColumnCount,
   shouldUseTouchGlow,
   type LayoutEnv,
 } from './responsive-layout-mode';
@@ -174,5 +175,15 @@ describe('getServicesGridClass', () => {
 
   it('null layout mode → 1 column', () => {
     assert.equal(getServicesGridClass(null, 0), 'grid-cols-1');
+  });
+});
+
+describe('getServicesGridColumnCount', () => {
+  it('matches grid class breakpoints', () => {
+    assert.equal(getServicesGridColumnCount('mobile', 390), 1);
+    assert.equal(getServicesGridColumnCount('desktop', 412), 1);
+    assert.equal(getServicesGridColumnCount('desktop', 800), 2);
+    assert.equal(getServicesGridColumnCount('desktop', 1024), 3);
+    assert.equal(getServicesGridColumnCount(null, 0), 1);
   });
 });

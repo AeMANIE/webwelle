@@ -2,10 +2,17 @@
 
 import { Search, MessageCircle, Rocket, Target } from 'lucide-react';
 import { WavePath } from '@/components/ui/wave-path';
+import { useGlowInputMode } from '@/hooks/useGlowInputMode';
+import { useLayoutCssWidth } from '@/hooks/useLayoutMode';
+import { shouldUseDesktopWorkflowTimeline } from '@/lib/wave-path-auto-animate';
 
 const FLOAT_DELAYS = ['0s', '0.8s', '1.6s', '2.4s'];
 
 export default function Workflow() {
+  const touchGlow = useGlowInputMode();
+  const cssWidth = useLayoutCssWidth();
+  const useDesktopTimeline = shouldUseDesktopWorkflowTimeline(cssWidth, touchGlow);
+
   const steps = [
     {
       number: '1',
@@ -50,8 +57,8 @@ export default function Workflow() {
           </h2>
         </div>
 
-        {/* Desktop Timeline – ab lg (1024px), nicht erst ab xl */}
-        <div className="hidden lg:block">
+        {/* Desktop Timeline – wide viewport + fine pointer/hover only */}
+        <div className={useDesktopTimeline ? 'block' : 'hidden'}>
           <div className="relative">
             <div className="absolute top-24 left-8 right-8 h-0.5 bg-primary/30" />
 
@@ -90,8 +97,8 @@ export default function Workflow() {
           </div>
         </div>
 
-        {/* Mobile Timeline */}
-        <div className="lg:hidden space-y-6">
+        {/* Mobile / touch-tablet Timeline with scroll wave */}
+        <div className={useDesktopTimeline ? 'hidden' : 'space-y-6'}>
           {steps.map((step, index) => (
             <div
               key={index}
