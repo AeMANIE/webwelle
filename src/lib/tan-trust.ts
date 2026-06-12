@@ -100,6 +100,26 @@ export function issueTanTrustCookie(
   );
 }
 
+/** UI preview only – no pwdVer check (password not available yet). */
+export function previewTanTrust(
+  request: NextRequest,
+  scope: TanTrustScope,
+  email: string
+): boolean {
+  const token = request.cookies.get(getTrustCookieName(scope))?.value;
+  if (!token) return false;
+
+  const payload = parseTrustToken(token);
+  if (!payload) return false;
+
+  const normalizedEmail = email.toLowerCase().trim();
+  if (payload.scope !== scope) return false;
+  if (payload.email !== normalizedEmail) return false;
+  if (Date.now() > payload.exp) return false;
+
+  return true;
+}
+
 export function verifyTanTrust(
   request: NextRequest,
   scope: TanTrustScope,

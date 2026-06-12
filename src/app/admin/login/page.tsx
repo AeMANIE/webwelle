@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardAuthLayout from '../../components/dashboard/DashboardAuthLayout';
 import { Shield } from 'lucide-react';
@@ -42,7 +42,33 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [tanSent, setTanSent] = useState(false);
+  const [trustPreview, setTrustPreview] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (step !== 'credentials') return;
+
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+      setTrustPreview(false);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ scope: 'admin', email: normalizedEmail });
+        const response = await fetch(`/api/auth/tan-trust-status?${params}`, {
+          credentials: 'include',
+        });
+        const data = await response.json();
+        setTrustPreview(Boolean(data.trusted));
+      } catch {
+        setTrustPreview(false);
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [email, step]);
 
   // Schritt 1: TAN anfordern (Email + Passwort)
   const handleRequestTAN = async (e: React.FormEvent) => {
@@ -204,7 +230,13 @@ export default function AdminLogin() {
                   disabled={loading}
                   className="w-full bg-brand text-brand-foreground py-3 px-4 rounded-lg hover:bg-brand/90 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'TAN wird angefordert...' : 'TAN anfordern'}
+                  {loading
+                    ? trustPreview
+                      ? 'Anmeldung...'
+                      : 'TAN wird angefordert...'
+                    : trustPreview
+                      ? 'Anmelden'
+                      : 'TAN anfordern'}
                 </button>
               </form>
             ) : (

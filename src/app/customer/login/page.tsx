@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardAuthLayout from '../../components/dashboard/DashboardAuthLayout';
 import { navigateToStarterwelle } from '@/lib/scroll-to-anchor';
@@ -15,7 +15,33 @@ export default function CustomerLogin() {
   const [error, setError] = useState('');
   const [step, setStep] = useState<'login' | 'tan'>('login');
   const [tanSent, setTanSent] = useState(false);
+  const [trustPreview, setTrustPreview] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (step !== 'login') return;
+
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+      setTrustPreview(false);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ scope: 'customer', email: normalizedEmail });
+        const response = await fetch(`/api/auth/tan-trust-status?${params}`, {
+          credentials: 'include',
+        });
+        const data = await response.json();
+        setTrustPreview(Boolean(data.trusted));
+      } catch {
+        setTrustPreview(false);
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [email, step]);
 
   const getSafeRedirectTo = () => {
     if (typeof window === 'undefined') return '/customer';
@@ -174,7 +200,13 @@ export default function CustomerLogin() {
                   disabled={loading}
                   className="w-full bg-brand text-brand-foreground py-3 px-4 rounded-lg hover:bg-brand/90 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'TAN wird gesendet...' : 'TAN anfordern'}
+                  {loading
+                    ? trustPreview
+                      ? 'Anmeldung...'
+                      : 'TAN wird gesendet...'
+                    : trustPreview
+                      ? 'Anmelden'
+                      : 'TAN anfordern'}
                 </button>
               </form>
             ) : (
