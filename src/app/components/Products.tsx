@@ -52,7 +52,7 @@ export default function Products() {
               </p>
             </div>
 
-            <div className="space-y-3 mb-8">
+            <div className="space-y-3">
               {STARTERWELLE.features.map((feature) => (
                 <div key={feature} className="flex items-start">
                   <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0 mt-0.5" />
@@ -61,13 +61,22 @@ export default function Products() {
               ))}
             </div>
 
-            <HeroIndustrySearch
-              variant="card"
-              inputId="starterwelle-industry"
-              source="products_starterwelle"
-              submitLabel="ANALYSE STARTEN"
-              className="pb-2"
-            />
+            <div className="pt-8 mt-8 border-t border-border">
+              <h4 className="text-base font-semibold text-foreground mb-2">
+                Website-Angebot passend zu Ihrer Branche finden
+              </h4>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                Beantworten Sie ein paar kurze Fragen und erhalten Sie eine klare Empfehlung für
+                Ihre neue Website.
+              </p>
+              <HeroIndustrySearch
+                variant="card"
+                inputId="starterwelle-industry"
+                source="products_starterwelle"
+                submitLabel="ANALYSE STARTEN"
+                className="pb-2"
+              />
+            </div>
             </div>
           </div>
         </div>

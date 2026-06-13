@@ -67,9 +67,6 @@ export default function Header() {
           {/* Desktop Navigation */}
           {!isMobileHeader && (
           <nav className="flex items-center space-x-6">
-            <Link href="/ai-voice" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap py-2 px-1">
-              Telefonassistent AI
-            </Link>
             <Link 
               href="/#vorteile" 
               className="text-foreground hover:text-primary transition-colors font-medium py-2 px-1"
@@ -132,9 +129,6 @@ export default function Header() {
         {isMobileHeader && isMenuOpen && (
           <div>
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-card rounded-lg mt-2 border border-border shadow-lg">
-              <Link href="/ai-voice" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
-                Telefonassistent AI
-              </Link>
               <Link 
                 href="/#vorteile" 
                 className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" 
