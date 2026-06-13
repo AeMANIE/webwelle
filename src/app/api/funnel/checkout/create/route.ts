@@ -5,10 +5,12 @@ import {
   getStripeClient,
   startFunnelCheckout,
 } from '@/lib/funnel/offer-checkout';
-import { getFunnelLeadByToken } from '@/lib/funnel-database';
+import { ensureFunnelTables, getFunnelLeadByToken } from '@/lib/funnel-database';
 
 export async function POST(request: NextRequest) {
   try {
+    await ensureFunnelTables();
+
     const body = await request.json();
     const token = String(body.token || '').trim();
     if (!token) {
@@ -24,7 +26,9 @@ export async function POST(request: NextRequest) {
     return secureResponse(result);
   } catch (error) {
     if (error instanceof FunnelCheckoutError) {
-      return secureResponse({ error: error.code, message: error.message }, 400);
+      const status = error.code === 'checkout_failed' ? 500 : 400;
+      console.error('Funnel checkout create failed:', error.code, error.message);
+      return secureResponse({ error: error.code, message: error.message }, status);
     }
     console.error('Funnel checkout create failed:', error);
     return secureResponse(

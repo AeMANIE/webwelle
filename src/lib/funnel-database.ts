@@ -35,6 +35,23 @@ export async function ensureFunnelTables(): Promise<void> {
       ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS addon_selection JSONB;
       ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS design_preferences JSONB;
     `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS offer_checkout_sessions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        offer_id UUID NOT NULL REFERENCES offers(id) ON DELETE CASCADE,
+        stripe_session_id TEXT NOT NULL UNIQUE,
+        stripe_customer_id TEXT,
+        amount_cents INTEGER NOT NULL DEFAULT 0,
+        status VARCHAR(32) NOT NULL DEFAULT 'pending',
+        paid_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_offer_checkout_sessions_stripe
+        ON offer_checkout_sessions (stripe_session_id);
+      CREATE INDEX IF NOT EXISTS idx_offer_checkout_sessions_offer
+        ON offer_checkout_sessions (offer_id);
+    `);
   } catch (e) {
     console.warn('Funnel tables migration:', e);
   } finally {

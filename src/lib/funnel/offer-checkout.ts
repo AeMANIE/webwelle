@@ -25,6 +25,48 @@ export class FunnelCheckoutError extends Error {
   }
 }
 
+function isStripeError(error: unknown): error is Stripe.errors.StripeError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'type' in error &&
+    typeof (error as Stripe.errors.StripeError).type === 'string'
+  );
+}
+
+export function mapCheckoutError(error: unknown): FunnelCheckoutError {
+  if (error instanceof FunnelCheckoutError) return error;
+
+  if (isStripeError(error)) {
+    const code = error.code || error.type;
+    if (code === 'resource_missing' || error.message.includes('No such price')) {
+      return new FunnelCheckoutError(
+        'Stripe-Preis nicht gefunden. Bitte STRIPE_PRICE_* in Coolify mit den Price-IDs aus dem Stripe-Dashboard abgleichen (Test vs. Live).',
+        'stripe_price_missing'
+      );
+    }
+    return new FunnelCheckoutError(
+      `Stripe-Fehler: ${error.message}`,
+      'stripe_error'
+    );
+  }
+
+  if (error instanceof Error) {
+    if (/offer_checkout_sessions|relation .* does not exist/i.test(error.message)) {
+      return new FunnelCheckoutError(
+        'Checkout-Tabelle fehlt in der Datenbank. Bitte Deployment neu starten oder /api/migrate ausführen.',
+        'db_schema_missing'
+      );
+    }
+    return new FunnelCheckoutError(error.message, 'checkout_failed');
+  }
+
+  return new FunnelCheckoutError(
+    'Checkout konnte nicht gestartet werden.',
+    'checkout_failed'
+  );
+}
+
 export function getPublicBaseUrl(): string {
   return (
     process.env.NEXT_PUBLIC_BASE_URL ||
@@ -197,35 +239,39 @@ export async function createOfferCheckoutSession(params: {
 export async function startFunnelCheckout(lead: FunnelLead) {
   validateLeadForCheckout(lead);
 
-  const stripe = getStripeClient();
-  const { offerId, addonSelection, discountCents, totalCents } =
-    await buildOfferFromLead(lead);
+  try {
+    const stripe = getStripeClient();
+    const { offerId, addonSelection, discountCents, totalCents } =
+      await buildOfferFromLead(lead);
 
-  await updateFunnelLead(lead.token, {
-    selected_package: 'starterwelle',
-    wants_custom_offer: true,
-    status: 'package_selected',
-  });
+    await updateFunnelLead(lead.token, {
+      selected_package: 'starterwelle',
+      wants_custom_offer: true,
+      status: 'package_selected',
+    });
 
-  const session = await createOfferCheckoutSession({
-    stripe,
-    lead,
-    offerId,
-    selection: addonSelection,
-    totalCents,
-    discountCents,
-  });
+    const session = await createOfferCheckoutSession({
+      stripe,
+      lead,
+      offerId,
+      selection: addonSelection,
+      totalCents,
+      discountCents,
+    });
 
-  if (!session.url) {
-    throw new FunnelCheckoutError(
-      'Stripe Checkout konnte nicht gestartet werden.',
-      'checkout_failed'
-    );
+    if (!session.url) {
+      throw new FunnelCheckoutError(
+        'Stripe Checkout konnte nicht gestartet werden.',
+        'checkout_failed'
+      );
+    }
+
+    return {
+      offerId,
+      sessionId: session.id,
+      url: session.url,
+    };
+  } catch (error) {
+    throw mapCheckoutError(error);
   }
-
-  return {
-    offerId,
-    sessionId: session.id,
-    url: session.url,
-  };
 }
