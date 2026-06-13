@@ -10,6 +10,7 @@ function Funnel5Content() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('t') || '';
+  const staffAdminPreview = searchParams.get('view') === 'admin';
 
   const [lead, setLead] = useState<Record<string, unknown> | null>(null);
   const [research, setResearch] = useState<
@@ -71,6 +72,7 @@ function Funnel5Content() {
         onRefresh={load}
         pollCount={pollCount}
         maxPolls={60}
+        viewMode={staffAdminPreview ? 'auto' : 'customer'}
         showContinueCta
         onContinue={() => router.push(`/funnel-6?t=${encodeURIComponent(token)}`)}
       />

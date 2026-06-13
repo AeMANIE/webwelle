@@ -1,6 +1,8 @@
 import type { FunnelAddonSelection } from '@/lib/funnel/packages';
 import type { ResearchItem } from '@/lib/funnel/analysis/analysis-types';
 
+export type AnalysisViewModeOverride = 'auto' | 'customer' | 'admin';
+
 export type LeadAnalysisProps = {
   lead: {
     industry_normalized?: string;
@@ -25,4 +27,6 @@ export type LeadAnalysisProps = {
   maxPolls?: number;
   onContinue?: () => void;
   showContinueCta?: boolean;
+  /** Funnel-5 should always show the customer UI; staff preview uses ?view=admin */
+  viewMode?: AnalysisViewModeOverride;
 };

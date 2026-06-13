@@ -5,8 +5,13 @@ import CustomerAnalysisView from './CustomerAnalysisView';
 import { useAnalysisViewMode } from './useAnalysisViewMode';
 import type { LeadAnalysisProps } from './types';
 
-export default function LiveAnalysisDashboard(props: LeadAnalysisProps) {
-  const viewMode = useAnalysisViewMode();
+export default function LiveAnalysisDashboard({
+  viewMode: viewModeOverride = 'auto',
+  ...props
+}: LeadAnalysisProps) {
+  const detectedMode = useAnalysisViewMode();
+  const viewMode =
+    viewModeOverride === 'auto' ? detectedMode : viewModeOverride;
 
   if (viewMode === 'admin') {
     return <AdminAnalysisView {...props} />;
