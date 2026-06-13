@@ -13,66 +13,30 @@ import {
   STARTERWELLE,
   type FunnelAddonSelection,
 } from '@/lib/funnel/packages';
-import { buildStripeLineItemsFromSelection } from '@/lib/funnel/funnel-stripe-line-items';
+import {
+  assertFunnelStripePrices,
+  buildStripeLineItemsFromSelection,
+} from '@/lib/funnel/funnel-stripe-line-items';
+import { FunnelCheckoutError, mapCheckoutError } from '@/lib/funnel/funnel-checkout-error';
 
-export class FunnelCheckoutError extends Error {
-  constructor(
-    message: string,
-    public code: string
-  ) {
-    super(message);
-    this.name = 'FunnelCheckoutError';
-  }
-}
+export { FunnelCheckoutError, mapCheckoutError };
 
-function isStripeError(error: unknown): error is Stripe.errors.StripeError {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'type' in error &&
-    typeof (error as Stripe.errors.StripeError).type === 'string'
-  );
-}
-
-export function mapCheckoutError(error: unknown): FunnelCheckoutError {
-  if (error instanceof FunnelCheckoutError) return error;
-
-  if (isStripeError(error)) {
-    const code = error.code || error.type;
-    if (code === 'resource_missing' || error.message.includes('No such price')) {
-      return new FunnelCheckoutError(
-        'Stripe-Preis nicht gefunden. Bitte STRIPE_PRICE_* in Coolify mit den Price-IDs aus dem Stripe-Dashboard abgleichen (Test vs. Live).',
-        'stripe_price_missing'
-      );
-    }
-    return new FunnelCheckoutError(
-      `Stripe-Fehler: ${error.message}`,
-      'stripe_error'
-    );
-  }
-
-  if (error instanceof Error) {
-    if (/offer_checkout_sessions|relation .* does not exist/i.test(error.message)) {
-      return new FunnelCheckoutError(
-        'Checkout-Tabelle fehlt in der Datenbank. Bitte Deployment neu starten oder /api/migrate ausführen.',
-        'db_schema_missing'
-      );
-    }
-    return new FunnelCheckoutError(error.message, 'checkout_failed');
-  }
-
-  return new FunnelCheckoutError(
-    'Checkout konnte nicht gestartet werden.',
-    'checkout_failed'
-  );
-}
+const PRODUCTION_BASE_URL = 'https://webwelle.com';
 
 export function getPublicBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    'http://localhost:3000'
-  ).replace(/\/$/, '');
+  const fromEnv =
+    process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+  const trimmed = fromEnv.replace(/\/$/, '');
+  if (trimmed) return trimmed;
+  if (process.env.NODE_ENV === 'production') return PRODUCTION_BASE_URL;
+  return 'http://localhost:3000';
+}
+
+export function getStripeKeyMode(): 'test' | 'live' | 'unknown' {
+  const key = process.env.STRIPE_SECRET_KEY || '';
+  if (key.startsWith('sk_test_')) return 'test';
+  if (key.startsWith('sk_live_')) return 'live';
+  return 'unknown';
 }
 
 export function getStripeClient(): Stripe {
@@ -201,6 +165,7 @@ export async function createOfferCheckoutSession(params: {
   const baseUrl = getPublicBaseUrl();
   const stripeCustomerId = await createStripeCustomerForLead(stripe, lead, offerId);
   const lineItems = buildStripeLineItemsFromSelection(selection);
+  await assertFunnelStripePrices(stripe, lineItems);
   const discountCouponId = await buildDiscountCoupon(stripe, discountCents);
 
   const session = await stripe.checkout.sessions.create({

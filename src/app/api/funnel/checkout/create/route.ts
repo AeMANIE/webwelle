@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 import { secureResponse } from '@/lib/api-security';
 import {
   FunnelCheckoutError,
-  getStripeClient,
   startFunnelCheckout,
 } from '@/lib/funnel/offer-checkout';
 import { ensureFunnelTables, getFunnelLeadByToken } from '@/lib/funnel-database';
@@ -27,8 +26,16 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof FunnelCheckoutError) {
       const status = error.code === 'checkout_failed' ? 500 : 400;
-      console.error('Funnel checkout create failed:', error.code, error.message);
-      return secureResponse({ error: error.code, message: error.message }, status);
+      console.error('Funnel checkout create failed:', error.code, error.message, error.priceId);
+      return secureResponse(
+        {
+          error: error.code,
+          message: error.message,
+          priceId: error.priceId,
+          stripeCode: error.stripeCode,
+        },
+        status
+      );
     }
     console.error('Funnel checkout create failed:', error);
     return secureResponse(

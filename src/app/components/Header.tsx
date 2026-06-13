@@ -99,7 +99,7 @@ export default function Header() {
             <Link href="/blog" className="text-foreground hover:text-primary transition-colors font-medium py-2 px-1">
               Blog
             </Link>
-            <Link href="/customer" className="text-primary hover:text-primary/80 transition-colors font-medium border border-primary px-4 py-2 rounded-md flex items-center space-x-1 hover:bg-primary/10">
+            <Link href="/customer" prefetch={false} className="text-primary hover:text-primary/80 transition-colors font-medium border border-primary px-4 py-2 rounded-md flex items-center space-x-1 hover:bg-primary/10">
               <LogIn className="w-4 h-4" />
               <span>Login</span>
             </Link>
@@ -163,7 +163,7 @@ export default function Header() {
                 Blog
               </Link>
               <div className="pt-2 border-t border-border">
-                <Link href="/customer" className="flex items-center justify-center space-x-2 px-3 py-2 text-primary hover:text-primary/80 font-medium border border-primary rounded-md hover:bg-primary/5" onClick={closeMenu}>
+                <Link href="/customer" prefetch={false} className="flex items-center justify-center space-x-2 px-3 py-2 text-primary hover:text-primary/80 font-medium border border-primary rounded-md hover:bg-primary/5" onClick={closeMenu}>
                   <LogIn className="w-4 h-4" />
                   <span>Login</span>
                 </Link>
