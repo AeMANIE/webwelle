@@ -4,7 +4,6 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import FunnelShell from '@/components/funnel/FunnelShell';
 import LiveAnalysisDashboard from '@/components/funnel/LiveAnalysisDashboard';
-import { ShinyButton } from '@/components/ui/shiny-button';
 import { isFunnelResearchComplete } from '@/lib/funnel/research';
 
 function Funnel5Content() {
@@ -25,6 +24,8 @@ function Funnel5Content() {
     () => isFunnelResearchComplete(research),
     [research]
   );
+
+  const [pollCount, setPollCount] = useState(0);
 
   const load = useCallback(() => {
     if (!token) return;
@@ -53,6 +54,7 @@ function Funnel5Content() {
       }
       load();
       polls += 1;
+      setPollCount(polls);
     }, 2000);
 
     return () => clearInterval(id);
@@ -67,15 +69,11 @@ function Funnel5Content() {
         research={research}
         token={token}
         onRefresh={load}
+        pollCount={pollCount}
+        maxPolls={60}
+        showContinueCta
+        onContinue={() => router.push(`/funnel-6?t=${encodeURIComponent(token)}`)}
       />
-      <div className="mt-8 flex justify-end">
-        <ShinyButton
-          type="button"
-          onClick={() => router.push(`/funnel-6?t=${encodeURIComponent(token)}`)}
-        >
-          Weiter zur Paketauswahl
-        </ShinyButton>
-      </div>
     </FunnelShell>
   );
 }

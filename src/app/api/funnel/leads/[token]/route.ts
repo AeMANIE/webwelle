@@ -526,6 +526,8 @@ export async function PATCH(
       seoProfi: body.seoProfi,
       blogMode: body.blogMode,
       blogCount: body.blogCount,
+      brandingSelected: body.brandingSelected,
+      animationSelected: body.animationSelected,
     });
 
     if (selection.blogMode === 'custom' && selection.blogCount < BLOG_MIN_COUNT) {

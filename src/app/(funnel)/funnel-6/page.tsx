@@ -23,6 +23,8 @@ import {
   SEO_PROFI_ADDON,
   BLOG_UNIT_PRICE_CENTS,
   seoProfiIncluded,
+  BRANDING_ADDON,
+  ANIMATION_ADDON,
 } from '@/lib/funnel/packages';
 
 type ResearchRow = {
@@ -174,7 +176,9 @@ function Funnel6Content() {
         <div className="rounded-xl border border-border bg-background/60 p-5 space-y-3">
           <h2 className="font-semibold">Gewählte Zusatzpakete</h2>
           {addonSelection.blogMode === 'none' &&
-          !addonSelection.seoProfi ? (
+          !addonSelection.seoProfi &&
+          !addonSelection.brandingSelected &&
+          !addonSelection.animationSelected ? (
             <p className="text-sm text-muted-foreground">Keine Zusatzpakete gewählt.</p>
           ) : (
             <ul className="space-y-2 text-sm">
@@ -194,6 +198,12 @@ function Funnel6Content() {
                   • Blog-Artikel ({addonSelection.blogCount}×) –{' '}
                   {formatEuro(addonSelection.blogCount * BLOG_UNIT_PRICE_CENTS)}
                 </li>
+              )}
+              {addonSelection.brandingSelected && (
+                <li>• {BRANDING_ADDON.name} – {formatEuro(BRANDING_ADDON.priceCents)}</li>
+              )}
+              {addonSelection.animationSelected && (
+                <li>• {ANIMATION_ADDON.name} – {formatEuro(ANIMATION_ADDON.priceCents)}</li>
               )}
             </ul>
           )}

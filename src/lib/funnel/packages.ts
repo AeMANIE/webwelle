@@ -6,6 +6,8 @@ export interface FunnelAddonSelection {
   seoProfi: boolean;
   blogMode: BlogMode;
   blogCount: number;
+  brandingSelected: boolean;
+  animationSelected: boolean;
 }
 
 export interface FunnelDesignPreferences {
@@ -39,7 +41,7 @@ export const STARTERWELLE = {
 export const SEO_PROFI_ADDON = {
   id: 'seo_profi',
   name: 'SEO Profi Zusatzpaket',
-  priceCents: 9999,
+  priceCents: 29900,
   description:
     'Professionelle SEO-Betreuung: Keyword-Strategie, OnPage-Optimierung und laufendes Monitoring für mehr Sichtbarkeit.',
 };
@@ -55,6 +57,22 @@ export const BLOG_BUNDLE_10 = {
 
 export const BLOG_UNIT_PRICE_CENTS = 6999;
 export const BLOG_MIN_COUNT = 5;
+
+export const BRANDING_ADDON = {
+  id: 'branding',
+  name: 'Branding & Logo',
+  priceCents: 19900,
+  description:
+    'Vier Logo-Entwürfe zur Auswahl – ideal, wenn Ihr Außenauftritt modernisiert oder professionell aufgebaut werden soll.',
+};
+
+export const ANIMATION_ADDON = {
+  id: 'animation',
+  name: 'Animationspaket',
+  priceCents: 99900,
+  description:
+    'Mehr Dynamik und visuelle Wirkung durch passende Animationen und Übergänge, abgestimmt auf Branche und Seitenaufbau.',
+};
 
 export const INTERACTIVE_ELEMENT_OPTIONS = [
   {
@@ -123,6 +141,8 @@ export function normalizeAddonSelection(raw: unknown): FunnelAddonSelection {
     seoProfi: Boolean(obj.seoProfi),
     blogMode,
     blogCount,
+    brandingSelected: Boolean(obj.brandingSelected),
+    animationSelected: Boolean(obj.animationSelected),
   };
 }
 
@@ -204,6 +224,33 @@ export interface FunnelOfferBreakdown {
   seoProfiIncluded: boolean;
 }
 
+export function listSelectedPackageLabels(
+  selection?: FunnelAddonSelection | null
+): string[] {
+  const normalized = normalizeAddonSelection(selection);
+  const labels: string[] = [STARTERWELLE.name];
+
+  if (normalized.seoProfi || seoProfiIncluded(normalized)) {
+    labels.push(SEO_PROFI_ADDON.name);
+  }
+
+  if (normalized.blogMode === 'bundle_10') {
+    labels.push(BLOG_BUNDLE_10.name);
+  } else if (normalized.blogMode === 'custom') {
+    labels.push(`Blog-Artikel (${normalized.blogCount}×)`);
+  }
+
+  if (normalized.brandingSelected) {
+    labels.push(BRANDING_ADDON.name);
+  }
+
+  if (normalized.animationSelected) {
+    labels.push(ANIMATION_ADDON.name);
+  }
+
+  return labels;
+}
+
 export function calculateFunnelOfferTotal(
   selection?: FunnelAddonSelection | null
 ): FunnelOfferBreakdown {
@@ -234,6 +281,20 @@ export function calculateFunnelOfferTotal(
     items.push({
       label: SEO_PROFI_ADDON.name,
       amountCents: SEO_PROFI_ADDON.priceCents,
+    });
+  }
+
+  if (normalized.brandingSelected) {
+    items.push({
+      label: BRANDING_ADDON.name,
+      amountCents: BRANDING_ADDON.priceCents,
+    });
+  }
+
+  if (normalized.animationSelected) {
+    items.push({
+      label: ANIMATION_ADDON.name,
+      amountCents: ANIMATION_ADDON.priceCents,
     });
   }
 
