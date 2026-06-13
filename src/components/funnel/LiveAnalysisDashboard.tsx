@@ -406,8 +406,6 @@ export default function LiveAnalysisDashboard({
 }) {
   const [tab, setTab] = useState<TabKey>('seo');
   const [mounted, setMounted] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const [designUrls, setDesignUrls] = useState<string[]>(['', '', '']);
   const [designSaving, setDesignSaving] = useState(false);
   const [designMessage, setDesignMessage] = useState<string | null>(null);
@@ -594,28 +592,6 @@ export default function LiveAnalysisDashboard({
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
-  async function saveResume() {
-    setSaving(true);
-    setSaveMessage(null);
-    try {
-      window.localStorage.setItem(
-        'webwelle:funnel-resume',
-        JSON.stringify({ token, savedAt: new Date().toISOString() })
-      );
-      const res = await fetch(`/api/funnel/leads/${token}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ intent: 'save-resume' }),
-      });
-      const data = await res.json().catch(() => ({}));
-      setSaveMessage(data.message || 'Analyse wurde gespeichert.');
-    } catch {
-      setSaveMessage('Analyse wurde lokal gespeichert. E-Mail konnte nicht gesendet werden.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function saveAddonSelection() {
     setAddonSaving(true);
     setAddonMessage(null);
@@ -720,44 +696,34 @@ export default function LiveAnalysisDashboard({
 
       {/* ── Header ── */}
       <header className="rounded-2xl border border-border bg-card p-6 shadow-xl">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="text-sm font-medium text-primary">Live-Analyse</p>
-            <h1 className="text-2xl font-bold">Top {TARGET_WEBSITES} Wettbewerber</h1>
-            <p className="mt-1 text-muted-foreground">
-              {lead.industry_normalized || lead.industry_raw} · PLZ {lead.postal_code} ·{' '}
-              {lead.market || 'DE'}
-              {lead.city ? ` · ${lead.city}` : ''}
+        <div>
+          <p className="text-sm font-medium text-primary">Live-Analyse</p>
+          <h1 className="text-2xl font-bold">Top {TARGET_WEBSITES} Wettbewerber</h1>
+          <p className="mt-1 text-muted-foreground">
+            {lead.industry_normalized || lead.industry_raw} · PLZ {lead.postal_code} ·{' '}
+            {lead.market || 'DE'}
+            {lead.city ? ` · ${lead.city}` : ''}
+          </p>
+          {lead.existing_website === true && lead.existing_website_url ? (
+            <p className="mt-2 text-sm">
+              <span className="text-muted-foreground">Ihre Website: </span>
+              <a
+                href={String(lead.existing_website_url)}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline break-all"
+              >
+                {String(lead.existing_website_url)}
+              </a>
+              <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
+                Performance-Analyse läuft
+              </span>
             </p>
-            {lead.existing_website === true && lead.existing_website_url ? (
-              <p className="mt-2 text-sm">
-                <span className="text-muted-foreground">Ihre Website: </span>
-                <a
-                  href={String(lead.existing_website_url)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary underline break-all"
-                >
-                  {String(lead.existing_website_url)}
-                </a>
-                <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
-                  Performance-Analyse läuft
-                </span>
-              </p>
-            ) : lead.existing_website === false ? (
-              <p className="mt-2 text-sm text-muted-foreground">
-                Ziel: neue Website von Grund auf
-              </p>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            onClick={saveResume}
-            disabled={saving}
-            className="shrink-0 rounded-lg bg-primary px-4 py-2.5 text-xs sm:text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60 min-h-[44px]"
-          >
-            {saving ? 'Speichert…' : '💾 Analyse speichern'}
-          </button>
+          ) : lead.existing_website === false ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Ziel: neue Website von Grund auf
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
@@ -778,11 +744,6 @@ export default function LiveAnalysisDashboard({
           </button>
         </div>
 
-        {saveMessage && (
-          <p className="mt-3 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">
-            {saveMessage}
-          </p>
-        )}
       </header>
 
       {/* ── Competitor mini-cards ── */}

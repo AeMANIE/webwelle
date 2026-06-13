@@ -83,7 +83,8 @@ function Funnel3Content() {
         <section>
           <h1 className="text-2xl font-bold mb-2">Haben Sie bereits eine Website?</h1>
           <p className="text-muted-foreground text-sm mb-4">
-            Das hilft uns, Ihre Analyse und unser Angebot besser auf Sie zuzuschneiden.
+            So können wir besser einschätzen, ob wir Ihre bestehende Präsenz verbessern oder Ihren
+            neuen Auftritt von Grund auf planen.
           </p>
 
           <div className="space-y-3">

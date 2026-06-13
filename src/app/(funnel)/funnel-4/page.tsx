@@ -171,10 +171,10 @@ function Funnel4Content() {
         autoComplete="on"
         className="rounded-2xl border border-border bg-card p-6 md:p-8 shadow-xl"
       >
-        <h1 className="text-2xl font-bold mb-2">Kontakt- & Firmendaten</h1>
+        <h1 className="text-2xl font-bold mb-2">Ihre Kontaktdaten</h1>
         <p className="text-muted-foreground text-sm mb-6">
-          Diese Daten fragen wir nur ein einziges Mal ab und übernehmen sie später automatisch
-          (Angebot, Unterschrift und Zahlung).
+          Diese Angaben fragen wir nur einmal ab. Wir nutzen sie später für Ihr Angebot, die
+          Freigabe und die weitere Abstimmung.
         </p>
 
         <div className="grid md:grid-cols-2 gap-4">
