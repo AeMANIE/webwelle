@@ -24,8 +24,9 @@ export interface FunnelDesignPreferences {
 export const STARTERWELLE = {
   id: 'starterwelle' as const,
   name: 'StarterWelle',
-  priceCents: 69900,
+  priceCents: 99900,
   compareAtPriceCents: 99900,
+  stripePriceId: 'price_1ThumEJ8MIbotcdAuJdNM20L',
   termLabel: '24 Monate',
   features: [
     'Individuell gestaltete Onepage-Website für einen professionellen Unternehmensauftritt',
@@ -42,6 +43,7 @@ export const SEO_PROFI_ADDON = {
   id: 'seo_profi',
   name: 'SEO Profi Zusatzpaket',
   priceCents: 29900,
+  stripePriceId: 'price_1ThuqjJ8MIbotcdAodiU9DGS',
   description:
     'Professionelle SEO-Betreuung: Keyword-Strategie, OnPage-Optimierung und laufendes Monitoring für mehr Sichtbarkeit.',
 };
@@ -50,6 +52,7 @@ export const BLOG_BUNDLE_10 = {
   id: 'blog_bundle_10',
   name: '10 Blog-Artikel Paket',
   priceCents: 49900,
+  stripePriceId: 'price_1Thut7J8MIbotcdAvDGxBGTz',
   articleCount: 10,
   description:
     'Zehn SEO-optimierte Fachartikel für Ihre Branche – perfekt für mehr Reichweite und Vertrauen bei Google.',
@@ -62,6 +65,7 @@ export const BRANDING_ADDON = {
   id: 'branding',
   name: 'Branding & Logo',
   priceCents: 19900,
+  stripePriceId: 'price_1ThuueJ8MIbotcdAeReNxoO3',
   description:
     'Vier Logo-Entwürfe zur Auswahl – ideal, wenn Ihr Außenauftritt modernisiert oder professionell aufgebaut werden soll.',
 };
@@ -70,6 +74,7 @@ export const ANIMATION_ADDON = {
   id: 'animation',
   name: 'Animationspaket',
   priceCents: 99900,
+  stripePriceId: 'price_1ThuvnJ8MIbotcdASWwhyiVY',
   description:
     'Mehr Dynamik und visuelle Wirkung durch passende Animationen und Übergänge, abgestimmt auf Branche und Seitenaufbau.',
 };
@@ -204,12 +209,8 @@ export function hasBlogSelection(selection: FunnelAddonSelection): boolean {
   return selection.blogMode === 'bundle_10' || selection.blogMode === 'custom';
 }
 
-export function seoProfiIncluded(selection: FunnelAddonSelection): boolean {
-  return hasBlogSelection(selection);
-}
-
 export function effectiveSeoProfi(selection: FunnelAddonSelection): boolean {
-  return selection.seoProfi || seoProfiIncluded(selection);
+  return selection.seoProfi;
 }
 
 export interface OfferLineItem {
@@ -221,7 +222,6 @@ export interface OfferLineItem {
 export interface FunnelOfferBreakdown {
   items: OfferLineItem[];
   subtotalCents: number;
-  seoProfiIncluded: boolean;
 }
 
 export function listSelectedPackageLabels(
@@ -230,7 +230,7 @@ export function listSelectedPackageLabels(
   const normalized = normalizeAddonSelection(selection);
   const labels: string[] = [STARTERWELLE.name];
 
-  if (normalized.seoProfi || seoProfiIncluded(normalized)) {
+  if (normalized.seoProfi) {
     labels.push(SEO_PROFI_ADDON.name);
   }
 
@@ -266,18 +266,18 @@ export function calculateFunnelOfferTotal(
   if (normalized.blogMode === 'bundle_10') {
     items.push({
       label: BLOG_BUNDLE_10.name,
-      description: 'SEO Profi Zusatzpaket inklusive',
+      description: `${BLOG_BUNDLE_10.articleCount} SEO-optimierte Fachartikel`,
       amountCents: BLOG_BUNDLE_10.priceCents,
     });
   } else if (normalized.blogMode === 'custom') {
     items.push({
       label: `Blog-Artikel (${normalized.blogCount}×)`,
-      description: `à ${formatEuro(BLOG_UNIT_PRICE_CENTS)} · SEO Profi inklusive`,
+      description: `à ${formatEuro(BLOG_UNIT_PRICE_CENTS)}`,
       amountCents: normalized.blogCount * BLOG_UNIT_PRICE_CENTS,
     });
   }
 
-  if (normalized.seoProfi && !seoProfiIncluded(normalized)) {
+  if (normalized.seoProfi) {
     items.push({
       label: SEO_PROFI_ADDON.name,
       amountCents: SEO_PROFI_ADDON.priceCents,
@@ -303,7 +303,6 @@ export function calculateFunnelOfferTotal(
   return {
     items,
     subtotalCents,
-    seoProfiIncluded: seoProfiIncluded(normalized),
   };
 }
 

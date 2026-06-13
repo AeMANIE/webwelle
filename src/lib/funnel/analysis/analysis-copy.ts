@@ -9,7 +9,15 @@ export const CUSTOMER_COPY = {
   visibilitySummary:
     'In Ihrer Region gibt es gute Chancen, über passende Suchbegriffe und klare Leistungsseiten besser gefunden zu werden.',
   visibilityCardCta: 'SEO-Chancen ansehen',
+  designCardCta: 'Design-Eindruck ansehen',
+  performanceSummary:
+    'Eine gute technische Basis sorgt dafür, dass Ihre Website auf Mobilgeräten angenehmer genutzt wird und professioneller wirkt. Gerade unterwegs entscheidet das oft über den ersten Eindruck.',
+  performanceCardCta: 'Performance ansehen',
+  performanceBulletStarter: 'Technische Basis in StarterWelle enthalten',
   summaryCardCta: 'Details ansehen',
+  recommendationBulletBase: 'StarterWelle als starke Basis',
+  recommendationBulletExtensions: 'Sinnvolle Erweiterungen für mehr Sichtbarkeit',
+  recommendationBulletIndividual: 'Individuelles Angebot bei größerem Umfang',
   seoTabTitle: 'Sichtbarkeit bei Google',
   seoTabIntro:
     'Diese Suchbegriffe und Themen zeigen, wonach potenzielle Kunden in Ihrer Region suchen. So erkennen wir, welche Inhalte und Leistungen für Ihre Website besonders relevant sind.',

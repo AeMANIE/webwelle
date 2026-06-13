@@ -1,0 +1,31 @@
+---
+description: WebWelle Funnel-Flow, Lead-Status, API-Intents und UI-Schritte
+globs: src/app/(funnel)/**/*,src/components/funnel/**/*,src/app/api/funnel/**/*,src/lib/funnel/**/*,src/lib/funnel-database.ts
+alwaysApply: false
+---
+
+# Funnel-Regeln
+
+## Ablauf (Token `?t=` + Cookie `wf_token`)
+
+1. **Einstieg:** `HeroIndustrySearch` → `POST /api/funnel/leads/start` → `/funnel-2`
+2. **funnel-2:** Branche, PLZ, Stadt → `PATCH intent: geo` → startet n8n-Research
+3. **funnel-3:** Website vorhanden? → `intent: website-intent`
+4. **funnel-4:** Kontakt → `intent: contact` (Validierung client + server)
+5. **funnel-5:** `LiveAnalysisDashboard` (Polling Research) → Stripe Checkout
+6. ~~funnel-6~~ entfernt (Redirect nach funnel-5); Zahlung via `POST /api/funnel/checkout/create`
+
+## Lead-Status (Auszug)
+
+`new` → `geo_complete` → `research_running` → `research_ready` → `website_intent_set` → `contact_complete` → `package_selected` → … → `paid`
+
+## API `PATCH /api/funnel/leads/[token]` – Intents
+
+`geo`, `website-intent`, `contact`, `package`, `addon-selection`, `design-style-preferences`, `retry-research`, …
+
+## Wichtig
+
+- Research-Kern: `industry_questions`, `seo_keywords`, `competitor_design` (+ optional `site_performance`)
+- `getType()` für Mobilnummern nur mit `libphonenumber-js/max`
+- Funnel-4: nur **Handynummer** (MOBILE), Autofill `autoComplete="email"` etc. – nicht wieder `off`
+- Post-Funnel: Admin optional DocuSeal; Funnel-Kunden zahlen direkt via Stripe Checkout

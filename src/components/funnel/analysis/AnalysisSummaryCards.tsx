@@ -4,17 +4,25 @@ import type { AnalysisTabKey, CustomerAnalysisViewModel } from '@/lib/funnel/ana
 
 export function AnalysisSummaryCards({
   vm,
+  activeTab,
   onOpenTab,
 }: {
   vm: CustomerAnalysisViewModel;
+  activeTab: AnalysisTabKey;
   onOpenTab: (tab: AnalysisTabKey) => void;
 }) {
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      {vm.summaryCards.map((card) => (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {vm.summaryCards.map((card) => {
+        const isActive = activeTab === card.tab;
+
+        return (
         <div
           key={card.id}
-          className="rounded-2xl border border-border bg-card p-5 shadow-sm flex flex-col"
+          className={
+            'rounded-2xl border bg-card p-5 shadow-sm flex flex-col transition-colors ' +
+            (isActive ? 'border-primary ring-1 ring-primary/20' : 'border-border')
+          }
         >
           <h2 className="text-base font-semibold">{card.title}</h2>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed flex-1">{card.summary}</p>
@@ -36,7 +44,8 @@ export function AnalysisSummaryCards({
             {card.ctaLabel}
           </button>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

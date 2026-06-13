@@ -92,7 +92,7 @@ export type ParsedResearch = {
 };
 
 export type SummaryCardModel = {
-  id: 'visibility' | 'appearance' | 'recommendation';
+  id: 'visibility' | 'appearance' | 'performance' | 'recommendation';
   title: string;
   summary: string;
   highlights: string[];

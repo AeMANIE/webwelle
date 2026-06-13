@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { persistLeadToken } from '@/lib/funnel/client';
 
-const STEPS = [2, 3, 4, 5, 6] as const;
+const STEPS = [2, 3, 4, 5] as const;
 
 export function FunnelStepper({ current }: { current: number }) {
   return (
@@ -49,7 +49,7 @@ export default function FunnelShell({
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 text-foreground">
       <p className="text-center text-sm text-muted-foreground mb-3">
-        Schritt {step} von 6
+        Schritt {step} von 5
       </p>
       <FunnelStepper current={step} />
       <div ref={ref}>{children}</div>

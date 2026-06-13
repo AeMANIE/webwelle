@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BarChart3,
   Lightbulb,
@@ -20,9 +20,7 @@ import {
   BLOG_BUNDLE_10,
   BRANDING_ADDON,
   SEO_PROFI_ADDON,
-  hasBlogSelection,
   effectiveSeoProfi,
-  seoProfiIncluded,
   type BlogMode,
   type FunnelAddonSelection,
 } from '@/lib/funnel/packages';
@@ -45,8 +43,8 @@ import { usePersistedAddonSelection } from './usePersistedAddonSelection';
 import type { LeadAnalysisProps } from './types';
 
 const TABS: { key: AnalysisTabKey; label: string }[] = [
-  { key: 'seo', label: 'Sichtbarkeit bei Google' },
-  { key: 'design', label: 'Design' },
+  { key: 'seo', label: 'Sichtbarkeit' },
+  { key: 'design', label: 'Außenwirkung' },
   { key: 'performance', label: 'Performance' },
   { key: 'recommendation', label: 'Empfehlung' },
 ];
@@ -60,11 +58,22 @@ export default function CustomerAnalysisView({
   maxPolls = 60,
   onContinue,
   showContinueCta = false,
+  continueLoading = false,
+  continueError = null,
+  continueLabel = 'Jetzt bezahlen',
 }: LeadAnalysisProps) {
   const [tab, setTab] = useState<AnalysisTabKey>('seo');
   const [mounted, setMounted] = useState(false);
+  const tabSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
+
+  const openTabFromCard = useCallback((nextTab: AnalysisTabKey) => {
+    setTab(nextTab);
+    window.requestAnimationFrame(() => {
+      tabSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, []);
 
   const vm = useMemo(
     () =>
@@ -83,24 +92,16 @@ export default function CustomerAnalysisView({
     onRefresh
   );
 
-  const blogIncludesSeo = seoProfiIncluded(selection);
-
   function setBlogMode(mode: BlogMode) {
-    setSelection((prev) => {
-      const turningOffBlog = mode === 'none' && hasBlogSelection(prev);
-      return {
-        ...prev,
-        blogMode: mode,
-        seoProfi: mode !== 'none' ? true : turningOffBlog ? false : prev.seoProfi,
-      };
-    });
+    setSelection((prev) => ({ ...prev, blogMode: mode }));
   }
 
   return (
     <div className="space-y-6 pb-24 md:pb-6">
       <AnalysisHeader vm={vm} />
-      <AnalysisSummaryCards vm={vm} onOpenTab={setTab} />
+      <AnalysisSummaryCards vm={vm} activeTab={tab} onOpenTab={openTabFromCard} />
 
+      <div ref={tabSectionRef} className="scroll-mt-6 space-y-6">
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 border-b border-border pb-2">
         {TABS.map(({ key, label }) => (
           <button
@@ -119,7 +120,12 @@ export default function CustomerAnalysisView({
 
       {tab === 'seo' && (
         <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
-          <p className="text-sm text-muted-foreground">{CUSTOMER_COPY.seoTabIntro}</p>
+          <div>
+            <SectionHeading as="h2" icon={Search}>
+              {CUSTOMER_COPY.seoTabTitle}
+            </SectionHeading>
+            <p className="text-sm text-muted-foreground mt-1">{CUSTOMER_COPY.seoTabIntro}</p>
+          </div>
           {vm.topKeywords.length > 0 && (
             <div>
               <SectionHeading icon={Search} className="mb-2">
@@ -173,8 +179,7 @@ export default function CustomerAnalysisView({
               description={SEO_PROFI_ADDON.description}
               priceCents={SEO_PROFI_ADDON.priceCents}
               selected={effectiveSeoProfi(selection)}
-              included={blogIncludesSeo}
-              disabled={blogIncludesSeo || saving}
+              disabled={saving}
               onToggle={() =>
                 setSelection((p) => ({ ...p, seoProfi: !p.seoProfi }))
               }
@@ -285,11 +290,16 @@ export default function CustomerAnalysisView({
         </div>
       )}
 
+      </div>
+
       <StickyAddonSummary
         selection={selection}
         saving={saving}
         showContinue={showContinueCta}
         onContinue={onContinue}
+        continueLoading={continueLoading}
+        continueError={continueError}
+        continueLabel={continueLabel}
       />
     </div>
   );

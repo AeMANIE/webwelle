@@ -42,7 +42,6 @@ import {
   normalizeDesignPreferences,
   SEO_PROFI_ADDON,
   STARTERWELLE,
-  seoProfiIncluded,
   type BlogMode,
   type FunnelAddonSelection,
 } from '@/lib/funnel/packages';
@@ -590,7 +589,6 @@ export default function AdminAnalysisView({
     () => calculateFunnelOfferTotal(addonSelection),
     [addonSelection]
   );
-  const blogIncludesSeo = seoProfiIncluded(addonSelection);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -659,11 +657,7 @@ export default function AdminAnalysisView({
   }
 
   function setBlogMode(mode: BlogMode) {
-    setAddonSelection((prev) => ({
-      ...prev,
-      blogMode: mode,
-      seoProfi: mode !== 'none' ? true : prev.seoProfi,
-    }));
+    setAddonSelection((prev) => ({ ...prev, blogMode: mode }));
   }
 
   async function saveDesignReferences() {
@@ -990,13 +984,11 @@ export default function AdminAnalysisView({
             <button
               type="button"
               onClick={() => {
-                if (blogIncludesSeo) return;
                 setAddonSelection((prev) => ({ ...prev, seoProfi: !prev.seoProfi }));
               }}
-              disabled={blogIncludesSeo}
               className={
                 `w-full rounded-xl border p-4 text-left transition-all ` +
-                (addonSelection.seoProfi || blogIncludesSeo
+                (addonSelection.seoProfi
                   ? 'border-primary bg-primary/15 ring-1 ring-primary/30'
                   : 'border-border bg-background/60 hover:border-primary/40')
               }
@@ -1007,15 +999,9 @@ export default function AdminAnalysisView({
                   <p className="mt-1 text-sm text-muted-foreground">{SEO_PROFI_ADDON.description}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  {blogIncludesSeo ? (
-                    <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-400">
-                      Inklusive
-                    </span>
-                  ) : (
-                    <span className="text-lg font-bold text-primary">
-                      {formatEuro(SEO_PROFI_ADDON.priceCents)}
-                    </span>
-                  )}
+                  <span className="text-lg font-bold text-primary">
+                    {formatEuro(SEO_PROFI_ADDON.priceCents)}
+                  </span>
                 </div>
               </div>
             </button>

@@ -25,8 +25,11 @@ export type LeadAnalysisProps = {
   onRefresh: () => void;
   pollCount?: number;
   maxPolls?: number;
-  onContinue?: () => void;
+  onContinue?: () => void | Promise<void>;
   showContinueCta?: boolean;
+  continueLoading?: boolean;
+  continueError?: string | null;
+  continueLabel?: string;
   /** Funnel-5 should always show the customer UI; staff preview uses ?view=admin */
   viewMode?: AnalysisViewModeOverride;
 };

@@ -27,6 +27,8 @@ export function StarterWellePrice({
   align = 'left',
 }: StarterWellePriceProps) {
   const styles = sizeStyles[size];
+  const showCompare =
+    STARTERWELLE.compareAtPriceCents > STARTERWELLE.priceCents;
 
   return (
     <div
@@ -38,16 +40,18 @@ export function StarterWellePrice({
         .filter(Boolean)
         .join(' ')}
     >
-      <span
-        className={[
-          styles.old,
-          'font-semibold text-muted-foreground',
-          'line-through decoration-solid decoration-[2.5px] decoration-red-500/80',
-        ].join(' ')}
-        aria-label={`Ursprünglich ${formatEuro(STARTERWELLE.compareAtPriceCents)}`}
-      >
-        {formatEuro(STARTERWELLE.compareAtPriceCents)}
-      </span>
+      {showCompare && (
+        <span
+          className={[
+            styles.old,
+            'font-semibold text-muted-foreground',
+            'line-through decoration-solid decoration-[2.5px] decoration-red-500/80',
+          ].join(' ')}
+          aria-label={`Ursprünglich ${formatEuro(STARTERWELLE.compareAtPriceCents)}`}
+        >
+          {formatEuro(STARTERWELLE.compareAtPriceCents)}
+        </span>
+      )}
       <span
         className={[styles.new, 'font-bold text-primary'].join(' ')}
         aria-label={`Jetzt ${formatEuro(STARTERWELLE.priceCents)}`}
@@ -60,11 +64,16 @@ export function StarterWellePrice({
 
 /** Kompakte Inline-Darstellung z. B. in Überschriften */
 export function StarterWellePriceInline() {
+  const showCompare =
+    STARTERWELLE.compareAtPriceCents > STARTERWELLE.priceCents;
+
   return (
     <span className="inline-flex flex-wrap items-baseline gap-x-2">
-      <span className="font-semibold text-muted-foreground line-through decoration-solid decoration-2 decoration-red-500/80">
-        {formatEuro(STARTERWELLE.compareAtPriceCents)}
-      </span>
+      {showCompare && (
+        <span className="font-semibold text-muted-foreground line-through decoration-solid decoration-2 decoration-red-500/80">
+          {formatEuro(STARTERWELLE.compareAtPriceCents)}
+        </span>
+      )}
       <span className="font-bold text-primary">{formatEuro(STARTERWELLE.priceCents)}</span>
     </span>
   );

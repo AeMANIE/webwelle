@@ -1,14 +1,14 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import FunnelShell from '@/components/funnel/FunnelShell';
 import LiveAnalysisDashboard from '@/components/funnel/LiveAnalysisDashboard';
 import { isFunnelResearchComplete } from '@/lib/funnel/research';
+import { loadStripeOnDemand } from '@/lib/stripe';
 
 function Funnel5Content() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const token = searchParams.get('t') || '';
   const staffAdminPreview = searchParams.get('view') === 'admin';
 
@@ -27,6 +27,8 @@ function Funnel5Content() {
   );
 
   const [pollCount, setPollCount] = useState(0);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     if (!token) return;
@@ -61,6 +63,56 @@ function Funnel5Content() {
     return () => clearInterval(id);
   }, [token, load, researchComplete]);
 
+  const startCheckout = useCallback(async () => {
+    if (!token || checkoutLoading) return;
+
+    setCheckoutLoading(true);
+    setCheckoutError(null);
+
+    try {
+      const res = await fetch('/api/funnel/checkout/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Checkout konnte nicht gestartet werden.');
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      if (data.sessionId) {
+        const stripe = await loadStripeOnDemand();
+        if (!stripe) {
+          throw new Error('Stripe konnte nicht geladen werden.');
+        }
+
+        const { error } = await (
+          stripe as {
+            redirectToCheckout: (params: { sessionId: string }) => Promise<{ error?: { message: string } }>;
+          }
+        ).redirectToCheckout({ sessionId: data.sessionId });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+        return;
+      }
+
+      throw new Error('Keine Checkout-Session erhalten.');
+    } catch (error) {
+      setCheckoutError(
+        error instanceof Error ? error.message : 'Checkout konnte nicht gestartet werden.'
+      );
+      setCheckoutLoading(false);
+    }
+  }, [token, checkoutLoading]);
+
   if (!token) return <p>Session fehlt.</p>;
 
   return (
@@ -73,8 +125,11 @@ function Funnel5Content() {
         pollCount={pollCount}
         maxPolls={60}
         viewMode={staffAdminPreview ? 'auto' : 'customer'}
-        showContinueCta
-        onContinue={() => router.push(`/funnel-6?t=${encodeURIComponent(token)}`)}
+        showContinueCta={!staffAdminPreview}
+        onContinue={startCheckout}
+        continueLoading={checkoutLoading}
+        continueError={checkoutError}
+        continueLabel="Jetzt bezahlen"
       />
     </FunnelShell>
   );

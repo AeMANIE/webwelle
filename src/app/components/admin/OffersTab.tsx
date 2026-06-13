@@ -15,7 +15,6 @@ import {
   BLOG_BUNDLE_10,
   SEO_PROFI_ADDON,
   BLOG_UNIT_PRICE_CENTS,
-  seoProfiIncluded,
 } from '@/lib/funnel/packages';
 
 interface EnrichedLead {
@@ -185,12 +184,7 @@ export default function OffersTab() {
                       <p className="text-muted-foreground">Keine gewählt</p>
                     ) : (
                       <ul className="space-y-1 text-muted-foreground">
-                        {(addons.seoProfi || seoProfiIncluded(addons)) && (
-                          <li>
-                            {SEO_PROFI_ADDON.name}
-                            {seoProfiIncluded(addons) ? ' (inkl. bei Blog)' : ''}
-                          </li>
-                        )}
+                        {addons.seoProfi && <li>{SEO_PROFI_ADDON.name}</li>}
                         {addons.blogMode === 'bundle_10' && <li>{BLOG_BUNDLE_10.name}</li>}
                         {addons.blogMode === 'custom' && (
                           <li>
