@@ -20,7 +20,7 @@ const TARGETS = [
 
 for (const target of TARGETS) {
   const workflow = JSON.parse(readFileSync(target.input, 'utf8'));
-  const patched = ensureOwnSiteNodes(workflow, target.evidenceTarget);
+  const patched = ensureOwnSiteNodes(workflow);
   writeFileSync(
     target.output,
     JSON.stringify({

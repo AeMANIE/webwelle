@@ -22,6 +22,7 @@ import {
   dispatchAllResearch,
   dispatchOwnSiteDesignAndSeo,
   dispatchOwnSitePerformance,
+  competitorsFromResearchPayloads,
   getCallbackBaseUrl,
 } from '@/lib/n8n/dispatch';
 import { secureResponse } from '@/lib/api-security';
@@ -357,7 +358,11 @@ export async function PATCH(
         status: 'website_intent_set',
       });
       if (updated) {
-        void dispatchOwnSitePerformance(updated);
+        const research = await getResearchResults(updated.id);
+        const competitors = competitorsFromResearchPayloads(
+          research.map((entry) => entry.payload as Record<string, unknown>)
+        );
+        void dispatchOwnSitePerformance(updated, competitors);
         void dispatchOwnSiteDesignAndSeo(updated);
       }
       return secureResponse({

@@ -1,5 +1,6 @@
 /**
  * Patches competitor-design-v3 and seo-keywords-v2 for Funnel-3 own-site analysis.
+ * Own site is prepended to competitor discovery — never analyzed alone.
  * Usage: N8N_API_URL=... N8N_API_KEY=... node scripts/patch-n8n-own-site-workflows.mjs
  */
 
@@ -7,6 +8,8 @@ const WORKFLOWS = [
   { id: 'bZoVtgwefEh78IMI', name: 'competitor-design-v3', evidenceTarget: 'Fetch Evidence Per Site' },
   { id: '9M8lo3OsPCxs5q68', name: 'seo-keywords-v2', evidenceTarget: 'Run SEO Crawl And LLM' },
 ];
+
+const SUPPLEMENT_NODE_NAMES = ['If Own Site Supplement', 'Prepare Own Site Competitors'];
 
 const NORMALIZE_JS = String.raw`const crypto = require('crypto');
 const item = items[0].json;
@@ -49,10 +52,10 @@ const postalCode = (body.postalCode || '').trim();
 const market = (body.market || 'DE').trim();
 const callbackBaseUrl = String(body.callbackBaseUrl || '').replace(/\/$/, '');
 if (!leadId) throw new Error('leadId fehlt');
+if (!postalCode) throw new Error('postalCode fehlt');
 
 const existingWebsite = body.existingWebsite === true;
 const existingWebsiteUrl = String(body.existingWebsiteUrl || '').trim();
-const isOwnSiteSupplement = body.isOwnSiteSupplement === true;
 
 function hasHttpScheme(url) {
   const lower = String(url).trim().toLowerCase();
@@ -95,9 +98,6 @@ if (!ownSite && existingWebsite && existingWebsiteUrl) {
   ownSite = normalizeOwnSite({ websiteUrl: existingWebsiteUrl, name: 'Ihre Website' }, 'Ihre Website');
 }
 
-if (!isOwnSiteSupplement && !postalCode) throw new Error('postalCode fehlt');
-if (isOwnSiteSupplement && !ownSite) throw new Error('ownSite fehlt fuer Own-Site-Supplement');
-
 return [{
   json: {
     leadId,
@@ -109,29 +109,6 @@ return [{
     existingWebsite,
     existingWebsiteUrl,
     ownSite,
-    isOwnSiteSupplement,
-  },
-}];`;
-
-const PREPARE_OWN_SITE_JS = String.raw`const row = items[0].json;
-if (!row.ownSite || !row.ownSite.websiteUrl) {
-  throw new Error('ownSite fehlt fuer Own-Site-Supplement');
-}
-const own = {
-  ...row.ownSite,
-  isOwnSite: true,
-  name: row.ownSite.name || 'Ihre Website',
-};
-return [{
-  json: {
-    ...row,
-    competitors: [own],
-    discoverMeta: {
-      source: 'own_site',
-      picked: 1,
-      placesCount: 0,
-      cseUsed: false,
-    },
   },
 }];`;
 
@@ -142,52 +119,92 @@ try {
 } catch {
   norm = {};
 }
-if (norm.ownSite && norm.ownSite.websiteUrl && !norm.isOwnSiteSupplement) {
+if (norm.ownSite && norm.ownSite.websiteUrl) {
   const own = { ...norm.ownSite, isOwnSite: true, name: norm.ownSite.name || 'Ihre Website' };
   const filtered = top.filter((c) => c.domain !== own.domain);
   top = [own, ...filtered].slice(0, 5);
 }
 `;
 
+const SIGN_DESIGN_OWN_SITE_MAP = String.raw`competitors: (parsed.competitors || []).slice(0, 5).map((c) => {
+    const own = normalizedInput.ownSite;
+    if (!own || !own.domain) return c;
+    const domain = String(c.domain || '').toLowerCase();
+    const ownDomain = String(own.domain || '').toLowerCase();
+    if (domain && ownDomain && domain === ownDomain) {
+      return { ...c, isOwnSite: true, name: c.name || own.name || 'Ihre Website' };
+    }
+    return c;
+  }),`;
+
+const SIGN_SEO_OWN_SITE_MAP = String.raw`perSite: (row.perSite || []).map((entry) => {
+    const own = normalizedInput.ownSite;
+    if (!own || !own.domain) return entry;
+    const domain = String(entry.domain || '').toLowerCase();
+    const ownDomain = String(own.domain || '').toLowerCase();
+    if (domain && ownDomain && domain === ownDomain) {
+      return { ...entry, isOwnSite: true };
+    }
+    return entry;
+  }),`;
+
 function patchDiscoverAndFilter(code) {
-  if (code.includes('norm.ownSite && norm.ownSite.websiteUrl')) return code;
-  return code.replace(
+  let next = code;
+  if (next.includes('!norm.isOwnSiteSupplement')) {
+    next = next.replace(/\s*&&\s*!norm\.isOwnSiteSupplement/g, '');
+  }
+  if (next.includes('norm.ownSite && norm.ownSite.websiteUrl')) return next;
+  return next.replace(
     /const top = uniq\.slice\(0, \d+\);/,
     (match) => match.replace('const top', 'let top') + `\n${DISCOVER_INJECT_SNIPPET}`
   );
 }
 
 function patchSignDesignCallback(code) {
-  if (code.includes('isOwnSiteSupplement')) return code;
-  return code.replace(
-    'competitors: (parsed.competitors || []).slice(0, 5),',
-    `competitors: (parsed.competitors || []).slice(0, 5).map((c) => {
-    if (!normalizedInput.isOwnSiteSupplement) return c;
-    return { ...c, isOwnSite: true, name: c.name || 'Ihre Website' };
-  }),`
-  ).replace(
-    'partial: Boolean(parsed.partial),',
-    'partial: Boolean(parsed.partial),\n  isOwnSiteSupplement: Boolean(normalizedInput.isOwnSiteSupplement),'
-  );
+  if (code.includes('ownDomain === ownDomain')) return code;
+  if (code.includes(SIGN_DESIGN_OWN_SITE_MAP.trim().slice(0, 40))) return code;
+  return code
+    .replace(
+      /competitors: \(parsed\.competitors \|\| \[\]\)\.slice\(0, 5\)(?:\.map\([\s\S]*?\))?,\s*/,
+      `${SIGN_DESIGN_OWN_SITE_MAP}\n  `
+    )
+    .replace(/\s*isOwnSiteSupplement: Boolean\(normalizedInput\.isOwnSiteSupplement\),?\n?/g, '\n');
 }
 
 function patchSignSeoCallback(code) {
-  if (code.includes('isOwnSiteSupplement')) return code;
-  return code.replace(
-    'perSite: row.perSite || [],',
-    `perSite: (row.perSite || []).map((entry) => ({
-    ...entry,
-    isOwnSite: Boolean(normalizedInput.isOwnSiteSupplement),
-  })),`
-  ).replace(
-    'gaps: row.gaps || [],',
-    'gaps: row.gaps || [],\n  isOwnSiteSupplement: Boolean(normalizedInput.isOwnSiteSupplement),'
-  );
+  if (code.includes('ownDomain === ownDomain')) return code;
+  if (code.includes('normalizedInput.ownSite')) return code;
+  return code
+    .replace(
+      /perSite: row\.perSite \|\| \[\],/,
+      SIGN_SEO_OWN_SITE_MAP
+    )
+    .replace(/\s*isOwnSiteSupplement: Boolean\(normalizedInput\.isOwnSiteSupplement\),?\n?/g, '\n');
 }
 
-function ensureOwnSiteNodes(workflow, evidenceTarget) {
-  const nodes = workflow.nodes;
-  const connections = { ...workflow.connections };
+function removeSupplementShortcut(nodes, connections) {
+  const hasShortcut = nodes.some((n) => SUPPLEMENT_NODE_NAMES.includes(n.name));
+  if (!hasShortcut) {
+    return { nodes, connections };
+  }
+
+  const filteredNodes = nodes.filter((n) => !SUPPLEMENT_NODE_NAMES.includes(n.name));
+  const nextConnections = { ...connections };
+
+  for (const name of SUPPLEMENT_NODE_NAMES) {
+    delete nextConnections[name];
+  }
+
+  nextConnections['Normalize And Verify HMAC'] = {
+    main: [[{ node: 'Geocode PLZ', type: 'main', index: 0 }]],
+  };
+
+  return { nodes: filteredNodes, connections: nextConnections };
+}
+
+function ensureOwnSiteNodes(workflow) {
+  let nodes = workflow.nodes;
+  let connections = { ...workflow.connections };
 
   const normalize = nodes.find((n) => n.name === 'Normalize And Verify HMAC');
   if (normalize) {
@@ -209,56 +226,11 @@ function ensureOwnSiteNodes(workflow, evidenceTarget) {
     signSeo.parameters.jsCode = patchSignSeoCallback(signSeo.parameters.jsCode);
   }
 
-  if (!nodes.find((n) => n.name === 'If Own Site Supplement')) {
-    nodes.push({
-      parameters: {
-        conditions: {
-          options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
-          conditions: [
-            {
-              id: 'cond-own-site-supplement',
-              leftValue: '={{ $json.isOwnSiteSupplement }}',
-              rightValue: true,
-              operator: { type: 'boolean', operation: 'equals' },
-            },
-            {
-              id: 'cond-own-site-present',
-              leftValue: '={{ Boolean($json.ownSite && $json.ownSite.websiteUrl) }}',
-              rightValue: true,
-              operator: { type: 'boolean', operation: 'equals' },
-            },
-          ],
-          combinator: 'and',
-        },
-        options: {},
-      },
-      id: 'if-own-site-supplement',
-      name: 'If Own Site Supplement',
-      type: 'n8n-nodes-base.if',
-      typeVersion: 2,
-      position: [360, 128],
-    });
+  ({ nodes, connections } = removeSupplementShortcut(nodes, connections));
 
-    nodes.push({
-      parameters: { mode: 'runOnceForAllItems', jsCode: PREPARE_OWN_SITE_JS },
-      id: 'prepare-own-site-competitors',
-      name: 'Prepare Own Site Competitors',
-      type: 'n8n-nodes-base.code',
-      typeVersion: 2,
-      position: [600, 256],
-    });
-
+  if (!connections['Normalize And Verify HMAC']) {
     connections['Normalize And Verify HMAC'] = {
-      main: [[{ node: 'If Own Site Supplement', type: 'main', index: 0 }]],
-    };
-    connections['If Own Site Supplement'] = {
-      main: [
-        [{ node: 'Prepare Own Site Competitors', type: 'main', index: 0 }],
-        [{ node: 'Geocode PLZ', type: 'main', index: 0 }],
-      ],
-    };
-    connections['Prepare Own Site Competitors'] = {
-      main: [[{ node: evidenceTarget, type: 'main', index: 0 }]],
+      main: [[{ node: 'Geocode PLZ', type: 'main', index: 0 }]],
     };
   }
 
@@ -281,7 +253,7 @@ async function main() {
     if (!res.ok) throw new Error(`Fetch ${target.name} failed: ${res.status}`);
     const workflow = await res.json();
 
-    const patched = ensureOwnSiteNodes(workflow, target.evidenceTarget);
+    const patched = ensureOwnSiteNodes(workflow);
     const putRes = await fetch(`${apiUrl}/workflows/${target.id}`, {
       method: 'PUT',
       headers: {

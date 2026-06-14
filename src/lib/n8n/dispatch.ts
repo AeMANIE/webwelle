@@ -18,6 +18,7 @@ export interface N8nDispatchPayload {
   callbackBaseUrl: string;
   existingWebsite?: boolean;
   existingWebsiteUrl?: string;
+  ownSite?: N8nCompetitorPayload;
 }
 
 export interface N8nCompetitorPayload {
@@ -38,6 +39,28 @@ export interface N8nSitePerformancePayload extends N8nDispatchPayload {
 export interface N8nOwnSiteSupplementPayload extends N8nDispatchPayload {
   ownSite: N8nCompetitorPayload;
   isOwnSiteSupplement: true;
+}
+
+function normalizeCompetitorsFromResearch(
+  value: unknown
+): N8nCompetitorPayload[] {
+  if (!Array.isArray(value)) return [];
+  return value.reduce<N8nCompetitorPayload[]>((acc, item) => {
+    if (!item || typeof item !== 'object') return acc;
+    const competitor = item as Record<string, unknown>;
+    const domain = String(competitor.domain || '').trim();
+    const websiteUrl = String(competitor.websiteUrl || competitor.url || '').trim();
+    const name = String(competitor.name || domain || '').trim();
+    if (!domain || !websiteUrl) return acc;
+    acc.push({
+      name,
+      domain,
+      websiteUrl,
+      address: typeof competitor.address === 'string' ? competitor.address : undefined,
+      mapsUri: typeof competitor.mapsUri === 'string' ? competitor.mapsUri : undefined,
+    });
+    return acc;
+  }, []);
 }
 
 type LeadDispatchSource = Pick<
@@ -235,35 +258,34 @@ export async function dispatchSitePerformance(
   );
 }
 
-export async function dispatchOwnSitePerformance(lead: LeadDispatchSource): Promise<void> {
+export async function dispatchOwnSitePerformance(
+  lead: LeadDispatchSource,
+  competitors: N8nCompetitorPayload[] = []
+): Promise<void> {
   const ownSite = ownSiteFromLead(lead);
   if (!ownSite) return;
 
   const payload = buildDispatchPayloadFromLead(lead);
-  console.log(`n8n dispatch: eigene Website für Lead ${payload.leadId} (${ownSite.websiteUrl})`);
+  console.log(
+    `n8n dispatch: Performance eigene Website + Wettbewerber für Lead ${payload.leadId}` +
+      ` (${ownSite.websiteUrl}, ${competitors.length} Wettbewerber)`
+  );
 
-  await postWebhook(process.env.N8N_WEBHOOK_SITE_PERFORMANCE_URL, {
-    ...payload,
-    competitor: ownSite,
-    siteIndex: 0,
-    totalSites: 1,
-    isOwnSite: true,
-  });
+  await dispatchSitePerformance(payload, competitors, { ownSite });
 }
 
-function buildOwnSiteSupplementPayload(lead: LeadDispatchSource): N8nOwnSiteSupplementPayload | null {
+function buildOwnSiteResearchPayload(lead: LeadDispatchSource): N8nDispatchPayload | null {
   const ownSite = ownSiteFromLead(lead);
   if (!ownSite) return null;
   return {
     ...buildDispatchPayloadFromLead(lead),
     ownSite,
-    isOwnSiteSupplement: true,
   };
 }
 
-/** Nach Funnel 3: Design + SEO für die Kunden-Website (ergänzt den Lauf ab Funnel 2). */
+/** Nach Funnel 3: Design + SEO für Kunden-Website und Wettbewerber gemeinsam. */
 export async function dispatchOwnSiteDesignAndSeo(lead: LeadDispatchSource): Promise<void> {
-  const payload = buildOwnSiteSupplementPayload(lead);
+  const payload = buildOwnSiteResearchPayload(lead);
   if (!payload) return;
 
   const targets = [
@@ -272,10 +294,31 @@ export async function dispatchOwnSiteDesignAndSeo(lead: LeadDispatchSource): Pro
   ];
 
   console.log(
-    `n8n dispatch: eigene Website Design+SEO für Lead ${payload.leadId} (${payload.ownSite.websiteUrl})`
+    `n8n dispatch: Design+SEO eigene Website + Wettbewerber für Lead ${payload.leadId} (${payload.ownSite?.websiteUrl})`
   );
 
   await Promise.allSettled(targets.map((t) => postWebhook(t.url, payload)));
+}
+
+export function competitorsFromResearchPayloads(
+  payloads: Array<Record<string, unknown> | null | undefined>
+): N8nCompetitorPayload[] {
+  const merged = new Map<string, N8nCompetitorPayload>();
+
+  for (const payload of payloads) {
+    if (!payload) continue;
+    const sources = [
+      payload.competitors,
+      payload.discoveredCompetitors,
+    ];
+    for (const source of sources) {
+      for (const competitor of normalizeCompetitorsFromResearch(source)) {
+        merged.set(competitor.domain.toLowerCase(), competitor);
+      }
+    }
+  }
+
+  return Array.from(merged.values());
 }
 
 export function getCallbackBaseUrl(): string {
