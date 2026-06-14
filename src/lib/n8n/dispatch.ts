@@ -35,6 +35,11 @@ export interface N8nSitePerformancePayload extends N8nDispatchPayload {
   isOwnSite?: boolean;
 }
 
+export interface N8nOwnSiteSupplementPayload extends N8nDispatchPayload {
+  ownSite: N8nCompetitorPayload;
+  isOwnSiteSupplement: true;
+}
+
 type LeadDispatchSource = Pick<
   FunnelLead,
   | 'id'
@@ -244,6 +249,33 @@ export async function dispatchOwnSitePerformance(lead: LeadDispatchSource): Prom
     totalSites: 1,
     isOwnSite: true,
   });
+}
+
+function buildOwnSiteSupplementPayload(lead: LeadDispatchSource): N8nOwnSiteSupplementPayload | null {
+  const ownSite = ownSiteFromLead(lead);
+  if (!ownSite) return null;
+  return {
+    ...buildDispatchPayloadFromLead(lead),
+    ownSite,
+    isOwnSiteSupplement: true,
+  };
+}
+
+/** Nach Funnel 3: Design + SEO für die Kunden-Website (ergänzt den Lauf ab Funnel 2). */
+export async function dispatchOwnSiteDesignAndSeo(lead: LeadDispatchSource): Promise<void> {
+  const payload = buildOwnSiteSupplementPayload(lead);
+  if (!payload) return;
+
+  const targets = [
+    { name: 'competitor-design', url: process.env.N8N_WEBHOOK_COMPETITOR_DESIGN_URL },
+    { name: 'seo-keywords', url: process.env.N8N_WEBHOOK_SEO_KEYWORDS_URL },
+  ];
+
+  console.log(
+    `n8n dispatch: eigene Website Design+SEO für Lead ${payload.leadId} (${payload.ownSite.websiteUrl})`
+  );
+
+  await Promise.allSettled(targets.map((t) => postWebhook(t.url, payload)));
 }
 
 export function getCallbackBaseUrl(): string {

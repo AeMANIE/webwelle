@@ -215,7 +215,10 @@ export default function CustomerAnalysisView({
               <DesignScoreChart competitors={vm.parsed.competitors} mounted={mounted} />
             }
           />
-          <DesignCompetitorSection competitors={vm.parsed.competitors} />
+          <DesignCompetitorSection
+            competitors={vm.parsed.competitors}
+            existingWebsiteUrl={lead.existing_website_url}
+          />
           <div className="space-y-3 pt-2 border-t border-border">
             <SectionHeading icon={Sparkles}>Design-Erweiterungen</SectionHeading>
             <AddonSelectionCard

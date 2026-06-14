@@ -42,6 +42,7 @@ export type CompetitorRow = {
   domain?: string;
   websiteUrl?: string;
   url?: string;
+  isOwnSite?: boolean;
   palette?: string[];
   layoutPattern?: string;
   typography?: string;

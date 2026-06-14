@@ -3,8 +3,10 @@ import { verifyN8nSignature } from '@/lib/n8n/signature';
 import {
   getFunnelLeadById,
   getFunnelLeadByToken,
+  getResearchResults,
   upsertResearchResult,
 } from '@/lib/funnel-database';
+import { mergeCompetitorDesignPayload } from '@/lib/n8n/research-merge';
 import { secureResponse } from '@/lib/api-security';
 
 export async function POST(request: NextRequest) {
@@ -21,8 +23,42 @@ export async function POST(request: NextRequest) {
     : leadId
       ? await getFunnelLeadById(leadId)
       : null;
+
   if (lead) {
-    await upsertResearchResult(lead.id, 'competitor_design', 'done', body);
+    const previous = (await getResearchResults(lead.id)).find(
+      (result) => result.workflow_key === 'competitor_design'
+    );
+    const previousPayload = (previous?.payload as Record<string, unknown> | null) ?? null;
+
+    if (body.isOwnSiteSupplement === true) {
+      const merged = mergeCompetitorDesignPayload(
+        previousPayload,
+        body,
+        lead.existing_website_url
+      );
+      await upsertResearchResult(lead.id, 'competitor_design', 'done', merged);
+      return secureResponse({ ok: true, merged: true });
+    }
+
+    let payload = body;
+    if (previousPayload?.ownSiteAnalyzed === true) {
+      const ownEntries = (Array.isArray(previousPayload.competitors)
+        ? previousPayload.competitors
+        : []
+      ).filter((entry) => {
+        if (!entry || typeof entry !== 'object') return false;
+        return (entry as Record<string, unknown>).isOwnSite === true;
+      });
+      if (ownEntries.length > 0) {
+        payload = mergeCompetitorDesignPayload(
+          body,
+          { competitors: ownEntries },
+          lead.existing_website_url
+        );
+      }
+    }
+
+    await upsertResearchResult(lead.id, 'competitor_design', 'done', payload);
   }
   return secureResponse({ ok: true });
 }

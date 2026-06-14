@@ -130,9 +130,29 @@ function CompetitorDetailPanel({ competitor }: { competitor: CompetitorRow }) {
 
 type DesignCompetitorSectionProps = {
   competitors: CompetitorRow[];
+  existingWebsiteUrl?: string | null;
 };
 
-export function DesignCompetitorSection({ competitors }: DesignCompetitorSectionProps) {
+function isOwnSiteCompetitor(competitor: CompetitorRow, existingWebsiteUrl?: string | null): boolean {
+  if (competitor.isOwnSite) return true;
+  if (!existingWebsiteUrl) return false;
+  const siteUrl = competitor.websiteUrl || competitor.url || competitor.domain || '';
+  if (!siteUrl) return false;
+  try {
+    const own = new URL(
+      existingWebsiteUrl.startsWith('http') ? existingWebsiteUrl : `https://${existingWebsiteUrl}`
+    );
+    const site = new URL(siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`);
+    return own.hostname.replace(/^www\./, '') === site.hostname.replace(/^www\./, '');
+  } catch {
+    return false;
+  }
+}
+
+export function DesignCompetitorSection({
+  competitors,
+  existingWebsiteUrl,
+}: DesignCompetitorSectionProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -159,6 +179,7 @@ export function DesignCompetitorSection({ competitors }: DesignCompetitorSection
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {competitors.map((c, i) => {
           const isSelected = selectedIndex === i;
+          const isOwnSite = isOwnSiteCompetitor(c, existingWebsiteUrl);
           const preview = c.strengths?.[0] || c.weaknesses?.[0] || c.layoutPattern;
           return (
             <button
@@ -169,7 +190,9 @@ export function DesignCompetitorSection({ competitors }: DesignCompetitorSection
                 'rounded-xl border p-4 text-left transition-colors min-h-[44px] ' +
                 (isSelected
                   ? 'border-primary bg-primary/5 ring-1 ring-primary/40'
-                  : 'border-border bg-background/40 hover:border-primary/40 hover:bg-background/60')
+                  : isOwnSite
+                    ? 'border-brand/40 bg-brand/5 hover:border-brand/60'
+                    : 'border-border bg-background/40 hover:border-primary/40 hover:bg-background/60')
               }
             >
               <div className="flex items-start justify-between gap-2">
@@ -177,6 +200,11 @@ export function DesignCompetitorSection({ competitors }: DesignCompetitorSection
                   <p className="font-semibold text-sm truncate">
                     {c.name || c.domain || `Wettbewerber ${i + 1}`}
                   </p>
+                  {isOwnSite && (
+                    <span className="mt-1 inline-flex rounded-full bg-brand/15 px-2 py-0.5 text-[10px] font-semibold text-brand">
+                      Ihre Website
+                    </span>
+                  )}
                   <p className="text-xs text-muted-foreground truncate mt-0.5">
                     {c.websiteUrl || c.url || c.domain}
                   </p>

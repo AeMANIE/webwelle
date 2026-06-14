@@ -68,7 +68,8 @@ export function parseResearchData(
         ? asArray<CompetitorRow>(questionsPayload.discoveredCompetitors)
         : asArray<CompetitorRow>(questionsPayload.competitors)
   )
-    .slice(0, TARGET_WEBSITES)
+    .slice(0, TARGET_WEBSITES + 1)
+    .sort((a, b) => Number(Boolean(b.isOwnSite)) - Number(Boolean(a.isOwnSite)))
     .map((c) => ({
       ...c,
       designScore: clampDesignScore(c.designScore) ?? undefined,

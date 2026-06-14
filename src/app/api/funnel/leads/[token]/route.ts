@@ -20,6 +20,7 @@ import {
 } from '@/lib/funnel/industry';
 import {
   dispatchAllResearch,
+  dispatchOwnSiteDesignAndSeo,
   dispatchOwnSitePerformance,
   getCallbackBaseUrl,
 } from '@/lib/n8n/dispatch';
@@ -357,8 +358,13 @@ export async function PATCH(
       });
       if (updated) {
         void dispatchOwnSitePerformance(updated);
+        void dispatchOwnSiteDesignAndSeo(updated);
       }
-      return secureResponse({ lead: updated, sitePerformanceStarted: true });
+      return secureResponse({
+        lead: updated,
+        sitePerformanceStarted: true,
+        ownSiteResearchStarted: true,
+      });
     }
 
     const updated = await updateFunnelLead(token, {
