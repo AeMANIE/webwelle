@@ -119,3 +119,70 @@ WebWelle | info@webwelle.com`;
 
   return { html, text };
 }
+
+interface WebWelleInvoiceMailParams {
+  customerName: string;
+  customerEmail?: string;
+  invoiceNumber: string;
+  customerNumber?: string | null;
+}
+
+export function renderWebWelleInvoiceEmail(params: WebWelleInvoiceMailParams) {
+  const safeName = escapeHtml(params.customerName || 'Guten Tag');
+  const safeEmail = params.customerEmail ? escapeHtml(params.customerEmail) : '';
+  const safeInvoice = escapeHtml(params.invoiceNumber);
+  const title = 'Ihre Rechnung von WebWelle';
+
+  const html = `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${title} | WebWelle</title>
+  </head>
+  <body style="margin:0;padding:0;background:${C.background};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#f8fafc;">
+    <div style="max-width:680px;margin:0 auto;padding:28px 16px;">
+      <div style="border:1px solid ${WW_EMAIL.brandBorder};border-radius:24px;overflow:hidden;background:${WW_EMAIL.cardGradient};box-shadow:0 24px 80px rgba(0,0,0,.35);">
+        <div style="padding:34px 32px 22px;border-bottom:1px solid ${WW_EMAIL.brandBorderLight};">
+          <div style="letter-spacing:.18em;text-transform:uppercase;color:${C.primary};font-size:12px;font-weight:700;">WebWelle</div>
+          <h1 style="margin:12px 0 10px;font-size:28px;line-height:1.2;color:#ffffff;">${title}</h1>
+          <p style="margin:0;color:#cbd5e1;font-size:16px;line-height:1.65;">Hallo ${safeName}, vielen Dank für Ihre Bestellung bei WebWelle.</p>
+          ${safeEmail ? `<p style="margin:14px 0 0;color:#94a3b8;font-size:14px;">Rechnung für <strong style="color:#f8fafc;">${safeEmail}</strong></p>` : ''}
+        </div>
+
+        <div style="padding:30px 32px;">
+          <div style="background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:22px;margin-bottom:24px;">
+            <p style="margin:0 0 10px;color:#f8fafc;font-weight:700;">Rechnungsnummer: ${safeInvoice}</p>
+            ${params.customerNumber ? `<p style="margin:0;color:#cbd5e1;">Kundennummer: <strong style="color:#f8fafc;">${escapeHtml(params.customerNumber)}</strong></p>` : ''}
+            <p style="margin:14px 0 0;color:#cbd5e1;line-height:1.6;">Im Anhang finden Sie Ihre Rechnung als PDF. Sie können Ihre Rechnungen auch jederzeit in Ihrem Kundenportal einsehen.</p>
+          </div>
+
+          <div style="text-align:center;margin:8px 0 0;">
+            <a href="https://webwelle.com/customer" style="display:inline-block;background:${C.brand};color:${C.brandForeground};text-decoration:none;font-weight:800;padding:16px 26px;border-radius:999px;box-shadow:0 10px 26px ${WW_EMAIL.brandShadow};">
+              Zum Kundenportal
+            </a>
+          </div>
+        </div>
+      </div>
+      <p style="text-align:center;color:#64748b;font-size:12px;margin:18px 0 0;">WebWelle | info@webwelle.com</p>
+    </div>
+  </body>
+</html>`;
+
+  const text = `${title}
+
+Hallo ${params.customerName || 'Guten Tag'},
+
+vielen Dank für Ihre Bestellung bei WebWelle. Im Anhang finden Sie Ihre Rechnung.
+
+Rechnungsnummer: ${params.invoiceNumber}
+${params.customerNumber ? `Kundennummer: ${params.customerNumber}\n` : ''}
+Sie können Ihre Rechnungen auch jederzeit in Ihrem Kundenportal einsehen.
+
+Zum Kundenportal: https://webwelle.com/customer
+
+WebWelle | info@webwelle.com`;
+
+  return { html, text };
+}

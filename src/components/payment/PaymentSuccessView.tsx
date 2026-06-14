@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { Calendar, CheckCircle2, Mail } from 'lucide-react';
 import {
   PAYMENT_SUCCESS_CONTENT,
-  ZOOM_MEETING_ID,
   ZOOM_SCHEDULER_URL,
 } from '@/lib/payment-success-content';
 
@@ -85,9 +84,6 @@ export default function PaymentSuccessView() {
 
           <p className="mt-5 text-sm text-muted-foreground">
             {c.emailNote}
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground/70">
-            Meeting-ID: {ZOOM_MEETING_ID}
           </p>
         </motion.div>
 

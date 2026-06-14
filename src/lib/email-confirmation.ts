@@ -1,5 +1,6 @@
 import { sendEmail } from './email';
 import { WW_COLORS, WW_EMAIL } from './design-tokens';
+import { PAYMENT_SUCCESS_CONTENT, ZOOM_SCHEDULER_URL } from './payment-success-content';
 
 const C = WW_COLORS;
 
@@ -17,10 +18,39 @@ interface BookingConfirmationData {
   totalAmount: number;
   currency: string;
   sessionId: string;
+  showZoomCta?: boolean;
+  zoomSchedulerUrl?: string;
 }
 
 export async function sendBookingConfirmation(data: BookingConfirmationData) {
-  const { customerName, customerEmail, packageName, packagePrice, isMonthly, selectedAddons, totalAmount, currency, sessionId } = data;
+  const {
+    customerName,
+    customerEmail,
+    packageName,
+    packagePrice,
+    isMonthly,
+    selectedAddons,
+    totalAmount,
+    currency,
+    sessionId,
+    showZoomCta = false,
+    zoomSchedulerUrl = ZOOM_SCHEDULER_URL,
+  } = data;
+
+  const zoomCopy = PAYMENT_SUCCESS_CONTENT;
+  const zoomBlock = showZoomCta
+    ? `
+            <div style="background: rgba(140, 54, 201, 0.12); border: 1px solid ${WW_EMAIL.brandBorder}; border-radius: 12px; padding: 24px; margin: 30px 0; text-align: center;">
+              <h3 style="color: ${C.foreground}; font-size: 18px; margin: 0 0 12px 0;">${zoomCopy.ctaTitle}</h3>
+              <p style="color: #cbd5e1; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">${zoomCopy.ctaDescription}</p>
+              <a href="${zoomSchedulerUrl}"
+                 style="display: inline-block; background: ${C.brand}; color: ${C.brandForeground}; text-decoration: none; padding: 14px 28px; border-radius: 999px; font-weight: 700; font-size: 16px; box-shadow: 0 10px 26px ${WW_EMAIL.brandShadow};">
+                ${zoomCopy.ctaButton}
+              </a>
+              <p style="color: ${C.mutedForeground}; font-size: 13px; margin: 16px 0 0 0;">${zoomCopy.emailNote}</p>
+            </div>
+    `
+    : '';
 
   const subject = `Buchungsbestätigung - ${packageName} | WebWelle`;
   
@@ -94,6 +124,8 @@ export async function sendBookingConfirmation(data: BookingConfirmationData) {
 
             ${addonsHtml}
 
+            ${zoomBlock}
+
             <div style="background: ${C.brand}; color: ${C.brandForeground}; border-radius: 12px; padding: 20px; margin: 30px 0; text-align: center;">
               <h3 style="color: ${C.brandForeground}; font-size: 18px; margin: 0 0 10px 0;">Gesamtbetrag</h3>
               <p style="color: ${C.brandForeground}; font-size: 32px; font-weight: 700; margin: 0;">${totalAmount.toFixed(2)} ${currency.toUpperCase()}</p>
@@ -151,6 +183,7 @@ BUCHUNGSDETAILS:
 - Buchungs-ID: ${sessionId}
 
 ${selectedAddons.length > 0 ? 'ZUSATZOPTIONEN:\n' + selectedAddons.map(addon => `- ${addon.label}: ${addon.price} ${addon.billing === 'monthly' ? 'mtl.' : addon.billing === 'yearly' ? 'jährlich' : ''}`).join('\n') + '\n' : ''}
+${showZoomCta ? `\nNÄCHSTER SCHRITT:\n${zoomCopy.ctaTitle}\n${zoomCopy.ctaDescription}\n${zoomCopy.ctaButton}: ${zoomSchedulerUrl}\n${zoomCopy.emailNote}\n` : ''}
 
 GESAMTBETRAG: ${totalAmount.toFixed(2)} ${currency.toUpperCase()}
 

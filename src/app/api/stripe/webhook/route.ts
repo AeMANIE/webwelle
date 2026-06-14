@@ -90,8 +90,9 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   try {
     const metadata = session.metadata;
     if (metadata?.offerId) {
-      const { pool } = await import('@/lib/database');
-      const { updateOfferStatus, updateFunnelLead } = await import('@/lib/funnel-database');
+      const { pool, getOrCreateCustomerWithNumber } = await import('@/lib/database');
+      const { updateOfferStatus, updateFunnelLead, getOfferById } = await import('@/lib/funnel-database');
+      const { sendPostPaymentEmails } = await import('@/lib/post-payment-emails');
       const client = await pool.connect();
       try {
         await client.query(
@@ -106,24 +107,75 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           const token = leadRow.rows[0]?.token as string | undefined;
           if (token) await updateFunnelLead(token, { status: 'paid' });
         }
+
+        const email =
+          session.customer_email ||
+          session.customer_details?.email ||
+          '';
+        const customerName = session.customer_details?.name || email.split('@')[0];
+        const address = session.customer_details?.address;
+        const customerAddress = address
+          ? [address.line1, address.postal_code, address.city].filter(Boolean).join(' ')
+          : null;
+
+        let customerNumber: string | null = null;
+        if (email) {
+          const customer = await getOrCreateCustomerWithNumber(
+            email,
+            customerName,
+            session.customer_details?.phone || undefined,
+            undefined
+          );
+          customerNumber = customer.customer_number || null;
+        }
+
+        const { offer, items } = await getOfferById(metadata.offerId);
+        const offerItems = (items || []).map((row: Record<string, unknown>) => ({
+          label: String(row.label || 'Position'),
+          unit_amount_cents: Number(row.unit_amount_cents || 0),
+          billing: row.billing ? String(row.billing) : 'one_time',
+          description: row.description ? String(row.description) : null,
+        }));
+
         const { saveBooking } = await import('@/lib/database');
-        const email = session.customer_email || session.customer_details?.email || '';
-        await saveBooking({
+        const bookingData = {
           session_id: session.id,
           package_type: (metadata.packageType as 'starterwelle') || 'starterwelle',
           is_monthly: false,
-          checkout_mode: 'payment',
+          checkout_mode: 'payment' as const,
           package_price_display: `${(session.amount_total || 0) / 100} €`,
           currency: 'eur',
           total_amount_cents: session.amount_total || 0,
           customer_email: email,
-          customer_name: session.customer_details?.name || undefined,
+          customer_name: customerName || undefined,
           stripe_customer_id: session.customer as string,
           stripe_payment_intent_id: session.payment_intent as string,
-          status: 'paid',
+          status: 'paid' as const,
           raw_form_data: { offerId: metadata.offerId, leadId: metadata.leadId },
-        });
+        };
+
+        await saveBooking(bookingData);
         console.log('✅ Offer-Checkout verarbeitet:', metadata.offerId);
+
+        if (email) {
+          try {
+            await sendPostPaymentEmails({
+              session,
+              metadata,
+              bookingData,
+              source: 'funnel',
+              offerItems,
+              offerDiscountCents: Number(offer?.discount_cents || 0),
+              customerNumber,
+              customerAddress,
+            });
+            console.log('✅ Funnel Post-Payment E-Mails gesendet');
+          } catch (emailError) {
+            console.error('❌ Fehler beim Senden der Funnel Post-Payment E-Mails:', emailError);
+          }
+        } else {
+          console.warn('⚠️ Keine Kunden-E-Mail für Funnel-Offer-Checkout:', session.id);
+        }
       } finally {
         client.release();
       }
@@ -145,6 +197,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       const companyName = metadata.companyName || session.customer_details?.address?.line1 || undefined;
       
       let customerId: string | undefined = undefined;
+      let customerNumber: string | null = null;
       if (customerEmail) {
         const customer = await getOrCreateCustomerWithNumber(
           customerEmail,
@@ -153,6 +206,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
           companyName
         );
         customerId = customer.id?.toString();
+        customerNumber = customer.customer_number || null;
         console.log(`✅ Kunde ${customerEmail} erstellt/abgerufen mit Kundennummer: ${customer.customer_number || 'wird generiert'}`);
       }
 
@@ -242,7 +296,14 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         // Falls session.customer_email leer war, setze sie lokal für die Übergabe
         console.log(`📧 Versuche E-Mails zu senden an: ${effectiveEmail}`);
         try {
-          await sendBookingAndActivationEmails(session, metadata, bookingData);
+          const { sendPostPaymentEmails } = await import('@/lib/post-payment-emails');
+          await sendPostPaymentEmails({
+            session,
+            metadata,
+            bookingData,
+            source: 'buchung',
+            customerNumber,
+          });
           console.log('✅ E-Mail-Versand erfolgreich abgeschlossen');
         } catch (emailError) {
           console.error('❌ Fehler beim Senden der E-Mails:', emailError);
@@ -271,106 +332,13 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   }
 }
 
-// Bestellbestätigung und Portal-Aktivierungs-E-Mails senden
-async function sendBookingAndActivationEmails(
-  session: Stripe.Checkout.Session,
-  metadata: Stripe.Metadata,
-  bookingData: { session_id: string; customer_email?: string; customer_name?: string }
-) {
-  const { getRedisClient } = await import('@/lib/redis');
-  const { sendBookingConfirmation } = await import('@/lib/email-confirmation');
-  const { sendPortalActivationEmail } = await import('@/lib/email-portal-activation');
-  const { generateActivationToken, saveActivationToken } = await import('@/lib/portal-activation');
-  const { getPackageDisplayName, extractAddonsFromMetadata } = await import('@/lib/email-helpers');
-  
-  const redis = getRedisClient();
-  const emailSentKey = `email_sent:${session.id}`;
-  
-  console.log(`📧 sendBookingAndActivationEmails aufgerufen für Session: ${session.id}`);
-  console.log(`📧 E-Mail-Konfiguration prüfen: EMAIL_SMTP_USER=${process.env.EMAIL_SMTP_USER ? '✅ gesetzt' : '❌ fehlt'}, EMAIL_SMTP_PASSWORD=${process.env.EMAIL_SMTP_PASSWORD ? '✅ gesetzt' : '❌ fehlt'}`);
-  
-  try {
-    // Prüfe ob E-Mail bereits gesendet wurde (verhindert Duplikate)
-    if (redis && (await redis.status) === 'ready') {
-      const emailAlreadySent = await redis.get(emailSentKey);
-      if (emailAlreadySent) {
-        console.log('⚠️ E-Mail wurde bereits gesendet für Session:', session.id);
-        console.log('⚠️ Falls die E-Mail fehlt, verwenden Sie die manuelle Route: /api/manual-send-booking-email');
-        console.log('⚠️ Oder prüfen Sie den Status mit: /api/debug-email-status?sessionId=' + session.id);
-        return; // Verhindert Duplikate bei Webhook-Wiederholungen
-      }
-    }
-    
-    const customerEmail = session.customer_email!;
-    const customerName = metadata.customerName || bookingData.customer_name || customerEmail.split('@')[0];
-    const packageName = getPackageDisplayName(metadata.packageType || '', metadata.packageCategory);
-    const packagePrice = metadata.packagePriceDisplay || `${(session.amount_total || 0) / 100} €`;
-    const selectedAddons = extractAddonsFromMetadata(metadata, session);
-    const isMonthly = metadata.isMonthly === 'true' || !!session.subscription;
-    
-    // 1. Bestellbestätigung senden (für alle Pakettypen)
-    try {
-      console.log(`📧 Versende Bestellbestätigung an: ${customerEmail}`);
-      const emailResult = await sendBookingConfirmation({
-        customerName,
-        customerEmail,
-        packageName,
-        packagePrice,
-        isMonthly,
-        selectedAddons: selectedAddons.map(addon => ({
-          label: addon.label,
-          price: addon.price,
-          billing: addon.billing // Behalte original billing (yearly, monthly, oneTime)
-        })),
-        totalAmount: (session.amount_total || 0) / 100,
-        currency: session.currency || 'eur',
-        sessionId: session.id,
-      });
-      
-      if (emailResult.success) {
-        console.log(`✅ Bestellbestätigung erfolgreich gesendet an ${customerEmail}`);
-      } else {
-        console.error(`❌ Bestellbestätigung fehlgeschlagen: ${emailResult.error || 'Unbekannter Fehler'}`);
-      }
-    } catch (error) {
-      console.error('❌ Fehler beim Senden der Bestellbestätigung:', error);
-      // Weiter mit Portal-Aktivierung auch wenn Bestätigung fehlschlägt
-    }
-    
-    // 2. Portal-Aktivierungs-Token generieren und senden – für ALLE Pakettypen (nur wenn noch kein Portal)
-    try {
-      const { getCustomerByEmail } = await import('@/lib/database');
-      const existingCustomer = await getCustomerByEmail(customerEmail);
-      if (existingCustomer?.portal_activated) {
-        console.log('ℹ️ Kunde hat bereits ein aktiviertes Portal – Aktivierungs-E-Mail wird nicht erneut gesendet.');
-      } else {
-        const activationToken = generateActivationToken();
-        await saveActivationToken(customerEmail, activationToken, bookingData.session_id);
-        await sendPortalActivationEmail({ customerName, customerEmail, activationToken });
-        console.log(`✅ Portal-Aktivierungs-E-Mail gesendet an ${customerEmail}`);
-      }
-    } catch (error) {
-      console.error('❌ Fehler beim Senden der Portal-Aktivierungs-E-Mail:', error);
-      // Nicht kritisch - kann später manuell gesendet werden
-    }
-    
-    // Markiere E-Mail als gesendet (24h TTL)
-    if (redis && (await redis.status) === 'ready') {
-      await redis.setex(emailSentKey, 86400, '1'); // 24 Stunden
-    }
-  } catch (error) {
-    console.error('❌ Fehler beim Senden der E-Mails:', error);
-    // Nicht kritisch - kann später manuell gesendet werden
-  }
-}
-
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice, stripe: Stripe) {
   console.log('Zahlung erfolgreich:', invoice.id);
   
   try {
     const { updateBookingStatus, saveInvoice, getCustomerByEmail } = await import('@/lib/database');
     const { generateInvoicePdf } = await import('@/lib/invoice-pdf');
-    const { sendEmail } = await import('@/lib/email');
+    const { sendStripeInvoiceEmail, INVOICE_BANKING } = await import('@/lib/post-payment-emails');
     
     if (!invoice.id) {
       console.error('❌ Invoice-ID fehlt');
@@ -449,35 +417,16 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice, stripe: St
             address: customer ? `${customer.address?.line1 || ''} ${customer.address?.postal_code || ''} ${customer.address?.city || ''}`.trim() || null : null,
           },
           items,
-          banking: {
-            companyName: 'AeManie GmbH',
-            addressLine: 'Uhlandstr. 16 – 87437 Kempten',
-            iban: 'DE25 7335 0000 05163187 06',
-            bic: 'BYLADEM1ALG',
-            taxOffice: 'Finanzamt Kempten',
-            taxNumber: '127 121 20418',
-            vatId: 'DE 367002188',
-          },
+          banking: INVOICE_BANKING,
           notes: customerNumber ? `Kundennummer: ${customerNumber}` : undefined,
         });
 
-        await sendEmail({
-          to: customerEmail,
-          subject: `Ihre Rechnung von WebWelle #${inv.number || inv.id}`,
-          html: `
-            <p>Hallo ${customerName || customerEmail},</p>
-            <p>Vielen Dank für Ihre Bestellung bei WebWelle. Im Anhang finden Sie Ihre Rechnung.</p>
-            ${customerNumber ? `<p>Ihre Kundennummer: <strong>${customerNumber}</strong></p>` : ''}
-            <p>Sie können Ihre Rechnungen auch jederzeit in Ihrem Kundenportal einsehen.</p>
-            <p>Mit freundlichen Grüßen,</p>
-            <p>Ihr WebWelle Team</p>
-          `,
-          text: `Hallo ${customerName || customerEmail},\n\nVielen Dank für Ihre Bestellung bei WebWelle. Im Anhang finden Sie Ihre Rechnung.\n${customerNumber ? `Ihre Kundennummer: ${customerNumber}\n` : ''}Sie können Ihre Rechnungen auch jederzeit in Ihrem Kundenportal einsehen.\n\nMit freundlichen Grüßen,\nIhr WebWelle Team`,
-          attachments: [{
-            filename: `Rechnung_${inv.number || inv.id}.pdf`,
-            content: pdfBuffer,
-            contentType: 'application/pdf',
-          }],
+        await sendStripeInvoiceEmail({
+          customerEmail,
+          customerName: customerName || customerEmail,
+          customerNumber,
+          invoiceNumber: String(inv.number || inv.id),
+          pdfBuffer,
         });
         console.log(`✅ Gebrandetes PDF-Rechnung erfolgreich an ${customerEmail} gesendet.`);
       } catch (emailError) {

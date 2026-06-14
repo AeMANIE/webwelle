@@ -2,8 +2,6 @@ export const ZOOM_SCHEDULER_URL =
   process.env.NEXT_PUBLIC_ZOOM_SCHEDULER_URL ??
   'https://scheduler.zoom.us/aemanie-gmbh/30-minuten-mit-aemanie-gmbh-herr-manie';
 
-export const ZOOM_MEETING_ID = '927 335 0202';
-
 export const PAYMENT_SUCCESS_CONTENT = {
   headline: 'Zahlung erfolgreich abgeschlossen',
   intro:
