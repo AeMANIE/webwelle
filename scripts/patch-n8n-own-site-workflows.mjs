@@ -47,27 +47,41 @@ const token = body.token || '';
 const industry = (body.industry || 'Dienstleister').trim();
 const postalCode = (body.postalCode || '').trim();
 const market = (body.market || 'DE').trim();
-const callbackBaseUrl = String(body.callbackBaseUrl || '').replace(/\\/$/, '');
+const callbackBaseUrl = String(body.callbackBaseUrl || '').replace(/\/$/, '');
 if (!leadId) throw new Error('leadId fehlt');
 
 const existingWebsite = body.existingWebsite === true;
 const existingWebsiteUrl = String(body.existingWebsiteUrl || '').trim();
 const isOwnSiteSupplement = body.isOwnSiteSupplement === true;
 
+function hasHttpScheme(url) {
+  const lower = String(url).trim().toLowerCase();
+  return lower.startsWith('http://') || lower.startsWith('https://');
+}
+
+function stripWwwHost(host) {
+  const h = String(host).trim().toLowerCase();
+  return h.startsWith('www.') ? h.slice(4) : h;
+}
+
+function withHttpsScheme(url) {
+  const s = String(url).trim();
+  return hasHttpScheme(s) ? s : 'https://' + s;
+}
+
 function normalizeOwnSite(c, fallbackName) {
   const source = c && typeof c === 'object' ? c : {};
   const websiteUrl = String(source.websiteUrl || source.url || existingWebsiteUrl || '').trim();
   if (!websiteUrl) return null;
-  let domain = String(source.domain || '').trim().toLowerCase().replace(/^www\\./, '');
+  let domain = stripWwwHost(String(source.domain || '').trim());
   if (!domain) {
     try {
-      const u = /^https?:\\/\\//i.test(websiteUrl) ? websiteUrl : 'https://' + websiteUrl;
-      domain = new URL(u).hostname.replace(/^www\\./, '').toLowerCase();
+      domain = stripWwwHost(new URL(withHttpsScheme(websiteUrl)).hostname);
     } catch {
       return null;
     }
   }
-  const normalizedUrl = /^https?:\\/\\//i.test(websiteUrl) ? websiteUrl : 'https://' + websiteUrl;
+  const normalizedUrl = withHttpsScheme(websiteUrl);
   return {
     name: String(source.name || fallbackName || domain).slice(0, 200),
     domain,
@@ -278,7 +292,7 @@ async function main() {
         name: workflow.name,
         nodes: patched.nodes,
         connections: patched.connections,
-        settings: workflow.settings,
+        settings: { executionOrder: workflow.settings?.executionOrder ?? 'v1' },
       }),
     });
     if (!putRes.ok) {
