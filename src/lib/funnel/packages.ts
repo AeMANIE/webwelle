@@ -24,9 +24,9 @@ export interface FunnelDesignPreferences {
 export const STARTERWELLE = {
   id: 'starterwelle' as const,
   name: 'StarterWelle',
-  priceCents: 99900,
-  compareAtPriceCents: 99900,
-  stripePriceId: 'price_1ThumEJ8MIbotcdAuJdNM20L',
+  priceCents: 69900,
+  compareAtPriceCents: 69900,
+  stripePriceId: 'price_1TiD5rJ8MIbotcdApVcLOipx',
   termLabel: '24 Monate',
   features: [
     'Individuell gestaltete Onepage-Website für einen professionellen Unternehmensauftritt',
