@@ -248,6 +248,15 @@ async function processFunnelCheckoutPaid(session: Stripe.Checkout.Session): Prom
       description: row.description ? String(row.description) : null,
     }));
 
+    const agbConsent = session.consent?.terms_of_service ?? null;
+    if (agbConsent !== 'accepted') {
+      console.warn(
+        '⚠️ Funnel-Checkout ohne AGB-Zustimmung:',
+        session.id,
+        agbConsent ?? 'fehlt'
+      );
+    }
+
     const bookingData = {
       session_id: session.id,
       package_type: (metadata.packageType as 'starterwelle') || 'starterwelle',
@@ -261,7 +270,11 @@ async function processFunnelCheckoutPaid(session: Stripe.Checkout.Session): Prom
       stripe_customer_id: session.customer as string,
       stripe_payment_intent_id: session.payment_intent as string,
       status: 'paid' as const,
-      raw_form_data: { offerId: metadata.offerId, leadId: metadata.leadId },
+      raw_form_data: {
+        offerId: metadata.offerId,
+        leadId: metadata.leadId,
+        agb_consent: agbConsent,
+      },
     };
 
     await saveBooking(bookingData);

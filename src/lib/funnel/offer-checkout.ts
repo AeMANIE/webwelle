@@ -46,6 +46,23 @@ export function getStripeClient(): Stripe {
   return new Stripe(key, { apiVersion: '2025-08-27.basil' });
 }
 
+/** Stripe Checkout: Pflicht-AGB-Checkbox mit Link zur AGB-Seite. */
+export function getStripeAgbConsentConfig(
+  baseUrl?: string
+): Pick<Stripe.Checkout.SessionCreateParams, 'consent_collection' | 'custom_text'> {
+  const agbUrl = `${(baseUrl || getPublicBaseUrl()).replace(/\/$/, '')}/agb`;
+  return {
+    consent_collection: {
+      terms_of_service: 'required',
+    },
+    custom_text: {
+      terms_of_service_acceptance: {
+        message: `Ich habe die [AGB der WebWelle](${agbUrl}) gelesen und akzeptiere sie. Das Angebot richtet sich ausschließlich an Unternehmer im Sinne des § 14 BGB.`,
+      },
+    },
+  };
+}
+
 export function validateLeadForCheckout(lead: FunnelLead): void {
   if (lead.status === 'paid') {
     throw new FunnelCheckoutError('Diese Buchung wurde bereits bezahlt.', 'already_paid');
@@ -190,6 +207,7 @@ export async function createOfferCheckoutSession(params: {
     locale: 'de',
     billing_address_collection: stripeCustomerId ? 'auto' : 'required',
     phone_number_collection: { enabled: true },
+    ...getStripeAgbConsentConfig(baseUrl),
   });
 
   const client = await pool.connect();
