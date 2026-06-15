@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { headers } from 'next/headers';
+import {
+  isCheckoutSessionPaid,
+  resolvePaidCheckoutSession,
+} from '@/lib/stripe-checkout-paid';
 
 // Stripe-Konfiguration zur Laufzeit validieren
 function getStripeConfig() {
@@ -51,6 +55,16 @@ export async function POST(request: NextRequest) {
         console.log(`📦 Processing checkout.session.completed für Session: ${(event.data.object as Stripe.Checkout.Session).id}`);
         await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
         break;
+
+      case 'checkout.session.async_payment_succeeded':
+        console.log(`📦 Processing checkout.session.async_payment_succeeded für Session: ${(event.data.object as Stripe.Checkout.Session).id}`);
+        await handleCheckoutSessionPaid(event.data.object as Stripe.Checkout.Session, stripe);
+        break;
+
+      case 'checkout.session.async_payment_failed':
+        console.log(`📦 Processing checkout.session.async_payment_failed für Session: ${(event.data.object as Stripe.Checkout.Session).id}`);
+        await handleCheckoutSessionAsyncPaymentFailed(event.data.object as Stripe.Checkout.Session);
+        break;
       
       case 'invoice.payment_succeeded':
         await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice, stripe);
@@ -85,250 +99,323 @@ export async function POST(request: NextRequest) {
 
 // Event-Handler
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-  console.log('Checkout-Session abgeschlossen:', session.id);
-  
+  console.log('Checkout-Session abgeschlossen:', session.id, 'payment_status:', session.payment_status);
+
   try {
     const metadata = session.metadata;
-    if (metadata?.offerId) {
-      const { pool, getOrCreateCustomerWithNumber } = await import('@/lib/database');
-      const { updateOfferStatus, updateFunnelLead, getOfferById } = await import('@/lib/funnel-database');
-      const { sendPostPaymentEmails } = await import('@/lib/post-payment-emails');
-      const client = await pool.connect();
-      try {
-        await client.query(
-          `UPDATE offer_checkout_sessions SET status = 'paid', paid_at = NOW() WHERE stripe_session_id = $1`,
-          [session.id]
-        );
-        await updateOfferStatus(metadata.offerId, 'paid');
-        if (metadata.leadId) {
-          const leadRow = await client.query('SELECT token FROM funnel_leads WHERE id = $1', [
-            metadata.leadId,
-          ]);
-          const token = leadRow.rows[0]?.token as string | undefined;
-          if (token) await updateFunnelLead(token, { status: 'paid' });
-        }
+    if (!metadata) {
+      console.warn('⚠️ Keine Metadata in Session gefunden');
+      return;
+    }
 
-        const email =
-          session.customer_email ||
-          session.customer_details?.email ||
-          '';
-        const customerName = session.customer_details?.name || email.split('@')[0];
-        const address = session.customer_details?.address;
-        const customerAddress = address
-          ? [address.line1, address.postal_code, address.city].filter(Boolean).join(' ')
-          : null;
-
-        let customerNumber: string | null = null;
-        if (email) {
-          const customer = await getOrCreateCustomerWithNumber(
-            email,
-            customerName,
-            session.customer_details?.phone || undefined,
-            undefined
-          );
-          customerNumber = customer.customer_number || null;
-        }
-
-        const { offer, items } = await getOfferById(metadata.offerId);
-        const offerItems = (items || []).map((row: Record<string, unknown>) => ({
-          label: String(row.label || 'Position'),
-          unit_amount_cents: Number(row.unit_amount_cents || 0),
-          billing: row.billing ? String(row.billing) : 'one_time',
-          description: row.description ? String(row.description) : null,
-        }));
-
-        const { saveBooking } = await import('@/lib/database');
-        const bookingData = {
-          session_id: session.id,
-          package_type: (metadata.packageType as 'starterwelle') || 'starterwelle',
-          is_monthly: false,
-          checkout_mode: 'payment' as const,
-          package_price_display: `${(session.amount_total || 0) / 100} €`,
-          currency: 'eur',
-          total_amount_cents: session.amount_total || 0,
-          customer_email: email,
-          customer_name: customerName || undefined,
-          stripe_customer_id: session.customer as string,
-          stripe_payment_intent_id: session.payment_intent as string,
-          status: 'paid' as const,
-          raw_form_data: { offerId: metadata.offerId, leadId: metadata.leadId },
-        };
-
-        await saveBooking(bookingData);
-        console.log('✅ Offer-Checkout verarbeitet:', metadata.offerId);
-
-        if (email) {
-          try {
-            await sendPostPaymentEmails({
-              session,
-              metadata,
-              bookingData,
-              source: 'funnel',
-              offerItems,
-              offerDiscountCents: Number(offer?.discount_cents || 0),
-              customerNumber,
-              customerAddress,
-            });
-            console.log('✅ Funnel Post-Payment E-Mails gesendet');
-          } catch (emailError) {
-            console.error('❌ Fehler beim Senden der Funnel Post-Payment E-Mails:', emailError);
-          }
-        } else {
-          console.warn('⚠️ Keine Kunden-E-Mail für Funnel-Offer-Checkout:', session.id);
-        }
-      } finally {
-        client.release();
+    if (!isCheckoutSessionPaid(session)) {
+      console.log(
+        `⏳ Zahlung noch nicht bestätigt (payment_status=${session.payment_status}), E-Mails/Rechnung werden übersprungen:`,
+        session.id
+      );
+      if (metadata.offerId) {
+        await markFunnelCheckoutAwaitingPayment(session.id);
       }
       return;
     }
-    if (metadata) {
-      console.log('Kunden-Daten:', {
-        packageType: metadata.packageType,
-        isMonthly: metadata.isMonthly,
-        customerName: metadata.customerName,
-        formData: metadata.formData
-      });
 
-      // Kunde mit Kundennummer erstellen oder abrufen
-      const { getOrCreateCustomerWithNumber } = await import('@/lib/database');
-      const customerEmail = session.customer_email || session.customer_details?.email || '';
-      const customerName = metadata.customerName || session.customer_details?.name || customerEmail.split('@')[0];
-      const customerPhone = session.customer_details?.phone || metadata.phone || undefined;
-      const companyName = metadata.companyName || session.customer_details?.address?.line1 || undefined;
-      
-      let customerId: string | undefined = undefined;
-      let customerNumber: string | null = null;
-      if (customerEmail) {
-        const customer = await getOrCreateCustomerWithNumber(
-          customerEmail,
-          customerName,
-          customerPhone,
-          companyName
-        );
-        customerId = customer.id?.toString();
-        customerNumber = customer.customer_number || null;
-        console.log(`✅ Kunde ${customerEmail} erstellt/abgerufen mit Kundennummer: ${customer.customer_number || 'wird generiert'}`);
-      }
-
-      // Buchung in Datenbank speichern
-      const { saveBooking } = await import('@/lib/database');
-      
-      // Defensive JSON-Parsing
-      let formData: Record<string, unknown> = {};
-      try {
-        formData = metadata.formData ? JSON.parse(metadata.formData) : {};
-      } catch (parseError) {
-        console.error('Fehler beim Parsen der FormData:', parseError);
-        formData = {};
-      }
-      
-      // Defensive Parsing für Arrays
-      let targetGroup: string[] = [];
-      try {
-        targetGroup = formData.targetGroup ? JSON.parse(formData.targetGroup as string) : [];
-        if (!Array.isArray(targetGroup)) targetGroup = [];
-      } catch (parseError) {
-        console.error('Fehler beim Parsen der targetGroup:', parseError);
-        targetGroup = [];
-      }
-
-      let functions: string[] = [];
-      try {
-        functions = formData.functions ? JSON.parse(formData.functions as string) : [];
-        if (!Array.isArray(functions)) functions = [];
-      } catch (parseError) {
-        console.error('Fehler beim Parsen der functions:', parseError);
-        functions = [];
-      }
-      
-      // Prüfe ob es ein KI-Paket oder AI-Voice-Paket ist (vereinfachtes Checkout)
-      const isKIPackage = metadata.packageCategory === 'ki-automation';
-      const isAIVoicePackage = metadata.packageCategory === 'ai-voice';
-      const isSimplifiedCheckout = isKIPackage || isAIVoicePackage;
-      
-      // Für AI-Voice Pakete: isMonthly basierend auf isEinrichtungspaket
-      const isEinrichtungspaket = metadata.isEinrichtungspaket === 'true';
-      const aiVoiceIsMonthly = !isEinrichtungspaket; // Hauptpakete sind monatlich, Einrichtungspaket ist einmalig
-      
-      // Für KI-Pakete und AI-Voice-Pakete: Vereinfachte Datenstruktur
-      // Für Webdesign-Pakete: Vollständige Formular-Daten
-      const bookingData = {
-        session_id: session.id,
-        package_type: metadata.packageType as 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle' | 'minijob' | 'midijob' | 'festangestellt' | 'einrichtungspaket',
-        is_monthly: isAIVoicePackage ? aiVoiceIsMonthly : (metadata.isMonthly === 'true'),
-        checkout_mode: (isAIVoicePackage 
-          ? (isEinrichtungspaket ? 'payment' : 'subscription')
-          : ((metadata.isMonthly === 'true' || session.subscription) ? 'subscription' : 'payment')
-        ) as 'payment' | 'subscription',
-        package_price_display: metadata.packagePriceDisplay || `${(session.amount_total || 0) / 100} €`,
-        currency: 'eur',
-        total_amount_cents: session.amount_total || 0,
-        customer_id: customerId, // WICHTIG: customer_id wird gesetzt, wenn Kunde existiert
-        customer_name: metadata.customerName || (formData.customerName as string) || undefined,
-        customer_email: session.customer_email || (formData.customerEmail as string) || undefined,
-        customer_phone: isSimplifiedCheckout ? undefined : (formData.customerPhone as string) || undefined,
-        company_name: isSimplifiedCheckout ? undefined : (formData.companyName as string) || undefined,
-        existing_website: isSimplifiedCheckout ? undefined : (formData.existingWebsite as string) === 'ja' ? true : false,
-        existing_website_url: isSimplifiedCheckout ? undefined : (formData.existingWebsiteUrl as string) || undefined,
-        target_group: isSimplifiedCheckout ? undefined : targetGroup,
-        design_style: isSimplifiedCheckout ? undefined : (formData.designStyle as string) || undefined,
-        design_reference_url: isSimplifiedCheckout ? undefined : (formData.designReferenceUrl as string) || undefined,
-        selected_addons: isSimplifiedCheckout 
-          ? (isAIVoicePackage && metadata.addonPriceIds ? JSON.parse(metadata.addonPriceIds as string) : undefined)
-          : (formData.selectedAddons ? JSON.parse(formData.selectedAddons as string) : undefined),
-        message: isSimplifiedCheckout ? undefined : (formData.message as string) || undefined,
-        raw_form_data: formData,
-        stripe_metadata: metadata,
-        stripe_customer_id: session.customer as string || undefined,
-        stripe_payment_intent_id: session.payment_intent as string || undefined,
-        stripe_subscription_id: session.subscription as string || undefined,
-        stripe_invoice_id: session.invoice as string || undefined,
-        status: 'paid' as const
-      };
-
-      await saveBooking(bookingData);
-      console.log('✅ Buchung erfolgreich in Datenbank gespeichert');
-      
-      // Bestellbestätigung und Portal-Aktivierung E-Mails senden (mit Fallback auf customer_details.email)
-      const fallbackEmail = (session.customer_details as { email?: string } | null)?.email;
-      const effectiveEmail = session.customer_email || fallbackEmail;
-      if (effectiveEmail) {
-        // Falls session.customer_email leer war, setze sie lokal für die Übergabe
-        console.log(`📧 Versuche E-Mails zu senden an: ${effectiveEmail}`);
-        try {
-          const { sendPostPaymentEmails } = await import('@/lib/post-payment-emails');
-          await sendPostPaymentEmails({
-            session,
-            metadata,
-            bookingData,
-            source: 'buchung',
-            customerNumber,
-          });
-          console.log('✅ E-Mail-Versand erfolgreich abgeschlossen');
-        } catch (emailError) {
-          console.error('❌ Fehler beim Senden der E-Mails:', emailError);
-          // Fehler nicht weiterwerfen - Buchung wurde gespeichert
-          // E-Mail kann später manuell gesendet werden
-        }
-      } else {
-        console.warn('⚠️ Keine customer_email in Session gefunden, E-Mails werden nicht gesendet');
-        console.warn('⚠️ Session-Details:', {
-          id: session.id,
-          customer: session.customer,
-          customer_details: session.customer_details
-        });
-      }
-    } else {
-      console.warn('⚠️ Keine Metadata in Session gefunden');
-    }
+    await processPaidCheckout(session);
   } catch (error) {
-    console.error('❌ Fehler beim Speichern der Buchung:', error);
+    console.error('❌ Fehler beim Verarbeiten von checkout.session.completed:', error);
     console.error('❌ Fehler-Details:', {
       message: error instanceof Error ? error.message : 'Unbekannter Fehler',
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
-    // Wichtig: Nicht weiterwerfen, damit Stripe 200 erhält und keine dauerhaften Retries entstehen
-    // Fehlerfälle (z. B. E-Mail-Versand) werden separat durch manuelle Routen abgedeckt
+  }
+}
+
+async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session, stripe: Stripe) {
+  console.log('Checkout-Session Zahlung bestätigt:', session.id);
+
+  try {
+    const paidSession = await resolvePaidCheckoutSession(session, stripe);
+    if (!paidSession) {
+      console.warn('⚠️ Session nach Retrieve nicht paid, übersprungen:', session.id);
+      return;
+    }
+
+    await processPaidCheckout(paidSession);
+  } catch (error) {
+    console.error('❌ Fehler beim Verarbeiten von async_payment_succeeded:', error);
+  }
+}
+
+async function handleCheckoutSessionAsyncPaymentFailed(session: Stripe.Checkout.Session) {
+  console.log('Checkout-Session async Zahlung fehlgeschlagen:', session.id);
+
+  try {
+    const metadata = session.metadata;
+    if (!metadata?.offerId) return;
+
+    const { pool } = await import('@/lib/database');
+    const client = await pool.connect();
+    try {
+      await client.query(
+        `UPDATE offer_checkout_sessions SET status = 'failed' WHERE stripe_session_id = $1`,
+        [session.id]
+      );
+      console.log('✅ Funnel-Checkout-Session als failed markiert:', session.id);
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('❌ Fehler beim Verarbeiten von async_payment_failed:', error);
+  }
+}
+
+async function markFunnelCheckoutAwaitingPayment(sessionId: string): Promise<void> {
+  const { pool } = await import('@/lib/database');
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `UPDATE offer_checkout_sessions SET status = 'awaiting_payment' WHERE stripe_session_id = $1`,
+      [sessionId]
+    );
+    console.log('✅ Funnel-Checkout-Session awaiting_payment:', sessionId);
+  } finally {
+    client.release();
+  }
+}
+
+async function processPaidCheckout(session: Stripe.Checkout.Session): Promise<void> {
+  const metadata = session.metadata;
+  if (!metadata) {
+    console.warn('⚠️ Keine Metadata in Session gefunden');
+    return;
+  }
+
+  if (metadata.offerId) {
+    await processFunnelCheckoutPaid(session);
+    return;
+  }
+
+  await processBuchungCheckoutPaid(session);
+}
+
+async function processFunnelCheckoutPaid(session: Stripe.Checkout.Session): Promise<void> {
+  const metadata = session.metadata;
+  if (!metadata?.offerId) return;
+
+  const { pool, getOrCreateCustomerWithNumber, saveBooking } = await import('@/lib/database');
+  const { updateOfferStatus, updateFunnelLead, getOfferById } = await import('@/lib/funnel-database');
+  const { sendPostPaymentEmails } = await import('@/lib/post-payment-emails');
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `UPDATE offer_checkout_sessions SET status = 'paid', paid_at = NOW() WHERE stripe_session_id = $1`,
+      [session.id]
+    );
+    await updateOfferStatus(metadata.offerId, 'paid');
+    if (metadata.leadId) {
+      const leadRow = await client.query('SELECT token FROM funnel_leads WHERE id = $1', [
+        metadata.leadId,
+      ]);
+      const token = leadRow.rows[0]?.token as string | undefined;
+      if (token) await updateFunnelLead(token, { status: 'paid' });
+    }
+
+    const email =
+      session.customer_email ||
+      session.customer_details?.email ||
+      '';
+    const customerName = session.customer_details?.name || email.split('@')[0];
+    const address = session.customer_details?.address;
+    const customerAddress = address
+      ? [address.line1, address.postal_code, address.city].filter(Boolean).join(' ')
+      : null;
+
+    let customerNumber: string | null = null;
+    if (email) {
+      const customer = await getOrCreateCustomerWithNumber(
+        email,
+        customerName,
+        session.customer_details?.phone || undefined,
+        undefined
+      );
+      customerNumber = customer.customer_number || null;
+    }
+
+    const { offer, items } = await getOfferById(metadata.offerId);
+    const offerItems = (items || []).map((row: Record<string, unknown>) => ({
+      label: String(row.label || 'Position'),
+      unit_amount_cents: Number(row.unit_amount_cents || 0),
+      billing: row.billing ? String(row.billing) : 'one_time',
+      description: row.description ? String(row.description) : null,
+    }));
+
+    const bookingData = {
+      session_id: session.id,
+      package_type: (metadata.packageType as 'starterwelle') || 'starterwelle',
+      is_monthly: false,
+      checkout_mode: 'payment' as const,
+      package_price_display: `${(session.amount_total || 0) / 100} €`,
+      currency: 'eur',
+      total_amount_cents: session.amount_total || 0,
+      customer_email: email,
+      customer_name: customerName || undefined,
+      stripe_customer_id: session.customer as string,
+      stripe_payment_intent_id: session.payment_intent as string,
+      status: 'paid' as const,
+      raw_form_data: { offerId: metadata.offerId, leadId: metadata.leadId },
+    };
+
+    await saveBooking(bookingData);
+    console.log('✅ Offer-Checkout verarbeitet:', metadata.offerId);
+
+    if (email) {
+      try {
+        await sendPostPaymentEmails({
+          session,
+          metadata,
+          bookingData,
+          source: 'funnel',
+          offerItems,
+          offerDiscountCents: Number(offer?.discount_cents || 0),
+          customerNumber,
+          customerAddress,
+        });
+        console.log('✅ Funnel Post-Payment E-Mails gesendet');
+      } catch (emailError) {
+        console.error('❌ Fehler beim Senden der Funnel Post-Payment E-Mails:', emailError);
+      }
+    } else {
+      console.warn('⚠️ Keine Kunden-E-Mail für Funnel-Offer-Checkout:', session.id);
+    }
+  } finally {
+    client.release();
+  }
+}
+
+async function processBuchungCheckoutPaid(session: Stripe.Checkout.Session): Promise<void> {
+  const metadata = session.metadata;
+  if (!metadata) return;
+
+  console.log('Kunden-Daten:', {
+    packageType: metadata.packageType,
+    isMonthly: metadata.isMonthly,
+    customerName: metadata.customerName,
+    formData: metadata.formData,
+  });
+
+  const { getOrCreateCustomerWithNumber, saveBooking } = await import('@/lib/database');
+  const customerEmail = session.customer_email || session.customer_details?.email || '';
+  const customerName = metadata.customerName || session.customer_details?.name || customerEmail.split('@')[0];
+  const customerPhone = session.customer_details?.phone || metadata.phone || undefined;
+  const companyName = metadata.companyName || session.customer_details?.address?.line1 || undefined;
+
+  let customerId: string | undefined = undefined;
+  let customerNumber: string | null = null;
+  if (customerEmail) {
+    const customer = await getOrCreateCustomerWithNumber(
+      customerEmail,
+      customerName,
+      customerPhone,
+      companyName
+    );
+    customerId = customer.id?.toString();
+    customerNumber = customer.customer_number || null;
+    console.log(`✅ Kunde ${customerEmail} erstellt/abgerufen mit Kundennummer: ${customer.customer_number || 'wird generiert'}`);
+  }
+
+  let formData: Record<string, unknown> = {};
+  try {
+    formData = metadata.formData ? JSON.parse(metadata.formData) : {};
+  } catch (parseError) {
+    console.error('Fehler beim Parsen der FormData:', parseError);
+    formData = {};
+  }
+
+  let targetGroup: string[] = [];
+  try {
+    targetGroup = formData.targetGroup ? JSON.parse(formData.targetGroup as string) : [];
+    if (!Array.isArray(targetGroup)) targetGroup = [];
+  } catch (parseError) {
+    console.error('Fehler beim Parsen der targetGroup:', parseError);
+    targetGroup = [];
+  }
+
+  let functions: string[] = [];
+  try {
+    functions = formData.functions ? JSON.parse(formData.functions as string) : [];
+    if (!Array.isArray(functions)) functions = [];
+  } catch (parseError) {
+    console.error('Fehler beim Parsen der functions:', parseError);
+    functions = [];
+  }
+
+  const isKIPackage = metadata.packageCategory === 'ki-automation';
+  const isAIVoicePackage = metadata.packageCategory === 'ai-voice';
+  const isSimplifiedCheckout = isKIPackage || isAIVoicePackage;
+
+  const isEinrichtungspaket = metadata.isEinrichtungspaket === 'true';
+  const aiVoiceIsMonthly = !isEinrichtungspaket;
+
+  const bookingData = {
+    session_id: session.id,
+    package_type: metadata.packageType as 'starterwelle' | 'businesswelle' | 'erfolgswelle' | 'flowwelle' | 'powerwelle' | 'meisterwelle' | 'minijob' | 'midijob' | 'festangestellt' | 'einrichtungspaket',
+    is_monthly: isAIVoicePackage ? aiVoiceIsMonthly : (metadata.isMonthly === 'true'),
+    checkout_mode: (isAIVoicePackage
+      ? (isEinrichtungspaket ? 'payment' : 'subscription')
+      : ((metadata.isMonthly === 'true' || session.subscription) ? 'subscription' : 'payment')
+    ) as 'payment' | 'subscription',
+    package_price_display: metadata.packagePriceDisplay || `${(session.amount_total || 0) / 100} €`,
+    currency: 'eur',
+    total_amount_cents: session.amount_total || 0,
+    customer_id: customerId,
+    customer_name: metadata.customerName || (formData.customerName as string) || undefined,
+    customer_email: session.customer_email || (formData.customerEmail as string) || undefined,
+    customer_phone: isSimplifiedCheckout ? undefined : (formData.customerPhone as string) || undefined,
+    company_name: isSimplifiedCheckout ? undefined : (formData.companyName as string) || undefined,
+    existing_website: isSimplifiedCheckout ? undefined : (formData.existingWebsite as string) === 'ja' ? true : false,
+    existing_website_url: isSimplifiedCheckout ? undefined : (formData.existingWebsiteUrl as string) || undefined,
+    target_group: isSimplifiedCheckout ? undefined : targetGroup,
+    design_style: isSimplifiedCheckout ? undefined : (formData.designStyle as string) || undefined,
+    design_reference_url: isSimplifiedCheckout ? undefined : (formData.designReferenceUrl as string) || undefined,
+    selected_addons: isSimplifiedCheckout
+      ? (isAIVoicePackage && metadata.addonPriceIds ? JSON.parse(metadata.addonPriceIds as string) : undefined)
+      : (formData.selectedAddons ? JSON.parse(formData.selectedAddons as string) : undefined),
+    message: isSimplifiedCheckout ? undefined : (formData.message as string) || undefined,
+    raw_form_data: formData,
+    stripe_metadata: metadata,
+    stripe_customer_id: session.customer as string || undefined,
+    stripe_payment_intent_id: session.payment_intent as string || undefined,
+    stripe_subscription_id: session.subscription as string || undefined,
+    stripe_invoice_id: session.invoice as string || undefined,
+    status: 'paid' as const,
+  };
+
+  await saveBooking(bookingData);
+  console.log('✅ Buchung erfolgreich in Datenbank gespeichert');
+
+  const fallbackEmail = (session.customer_details as { email?: string } | null)?.email;
+  const effectiveEmail = session.customer_email || fallbackEmail;
+  if (effectiveEmail) {
+    console.log(`📧 Versuche E-Mails zu senden an: ${effectiveEmail}`);
+    try {
+      const { sendPostPaymentEmails } = await import('@/lib/post-payment-emails');
+      await sendPostPaymentEmails({
+        session,
+        metadata,
+        bookingData,
+        source: 'buchung',
+        customerNumber,
+      });
+      console.log('✅ E-Mail-Versand erfolgreich abgeschlossen');
+    } catch (emailError) {
+      console.error('❌ Fehler beim Senden der E-Mails:', emailError);
+    }
+  } else {
+    console.warn('⚠️ Keine customer_email in Session gefunden, E-Mails werden nicht gesendet');
+    console.warn('⚠️ Session-Details:', {
+      id: session.id,
+      customer: session.customer,
+      customer_details: session.customer_details,
+    });
   }
 }
 
