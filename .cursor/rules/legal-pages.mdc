@@ -1,0 +1,55 @@
+---
+description: Design und Struktur für WebWelle-Rechtseiten (AGB, Datenschutz, Impressum, Widerruf)
+globs: src/app/components/{AGB,Datenschutz,Impressum,Widerruf}.tsx,src/app/{agb,datenschutz,impressum,widerruf}/**/*
+alwaysApply: false
+---
+
+# WebWelle – Rechtseiten Design
+
+Referenz: `Datenschutz.tsx`, `Impressum.tsx`, `AGB.tsx`, `Widerruf.tsx`. Ausführlicher Workflow: Skill `webwelle-legal-pages`.
+
+## Pflicht-Layout (1:1 beibehalten)
+
+```tsx
+<div className="max-w-4xl mx-auto px-4 py-8">
+  <div className="prose prose-lg max-w-none">
+    <h1 className="text-3xl font-bold mb-8 text-center text-white">{Titel}</h1>
+    <p className="text-center text-gray-300 mb-12">{Untertitel}</p>
+    <div className="space-y-8">{/* Abschnitte */}</div>
+    {/* Zurück-Button: bg-gray-800, text-center mt-12 */}
+  </div>
+</div>
+```
+
+## Abschnitt
+
+- `h2`: `text-2xl font-bold mb-4 text-white` (nummeriert oder thematisch)
+- Inhalt: `div.space-y-4.text-white` mit `<p>` pro Absatz
+- `h3`: `text-lg font-semibold mb-2 text-white` (Unterpunkte)
+- **Kein** Daten-Array/Mapper – explizites JSX wie in bestehenden Komponenten
+
+## Design-Bausteine
+
+| Element | Klassen |
+|---------|---------|
+| Info-/Kontakt-Box | `bg-gray-800 p-4 border-l-4 border-gray-400` |
+| Schluss-/Highlight-Box | `bg-gray-800 p-6 border-l-4 border-gray-400` |
+| Stand-Box innen | `bg-gray-700 p-4 mt-4 border border-gray-600` |
+| Listen in Boxen | `list-disc list-inside space-y-2 ml-4 text-gray-300` |
+| Wichtiger Hinweis | `font-semibold text-yellow-300` |
+| Links | `text-blue-400 hover:underline` – intern `/datenschutz`, extern volle URL |
+
+## Text-Regeln
+
+- Nutzertext **wortgetreu** aus `info/*.txt` – nicht kürzen oder umformulieren
+- `&` in JSX als `&amp;` wo nötig
+- Footer-Link, Route, `layout.tsx` (Header/Footer/CookieBanner) nur anfassen wenn fehlend
+
+## Datei-Mapping
+
+| Seite | Komponente | Route | Textquelle |
+|-------|------------|-------|------------|
+| AGB | `AGB.tsx` | `/agb` | `info/agbneu.txt` |
+| Datenschutz | `Datenschutz.tsx` | `/datenschutz` | `info/datenschutz.txt` |
+| Impressum | `Impressum.tsx` | `/impressum` | – |
+| Widerruf | `Widerruf.tsx` | `/widerruf` | – |

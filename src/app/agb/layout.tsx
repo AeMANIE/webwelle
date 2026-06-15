@@ -6,7 +6,7 @@ import CookieBanner from '../components/CookieBanner';
 
 export const metadata: Metadata = {
   title: 'AGB | WebWelle – Rechtliche Grundlagen & Vertragsbedingungen',
-  description: 'Allgemeine Geschäftsbedingungen (AGB) von WebWelle: Leistungen, Vertragsbedingungen, Gewährleistung und Zahlungsmodalitäten – transparent und verständlich.',
+  description: 'Allgemeine Geschäftsbedingungen (AGB) von WebWelle für B2B-Kunden: Webdesign, Hosting, Domains, SEO, Branding und digitale Leistungen – transparent und verständlich.',
   keywords: 'AGB, Allgemeine Geschäftsbedingungen, WebWelle, Vertragsbedingungen, Gewährleistung, Zahlungsmodalitäten, rechtliche Grundlagen, Allgäu, Kempten',
   authors: [{ name: 'WebWelle' }],
   creator: 'WebWelle',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     url: 'https://webwelle.com/agb',
     siteName: 'WebWelle',
     title: 'AGB | WebWelle – Rechtliche Grundlagen & Vertragsbedingungen',
-    description: 'Allgemeine Geschäftsbedingungen (AGB) von WebWelle: Leistungen, Vertragsbedingungen, Gewährleistung und Zahlungsmodalitäten – transparent und verständlich.',
+    description: 'Allgemeine Geschäftsbedingungen (AGB) von WebWelle für B2B-Kunden: Webdesign, Hosting, Domains, SEO, Branding und digitale Leistungen – transparent und verständlich.',
     images: [
       {
         url: '/logo.png',
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'AGB | WebWelle – Rechtliche Grundlagen & Vertragsbedingungen',
-    description: 'Allgemeine Geschäftsbedingungen (AGB) von WebWelle: Leistungen, Vertragsbedingungen, Gewährleistung und Zahlungsmodalitäten – transparent und verständlich.',
+    description: 'Allgemeine Geschäftsbedingungen (AGB) von WebWelle für B2B-Kunden: Webdesign, Hosting, Domains, SEO, Branding und digitale Leistungen – transparent und verständlich.',
     images: ['/logo.png'],
   },
 };

@@ -5,9 +5,9 @@ import ScrollToTop from '../components/ScrollToTop';
 import CookieBanner from '../components/CookieBanner';
 
 export const metadata: Metadata = {
-  title: 'Widerrufsbelehrung | WebWelle – Rechte & Fristen',
-  description: 'Widerrufsbelehrung von WebWelle: Informationen zu Widerrufsrecht, Fristen, Ausnahmen und Ablauf – einfach erklärt und rechtssicher.',
-  keywords: 'Widerrufsbelehrung, Widerrufsrecht, WebWelle, Fristen, Ausnahmen, rechtssicher, Verbraucherschutz, Allgäu, Kempten',
+  title: 'Stornierung und Erstattungen | WebWelle – B2B-Regelungen',
+  description: 'Stornierung und Erstattungen von WebWelle für B2B-Kunden: Einmalleistungen, Laufzeitprodukte, Mitwirkung und Kulanzregelungen – transparent und verständlich.',
+  keywords: 'Stornierung, Erstattungen, B2B, WebWelle, Kündigung, Einmalleistungen, Laufzeitprodukte, Allgäu, Kempten',
   authors: [{ name: 'WebWelle' }],
   creator: 'WebWelle',
   publisher: 'WebWelle',
@@ -27,8 +27,8 @@ export const metadata: Metadata = {
     locale: 'de_DE',
     url: 'https://webwelle.com/widerruf',
     siteName: 'WebWelle',
-    title: 'Widerrufsbelehrung | WebWelle – Rechte & Fristen',
-    description: 'Widerrufsbelehrung von WebWelle: Informationen zu Widerrufsrecht, Fristen, Ausnahmen und Ablauf – einfach erklärt und rechtssicher.',
+    title: 'Stornierung und Erstattungen | WebWelle – B2B-Regelungen',
+    description: 'Stornierung und Erstattungen von WebWelle für B2B-Kunden: Einmalleistungen, Laufzeitprodukte, Mitwirkung und Kulanzregelungen – transparent und verständlich.',
     images: [
       {
         url: '/logo.png',
@@ -40,8 +40,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Widerrufsbelehrung | WebWelle – Rechte & Fristen',
-    description: 'Widerrufsbelehrung von WebWelle: Informationen zu Widerrufsrecht, Fristen, Ausnahmen und Ablauf – einfach erklärt und rechtssicher.',
+    title: 'Stornierung und Erstattungen | WebWelle – B2B-Regelungen',
+    description: 'Stornierung und Erstattungen von WebWelle für B2B-Kunden: Einmalleistungen, Laufzeitprodukte, Mitwirkung und Kulanzregelungen – transparent und verständlich.',
     images: ['/logo.png'],
   },
 };
