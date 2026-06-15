@@ -23,10 +23,16 @@ export type InvoiceBankingInfo = {
 const PAGE_LEFT = 50;
 const PAGE_RIGHT = 545;
 const PAGE_WIDTH = PAGE_RIGHT - PAGE_LEFT;
+const PAGE_HEIGHT = 842;
+const PAGE_BOTTOM = PAGE_HEIGHT - PAGE_LEFT;
 const RIGHT_COL_WIDTH = 220;
 const ACCENT_COLOR = WW_COLORS.primary;
 const LOGO_PATH = path.join(process.cwd(), 'public', 'logo250.png');
-const LOGO_SIZE = 80;
+const LOGO_SIZE = Math.round(80 * 0.7); // 30 % kleiner als zuvor
+const FOOTER_ZONE_HEIGHT = 72;
+const TOTALS_BLOCK_HEIGHT = 52;
+const FOOTER_SEPARATOR_Y = PAGE_BOTTOM - FOOTER_ZONE_HEIGHT + 8;
+const CONTENT_BOTTOM_LIMIT = FOOTER_SEPARATOR_Y - TOTALS_BLOCK_HEIGHT - 16;
 
 export function generateInvoicePdf(options: {
   invoiceNumber: string;
@@ -58,15 +64,20 @@ export function generateInvoicePdf(options: {
 
     const companyX = PAGE_RIGHT - RIGHT_COL_WIDTH;
     doc
+      .fontSize(11)
+      .fillColor(ACCENT_COLOR)
+      .text('webwelle.com', companyX, headerY, { width: RIGHT_COL_WIDTH, align: 'right' });
+    doc
       .fontSize(20)
       .fillColor('#0e141f')
-      .text(options.banking.companyName, companyX, headerY, { width: RIGHT_COL_WIDTH, align: 'right' });
+      .text(options.banking.companyName, companyX, headerY + 16, { width: RIGHT_COL_WIDTH, align: 'right' });
     doc
       .fontSize(10)
       .fillColor('#555')
-      .text(options.banking.addressLine, companyX, headerY + 26, { width: RIGHT_COL_WIDTH, align: 'right' });
+      .text(options.banking.addressLine, companyX, headerY + 42, { width: RIGHT_COL_WIDTH, align: 'right' });
 
-    const lineY = headerY + LOGO_SIZE + 14;
+    const headerBlockHeight = Math.max(LOGO_SIZE, 58);
+    const lineY = headerY + headerBlockHeight + 14;
     doc
       .strokeColor(ACCENT_COLOR)
       .lineWidth(2)
@@ -116,6 +127,13 @@ export function generateInvoicePdf(options: {
     let y = tableTop + 20;
     let netTotal = 0;
     options.items.forEach((it) => {
+      if (y > CONTENT_BOTTOM_LIMIT) {
+        doc.addPage();
+        y = PAGE_LEFT;
+        drawTableHeader(doc, y);
+        y += 20;
+      }
+
       const lineNet = it.netAmount * it.quantity;
       netTotal += lineNet;
       drawRow(doc, y, [
@@ -126,16 +144,17 @@ export function generateInvoicePdf(options: {
         euro(lineNet),
       ]);
       y += 20;
-      if (y > 700) {
-        doc.addPage();
-        y = PAGE_LEFT;
-      }
     });
 
     const vat = round2(netTotal * 0.19);
     const gross = round2(netTotal + vat);
     const totalsX = PAGE_RIGHT - 220;
-    const totalsY = y + 12;
+    let totalsY = y + 12;
+
+    if (totalsY + TOTALS_BLOCK_HEIGHT > FOOTER_SEPARATOR_Y - 8) {
+      doc.addPage();
+      totalsY = PAGE_LEFT + 12;
+    }
 
     doc.fontSize(10).fillColor('#000');
     doc.text(`Zwischensumme (Netto): ${euro(netTotal)}`, totalsX, totalsY, { width: 220, align: 'right' });
@@ -143,38 +162,39 @@ export function generateInvoicePdf(options: {
     doc.fontSize(12).fillColor('#0e141f');
     doc.text(`Gesamtbetrag (Brutto): ${euro(gross)}`, totalsX, totalsY + 34, { width: 220, align: 'right' });
 
-    const footerY = totalsY + 72;
-    doc
-      .strokeColor(ACCENT_COLOR)
-      .lineWidth(1)
-      .moveTo(PAGE_LEFT, footerY)
-      .lineTo(PAGE_RIGHT, footerY)
-      .stroke();
-
-    let footerTextY = footerY + 14;
-    doc.fontSize(9).fillColor('#333');
-    const footerLines = [
-      options.banking.bankName,
-      `BIC: ${options.banking.bic}`,
-      `IBAN: ${options.banking.iban}`,
-      options.banking.taxOffice,
-      `Steuer Nr.: ${options.banking.taxNumber}`,
-      `USt.-ID: ${options.banking.vatId}`,
-    ];
-    footerLines.forEach((line) => {
-      doc.text(line, PAGE_LEFT, footerTextY, { width: PAGE_WIDTH, align: 'center' });
-      footerTextY += 13;
-    });
-
-    if (options.notes) {
-      doc.moveDown(0.6).fontSize(9).fillColor('#555').text(options.notes, PAGE_LEFT, footerTextY + 6, {
-        width: PAGE_WIDTH,
-        align: 'center',
-      });
-    }
+    drawFixedFooter(doc, options.banking, options.notes);
 
     doc.end();
   });
+}
+
+function drawFixedFooter(doc: PDFKit.PDFDocument, banking: InvoiceBankingInfo, notes?: string) {
+  doc
+    .strokeColor(ACCENT_COLOR)
+    .lineWidth(1)
+    .moveTo(PAGE_LEFT, FOOTER_SEPARATOR_Y)
+    .lineTo(PAGE_RIGHT, FOOTER_SEPARATOR_Y)
+    .stroke();
+
+  const textStartY = FOOTER_SEPARATOR_Y + 12;
+  const lineHeight = 13;
+  doc.fontSize(9).fillColor('#333');
+
+  doc.text(banking.taxOffice, PAGE_LEFT, textStartY, { width: 250, align: 'left' });
+  doc.text(`Steuer Nr.: ${banking.taxNumber}`, PAGE_LEFT, textStartY + lineHeight, { width: 250, align: 'left' });
+  doc.text(`USt.-ID: ${banking.vatId}`, PAGE_LEFT, textStartY + lineHeight * 2, { width: 250, align: 'left' });
+
+  const bankX = PAGE_RIGHT - RIGHT_COL_WIDTH;
+  doc.text(banking.bankName, bankX, textStartY, { width: RIGHT_COL_WIDTH, align: 'right' });
+  doc.text(`BIC: ${banking.bic}`, bankX, textStartY + lineHeight, { width: RIGHT_COL_WIDTH, align: 'right' });
+  doc.text(`IBAN: ${banking.iban}`, bankX, textStartY + lineHeight * 2, { width: RIGHT_COL_WIDTH, align: 'right' });
+
+  if (notes) {
+    doc
+      .fontSize(8)
+      .fillColor('#555')
+      .text(notes, PAGE_LEFT, textStartY + lineHeight * 3 + 4, { width: PAGE_WIDTH, align: 'center' });
+  }
 }
 
 function drawTableHeader(doc: PDFKit.PDFDocument, y: number) {
