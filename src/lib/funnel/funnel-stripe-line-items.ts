@@ -23,10 +23,13 @@ export const FUNNEL_STRIPE_PRICE_CONFIG = [
   { envKey: 'STRIPE_PRICE_ANIMATION', defaultId: ANIMATION_ADDON.stripePriceId, label: 'Animationspaket' },
 ] as const;
 
+/** Stripe Checkout minimum for EUR */
+export const FUNNEL_TEST_CHECKOUT_AMOUNT_CENTS = 50;
+
 export const FUNNEL_TEST_PRICE = {
   envKey: 'STRIPE_PRICE_FUNNEL_TEST',
-  defaultId: 'price_1TiYnMJ8MIbotcdAYwIa9Lwf',
-  label: 'Funnel Test (0,01 €)',
+  defaultId: 'price_1TifmbJ8MIbotcdAOhAmN7cU',
+  label: 'Funnel Test (0,50 €)',
 } as const;
 
 export function sanitizeEnvValue(value: string | undefined): string {

@@ -55,7 +55,7 @@ describe('buildTestStripeLineItem', () => {
   it('returns a single test price line item', () => {
     const items = buildTestStripeLineItem();
     assert.equal(items.length, 1);
-    assert.equal(items[0]?.price, 'price_1TiYnMJ8MIbotcdAYwIa9Lwf');
+    assert.equal(items[0]?.price, 'price_1TifmbJ8MIbotcdAOhAmN7cU');
     assert.equal(items[0]?.quantity, 1);
   });
 });

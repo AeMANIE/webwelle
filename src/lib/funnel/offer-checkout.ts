@@ -17,6 +17,7 @@ import {
   assertFunnelStripePrices,
   buildStripeLineItemsFromSelection,
   buildTestStripeLineItem,
+  FUNNEL_TEST_CHECKOUT_AMOUNT_CENTS,
 } from '@/lib/funnel/funnel-stripe-line-items';
 import { FunnelCheckoutError, mapCheckoutError } from '@/lib/funnel/funnel-checkout-error';
 
@@ -188,7 +189,7 @@ export async function createOfferCheckoutSession(params: {
     : buildStripeLineItemsFromSelection(selection);
   await assertFunnelStripePrices(stripe, lineItems);
   const discountCouponId = useTestPrice ? undefined : await buildDiscountCoupon(stripe, discountCents);
-  const sessionAmountCents = useTestPrice ? 1 : totalCents;
+  const sessionAmountCents = useTestPrice ? FUNNEL_TEST_CHECKOUT_AMOUNT_CENTS : totalCents;
 
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',

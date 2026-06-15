@@ -120,7 +120,7 @@ function Funnel5Content() {
     <FunnelShell step={5} token={token}>
       {testCheckoutEnabled ? (
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Testzahlung 0,01 € – nur für interne Prüfung. Echter Paketinhalt bleibt im Angebot erhalten.
+          Testzahlung 0,50 € – nur für interne Prüfung. Echter Paketinhalt bleibt im Angebot erhalten.
         </div>
       ) : null}
       <LiveAnalysisDashboard
