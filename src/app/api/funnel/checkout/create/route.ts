@@ -4,6 +4,7 @@ import {
   FunnelCheckoutError,
   startFunnelCheckout,
 } from '@/lib/funnel/offer-checkout';
+import { isFunnelTestCheckoutEnabled } from '@/lib/funnel/funnel-stripe-line-items';
 import { ensureFunnelTables, getFunnelLeadByToken } from '@/lib/funnel-database';
 
 export async function POST(request: NextRequest) {
@@ -21,7 +22,9 @@ export async function POST(request: NextRequest) {
       return secureResponse({ error: 'not_found', message: 'Lead nicht gefunden.' }, 404);
     }
 
-    const result = await startFunnelCheckout(lead);
+    const result = await startFunnelCheckout(lead, {
+      useTestPrice: isFunnelTestCheckoutEnabled(),
+    });
     return secureResponse(result);
   } catch (error) {
     if (error instanceof FunnelCheckoutError) {

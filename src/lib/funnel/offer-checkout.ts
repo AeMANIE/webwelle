@@ -16,6 +16,7 @@ import {
 import {
   assertFunnelStripePrices,
   buildStripeLineItemsFromSelection,
+  buildTestStripeLineItem,
 } from '@/lib/funnel/funnel-stripe-line-items';
 import { FunnelCheckoutError, mapCheckoutError } from '@/lib/funnel/funnel-checkout-error';
 
@@ -160,13 +161,17 @@ export async function createOfferCheckoutSession(params: {
   totalCents: number;
   discountCents: number;
   cancelUrl?: string;
+  useTestPrice?: boolean;
 }): Promise<Stripe.Checkout.Session> {
-  const { stripe, lead, offerId, selection, totalCents, discountCents } = params;
+  const { stripe, lead, offerId, selection, totalCents, discountCents, useTestPrice } = params;
   const baseUrl = getPublicBaseUrl();
   const stripeCustomerId = await createStripeCustomerForLead(stripe, lead, offerId);
-  const lineItems = buildStripeLineItemsFromSelection(selection);
+  const lineItems = useTestPrice
+    ? buildTestStripeLineItem()
+    : buildStripeLineItemsFromSelection(selection);
   await assertFunnelStripePrices(stripe, lineItems);
-  const discountCouponId = await buildDiscountCoupon(stripe, discountCents);
+  const discountCouponId = useTestPrice ? undefined : await buildDiscountCoupon(stripe, discountCents);
+  const sessionAmountCents = useTestPrice ? 1 : totalCents;
 
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
@@ -178,6 +183,7 @@ export async function createOfferCheckoutSession(params: {
       offerId,
       leadId: lead.id,
       packageType: STARTERWELLE.id,
+      ...(useTestPrice ? { testCheckout: 'true' } : {}),
     },
     success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}&offer=1`,
     cancel_url: params.cancelUrl || `${baseUrl}/funnel-5?t=${encodeURIComponent(lead.token)}`,
@@ -191,7 +197,7 @@ export async function createOfferCheckoutSession(params: {
     await client.query(
       `INSERT INTO offer_checkout_sessions (offer_id, stripe_session_id, stripe_customer_id, amount_cents, status)
        VALUES ($1, $2, $3, $4, 'pending')`,
-      [offerId, session.id, stripeCustomerId || null, totalCents]
+      [offerId, session.id, stripeCustomerId || null, sessionAmountCents]
     );
     await updateOfferStatus(offerId, 'checkout_sent');
   } finally {
@@ -201,7 +207,10 @@ export async function createOfferCheckoutSession(params: {
   return session;
 }
 
-export async function startFunnelCheckout(lead: FunnelLead) {
+export async function startFunnelCheckout(
+  lead: FunnelLead,
+  options?: { useTestPrice?: boolean }
+) {
   validateLeadForCheckout(lead);
 
   try {
@@ -222,6 +231,7 @@ export async function startFunnelCheckout(lead: FunnelLead) {
       selection: addonSelection,
       totalCents,
       discountCents,
+      useTestPrice: options?.useTestPrice,
     });
 
     if (!session.url) {

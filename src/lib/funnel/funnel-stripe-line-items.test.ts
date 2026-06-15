@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildStripeLineItemsFromSelection } from './funnel-stripe-line-items';
+import { buildStripeLineItemsFromSelection, buildTestStripeLineItem } from './funnel-stripe-line-items';
 import {
   BLOG_BUNDLE_10,
   SEO_PROFI_ADDON,
@@ -48,5 +48,14 @@ describe('buildStripeLineItemsFromSelection', () => {
     assert.equal(items.length, 2);
     assert.ok(items[1]?.price_data);
     assert.equal(items[1]?.quantity, 7);
+  });
+});
+
+describe('buildTestStripeLineItem', () => {
+  it('returns a single test price line item', () => {
+    const items = buildTestStripeLineItem();
+    assert.equal(items.length, 1);
+    assert.equal(items[0]?.price, 'price_1TiYnMJ8MIbotcdAYwIa9Lwf');
+    assert.equal(items[0]?.quantity, 1);
   });
 });

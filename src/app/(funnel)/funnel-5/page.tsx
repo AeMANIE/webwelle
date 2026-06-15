@@ -29,6 +29,7 @@ function Funnel5Content() {
   const [pollCount, setPollCount] = useState(0);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const testCheckoutEnabled = process.env.NEXT_PUBLIC_FUNNEL_TEST_CHECKOUT === 'true';
 
   const load = useCallback(() => {
     if (!token) return;
@@ -117,6 +118,11 @@ function Funnel5Content() {
 
   return (
     <FunnelShell step={5} token={token}>
+      {testCheckoutEnabled ? (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Testzahlung 0,01 € – nur für interne Prüfung. Echter Paketinhalt bleibt im Angebot erhalten.
+        </div>
+      ) : null}
       <LiveAnalysisDashboard
         lead={lead || {}}
         research={research}

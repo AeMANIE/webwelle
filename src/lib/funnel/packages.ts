@@ -26,7 +26,7 @@ export const STARTERWELLE = {
   name: 'StarterWelle',
   priceCents: 69900,
   compareAtPriceCents: 69900,
-  stripePriceId: 'price_1TiD5rJ8MIbotcdApVcLOipx',
+  stripePriceId: 'price_1SigIZJ8MIbotcdALYoAD71T',
   termLabel: '24 Monate',
   features: [
     'Individuell gestaltete Onepage-Website für einen professionellen Unternehmensauftritt',
@@ -43,7 +43,7 @@ export const SEO_PROFI_ADDON = {
   id: 'seo_profi',
   name: 'SEO Profi Zusatzpaket',
   priceCents: 29900,
-  stripePriceId: 'price_1ThuqjJ8MIbotcdAodiU9DGS',
+  stripePriceId: 'price_1TiYk4J8MIbotcdAHYZp86sZ',
   description:
     'Professionelle SEO-Betreuung: Keyword-Strategie, OnPage-Optimierung und laufendes Monitoring für mehr Sichtbarkeit.',
 };
@@ -52,7 +52,7 @@ export const BLOG_BUNDLE_10 = {
   id: 'blog_bundle_10',
   name: '10 Blog-Artikel Paket',
   priceCents: 49900,
-  stripePriceId: 'price_1Thut7J8MIbotcdAvDGxBGTz',
+  stripePriceId: 'price_1TiYlpJ8MIbotcdABGyV8ax5',
   articleCount: 10,
   description:
     'Zehn SEO-optimierte Fachartikel für Ihre Branche – perfekt für mehr Reichweite und Vertrauen bei Google.',
@@ -65,7 +65,7 @@ export const BRANDING_ADDON = {
   id: 'branding',
   name: 'Branding & Logo',
   priceCents: 19900,
-  stripePriceId: 'price_1ThuueJ8MIbotcdAeReNxoO3',
+  stripePriceId: 'price_1TiYgkJ8MIbotcdA3jS2H8Oo',
   description:
     'Vier Logo-Entwürfe zur Auswahl – ideal, wenn Ihr Außenauftritt modernisiert oder professionell aufgebaut werden soll.',
 };
@@ -74,7 +74,7 @@ export const ANIMATION_ADDON = {
   id: 'animation',
   name: 'Animationspaket',
   priceCents: 99900,
-  stripePriceId: 'price_1ThuvnJ8MIbotcdASWwhyiVY',
+  stripePriceId: 'price_1TiYiaJ8MIbotcdAE9z0d7ha',
   description:
     'Mehr Dynamik und visuelle Wirkung durch passende Animationen und Übergänge, abgestimmt auf Branche und Seitenaufbau.',
 };

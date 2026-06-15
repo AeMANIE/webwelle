@@ -23,8 +23,18 @@ export const FUNNEL_STRIPE_PRICE_CONFIG = [
   { envKey: 'STRIPE_PRICE_ANIMATION', defaultId: ANIMATION_ADDON.stripePriceId, label: 'Animationspaket' },
 ] as const;
 
+export const FUNNEL_TEST_PRICE = {
+  envKey: 'STRIPE_PRICE_FUNNEL_TEST',
+  defaultId: 'price_1TiYnMJ8MIbotcdAYwIa9Lwf',
+  label: 'Funnel Test (0,01 €)',
+} as const;
+
 export function sanitizeEnvValue(value: string | undefined): string {
   return value?.trim().replace(/^["']|["']$/g, '') || '';
+}
+
+export function isFunnelTestCheckoutEnabled(): boolean {
+  return sanitizeEnvValue(process.env.FUNNEL_CHECKOUT_USE_TEST_PRICE).toLowerCase() === 'true';
 }
 
 export function resolvePriceId(defaultId: string, envKey: string): string {
@@ -83,6 +93,15 @@ export function buildStripeLineItemsFromSelection(
   }
 
   return lineItems;
+}
+
+export function buildTestStripeLineItem(): Stripe.Checkout.SessionCreateParams.LineItem[] {
+  return [
+    {
+      price: resolvePriceId(FUNNEL_TEST_PRICE.defaultId, FUNNEL_TEST_PRICE.envKey),
+      quantity: 1,
+    },
+  ];
 }
 
 export async function assertFunnelStripePrices(
@@ -182,6 +201,46 @@ export async function verifyFunnelStripePrices(
       results.push({
         envKey: config.envKey,
         label: config.label,
+        resolvedId,
+        source,
+        ok: false,
+        error:
+          stripeError?.message ||
+          (error instanceof Error ? error.message : 'Unbekannter Fehler'),
+        stripeCode: stripeError?.code,
+      });
+    }
+  }
+
+  if (isFunnelTestCheckoutEnabled()) {
+    const envValue = sanitizeEnvValue(process.env[FUNNEL_TEST_PRICE.envKey]);
+    const resolvedId = envValue || FUNNEL_TEST_PRICE.defaultId;
+    const source = envValue ? 'env' : 'default';
+
+    try {
+      const price = await stripe.prices.retrieve(resolvedId);
+      results.push({
+        envKey: FUNNEL_TEST_PRICE.envKey,
+        label: FUNNEL_TEST_PRICE.label,
+        resolvedId,
+        source,
+        ok: price.active === true && price.type === 'one_time',
+        type: price.type,
+        active: price.active,
+        unitAmount: price.unit_amount,
+        currency: price.currency,
+        error:
+          price.active !== true
+            ? 'Price ist nicht aktiv'
+            : price.type !== 'one_time'
+              ? `Falscher Typ: ${price.type}`
+              : undefined,
+      });
+    } catch (error) {
+      const stripeError = isStripeError(error) ? error : null;
+      results.push({
+        envKey: FUNNEL_TEST_PRICE.envKey,
+        label: FUNNEL_TEST_PRICE.label,
         resolvedId,
         source,
         ok: false,
