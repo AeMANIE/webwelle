@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { requireAdminAuth } from '@/lib/api-security';
 import { generateInvoicePdf } from '@/lib/invoice-pdf';
+import { INVOICE_BANKING } from '@/lib/post-payment-emails';
 import { sendEmail } from '@/lib/email';
 import { getCustomerByEmail } from '@/lib/database';
 
@@ -62,22 +63,14 @@ export async function POST(request: NextRequest) {
     const pdfBuffer = await generateInvoicePdf({
       invoiceNumber: String(inv.number || inv.id),
       issueDate: new Date((inv.created ?? Math.floor(Date.now() / 1000)) * 1000),
+      customerNumber,
       customer: {
         name: customerName || customerEmail || '',
         email: customerEmail || '',
         address: customer ? `${customer.address?.line1 || ''} ${customer.address?.postal_code || ''} ${customer.address?.city || ''}`.trim() || null : null,
       },
       items,
-      banking: {
-        companyName: 'AeManie GmbH',
-        addressLine: 'Uhlandstr. 16 – 87437 Kempten',
-        iban: 'DE25 7335 0000 05163187 06',
-        bic: 'BYLADEM1ALG',
-        taxOffice: 'Finanzamt Kempten',
-        taxNumber: '127 121 20418',
-        vatId: 'DE 367002188',
-      },
-      notes: customerNumber ? `Kundennummer: ${customerNumber}` : undefined,
+      banking: INVOICE_BANKING,
     });
 
     await sendEmail({

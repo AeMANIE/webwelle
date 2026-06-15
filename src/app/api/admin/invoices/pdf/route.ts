@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { requireAdminAuth } from '@/lib/api-security';
 import { generateInvoicePdf } from '@/lib/invoice-pdf';
+import { INVOICE_BANKING } from '@/lib/post-payment-emails';
 import { getCustomerByEmail } from '@/lib/database';
 
 function getStripe(): Stripe {
@@ -55,18 +56,11 @@ export async function GET(request: NextRequest) {
     const pdf = await generateInvoicePdf({
       invoiceNumber: String(inv.number || inv.id),
       issueDate: new Date(((inv.created ?? Math.floor(Date.now() / 1000)) as number) * 1000),
+      customerNumber,
       customer: { name: customerName || customerEmail || '', email: customerEmail || '' },
       items,
-      banking: {
-        companyName: 'AeManie GmbH',
-        addressLine: 'Uhlandstr.16 – 87437 Kempten',
-        iban: 'DE25 7335 0000 05163187 06',
-        bic: 'BYLADEM1ALG',
-        taxOffice: 'Finanzamt Kempten',
-        taxNumber: '127 121 20418',
-        vatId: 'DE 367002188',
-      },
-      notes: customerNumber ? `Kundennummer: ${customerNumber}` : 'Alle Preise netto zzgl. 19% MwSt. Vielen Dank für Ihr Vertrauen!',
+      banking: INVOICE_BANKING,
+      notes: 'Alle Preise netto zzgl. 19% MwSt. Vielen Dank für Ihr Vertrauen!',
     });
 
     const body = new Uint8Array(pdf);

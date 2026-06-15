@@ -11,6 +11,7 @@ import { getCustomerByEmail, saveInvoice } from '@/lib/database';
 export const INVOICE_BANKING = {
   companyName: 'AeManie GmbH',
   addressLine: 'Uhlandstr. 16 – 87437 Kempten',
+  bankName: 'Sparkasse Allgäu',
   iban: 'DE25 7335 0000 05163187 06',
   bic: 'BYLADEM1ALG',
   taxOffice: 'Finanzamt Kempten',
@@ -118,6 +119,7 @@ async function sendFunnelInvoiceEmail(params: {
   const pdfBuffer = await generateInvoicePdf({
     invoiceNumber,
     issueDate: new Date(),
+    customerNumber: params.customerNumber,
     customer: {
       name: params.customerName,
       email: params.customerEmail,
@@ -125,7 +127,6 @@ async function sendFunnelInvoiceEmail(params: {
     },
     items: offerItemsToPdfLines(params.offerItems, params.offerDiscountCents || 0),
     banking: INVOICE_BANKING,
-    notes: params.customerNumber ? `Kundennummer: ${params.customerNumber}` : undefined,
   });
 
   await saveInvoice({

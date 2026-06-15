@@ -411,6 +411,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice, stripe: St
         const pdfBuffer = await generateInvoicePdf({
           invoiceNumber: String(inv.number || inv.id),
           issueDate: new Date((inv.created ?? Math.floor(Date.now() / 1000)) * 1000),
+          customerNumber,
           customer: {
             name: customerName || customerEmail || '',
             email: customerEmail || '',
@@ -418,7 +419,6 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice, stripe: St
           },
           items,
           banking: INVOICE_BANKING,
-          notes: customerNumber ? `Kundennummer: ${customerNumber}` : undefined,
         });
 
         await sendStripeInvoiceEmail({
