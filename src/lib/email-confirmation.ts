@@ -1,8 +1,13 @@
 import { sendEmail } from './email';
-import { WW_COLORS, WW_EMAIL } from './design-tokens';
+import { WW_EMAIL_LIGHT as L } from './design-tokens';
 import { PAYMENT_SUCCESS_CONTENT, ZOOM_SCHEDULER_URL } from './payment-success-content';
-
-const C = WW_COLORS;
+import {
+  emailButton,
+  emailDetailRow,
+  emailPanel,
+  escapeHtml,
+  renderWebWelleEmailShell,
+} from './email-templates/email-layout';
 
 interface BookingConfirmationData {
   customerName: string;
@@ -37,137 +42,84 @@ export async function sendBookingConfirmation(data: BookingConfirmationData) {
     zoomSchedulerUrl = ZOOM_SCHEDULER_URL,
   } = data;
 
+  const safeName = escapeHtml(customerName);
+  const safePackage = escapeHtml(packageName);
+  const safePrice = escapeHtml(packagePrice);
+  const safeSessionId = escapeHtml(sessionId);
   const zoomCopy = PAYMENT_SUCCESS_CONTENT;
+
   const zoomBlock = showZoomCta
-    ? `
-            <div style="background: rgba(140, 54, 201, 0.12); border: 1px solid ${WW_EMAIL.brandBorder}; border-radius: 12px; padding: 24px; margin: 30px 0; text-align: center;">
-              <h3 style="color: ${C.foreground}; font-size: 18px; margin: 0 0 12px 0;">${zoomCopy.ctaTitle}</h3>
-              <p style="color: #cbd5e1; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">${zoomCopy.ctaDescription}</p>
-              <a href="${zoomSchedulerUrl}"
-                 style="display: inline-block; background: ${C.brand}; color: ${C.brandForeground}; text-decoration: none; padding: 14px 28px; border-radius: 999px; font-weight: 700; font-size: 16px; box-shadow: 0 10px 26px ${WW_EMAIL.brandShadow};">
-                ${zoomCopy.ctaButton}
-              </a>
-              <p style="color: ${C.mutedForeground}; font-size: 13px; margin: 16px 0 0 0;">${zoomCopy.emailNote}</p>
-            </div>
-    `
+    ? emailPanel(`
+        <h3 style="color:${L.heading};font-size:18px;margin:0 0 12px 0;text-align:center;">${escapeHtml(zoomCopy.ctaTitle)}</h3>
+        <p style="color:${L.body};font-size:15px;line-height:1.6;margin:0 0 20px 0;text-align:center;">${escapeHtml(zoomCopy.ctaDescription)}</p>
+        <div style="text-align:center;margin-bottom:12px;">${emailButton(zoomSchedulerUrl, escapeHtml(zoomCopy.ctaButton))}</div>
+        <p style="color:${L.muted};font-size:13px;margin:0;text-align:center;">${escapeHtml(zoomCopy.emailNote)}</p>
+      `)
     : '';
+
+  const addonsHtml =
+    selectedAddons.length > 0
+      ? `
+      <h3 style="color:${L.heading};font-size:18px;margin:20px 0 10px 0;">Zusatzoptionen:</h3>
+      <ul style="list-style:none;padding:0;margin:0 0 20px 0;">
+        ${selectedAddons
+          .map(
+            (addon) => `
+          <li style="padding:8px 0;border-bottom:1px solid ${L.border};">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="color:${L.body};">${escapeHtml(addon.label)}</span>
+              <span style="color:${L.primary};font-weight:600;">${escapeHtml(addon.price)} ${addon.billing === 'monthly' ? 'mtl.' : addon.billing === 'yearly' ? 'jährlich' : ''}</span>
+            </div>
+          </li>`
+          )
+          .join('')}
+      </ul>`
+      : '';
+
+  const bodyHtml = `
+    <h2 style="color:${L.heading};font-size:22px;font-weight:600;margin:0 0 20px 0;">Vielen Dank für Ihre Buchung!</h2>
+    <p style="color:${L.body};font-size:16px;line-height:1.6;margin:0 0 20px 0;">Hallo ${safeName},</p>
+    <p style="color:${L.body};font-size:16px;line-height:1.6;margin:0 0 24px 0;">
+      wir freuen uns, dass Sie sich für ${safePackage} entschieden haben! Ihre Buchung wurde erfolgreich verarbeitet.
+    </p>
+    ${emailPanel(`
+      <h3 style="color:${L.heading};font-size:18px;margin:0 0 8px 0;">Buchungsdetails</h3>
+      ${emailDetailRow('Paket', safePackage)}
+      ${emailDetailRow('Zahlungsart', isMonthly ? 'Monatlich' : 'Einmalzahlung')}
+      ${emailDetailRow('Preis', safePrice)}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;">
+        <span style="color:${L.muted};font-weight:500;">Buchungs-ID</span>
+        <span style="color:${L.muted};font-family:monospace;font-size:14px;">${safeSessionId}</span>
+      </div>
+    `)}
+    ${addonsHtml}
+    ${zoomBlock}
+    <div style="background:${L.brand};color:${L.brandText};border-radius:12px;padding:20px;margin:24px 0;text-align:center;">
+      <h3 style="color:${L.brandText};font-size:18px;margin:0 0 10px 0;">Gesamtbetrag</h3>
+      <p style="color:${L.brandText};font-size:32px;font-weight:700;margin:0;">${totalAmount.toFixed(2)} ${currency.toUpperCase()}</p>
+    </div>
+    <div style="background:${L.infoBg};border:1px solid ${L.infoBorder};border-radius:12px;padding:24px;margin:24px 0;">
+      <h3 style="color:${L.primary};font-size:18px;margin:0 0 15px 0;">Nächste Schritte</h3>
+      <ol style="color:${L.body};font-size:16px;line-height:1.6;margin:0;padding-left:20px;">
+        <li style="margin-bottom:8px;">Unser Team wird sich innerhalb von 24 Stunden bei Ihnen melden</li>
+        <li style="margin-bottom:8px;">Wir besprechen Ihre Anforderungen und den Projektablauf</li>
+        <li style="margin-bottom:8px;">Die Entwicklung Ihres Projekts beginnt nach der Abstimmung</li>
+        <li>Sie erhalten regelmäßige Updates zum Projektfortschritt</li>
+      </ol>
+    </div>
+    <div style="text-align:center;margin:32px 0 16px 0;">
+      <p style="color:${L.muted};font-size:14px;margin:0 0 10px 0;">Bei Fragen stehen wir Ihnen gerne zur Verfügung:</p>
+      <p style="color:${L.primary};font-size:16px;font-weight:600;margin:0;">info@webwelle.com</p>
+    </div>
+    <div style="text-align:center;margin:24px 0 0;">${emailButton('https://webwelle.com/customer', 'Zum Kundenportal')}</div>
+  `;
+
+  const html = renderWebWelleEmailShell({
+    title: 'Ihre Buchungsbestätigung',
+    bodyHtml,
+  });
 
   const subject = `Buchungsbestätigung - ${packageName} | WebWelle`;
-  
-  const addonsHtml = selectedAddons.length > 0 
-    ? `
-      <h3 style="color: ${C.foreground}; font-size: 18px; margin: 20px 0 10px 0;">Zusatzoptionen:</h3>
-      <ul style="list-style: none; padding: 0; margin: 0 0 20px 0;">
-        ${selectedAddons.map(addon => `
-          <li style="padding: 8px 0; border-bottom: 1px solid ${C.border};">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="color: #cbd5e1;">${addon.label}</span>
-              <span style="color: ${C.primary}; font-weight: 600;">${addon.price} ${addon.billing === 'monthly' ? 'mtl.' : addon.billing === 'yearly' ? 'jährlich' : ''}</span>
-            </div>
-          </li>
-        `).join('')}
-      </ul>
-    `
-    : '';
-
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Buchungsbestätigung - WebWelle</title>
-    </head>
-    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: ${C.background}; color: ${C.foreground};">
-      <div style="max-width: 600px; margin: 0 auto; padding: 28px 16px;">
-        <div style="border: 1px solid ${WW_EMAIL.brandBorder}; border-radius: 16px; overflow: hidden; background: ${WW_EMAIL.cardGradient}; box-shadow: 0 24px 80px rgba(0,0,0,.35);">
-          
-          <div style="padding: 34px 30px 22px; border-bottom: 1px solid ${WW_EMAIL.brandBorderLight}; text-align: center;">
-            <div style="letter-spacing: .18em; text-transform: uppercase; color: ${C.primary}; font-size: 12px; font-weight: 700;">WebWelle</div>
-            <h1 style="color: ${C.foreground}; font-size: 26px; font-weight: 700; margin: 12px 0 6px 0;">Ihre Buchungsbestätigung</h1>
-          </div>
-
-          <div style="padding: 30px;">
-            <h2 style="color: ${C.foreground}; font-size: 22px; font-weight: 600; margin: 0 0 20px 0;">Vielen Dank für Ihre Buchung!</h2>
-            
-            <p style="color: #cbd5e1; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-              Hallo ${customerName},
-            </p>
-            
-            <p style="color: #cbd5e1; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-              wir freuen uns, dass Sie sich für ${packageName} entschieden haben! Ihre Buchung wurde erfolgreich verarbeitet.
-            </p>
-
-            <div style="background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 24px; margin: 30px 0;">
-              <h3 style="color: ${C.foreground}; font-size: 18px; margin: 0 0 20px 0;">Buchungsdetails</h3>
-              
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid ${C.border};">
-                <span style="color: ${C.mutedForeground}; font-weight: 500;">Paket</span>
-                <span style="color: ${C.foreground}; font-weight: 600;">${packageName}</span>
-              </div>
-              
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid ${C.border};">
-                <span style="color: ${C.mutedForeground}; font-weight: 500;">Zahlungsart</span>
-                <span style="color: ${C.foreground}; font-weight: 600;">${isMonthly ? 'Monatlich' : 'Einmalzahlung'}</span>
-              </div>
-              
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid ${C.border};">
-                <span style="color: ${C.mutedForeground}; font-weight: 500;">Preis</span>
-                <span style="color: ${C.foreground}; font-weight: 600;">${packagePrice}</span>
-              </div>
-              
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
-                <span style="color: ${C.mutedForeground}; font-weight: 500;">Buchungs-ID</span>
-                <span style="color: ${C.mutedForeground}; font-family: monospace; font-size: 14px;">${sessionId}</span>
-              </div>
-            </div>
-
-            ${addonsHtml}
-
-            ${zoomBlock}
-
-            <div style="background: ${C.brand}; color: ${C.brandForeground}; border-radius: 12px; padding: 20px; margin: 30px 0; text-align: center;">
-              <h3 style="color: ${C.brandForeground}; font-size: 18px; margin: 0 0 10px 0;">Gesamtbetrag</h3>
-              <p style="color: ${C.brandForeground}; font-size: 32px; font-weight: 700; margin: 0;">${totalAmount.toFixed(2)} ${currency.toUpperCase()}</p>
-            </div>
-
-            <div style="background: rgba(102, 153, 255, 0.08); border: 1px solid rgba(102, 153, 255, 0.2); border-radius: 12px; padding: 24px; margin: 30px 0;">
-              <h3 style="color: ${C.info}; font-size: 18px; margin: 0 0 15px 0;">Nächste Schritte</h3>
-              <ol style="color: #cbd5e1; font-size: 16px; line-height: 1.6; margin: 0; padding-left: 20px;">
-                <li style="margin-bottom: 8px;">Unser Team wird sich innerhalb von 24 Stunden bei Ihnen melden</li>
-                <li style="margin-bottom: 8px;">Wir besprechen Ihre Anforderungen und den Projektablauf</li>
-                <li style="margin-bottom: 8px;">Die Entwicklung Ihres Projekts beginnt nach der Abstimmung</li>
-                <li>Sie erhalten regelmäßige Updates zum Projektfortschritt</li>
-              </ol>
-            </div>
-
-            <div style="text-align: center; margin: 40px 0 20px 0;">
-              <p style="color: ${C.mutedForeground}; font-size: 14px; margin: 0 0 10px 0;">
-                Bei Fragen stehen wir Ihnen gerne zur Verfügung:
-              </p>
-              <p style="color: ${C.primary}; font-size: 16px; font-weight: 600; margin: 0;">
-                📧 info@webwelle.com
-              </p>
-            </div>
-
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="https://webwelle.com/customer" 
-                 style="display: inline-block; background: ${C.brand}; color: ${C.brandForeground}; text-decoration: none; padding: 14px 28px; border-radius: 999px; font-weight: 700; font-size: 16px; box-shadow: 0 10px 26px ${WW_EMAIL.brandShadow};">
-                Zum Kundenportal
-              </a>
-            </div>
-          </div>
-
-          <div style="padding: 24px 30px; text-align: center; border-top: 1px solid rgba(255,255,255,.1);">
-            <p style="color: ${C.mutedForeground}; font-size: 12px; margin: 0;">
-              © ${new Date().getFullYear()} WebWelle. Alle Rechte vorbehalten.
-            </p>
-          </div>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
 
   const text = `
 Buchungsbestätigung - ${packageName}
@@ -194,7 +146,7 @@ NÄCHSTE SCHRITTE:
 4. Sie erhalten regelmäßige Updates zum Projektfortschritt
 
 Bei Fragen stehen wir Ihnen gerne zur Verfügung:
-📧 info@webwelle.com
+info@webwelle.com
 
 Zum Kundenportal: https://webwelle.com/customer
 
@@ -208,7 +160,7 @@ Zum Kundenportal: https://webwelle.com/customer
       html,
       text,
     });
-    
+
     console.log(`✅ Buchungsbestätigung erfolgreich an ${customerEmail} gesendet`);
     return { success: true };
   } catch (error) {

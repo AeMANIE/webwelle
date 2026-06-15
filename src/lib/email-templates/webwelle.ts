@@ -1,6 +1,10 @@
-import { WW_COLORS, WW_EMAIL } from '../design-tokens';
-
-const C = WW_COLORS;
+import { WW_EMAIL_LIGHT as L } from '../design-tokens';
+import {
+  emailButton,
+  emailPanel,
+  escapeHtml,
+  renderWebWelleEmailShell,
+} from './email-layout';
 
 interface WebWellePortalMailParams {
   customerName: string;
@@ -9,15 +13,6 @@ interface WebWellePortalMailParams {
   resumeLink?: string;
   isResume?: boolean;
   variant?: 'new_customer' | 'existing_unactivated' | 'existing_active' | 'resume';
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
 
 export function renderWebWellePortalActivationEmail(params: WebWellePortalMailParams) {
@@ -58,49 +53,37 @@ export function renderWebWellePortalActivationEmail(params: WebWellePortalMailPa
   const intro = copy.intro;
   const resumeLink = params.resumeLink;
 
-  const html = `
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>${title} | WebWelle</title>
-  </head>
-  <body style="margin:0;padding:0;background:${C.background};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#f8fafc;">
-    <div style="max-width:680px;margin:0 auto;padding:28px 16px;">
-      <div style="border:1px solid ${WW_EMAIL.brandBorder};border-radius:24px;overflow:hidden;background:${WW_EMAIL.cardGradient};box-shadow:0 24px 80px rgba(0,0,0,.35);">
-        <div style="padding:34px 32px 22px;border-bottom:1px solid ${WW_EMAIL.brandBorderLight};">
-          <div style="letter-spacing:.18em;text-transform:uppercase;color:${C.primary};font-size:12px;font-weight:700;">WebWelle</div>
-          <h1 style="margin:12px 0 10px;font-size:30px;line-height:1.2;color:#ffffff;">${title}</h1>
-          <p style="margin:0;color:#cbd5e1;font-size:16px;line-height:1.65;">Hallo ${safeName}, ${intro}</p>
-          ${safeEmail ? `<p style="margin:14px 0 0;color:#94a3b8;font-size:14px;">Diese Nachricht wurde fuer <strong style="color:#f8fafc;">${safeEmail}</strong> erstellt.</p>` : ''}
-        </div>
+  const subtitleHtml = `<p style="margin:12px 0 0;color:${L.body};font-size:16px;line-height:1.65;">Hallo ${safeName}, ${escapeHtml(intro)}</p>${
+    safeEmail
+      ? `<p style="margin:14px 0 0;color:${L.muted};font-size:14px;">Diese Nachricht wurde für <strong style="color:${L.heading};">${safeEmail}</strong> erstellt.</p>`
+      : ''
+  }`;
 
-        <div style="padding:30px 32px;">
-          <div style="background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:22px;margin-bottom:28px;">
-            <p style="margin:0 0 14px;color:#f8fafc;font-weight:700;">Im Portal sehen Sie:</p>
-            <p style="margin:0 0 10px;color:#cbd5e1;">Website-Analyse mit SEO-, Design- und Performance-Ergebnissen</p>
-            <p style="margin:0 0 10px;color:#cbd5e1;">Ihre gespeicherten Lieblings-Webseiten und Empfehlungen</p>
-            <p style="margin:0;color:#cbd5e1;">Angebote, Buchungen und Rechnungen an einem Ort</p>
-          </div>
-
-          <div style="text-align:center;margin:28px 0 20px;">
-            <a href="${params.activationLink}" style="display:inline-block;background:${C.brand};color:${C.brandForeground};text-decoration:none;font-weight:800;padding:16px 26px;border-radius:999px;box-shadow:0 10px 26px ${WW_EMAIL.brandShadow};">
-              ${copy.cta}
-            </a>
-          </div>
-
-          ${resumeLink ? `<p style="text-align:center;margin:0 0 24px;color:#94a3b8;font-size:14px;">Oder ohne Portal fortsetzen: <a href="${resumeLink}" style="color:${C.primary};text-decoration:none;font-weight:700;">Analyse später fortsetzen</a></p>` : ''}
-
-          <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:18px;color:#94a3b8;font-size:13px;line-height:1.6;">
-            ${copy.note}
-          </div>
-        </div>
-      </div>
-      <p style="text-align:center;color:#64748b;font-size:12px;margin:18px 0 0;">WebWelle | info@webwelle.com</p>
+  const bodyHtml = `
+    ${emailPanel(`
+      <p style="margin:0 0 14px;color:${L.heading};font-weight:700;">Im Portal sehen Sie:</p>
+      <p style="margin:0 0 10px;color:${L.body};">Website-Analyse mit SEO-, Design- und Performance-Ergebnissen</p>
+      <p style="margin:0 0 10px;color:${L.body};">Ihre gespeicherten Lieblings-Webseiten und Empfehlungen</p>
+      <p style="margin:0;color:${L.body};">Angebote, Buchungen und Rechnungen an einem Ort</p>
+    `)}
+    <div style="text-align:center;margin:28px 0 20px;">
+      ${emailButton(params.activationLink, escapeHtml(copy.cta))}
     </div>
-  </body>
-</html>`;
+    ${
+      resumeLink
+        ? `<p style="text-align:center;margin:0 0 24px;color:${L.muted};font-size:14px;">Oder ohne Portal fortsetzen: <a href="${resumeLink}" style="color:${L.primary};text-decoration:none;font-weight:700;">Analyse später fortsetzen</a></p>`
+        : ''
+    }
+    <div style="border-top:1px solid ${L.border};padding-top:18px;color:${L.muted};font-size:13px;line-height:1.6;">
+      ${escapeHtml(copy.note)}
+    </div>
+  `;
+
+  const html = renderWebWelleEmailShell({
+    title,
+    bodyHtml,
+    subtitleHtml,
+  });
 
   const text = `${title}
 
@@ -133,42 +116,32 @@ export function renderWebWelleInvoiceEmail(params: WebWelleInvoiceMailParams) {
   const safeInvoice = escapeHtml(params.invoiceNumber);
   const title = 'Ihre Rechnung von WebWelle';
 
-  const html = `
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>${title} | WebWelle</title>
-  </head>
-  <body style="margin:0;padding:0;background:${C.background};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#f8fafc;">
-    <div style="max-width:680px;margin:0 auto;padding:28px 16px;">
-      <div style="border:1px solid ${WW_EMAIL.brandBorder};border-radius:24px;overflow:hidden;background:${WW_EMAIL.cardGradient};box-shadow:0 24px 80px rgba(0,0,0,.35);">
-        <div style="padding:34px 32px 22px;border-bottom:1px solid ${WW_EMAIL.brandBorderLight};">
-          <div style="letter-spacing:.18em;text-transform:uppercase;color:${C.primary};font-size:12px;font-weight:700;">WebWelle</div>
-          <h1 style="margin:12px 0 10px;font-size:28px;line-height:1.2;color:#ffffff;">${title}</h1>
-          <p style="margin:0;color:#cbd5e1;font-size:16px;line-height:1.65;">Hallo ${safeName}, vielen Dank für Ihre Bestellung bei WebWelle.</p>
-          ${safeEmail ? `<p style="margin:14px 0 0;color:#94a3b8;font-size:14px;">Rechnung für <strong style="color:#f8fafc;">${safeEmail}</strong></p>` : ''}
-        </div>
+  const subtitleHtml = `<p style="margin:12px 0 0;color:${L.body};font-size:16px;line-height:1.65;">Hallo ${safeName}, vielen Dank für Ihre Bestellung bei WebWelle.</p>${
+    safeEmail
+      ? `<p style="margin:14px 0 0;color:${L.muted};font-size:14px;">Rechnung für <strong style="color:${L.heading};">${safeEmail}</strong></p>`
+      : ''
+  }`;
 
-        <div style="padding:30px 32px;">
-          <div style="background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:22px;margin-bottom:24px;">
-            <p style="margin:0 0 10px;color:#f8fafc;font-weight:700;">Rechnungsnummer: ${safeInvoice}</p>
-            ${params.customerNumber ? `<p style="margin:0;color:#cbd5e1;">Kundennummer: <strong style="color:#f8fafc;">${escapeHtml(params.customerNumber)}</strong></p>` : ''}
-            <p style="margin:14px 0 0;color:#cbd5e1;line-height:1.6;">Im Anhang finden Sie Ihre Rechnung als PDF. Sie können Ihre Rechnungen auch jederzeit in Ihrem Kundenportal einsehen.</p>
-          </div>
-
-          <div style="text-align:center;margin:8px 0 0;">
-            <a href="https://webwelle.com/customer" style="display:inline-block;background:${C.brand};color:${C.brandForeground};text-decoration:none;font-weight:800;padding:16px 26px;border-radius:999px;box-shadow:0 10px 26px ${WW_EMAIL.brandShadow};">
-              Zum Kundenportal
-            </a>
-          </div>
-        </div>
-      </div>
-      <p style="text-align:center;color:#64748b;font-size:12px;margin:18px 0 0;">WebWelle | info@webwelle.com</p>
+  const bodyHtml = `
+    ${emailPanel(`
+      <p style="margin:0 0 10px;color:${L.heading};font-weight:700;">Rechnungsnummer: ${safeInvoice}</p>
+      ${
+        params.customerNumber
+          ? `<p style="margin:0;color:${L.body};">Kundennummer: <strong style="color:${L.heading};">${escapeHtml(params.customerNumber)}</strong></p>`
+          : ''
+      }
+      <p style="margin:14px 0 0;color:${L.body};line-height:1.6;">Im Anhang finden Sie Ihre Rechnung als PDF. Sie können Ihre Rechnungen auch jederzeit in Ihrem Kundenportal einsehen.</p>
+    `)}
+    <div style="text-align:center;margin:8px 0 0;">
+      ${emailButton('https://webwelle.com/customer', 'Zum Kundenportal')}
     </div>
-  </body>
-</html>`;
+  `;
+
+  const html = renderWebWelleEmailShell({
+    title,
+    bodyHtml,
+    subtitleHtml,
+  });
 
   const text = `${title}
 

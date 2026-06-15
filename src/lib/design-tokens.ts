@@ -40,3 +40,21 @@ export const WW_EMAIL = {
   brandShadow: 'rgba(140, 54, 201, 0.28)',
   cardGradient: `linear-gradient(180deg, #151d2b 0%, ${WW_COLORS.background} 100%)`,
 } as const;
+
+/** Helles E-Mail-Layout – lesbar in iOS Light/Dark Mode (keine Client-Inversion) */
+export const WW_EMAIL_LIGHT = {
+  pageBg: '#f1f5f9',
+  cardBg: '#ffffff',
+  heading: '#0e141f',
+  body: '#334155',
+  muted: '#64748b',
+  border: '#e2e8f0',
+  panelBg: '#f8fafc',
+  primary: '#6699ff',
+  brand: '#8C36C9',
+  brandText: '#ffffff',
+  infoBg: '#eff6ff',
+  infoBorder: '#bfdbfe',
+  brandTintBg: '#f5f0fa',
+  brandTintBorder: '#e9d5ff',
+} as const;
