@@ -1,0 +1,37 @@
+---
+description: Systematisches Debuggen von Funnel, Forms und API mit Laufzeit-Beweisen
+globs: src/app/(funnel)/funnel-4/**/*,src/lib/validation.ts,src/components/funnel/EmailInputAssist.tsx
+alwaysApply: false
+---
+
+# Debug-Workflow (WebWelle)
+
+## Vorgehen
+
+1. Hypothesen formulieren (nicht raten)
+2. Instrumentierung / Logs (keine PII: keine E-Mails, Telefon, Tokens)
+3. Reproduktion durch Nutzer
+4. Logs auswerten → Fix nur mit Beleg
+5. Verifikation, dann Logs entfernen
+
+## Häufige Funnel-4-Fallen
+
+| Symptom | Prüfen |
+|--------|--------|
+| Button reagiert nicht | Client-Validierung vs. `disabled={loading}`; Submit-Fehler in `setError` |
+| Name ohne Hinweis | Live-Check erst ab `trim().length > 0`; min. 3 Zeichen |
+| Handy immer ungültig | Import muss `libphonenumber-js/max` sein; `getType() === 'MOBILE'` |
+| Autofill leer trotz Anzeige | React-State vs. DOM: `onInput`/`onBlur` sync; `autoComplete` nicht `off` |
+| API 400 trotz OK-UI | Server `contact`-Intent in `leads/[token]/route.ts` spiegelt Client-Checks |
+
+## Schnell-Checks
+
+```bash
+npm run build          # TypeScript + Next Build
+npx tsc --noEmit       # Nur Types
+```
+
+## n8n-Callbacks
+
+- Signatur: `x-webwelle-signature` via `verifyN8nSignature`
+- Research unvollständig: `isFunnelResearchComplete` in `src/lib/funnel/research.ts`

@@ -1,0 +1,37 @@
+---
+description: JWT-Auth, Rollen, Admin-TAN, Kundenportal und Middleware
+globs: src/lib/auth.ts,src/middleware.ts,src/app/api/auth/**/*,src/app/admin/**/*,src/app/customer/**/*,src/lib/portal-activation.ts,src/lib/tan*.ts
+alwaysApply: false
+---
+
+# Auth-Regeln
+
+## Rollen (RBAC)
+
+Hierarchie in `src/lib/rbac.ts`: `VIEWER < MEMBER < TEAM < ADMIN < OWNER`
+
+- **Kunden:** `VIEWER` (read-only) / `MEMBER` (read+write) – Spalte `customers.portal_role`
+- **Staff:** `TEAM` / `ADMIN` / `OWNER` – Tabelle `staff_users`; ENV-Admin → `OWNER` via `ensureEnvOwnerStaff`
+- **Middleware:** Staff → `/admin/*`, Kunden → `/customer/*`
+- **API:** `requireRole`, `requireAdminAuth` (≥ADMIN), `requireCustomerAuth` (≥VIEWER), `requireMemberAuth` (≥MEMBER)
+
+## Token
+
+- Erstellung: `createToken` in `src/lib/auth.ts` (`jsonwebtoken`)
+- Edge-Verify: `jwtVerify` (`jose`) in Middleware
+- Env: `JWT_SECRET` muss gesetzt sein
+
+## Admin-Login
+
+- TAN-Flow: `admin-request-tan` → `admin-verify-tan` → Session-Cookie
+
+## Kundenportal
+
+- Anlage bei Funnel-4 `intent: contact` (`getOrCreateCustomerWithNumber`)
+- Aktivierung: `/customer/activate?token=…`, Portal-Links per E-Mail (`portal-activation`)
+
+## Sicherheit
+
+- Keine Secrets loggen oder committen
+- API-Routen: `requireAdminAuth` für Admin-Endpunkte
+- Passwort-Hashing: `bcryptjs`

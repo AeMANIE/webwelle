@@ -1,0 +1,16 @@
+---
+description: WebWelle Projekt-Kontext, Stack und Konventionen (immer aktiv)
+alwaysApply: true
+---
+
+# WebWelle – Projekt-Kontext
+
+- **Stack:** Next.js 16 (App Router), TypeScript, Tailwind, PostgreSQL (`pg`), Redis, Stripe, DocuSeal, n8n-Webhooks, Coolify-Deploy
+- **Sprache:** UI und Nutzertexte auf **Deutsch**; Code-Kommentare knapp, auf Englisch wenn im File üblich
+- **Auth:** Eigene JWT-Lösung (`jose` Middleware, `jsonwebtoken` API) – **kein** NextAuth/Supabase/Clerk
+- **DB:** Raw SQL via `pg` Pool – **kein** Prisma/Supabase ORM
+- **Validierung:** Zentral in `src/lib/validation.ts`; Funnel-Kontakt nutzt `validatePersonName`, `validateMobileDACH` (`libphonenumber-js/max`)
+- **API-Sicherheit:** `secureResponse`, `requireAdminAuth` aus `src/lib/api-security.ts`
+- **Commits & Push:** Nur auf ausdrückliche Anfrage committen; **niemals** `git push` ohne explizite Erlaubnis des Nutzers
+- **Secrets:** Keine Secrets in Git
+- **Scope:** Minimale Diffs, bestehende Patterns erweitern – kein Over-Engineering

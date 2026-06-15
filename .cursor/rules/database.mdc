@@ -1,0 +1,41 @@
+---
+description: PostgreSQL pg-Pool, Coolify/VPS, Funnel-Tabellen und Migrationen
+globs: src/lib/database.ts,src/lib/funnel-database.ts,info/database/**/*,scripts/**/*,src/app/api/admin/**/*
+alwaysApply: false
+---
+
+# Datenbank-Regeln
+
+## Verbindung
+
+- **Driver:** `pg` (`Pool`) in `src/lib/database.ts` – kein Prisma
+- **Env:** `DATABASE_URL` (Prod/VPS), lokal oft `DATABASE_PUBLICURL`
+- **SSL:** VPS mit `sslmode=require`; ggf. `NODE_TLS_REJECT_UNAUTHORIZED=0` – nicht ohne Grund ändern
+- **Coolify:** Callback-URLs u. a. `COOLIFY_URL`, `COOLIFY_FQDN` in n8n-Dispatch
+
+## Funnel-Schema
+
+- Leads: `funnel_leads` (Token, Status, Kontakt, Paket, Addons)
+- Research: `funnel_research_results` (pro `workflow_key`)
+- Angebote: `offers`, `offer_items`, `docuseal_submissions`
+- Tabellen-Setup: `info/database/funnel_tables.sql` + `ensureFunnelTables()`
+
+## Patterns
+
+- Lead laden: `getFunnelLeadByToken` / `updateFunnelLead` in `funnel-database.ts`
+- Kunden: `customers` in `database.ts`, verknüpft via `customer_id` am Lead
+- Neue Spalten: `ALTER TABLE … ADD COLUMN IF NOT EXISTS` in `ensureFunnelTables` oder SQL-Datei
+
+## Daten-Isolation (aktuell)
+
+- **App-Layer:** `customer_id` aus JWT + `requireCustomerAuth` / `requireMemberAuth` – kein `tenant_id`
+- **Phase 4–5 zurückgestellt:** kein `organizations`-Schema, kein RLS ohne Freigabe → `info/database/phase-4-5-backlog.md`
+- **Nicht einführen:** `tenant_id` auf Tabellen, `ENABLE ROW LEVEL SECURITY`, `organization_id` ohne rbac/09-Entscheid
+
+## Backups & Ops
+
+- **Runbook:** `info/database/ops-runbook.md`, Restore: `backup-restore-procedure.md`
+- **Scripts:** `npm run db:backup`, `db:restore`, `db:ops-health`, `db:check-tables`
+- **Admin-API:** `GET /api/admin/ops/database` (Ops-Report)
+- **Env (nur Coolify/Secrets):** `BACKUP_B2_BUCKET`, `BACKUP_B2_ENDPOINT`, `BACKUP_B2_REGION`, `BACKUP_B2_KEY_ID`, `BACKUP_B2_APPLICATION_KEY`, `BACKUP_RETENTION_DAYS`, `BACKUP_SCHEDULE_ENABLED`, `BACKUP_LAST_SUCCESS_AT`
+- **RTO/RPO:** 4h / 24h – PITR optional wenn `wal_level=replica` + `archive_mode=on`
