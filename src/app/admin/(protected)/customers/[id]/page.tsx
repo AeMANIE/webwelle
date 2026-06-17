@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import DashboardShell from '../../../../components/dashboard/DashboardShell';
 import { splitFullName } from '@/lib/validation';
+import DwaLeadSummary from '@/components/funnel/DwaLeadSummary';
+import { dwaResumePath, dwaResumeStepLabel } from '@/lib/funnel/funnel-kind';
 
 const ADMIN_NAV = [
   { id: 'bookings', label: 'Bestellungen', icon: <Package className="h-4 w-4" /> },
@@ -70,11 +72,16 @@ interface FunnelAnalysis {
   id: string;
   token: string;
   status: string;
+  funnel_kind?: string;
   industry_raw?: string;
   industry_normalized?: string;
   postal_code?: string;
   city?: string;
   market?: string;
+  project_brief?: string | null;
+  project_notes?: string | null;
+  solution_selection?: { selectedIds?: string[] } | null;
+  zoom_booking_confirmed?: boolean;
   design_reference_urls?: string[];
   existing_website?: boolean | null;
   existing_website_url?: string | null;
@@ -646,11 +653,50 @@ export default function CustomerDetailPage() {
           {/* Funnel-Analysen */}
           <div className="bg-card rounded-lg p-6 border border-border mb-6">
             <h2 className="text-xl font-bold text-foreground mb-4">
-              Website-Analysen ({funnelAnalyses.length})
+              Funnel & Analysen ({funnelAnalyses.length})
             </h2>
             {funnelAnalyses.length > 0 ? (
               <div className="space-y-4">
                 {funnelAnalyses.map((analysis) => {
+                  const isDwa = analysis.funnel_kind === 'wachstumsarchitektur';
+
+                  if (isDwa) {
+                    return (
+                      <div key={analysis.id} className="rounded-lg border border-border p-4">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between mb-4">
+                          <div>
+                            <p className="font-semibold text-foreground">
+                              Digitale Wachstumsarchitektur
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {analysis.postal_code} {analysis.city} · {analysis.market || 'DE'} ·
+                              Status: {analysis.status}
+                            </p>
+                          </div>
+                          <a
+                            href={dwaResumePath(analysis.status, analysis.token)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded bg-brand px-3 py-2 text-sm text-brand-foreground hover:bg-brand/90 text-center"
+                          >
+                            Funnel fortsetzen (Schritt {dwaResumeStepLabel(analysis.status)})
+                          </a>
+                        </div>
+                        <DwaLeadSummary
+                          token={analysis.token}
+                          status={analysis.status}
+                          industry_normalized={analysis.industry_normalized}
+                          industry_raw={analysis.industry_raw}
+                          project_brief={analysis.project_brief}
+                          project_notes={analysis.project_notes}
+                          solution_selection={analysis.solution_selection}
+                          zoom_booking_confirmed={analysis.zoom_booking_confirmed}
+                          variant="admin"
+                        />
+                      </div>
+                    );
+                  }
+
                   const researchByKey = Object.fromEntries(
                     analysis.research.map((item) => [item.workflow_key, item])
                   );

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import DashboardShell from '../../components/dashboard/DashboardShell';
 import { DashboardPanel, DashboardStatCard } from '../../components/dashboard/DashboardPanel';
 import { Package, Euro, Calendar, FileText, Eye, Download, X, Plus, Settings } from 'lucide-react';
+import DwaLeadSummary from '@/components/funnel/DwaLeadSummary';
+import { dwaResumePath } from '@/lib/funnel/funnel-kind';
 
 type CustomerTabId = 'bookings' | 'addons' | 'analysis' | 'settings';
 
@@ -774,11 +776,10 @@ export default function CustomerPortal() {
                 {funnelAnalyses.map((analysis) => {
                   const isDwa = analysis.funnel_kind === 'wachstumsarchitektur';
                   const resumeHref = isDwa
-                    ? `/funnel-dw/4?t=${encodeURIComponent(analysis.token)}`
+                    ? dwaResumePath(analysis.status, analysis.token)
                     : `/funnel-5?t=${encodeURIComponent(analysis.token)}`;
 
                   if (isDwa) {
-                    const selectedIds = analysis.solution_selection?.selectedIds || [];
                     const projectSolutions = analysis.research.find(
                       (r) => r.workflow_key === 'project_solutions'
                     );
@@ -793,10 +794,6 @@ export default function CustomerPortal() {
                               {analysis.industry_normalized || analysis.industry_raw} ·{' '}
                               {analysis.postal_code} {analysis.city}
                             </p>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Status: {analysis.status}
-                              {analysis.zoom_booking_confirmed ? ' · Zoom bestätigt' : ''}
-                            </p>
                           </div>
                           <a
                             href={resumeHref}
@@ -805,20 +802,19 @@ export default function CustomerPortal() {
                             Anfrage fortsetzen
                           </a>
                         </div>
-                        {analysis.project_brief && (
-                          <div className="mt-4 rounded-lg bg-background/70 p-4 border border-border">
-                            <p className="text-sm font-medium mb-1">Projektbeschreibung</p>
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                              {analysis.project_brief}
-                            </p>
-                          </div>
-                        )}
-                        {selectedIds.length > 0 && (
-                          <div className="mt-4 rounded-lg bg-background/70 p-4 border border-border">
-                            <p className="text-sm font-medium mb-1">Gewählte Bausteine</p>
-                            <p className="text-sm text-muted-foreground">{selectedIds.join(', ')}</p>
-                          </div>
-                        )}
+                        <div className="mt-4">
+                          <DwaLeadSummary
+                            token={analysis.token}
+                            status={analysis.status}
+                            industry_normalized={analysis.industry_normalized}
+                            industry_raw={analysis.industry_raw}
+                            project_brief={analysis.project_brief}
+                            project_notes={analysis.project_notes}
+                            solution_selection={analysis.solution_selection}
+                            zoom_booking_confirmed={analysis.zoom_booking_confirmed}
+                            variant="customer"
+                          />
+                        </div>
                         {projectSolutions && (
                           <p className="text-xs text-muted-foreground mt-3">
                             Projektanalyse: {projectSolutions.status}

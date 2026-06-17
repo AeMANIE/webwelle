@@ -317,9 +317,10 @@ async function getCustomerDetails(customerId: string) {
     );
 
     const funnelLeadsResult = await client.query(
-      `SELECT id, token, status, industry_raw, industry_normalized, postal_code, city, market,
+      `SELECT id, token, status, funnel_kind, industry_raw, industry_normalized, postal_code, city, market,
               first_name, last_name, company_name, email, design_reference_urls,
               existing_website, existing_website_url,
+              project_brief, project_notes, solution_selection, zoom_booking_confirmed,
               created_at, updated_at
        FROM funnel_leads
        WHERE customer_id = $1 OR LOWER(email) = LOWER($2)
