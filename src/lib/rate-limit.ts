@@ -184,7 +184,13 @@ export const RATE_LIMITS = {
   API: { windowMs: 60 * 1000, maxRequests: 100 },
   
   // Stripe-Checkout: 10 Anfragen pro Stunde
-  CHECKOUT: { windowMs: 60 * 60 * 1000, maxRequests: 10 }
+  CHECKOUT: { windowMs: 60 * 60 * 1000, maxRequests: 10 },
+
+  // Funnel-API: Lesen (GET, Vorschläge)
+  FUNNEL_READ: { windowMs: 60 * 1000, maxRequests: 100 },
+
+  // Funnel-API: Schreiben (Lead start, PATCH)
+  FUNNEL_WRITE: { windowMs: 60 * 1000, maxRequests: 30 },
 };
 
 // Rate-Limit-Middleware für Next.js API Routes

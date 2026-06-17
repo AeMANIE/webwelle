@@ -12,6 +12,7 @@ import {
   normalizeDwaSolutions,
 } from '@/lib/funnel/dwa';
 import { ZOOM_SCHEDULER_URL } from '@/lib/payment-success-content';
+import { CUSTOMER_FREE_TEXT_LIMITS } from '@/lib/funnel/input-limits';
 import type { DwaSolutionItem } from '@/lib/funnel/types';
 
 function FunnelDw4Content() {
@@ -130,6 +131,9 @@ function FunnelDw4Content() {
     router.push(`/leistungen?submitted=dwa&t=${encodeURIComponent(token)}`);
   }
 
+  const notesLimit = CUSTOMER_FREE_TEXT_LIMITS.project_notes;
+  const notesLength = projectNotes.trim().length;
+
   if (!token) {
     return (
       <p className="text-center">
@@ -207,11 +211,15 @@ function FunnelDw4Content() {
           </label>
           <textarea
             id="project-notes"
+            maxLength={notesLimit.max}
             className={`${fieldClass} mt-1`}
             value={projectNotes}
             onChange={(e) => setProjectNotes(e.target.value)}
             placeholder="Z. B. interne Deadlines, besondere Anforderungen, bestehende Systeme …"
           />
+          <p className="text-xs text-muted-foreground mt-2">
+            {notesLength.toLocaleString('de-DE')} / {notesLimit.max.toLocaleString('de-DE')} Zeichen
+          </p>
         </section>
 
         <section className="space-y-4 pt-4 border-t border-border">

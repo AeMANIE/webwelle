@@ -6,6 +6,7 @@ import FunnelShell from '@/components/funnel/FunnelShell';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { useDwaLeadGuard } from '@/components/funnel/useFunnelLeadGuard';
 import { PROJECT_BRIEF_MIN_LENGTH } from '@/lib/funnel/dwa';
+import { CUSTOMER_FREE_TEXT_LIMITS } from '@/lib/funnel/input-limits';
 
 function FunnelDw2Content() {
   const searchParams = useSearchParams();
@@ -32,6 +33,9 @@ function FunnelDw2Content() {
 
   useDwaLeadGuard(token, lead, leadLoaded);
 
+  const briefLimit = CUSTOMER_FREE_TEXT_LIMITS.project_brief;
+  const briefLength = brief.trim().length;
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = brief.trim();
@@ -39,6 +43,11 @@ function FunnelDw2Content() {
       setError(
         `Bitte beschreiben Sie Ihr Projekt etwas ausführlicher (mindestens ${PROJECT_BRIEF_MIN_LENGTH} Zeichen).`
       );
+      return;
+    }
+
+    if (trimmed.length > briefLimit.max) {
+      setError(`Bitte kürzen Sie Ihre Beschreibung auf maximal ${briefLimit.max} Zeichen.`);
       return;
     }
 
@@ -90,6 +99,7 @@ function FunnelDw2Content() {
           <textarea
             id="project-brief"
             required
+            maxLength={briefLimit.max}
             className={`${fieldClass} mt-1`}
             value={brief}
             onChange={(e) => {
@@ -99,6 +109,12 @@ function FunnelDw2Content() {
             placeholder="Zum Beispiel: bestehende Website wirkt veraltet, Anfragen kommen zufällig, viel manuelle Abstimmung per E-Mail, neues Kundenportal geplant …"
           />
           <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+            {briefLength.toLocaleString('de-DE')} / {briefLimit.max.toLocaleString('de-DE')} Zeichen
+            {briefLength > 0 && briefLength < briefLimit.min
+              ? ` · mindestens ${briefLimit.min} Zeichen`
+              : ''}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
             Hilfreich ist, wenn Sie erwähnen, wo heute fehlende Klarheit, Medienbrüche oder
             manuelle Abläufe Wachstum und Effizienz begrenzen.
           </p>

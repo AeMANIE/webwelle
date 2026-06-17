@@ -6,6 +6,7 @@ import {
   INDUSTRY_DETAIL_MIN_LENGTH,
   isGenericIndustry,
 } from '@/lib/funnel/industry';
+import { CUSTOMER_FREE_TEXT_LIMITS } from '@/lib/funnel/input-limits';
 import type { DachMarket } from '@/lib/funnel/types';
 
 export interface IndustryDetailPanelProps {
@@ -130,6 +131,9 @@ export default function IndustryDetailPanel({
     await persistDetail(industryDetail);
   }
 
+  const detailLimit = CUSTOMER_FREE_TEXT_LIMITS.industry_detail;
+  const detailLength = industryDetail.trim().length;
+
   if (!needsDetail) return null;
 
   const detailValid = hasValidIndustryDetail(industryDetail);
@@ -175,6 +179,7 @@ export default function IndustryDetailPanel({
       <input
         id="industry-detail-input"
         value={industryDetail}
+        maxLength={detailLimit.max}
         onChange={(e) => {
           setSelectedChip(null);
           onDetailChange(e.target.value);
@@ -186,7 +191,8 @@ export default function IndustryDetailPanel({
         className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm"
       />
       <p className="text-xs text-muted-foreground mt-2">
-        Mindestens {INDUSTRY_DETAIL_MIN_LENGTH} Zeichen
+        {detailLength.toLocaleString('de-DE')} / {detailLimit.max.toLocaleString('de-DE')} Zeichen ·
+        mindestens {INDUSTRY_DETAIL_MIN_LENGTH} Zeichen
         {detailValid ? (
           <span className="text-emerald-500 ml-2">✓ Ausreichend konkret</span>
         ) : null}

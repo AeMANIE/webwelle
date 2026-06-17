@@ -8,19 +8,48 @@ import {
 import { createFunnelLead, ensureFunnelTables } from '@/lib/funnel-database';
 import { funnelKindFromSource } from '@/lib/funnel/funnel-kind';
 import type { FunnelKind } from '@/lib/funnel/types';
-import { secureResponse } from '@/lib/api-security';
+import { secureResponse, applyRateLimit } from '@/lib/api-security';
+import { RATE_LIMITS } from '@/lib/rate-limit';
+import { prepareCustomerFreeText } from '@/lib/validation';
 import { setFunnelTokenCookie } from '@/lib/auth-cookies';
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResponse = await applyRateLimit(request, RATE_LIMITS.FUNNEL_WRITE);
+    if (rateLimitResponse) return rateLimitResponse;
+
     await ensureFunnelTables();
 
     const body = await request.json();
-    const industryInput = String(body.industry || '').trim();
-    const acceptNormalized =
-      typeof body.acceptNormalized === 'string'
-        ? body.acceptNormalized.trim()
-        : '';
+    const preparedIndustry = prepareCustomerFreeText(
+      String(body.industry || ''),
+      'industry_short'
+    );
+    if (!preparedIndustry.valid || !preparedIndustry.value) {
+      return secureResponse(
+        {
+          error: 'invalid_industry',
+          message: preparedIndustry.hint || 'Branche zu kurz.',
+        },
+        400
+      );
+    }
+    const industryInput = preparedIndustry.value;
+    const acceptNormalizedInput =
+      typeof body.acceptNormalized === 'string' ? body.acceptNormalized : '';
+    const preparedAccepted = acceptNormalizedInput
+      ? prepareCustomerFreeText(acceptNormalizedInput, 'industry_short')
+      : null;
+    if (preparedAccepted && !preparedAccepted.valid) {
+      return secureResponse(
+        {
+          error: 'invalid_industry',
+          message: preparedAccepted.hint || 'Ungültige Branchenangabe.',
+        },
+        400
+      );
+    }
+    const acceptNormalized = preparedAccepted?.value || '';
 
     if (industryInput.length < 2) {
       return secureResponse(

@@ -7,6 +7,7 @@ import { ShinyInput } from '@/components/ui/shiny-input';
 import { SHINY_SWEEP_PRESETS } from '@/components/ui/shiny-motion';
 import type { FunnelKind } from '@/lib/funnel/types';
 import { funnelKindFromSource, funnelStartPath } from '@/lib/funnel/funnel-kind';
+import { CUSTOMER_FREE_TEXT_LIMITS } from '@/lib/funnel/input-limits';
 import { persistLeadToken } from '@/lib/funnel/client';
 import { isGenericIndustry } from '@/lib/funnel/industry';
 import AnimatedIndustryPlaceholder from '@/components/funnel/AnimatedIndustryPlaceholder';
@@ -28,6 +29,7 @@ export interface HeroIndustrySearchProps {
 }
 
 const DEFAULT_SUBMIT_LABEL = 'ANALYSE STARTEN';
+const INDUSTRY_MAX_LENGTH = CUSTOMER_FREE_TEXT_LIMITS.industry_short.max;
 
 export default function HeroIndustrySearch({
   variant = 'hero',
@@ -209,6 +211,7 @@ export default function HeroIndustrySearch({
             ref={inputRef}
             id={inputId}
             type="text"
+            maxLength={INDUSTRY_MAX_LENGTH}
             value={industry}
             onChange={(e) => {
               setIndustry(e.target.value);

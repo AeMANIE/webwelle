@@ -1,6 +1,10 @@
 import { parsePhoneNumberFromString } from 'libphonenumber-js/max';
 import { validatePostalCode } from '@/lib/funnel/market';
 import type { DachMarket } from '@/lib/funnel/types';
+import {
+  CUSTOMER_FREE_TEXT_LIMITS,
+  type CustomerFreeTextKind,
+} from '@/lib/funnel/input-limits';
 
 // Zentrale Input-Validierung für alle Formulare
 export interface ValidationResult {
@@ -507,6 +511,57 @@ export function sanitizeText(text: string): string {
     .replace(/javascript:/gi, '') // Entferne javascript: URLs
     .trim();
 }
+
+export function sanitizeCustomerFreeText(value: string): string {
+  return sanitizeText(
+    value
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\n{4,}/g, '\n\n\n')
+  );
+}
+
+export function validateCustomerFreeText(
+  value: string,
+  kind: CustomerFreeTextKind
+): FieldValidationResult {
+  const { min, max, label } = CUSTOMER_FREE_TEXT_LIMITS[kind];
+  const sanitized = sanitizeCustomerFreeText(value);
+
+  if (sanitized.length < min) {
+    if (min === 0) {
+      return { valid: true };
+    }
+    return {
+      valid: false,
+      hint: `${label} ist zu kurz (mindestens ${min} Zeichen).`,
+    };
+  }
+
+  if (sanitized.length > max) {
+    return {
+      valid: false,
+      hint: `${label} ist zu lang (maximal ${max} Zeichen).`,
+    };
+  }
+
+  return { valid: true };
+}
+
+export function prepareCustomerFreeText(
+  value: string,
+  kind: CustomerFreeTextKind
+): FieldValidationResult & { value?: string } {
+  const { max } = CUSTOMER_FREE_TEXT_LIMITS[kind];
+  const sanitized = sanitizeCustomerFreeText(value).slice(0, max);
+  const validation = validateCustomerFreeText(sanitized, kind);
+  if (!validation.valid) {
+    return validation;
+  }
+  return { valid: true, value: sanitized };
+}
+
+export type { CustomerFreeTextKind };
 
 // URL-Validierung
 export function validateUrl(url: string): boolean {

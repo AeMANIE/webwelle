@@ -12,8 +12,6 @@ import { DELIVERY_DISCOUNTS, type DeliveryWindow } from '@/lib/funnel/types';
 import { detectMarketFromHeaders, validatePostalCode } from '@/lib/funnel/market';
 import {
   buildIndustryForResearch,
-  hasValidIndustryDetail,
-  INDUSTRY_DETAIL_MIN_LENGTH,
   leadRequiresIndustryDetail,
   needsIndustryConfirmation,
   resolveIndustryNormalization,
@@ -27,11 +25,14 @@ import {
   getCallbackBaseUrl,
 } from '@/lib/n8n/dispatch';
 import { PROJECT_BRIEF_MIN_LENGTH } from '@/lib/funnel/dwa';
+import { CUSTOMER_FREE_TEXT_LIMITS } from '@/lib/funnel/input-limits';
 import { funnelResumePath, isWachstumsarchitekturLead } from '@/lib/funnel/funnel-kind';
 import type { DwaSolutionSelection, FunnelLead } from '@/lib/funnel/types';
-import { secureResponse } from '@/lib/api-security';
+import { secureResponse, applyRateLimit } from '@/lib/api-security';
+import { RATE_LIMITS } from '@/lib/rate-limit';
 import {
   fixEmailTypo,
+  prepareCustomerFreeText,
   validateEmail,
   validateMobileDACH,
   validatePersonName,
@@ -88,6 +89,11 @@ function rejectWrongFunnel(lead: FunnelLead, intent: string) {
   return null;
 }
 
+async function enforceFunnelRateLimit(request: NextRequest, write = false) {
+  const limit = write ? RATE_LIMITS.FUNNEL_WRITE : RATE_LIMITS.FUNNEL_READ;
+  return applyRateLimit(request, limit);
+}
+
 function classifyCustomer(customer: { password_hash?: string; portal_activated?: boolean } | null): FunnelCustomerType {
   if (!customer) return 'new_customer';
   return customer.password_hash && customer.portal_activated
@@ -138,14 +144,19 @@ async function sendPortalActivationMail(params: {
   resumeLink?: string;
   customerType?: FunnelCustomerType;
   isResume?: boolean;
+  funnelKind?: 'starterwelle' | 'wachstumsarchitektur';
 }) {
   const baseUrl = getPublicBaseUrl();
+  const mailKind = params.funnelKind === 'wachstumsarchitektur' ? 'wachstumsarchitektur' : 'starterwelle';
   const redirectTo = encodeURIComponent('/customer?tab=analysis');
   const activationLink = params.customerType === 'existing_active'
     ? `${baseUrl}/customer/login?redirectTo=${redirectTo}`
     : `${baseUrl}/customer/activate?token=${params.token}`;
-  const resumeLink =
-    params.resumeLink || `${baseUrl}/funnel-5?t=${encodeURIComponent(params.leadToken)}`;
+  const defaultResumePath =
+    mailKind === 'wachstumsarchitektur'
+      ? `/funnel-dw/4?t=${encodeURIComponent(params.leadToken)}`
+      : `/funnel-5?t=${encodeURIComponent(params.leadToken)}`;
+  const resumeLink = params.resumeLink || `${baseUrl}${defaultResumePath}`;
   const variant = params.isResume
     ? 'resume'
     : params.customerType === 'existing_active'
@@ -154,13 +165,21 @@ async function sendPortalActivationMail(params: {
         ? 'existing_unactivated'
         : 'new_customer';
   const subject =
-    variant === 'existing_active'
-      ? 'WebWelle - Ihre neue Analyse ist im Portal'
-      : variant === 'existing_unactivated'
-        ? 'WebWelle - Portal aktivieren und Analyse verbinden'
-        : params.isResume
-          ? 'WebWelle - Analyse gespeichert und Portalzugang'
-          : 'WebWelle - Kundenportal einrichten';
+    mailKind === 'wachstumsarchitektur'
+      ? variant === 'existing_active'
+        ? 'WebWelle - Ihre neue Projektanalyse ist im Portal'
+        : variant === 'existing_unactivated'
+          ? 'WebWelle - Portal aktivieren und Projektanalyse verbinden'
+          : params.isResume
+            ? 'WebWelle - Projektanalyse gespeichert und Portalzugang'
+            : 'WebWelle - Kundenportal einrichten'
+      : variant === 'existing_active'
+        ? 'WebWelle - Ihre neue Analyse ist im Portal'
+        : variant === 'existing_unactivated'
+          ? 'WebWelle - Portal aktivieren und Analyse verbinden'
+          : params.isResume
+            ? 'WebWelle - Analyse gespeichert und Portalzugang'
+            : 'WebWelle - Kundenportal einrichten';
   const email = renderWebWellePortalActivationEmail({
     customerName: params.name,
     customerEmail: params.email,
@@ -168,6 +187,7 @@ async function sendPortalActivationMail(params: {
     resumeLink,
     isResume: params.isResume,
     variant,
+    mailKind,
   });
 
   return sendEmail({
@@ -182,6 +202,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
+  const rateLimitResponse = await enforceFunnelRateLimit(request);
+  if (rateLimitResponse) return rateLimitResponse;
+
   const { token } = await params;
   let lead = await getFunnelLeadByToken(token);
   if (!lead) {
@@ -210,6 +233,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
+  const rateLimitResponse = await enforceFunnelRateLimit(request, true);
+  if (rateLimitResponse) return rateLimitResponse;
+
   const { token } = await params;
   const lead = await getFunnelLeadByToken(token);
   if (!lead) {
@@ -223,22 +249,38 @@ export async function PATCH(
   if (funnelGuard) return funnelGuard;
 
   if (intent === 'normalize-industry' || intent === 'update-industry') {
-    const raw =
+    const rawInput =
       intent === 'update-industry'
-        ? String(body.industry || '').trim()
-        : (lead.industry_raw || '').trim();
+        ? String(body.industry || '')
+        : (lead.industry_raw || '');
 
-    if (raw.length < 2) {
+    const preparedRaw = prepareCustomerFreeText(rawInput, 'industry_short');
+    if (!preparedRaw.valid || !preparedRaw.value) {
       return secureResponse(
-        { error: 'invalid_industry', message: 'Branche zu kurz (mindestens 2 Zeichen).' },
+        {
+          error: 'invalid_industry',
+          message: preparedRaw.hint || 'Branche zu kurz (mindestens 2 Zeichen).',
+        },
         400
       );
     }
+    const raw = preparedRaw.value;
 
-    const acceptNormalized =
-      typeof body.acceptNormalized === 'string'
-        ? body.acceptNormalized.trim()
-        : '';
+    const acceptNormalizedInput =
+      typeof body.acceptNormalized === 'string' ? body.acceptNormalized : '';
+    const preparedAccepted = acceptNormalizedInput
+      ? prepareCustomerFreeText(acceptNormalizedInput, 'industry_short')
+      : null;
+    if (preparedAccepted && !preparedAccepted.valid) {
+      return secureResponse(
+        {
+          error: 'invalid_industry',
+          message: preparedAccepted.hint || 'Ungültige Branchenangabe.',
+        },
+        400
+      );
+    }
+    const acceptNormalized = preparedAccepted?.value || '';
 
     const normalized = await resolveIndustryNormalization(
       raw,
@@ -271,35 +313,46 @@ export async function PATCH(
   }
 
   if (intent === 'industry-detail') {
-    const detail = String(body.industryDetail || body.detail || '').trim();
-    if (!hasValidIndustryDetail(detail)) {
+    const prepared = prepareCustomerFreeText(
+      String(body.industryDetail || body.detail || ''),
+      'industry_detail'
+    );
+    if (!prepared.valid || !prepared.value) {
       return secureResponse(
         {
           error: 'invalid_industry_detail',
-          message: `Bitte konkretisieren Sie Ihre Branche (mindestens ${INDUSTRY_DETAIL_MIN_LENGTH} Zeichen).`,
+          message:
+            prepared.hint ||
+            `Bitte konkretisieren Sie Ihre Branche (mindestens ${CUSTOMER_FREE_TEXT_LIMITS.industry_detail.min} Zeichen).`,
         },
         400
       );
     }
 
     const updated = await updateFunnelLead(token, {
-      industry_detail: detail,
+      industry_detail: prepared.value,
     });
 
     return secureResponse({ lead: updated });
   }
 
   if (intent === 'project-brief') {
-    const brief = String(body.projectBrief || body.project_brief || '').trim();
-    if (brief.length < PROJECT_BRIEF_MIN_LENGTH) {
+    const prepared = prepareCustomerFreeText(
+      String(body.projectBrief || body.project_brief || ''),
+      'project_brief'
+    );
+    if (!prepared.valid || !prepared.value) {
       return secureResponse(
         {
           error: 'invalid_project_brief',
-          message: `Bitte beschreiben Sie Ihr Projekt etwas ausführlicher (mindestens ${PROJECT_BRIEF_MIN_LENGTH} Zeichen).`,
+          message:
+            prepared.hint ||
+            `Bitte beschreiben Sie Ihr Projekt etwas ausführlicher (mindestens ${PROJECT_BRIEF_MIN_LENGTH} Zeichen).`,
         },
         400
       );
     }
+    const brief = prepared.value;
 
     const updated = await updateFunnelLead(token, {
       project_brief: brief,
@@ -559,6 +612,7 @@ export async function PATCH(
           leadToken: token,
           resumeLink: `${getPublicBaseUrl()}${resumePath}`,
           customerType,
+          funnelKind: lead.funnel_kind,
         });
       }
     }
@@ -619,7 +673,20 @@ export async function PATCH(
       );
     }
 
-    const projectNotes = String(body.projectNotes || '').trim();
+    const notesPrepared = prepareCustomerFreeText(
+      String(body.projectNotes || ''),
+      'project_notes'
+    );
+    if (!notesPrepared.valid) {
+      return secureResponse(
+        {
+          error: 'invalid_project_notes',
+          message: notesPrepared.hint || 'Zusatznotizen sind zu lang.',
+        },
+        400
+      );
+    }
+    const projectNotes = notesPrepared.value || '';
     const selection: DwaSolutionSelection = {
       selectedIds,
       updatedAt: new Date().toISOString(),
