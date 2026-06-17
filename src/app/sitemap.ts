@@ -14,6 +14,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 1,
     },
+    // Leistungen / Webdesign-Pakete
+    {
+      url: `${baseUrl}/leistungen`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
     // App-Entwicklung (neue Seite)
     {
       url: `${baseUrl}/app-entwicklung`,
