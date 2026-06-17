@@ -20,6 +20,25 @@ export function generateLeadToken(): string {
   return crypto.randomBytes(24).toString('hex');
 }
 
+const FUNNEL_LEAD_STATUSES: FunnelLeadStatus[] = [
+  'new',
+  'geo_complete',
+  'project_brief_complete',
+  'research_running',
+  'research_ready',
+  'discount_selected',
+  'website_intent_set',
+  'contact_complete',
+  'offer_viewed',
+  'package_selected',
+  'offer_sent',
+  'signed',
+  'checkout_sent',
+  'paid',
+  'consultation_requested',
+  'lost',
+];
+
 export async function ensureFunnelTables(): Promise<void> {
   const client = await pool.connect();
   try {
@@ -42,6 +61,47 @@ export async function ensureFunnelTables(): Promise<void> {
       ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS project_notes TEXT;
       ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS zoom_booking_confirmed BOOLEAN DEFAULT false;
       ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS zoom_booking_confirmed_at TIMESTAMPTZ;
+      ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS industry_detail TEXT;
+    `);
+
+    await client.query(`
+      DO $migration$
+      BEGIN
+        IF EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_name = 'funnel_leads'
+            AND column_name = 'industry_detail'
+        ) THEN
+          ALTER TABLE funnel_leads ALTER COLUMN industry_detail TYPE TEXT;
+        END IF;
+      EXCEPTION
+        WHEN others THEN NULL;
+      END $migration$;
+    `);
+
+    const statusList = FUNNEL_LEAD_STATUSES.map((s) => `'${s}'`).join(', ');
+    await client.query(`
+      DO $migration$
+      DECLARE
+        constraint_row RECORD;
+      BEGIN
+        FOR constraint_row IN
+          SELECT conname
+          FROM pg_constraint
+          WHERE conrelid = 'public.funnel_leads'::regclass
+            AND contype = 'c'
+            AND pg_get_constraintdef(oid) ILIKE '%status%'
+        LOOP
+          EXECUTE format('ALTER TABLE funnel_leads DROP CONSTRAINT %I', constraint_row.conname);
+        END LOOP;
+
+        ALTER TABLE funnel_leads ADD CONSTRAINT funnel_leads_status_check
+          CHECK (status IN (${statusList}));
+      EXCEPTION
+        WHEN duplicate_object THEN NULL;
+        WHEN others THEN NULL;
+      END $migration$;
     `);
 
     await client.query(`

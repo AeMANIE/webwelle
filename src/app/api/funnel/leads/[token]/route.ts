@@ -205,6 +205,12 @@ export async function GET(
   const rateLimitResponse = await enforceFunnelRateLimit(request);
   if (rateLimitResponse) return rateLimitResponse;
 
+  try {
+    await ensureFunnelTables();
+  } catch (error) {
+    console.warn('ensureFunnelTables (GET lead):', error);
+  }
+
   const { token } = await params;
   let lead = await getFunnelLeadByToken(token);
   if (!lead) {
@@ -236,18 +242,49 @@ export async function PATCH(
   const rateLimitResponse = await enforceFunnelRateLimit(request, true);
   if (rateLimitResponse) return rateLimitResponse;
 
-  const { token } = await params;
-  const lead = await getFunnelLeadByToken(token);
-  if (!lead) {
-    return secureResponse({ error: 'not_found' }, 404);
+  try {
+    await ensureFunnelTables();
+  } catch (error) {
+    console.warn('ensureFunnelTables (PATCH lead):', error);
   }
 
-  const body = await request.json();
-  const intent = body.intent as string;
+  try {
+    const { token } = await params;
+    const lead = await getFunnelLeadByToken(token);
+    if (!lead) {
+      return secureResponse({ error: 'not_found' }, 404);
+    }
 
-  const funnelGuard = rejectWrongFunnel(lead, intent);
-  if (funnelGuard) return funnelGuard;
+    const body = await request.json();
+    const intent = body.intent as string;
 
+    const funnelGuard = rejectWrongFunnel(lead, intent);
+    if (funnelGuard) return funnelGuard;
+
+    return await handleFunnelPatchIntent(token, lead, body, intent);
+  } catch (error) {
+    console.error('PATCH /api/funnel/leads/[token]:', error);
+    const message = error instanceof Error ? error.message : 'Unbekannter Serverfehler';
+    return secureResponse(
+      {
+        error: 'server_error',
+        message:
+          message.includes('violates check constraint') && message.includes('status')
+            ? 'Datenbank-Status ungültig. Bitte Seite neu laden und erneut versuchen.'
+            : 'Speichern fehlgeschlagen. Bitte erneut versuchen.',
+      },
+      500
+    );
+  }
+}
+
+async function handleFunnelPatchIntent(
+  token: string,
+  lead: FunnelLead,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  body: any,
+  intent: string
+) {
   if (intent === 'normalize-industry' || intent === 'update-industry') {
     const rawInput =
       intent === 'update-industry'
@@ -356,13 +393,17 @@ export async function PATCH(
 
     const updated = await updateFunnelLead(token, {
       project_brief: brief,
-      industry_detail: brief,
-      status: 'project_brief_complete',
+      status: 'research_running',
     });
 
-    await updateFunnelLead(token, { status: 'research_running' });
-    const refreshed = (await getFunnelLeadByToken(token)) || lead;
-    void dispatchProjectAnalysis(refreshed);
+    if (!updated) {
+      return secureResponse(
+        { error: 'update_failed', message: 'Projektbeschreibung konnte nicht gespeichert werden.' },
+        500
+      );
+    }
+
+    void dispatchProjectAnalysis(updated);
 
     return secureResponse({ lead: updated, analysisStarted: true });
   }

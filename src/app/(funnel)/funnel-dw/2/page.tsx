@@ -61,8 +61,17 @@ function FunnelDw2Content() {
     setLoading(false);
 
     if (!res.ok) {
-      const data = await res.json();
-      setError(data.message || 'Speichern fehlgeschlagen');
+      const text = await res.text();
+      let message = 'Speichern fehlgeschlagen';
+      if (text) {
+        try {
+          const data = JSON.parse(text) as { message?: string };
+          if (data.message) message = data.message;
+        } catch {
+          /* non-JSON error body */
+        }
+      }
+      setError(message);
       return;
     }
 
