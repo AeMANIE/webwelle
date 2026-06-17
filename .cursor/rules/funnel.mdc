@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Funnel-Regeln
 
-## Ablauf (Token `?t=` + Cookie `wf_token`)
+## Ablauf StarterWelle (Token `?t=` + Cookie `wf_token`)
 
 1. **Einstieg:** `HeroIndustrySearch` → `POST /api/funnel/leads/start` → `/funnel-2`
 2. **funnel-2:** Branche, PLZ, Stadt → `PATCH intent: geo` → startet n8n-Research
@@ -15,13 +15,22 @@ alwaysApply: false
 5. **funnel-5:** `LiveAnalysisDashboard` (Polling Research) → Stripe Checkout
 6. ~~funnel-6~~ entfernt (Redirect nach funnel-5); Zahlung via `POST /api/funnel/checkout/create`
 
+## Ablauf Digitale Wachstumsarchitektur (`funnel_kind: wachstumsarchitektur`)
+
+1. **Einstieg:** Leistungskarte → `HeroIndustrySearch` mit `funnelKind` → `/funnel-dw/2`
+2. **funnel-dw/2:** Projektbeschreibung → `intent: project-brief` → n8n `project_solutions`
+3. **funnel-dw/3:** Kontakt + Adresse → `intent: contact`
+4. **funnel-dw/4:** Lösungsbausteine + Zoom-Link/Checkbox → `intent: dw-submit` → Status `consultation_requested`
+
 ## Lead-Status (Auszug)
 
 `new` → `geo_complete` → `research_running` → `research_ready` → `website_intent_set` → `contact_complete` → `package_selected` → … → `paid`
 
 ## API `PATCH /api/funnel/leads/[token]` – Intents
 
-`geo`, `website-intent`, `contact`, `package`, `addon-selection`, `design-style-preferences`, `retry-research`, …
+`geo`, `website-intent`, `contact`, `package`, `addon-selection`, `design-style-preferences`, `retry-research`, `project-brief`, `solution-selection`, `dw-submit`, …
+
+DWA-only: `project-brief`, `solution-selection`, `dw-submit`. StarterWelle-only: `geo`, `website-intent`, `addon-selection`, …
 
 ## Wichtig
 

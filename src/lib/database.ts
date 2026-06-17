@@ -5,9 +5,37 @@
 // WICHTIG: Setze NODE_TLS_REJECT_UNAUTHORIZED für self-signed certificates
 // Dies muss GLOBAL gesetzt werden, BEVOR pg importiert wird
 const isDevelopmentEnv = process.env.NODE_ENV !== 'production';
-const dbUrlForSSL = isDevelopmentEnv && process.env.DATABASE_PUBLICURL 
-  ? process.env.DATABASE_PUBLICURL 
-  : process.env.DATABASE_URL;
+
+function isCoolifyInternalHost(hostname: string): boolean {
+  return Boolean(hostname) && !hostname.includes('.') && hostname.length > 8;
+}
+
+function resolveDatabaseConnectionString(): string {
+  const internal = process.env.DATABASE_URL || '';
+  const publicUrl = process.env.DATABASE_PUBLICURL || '';
+
+  if (isDevelopmentEnv && publicUrl) {
+    return publicUrl;
+  }
+
+  if (internal && publicUrl) {
+    try {
+      const host = new URL(internal).hostname;
+      if (isCoolifyInternalHost(host)) {
+        console.warn(
+          '⚠️ DATABASE_URL nutzt internen Coolify-Host – verwende DATABASE_PUBLICURL'
+        );
+        return publicUrl;
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  return internal || publicUrl;
+}
+
+const dbUrlForSSL = resolveDatabaseConnectionString() || process.env.DATABASE_URL || '';
 
 if (dbUrlForSSL?.includes('sslmode=require') && process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0') {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -139,19 +167,14 @@ export function getDatabaseUrl(usePublicUrl: boolean = false): string {
   const internalUrl = process.env.DATABASE_URL;
   const isDevelopment = process.env.NODE_ENV !== 'production';
   
-  // In Development: Bevorzuge DATABASE_PUBLICURL wenn vorhanden
-  if (isDevelopment && publicUrl) {
-    return publicUrl;
-  }
-  
-  // Bei expliziter Anforderung (z.B. bei Hostname-Fehlern)
   if (usePublicUrl && publicUrl) {
     return publicUrl;
   }
+
+  const resolved = resolveDatabaseConnectionString();
+  if (resolved) return resolved;
   
-  // Standard: DATABASE_URL verwenden (für Production oder wenn PUBLICURL nicht gesetzt)
   if (!internalUrl) {
-    // Fallback: Wenn DATABASE_URL nicht gesetzt, aber PUBLICURL vorhanden ist
     if (publicUrl) {
       console.warn('⚠️ DATABASE_URL nicht gesetzt, verwende DATABASE_PUBLICURL als Fallback');
       return publicUrl;
@@ -207,10 +230,8 @@ export async function createTempPool(
 
 // Hole die beste verfügbare Datenbank-URL
 // In Development: Bevorzugt DATABASE_PUBLICURL
-// In Production: Verwendet DATABASE_URL
-const selectedDbUrl = isDevelopmentEnv && process.env.DATABASE_PUBLICURL 
-  ? process.env.DATABASE_PUBLICURL 
-  : process.env.DATABASE_URL;
+// Lokal mit Coolify-DB: PUBLICURL wenn interner Hostname nicht auflösbar
+const selectedDbUrl = resolveDatabaseConnectionString();
 
 if (!selectedDbUrl) {
   throw new Error('DATABASE_URL oder DATABASE_PUBLICURL muss gesetzt sein');

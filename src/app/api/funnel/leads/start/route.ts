@@ -6,6 +6,8 @@ import {
   resolveIndustryNormalization,
 } from '@/lib/funnel/industry';
 import { createFunnelLead, ensureFunnelTables } from '@/lib/funnel-database';
+import { funnelKindFromSource } from '@/lib/funnel/funnel-kind';
+import type { FunnelKind } from '@/lib/funnel/types';
 import { secureResponse } from '@/lib/api-security';
 import { setFunnelTokenCookie } from '@/lib/auth-cookies';
 
@@ -72,11 +74,18 @@ export async function POST(request: NextRequest) {
     const geoLat = typeof body.lat === 'number' ? body.lat : undefined;
     const geoLng = typeof body.lng === 'number' ? body.lng : undefined;
 
+    const source = body.source || 'homepage_hero';
+    const funnelKind: FunnelKind =
+      body.funnelKind === 'wachstumsarchitektur'
+        ? 'wachstumsarchitektur'
+        : funnelKindFromSource(source);
+
     const lead = await createFunnelLead({
       industryRaw: industryInput,
       industryNormalized: normalized.normalized,
       industryConfidence: normalized.confidence,
-      source: body.source || 'homepage_hero',
+      source,
+      funnelKind,
       market: geo.market || body.market || null,
       country: geo.country,
       marketAutoDetected: geo.autoDetected,
@@ -87,6 +96,7 @@ export async function POST(request: NextRequest) {
     const res = secureResponse({
       token: lead.token,
       leadId: lead.id,
+      funnelKind: lead.funnel_kind,
       industryNormalized: normalized.normalized,
       needsConfirmation: false,
       market: lead.market,
@@ -98,10 +108,17 @@ export async function POST(request: NextRequest) {
     return res;
   } catch (error) {
     console.error('Lead start:', error);
+    const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
+    const isDbHostError =
+      message.includes('ENOTFOUND') ||
+      message.includes('getaddrinfo') ||
+      message.includes('ECONNREFUSED');
     return secureResponse(
       {
         error: 'server_error',
-        message: error instanceof Error ? error.message : 'Unbekannter Fehler',
+        message: isDbHostError
+          ? 'Datenbank nicht erreichbar. Bitte DATABASE_PUBLICURL in .env.local setzen (Coolify-Postgres von außen).'
+          : message,
       },
       500
     );

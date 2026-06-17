@@ -3,6 +3,8 @@ import { pool } from './database';
 import type {
   DachMarket,
   DeliveryWindow,
+  DwaSolutionSelection,
+  FunnelKind,
   FunnelLead,
   FunnelLeadStatus,
   FunnelResearchResult,
@@ -34,6 +36,12 @@ export async function ensureFunnelTables(): Promise<void> {
       ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS existing_website_url TEXT;
       ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS addon_selection JSONB;
       ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS design_preferences JSONB;
+      ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS funnel_kind VARCHAR(32) DEFAULT 'starterwelle';
+      ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS project_brief TEXT;
+      ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS solution_selection JSONB;
+      ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS project_notes TEXT;
+      ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS zoom_booking_confirmed BOOLEAN DEFAULT false;
+      ALTER TABLE funnel_leads ADD COLUMN IF NOT EXISTS zoom_booking_confirmed_at TIMESTAMPTZ;
     `);
 
     await client.query(`
@@ -59,12 +67,34 @@ export async function ensureFunnelTables(): Promise<void> {
   }
 }
 
+function normalizeSolutionSelection(value: unknown): DwaSolutionSelection | null {
+  if (!value || typeof value !== 'object') return null;
+  const raw = value as Record<string, unknown>;
+  const selectedIds = Array.isArray(raw.selectedIds)
+    ? raw.selectedIds.map((id) => String(id)).filter(Boolean)
+    : [];
+  return {
+    selectedIds,
+    updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : undefined,
+  };
+}
+
 function mapLead(row: Record<string, unknown>): FunnelLead {
   return {
     id: row.id as string,
     token: row.token as string,
     status: row.status as FunnelLeadStatus,
+    funnel_kind: ((row.funnel_kind as string) || 'starterwelle') as FunnelKind,
     source: (row.source as string) || 'homepage_hero',
+    project_brief: (row.project_brief as string | null) || null,
+    solution_selection: row.solution_selection
+      ? normalizeSolutionSelection(row.solution_selection)
+      : null,
+    project_notes: (row.project_notes as string | null) || null,
+    zoom_booking_confirmed: Boolean(row.zoom_booking_confirmed),
+    zoom_booking_confirmed_at: row.zoom_booking_confirmed_at
+      ? new Date(row.zoom_booking_confirmed_at as string)
+      : null,
     market: row.market as DachMarket | null,
     market_auto_detected: Boolean(row.market_auto_detected),
     country: row.country as string | null,
@@ -111,6 +141,7 @@ export async function createFunnelLead(params: {
   industryNormalized: string;
   industryConfidence: number;
   source?: string;
+  funnelKind?: FunnelKind;
   market?: DachMarket | null;
   country?: string | null;
   marketAutoDetected?: boolean;
@@ -118,17 +149,19 @@ export async function createFunnelLead(params: {
   geoLng?: number;
 }): Promise<FunnelLead> {
   const token = generateLeadToken();
+  const funnelKind = params.funnelKind || 'starterwelle';
   const client = await pool.connect();
   try {
     const result = await client.query(
       `INSERT INTO funnel_leads (
-        token, status, source, market, market_auto_detected, country,
+        token, status, source, funnel_kind, market, market_auto_detected, country,
         industry_raw, industry_normalized, industry_confidence, geo_lat, geo_lng
-      ) VALUES ($1, 'new', $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ) VALUES ($1, 'new', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *`,
       [
         token,
         params.source || 'homepage_hero',
+        funnelKind,
         params.market || null,
         Boolean(params.marketAutoDetected),
         params.country || params.market || null,
@@ -196,6 +229,12 @@ export async function updateFunnelLead(
     industry_normalized: string;
     industry_detail?: string;
     industry_confidence: number;
+    funnel_kind: FunnelKind;
+    project_brief: string;
+    solution_selection: DwaSolutionSelection | null;
+    project_notes: string;
+    zoom_booking_confirmed: boolean;
+    zoom_booking_confirmed_at: Date;
   }>
 ): Promise<FunnelLead | null> {
   const fields: string[] = [];
@@ -209,7 +248,8 @@ export async function updateFunnelLead(
         key === 'selected_modules' ||
         key === 'design_reference_urls' ||
         key === 'addon_selection' ||
-        key === 'design_preferences'
+        key === 'design_preferences' ||
+        key === 'solution_selection'
           ? JSON.stringify(value)
           : value
       );

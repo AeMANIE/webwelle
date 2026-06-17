@@ -2,9 +2,12 @@ import type { FunnelAddonSelection, FunnelDesignPreferences } from './packages';
 
 export type DachMarket = 'DE' | 'AT' | 'CH';
 
+export type FunnelKind = 'starterwelle' | 'wachstumsarchitektur';
+
 export type FunnelLeadStatus =
   | 'new'
   | 'geo_complete'
+  | 'project_brief_complete'
   | 'research_running'
   | 'research_ready'
   | 'discount_selected'
@@ -16,7 +19,20 @@ export type FunnelLeadStatus =
   | 'signed'
   | 'checkout_sent'
   | 'paid'
+  | 'consultation_requested'
   | 'lost';
+
+export interface DwaSolutionItem {
+  id: string;
+  title: string;
+  description: string;
+  recommended?: boolean;
+}
+
+export interface DwaSolutionSelection {
+  selectedIds: string[];
+  updatedAt?: string;
+}
 
 export type DeliveryWindow =
   | '1_month'
@@ -35,7 +51,13 @@ export interface FunnelLead {
   id: string;
   token: string;
   status: FunnelLeadStatus;
+  funnel_kind: FunnelKind;
   source: string;
+  project_brief: string | null;
+  solution_selection: DwaSolutionSelection | null;
+  project_notes: string | null;
+  zoom_booking_confirmed: boolean;
+  zoom_booking_confirmed_at: Date | null;
   market: DachMarket | null;
   market_auto_detected: boolean;
   country: string | null;

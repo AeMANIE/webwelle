@@ -4,12 +4,21 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { persistLeadToken } from '@/lib/funnel/client';
 
-const STEPS = [2, 3, 4, 5] as const;
+const STEPS_STARTERWELLE = [2, 3, 4, 5] as const;
+const STEPS_DWA = [1, 2, 3, 4] as const;
 
-export function FunnelStepper({ current }: { current: number }) {
+export function FunnelStepper({
+  current,
+  totalSteps = 5,
+}: {
+  current: number;
+  totalSteps?: number;
+}) {
+  const steps = totalSteps === 4 ? STEPS_DWA : STEPS_STARTERWELLE;
+
   return (
     <nav className="flex justify-center gap-2 mb-8 flex-wrap" aria-label="Funnel-Fortschritt">
-      {STEPS.map((step) => (
+      {steps.map((step) => (
         <span
           key={step}
           className={
@@ -26,10 +35,12 @@ export default function FunnelShell({
   step,
   children,
   token,
+  totalSteps = 5,
 }: {
   step: number;
   children: React.ReactNode;
   token: string;
+  totalSteps?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -49,9 +60,9 @@ export default function FunnelShell({
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 text-foreground">
       <p className="text-center text-sm text-muted-foreground mb-3">
-        Schritt {step} von 5
+        Schritt {step} von {totalSteps}
       </p>
-      <FunnelStepper current={step} />
+      <FunnelStepper current={step} totalSteps={totalSteps} />
       <div ref={ref}>{children}</div>
     </main>
   );

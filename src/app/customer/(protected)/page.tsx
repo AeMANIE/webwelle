@@ -79,11 +79,16 @@ interface FunnelAnalysis {
   id: string;
   token: string;
   status: string;
+  funnel_kind?: string;
   industry_raw?: string;
   industry_normalized?: string;
   postal_code?: string;
   city?: string;
   market?: string;
+  project_brief?: string | null;
+  project_notes?: string | null;
+  solution_selection?: { selectedIds?: string[] } | null;
+  zoom_booking_confirmed?: boolean;
   design_reference_urls?: string[];
   existing_website?: boolean | null;
   existing_website_url?: string | null;
@@ -767,6 +772,62 @@ export default function CustomerPortal() {
             ) : (
               <div className="space-y-6">
                 {funnelAnalyses.map((analysis) => {
+                  const isDwa = analysis.funnel_kind === 'wachstumsarchitektur';
+                  const resumeHref = isDwa
+                    ? `/funnel-dw/4?t=${encodeURIComponent(analysis.token)}`
+                    : `/funnel-5?t=${encodeURIComponent(analysis.token)}`;
+
+                  if (isDwa) {
+                    const selectedIds = analysis.solution_selection?.selectedIds || [];
+                    const projectSolutions = analysis.research.find(
+                      (r) => r.workflow_key === 'project_solutions'
+                    );
+                    return (
+                      <div key={analysis.id} className="bg-card rounded-lg p-6 border border-border">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                          <div>
+                            <h3 className="text-xl font-semibold text-foreground">
+                              Digitale Wachstumsarchitektur
+                            </h3>
+                            <p className="text-muted-foreground">
+                              {analysis.industry_normalized || analysis.industry_raw} ·{' '}
+                              {analysis.postal_code} {analysis.city}
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Status: {analysis.status}
+                              {analysis.zoom_booking_confirmed ? ' · Zoom bestätigt' : ''}
+                            </p>
+                          </div>
+                          <a
+                            href={resumeHref}
+                            className="bg-brand text-brand-foreground px-4 py-2 rounded hover:bg-brand/90 transition-colors text-sm text-center"
+                          >
+                            Anfrage fortsetzen
+                          </a>
+                        </div>
+                        {analysis.project_brief && (
+                          <div className="mt-4 rounded-lg bg-background/70 p-4 border border-border">
+                            <p className="text-sm font-medium mb-1">Projektbeschreibung</p>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                              {analysis.project_brief}
+                            </p>
+                          </div>
+                        )}
+                        {selectedIds.length > 0 && (
+                          <div className="mt-4 rounded-lg bg-background/70 p-4 border border-border">
+                            <p className="text-sm font-medium mb-1">Gewählte Bausteine</p>
+                            <p className="text-sm text-muted-foreground">{selectedIds.join(', ')}</p>
+                          </div>
+                        )}
+                        {projectSolutions && (
+                          <p className="text-xs text-muted-foreground mt-3">
+                            Projektanalyse: {projectSolutions.status}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  }
+
                   const researchByKey = Object.fromEntries(
                     analysis.research.map((item) => [item.workflow_key, item])
                   );
@@ -814,7 +875,7 @@ export default function CustomerPortal() {
                           </p>
                         </div>
                         <a
-                          href={`/funnel-5?t=${encodeURIComponent(analysis.token)}`}
+                          href={resumeHref}
                           className="bg-brand text-brand-foreground px-4 py-2 rounded hover:bg-brand/90 transition-colors text-sm text-center"
                         >
                           Analyse fortsetzen

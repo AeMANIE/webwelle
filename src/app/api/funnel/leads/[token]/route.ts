@@ -22,9 +22,13 @@ import {
   dispatchAllResearch,
   dispatchOwnSiteDesignAndSeo,
   dispatchOwnSitePerformance,
+  dispatchProjectAnalysis,
   competitorsFromResearchPayloads,
   getCallbackBaseUrl,
 } from '@/lib/n8n/dispatch';
+import { PROJECT_BRIEF_MIN_LENGTH } from '@/lib/funnel/dwa';
+import { funnelResumePath, isWachstumsarchitekturLead } from '@/lib/funnel/funnel-kind';
+import type { DwaSolutionSelection, FunnelLead } from '@/lib/funnel/types';
 import { secureResponse } from '@/lib/api-security';
 import {
   fixEmailTypo,
@@ -54,6 +58,35 @@ import { sendEmail } from '@/lib/email';
 import { renderWebWellePortalActivationEmail } from '@/lib/email-templates/webwelle';
 
 type FunnelCustomerType = 'new_customer' | 'existing_unactivated' | 'existing_active';
+
+const STARTERWELLE_ONLY_INTENTS = new Set([
+  'geo',
+  'discount',
+  'website-intent',
+  'design-preferences',
+  'design-style-preferences',
+  'addon-selection',
+  'package',
+  'retry-research',
+]);
+
+const DWA_ONLY_INTENTS = new Set(['project-brief', 'solution-selection', 'dw-submit']);
+
+function rejectWrongFunnel(lead: FunnelLead, intent: string) {
+  if (DWA_ONLY_INTENTS.has(intent) && !isWachstumsarchitekturLead(lead)) {
+    return secureResponse(
+      { error: 'wrong_funnel', message: 'Dieser Schritt gehört nicht zu diesem Funnel.' },
+      400
+    );
+  }
+  if (STARTERWELLE_ONLY_INTENTS.has(intent) && isWachstumsarchitekturLead(lead)) {
+    return secureResponse(
+      { error: 'wrong_funnel', message: 'Dieser Schritt gehört nicht zu diesem Funnel.' },
+      400
+    );
+  }
+  return null;
+}
 
 function classifyCustomer(customer: { password_hash?: string; portal_activated?: boolean } | null): FunnelCustomerType {
   if (!customer) return 'new_customer';
@@ -102,6 +135,7 @@ async function sendPortalActivationMail(params: {
   name: string;
   token: string;
   leadToken: string;
+  resumeLink?: string;
   customerType?: FunnelCustomerType;
   isResume?: boolean;
 }) {
@@ -110,7 +144,8 @@ async function sendPortalActivationMail(params: {
   const activationLink = params.customerType === 'existing_active'
     ? `${baseUrl}/customer/login?redirectTo=${redirectTo}`
     : `${baseUrl}/customer/activate?token=${params.token}`;
-  const resumeLink = `${baseUrl}/funnel-5?t=${encodeURIComponent(params.leadToken)}`;
+  const resumeLink =
+    params.resumeLink || `${baseUrl}/funnel-5?t=${encodeURIComponent(params.leadToken)}`;
   const variant = params.isResume
     ? 'resume'
     : params.customerType === 'existing_active'
@@ -184,6 +219,9 @@ export async function PATCH(
   const body = await request.json();
   const intent = body.intent as string;
 
+  const funnelGuard = rejectWrongFunnel(lead, intent);
+  if (funnelGuard) return funnelGuard;
+
   if (intent === 'normalize-industry' || intent === 'update-industry') {
     const raw =
       intent === 'update-industry'
@@ -249,6 +287,31 @@ export async function PATCH(
     });
 
     return secureResponse({ lead: updated });
+  }
+
+  if (intent === 'project-brief') {
+    const brief = String(body.projectBrief || body.project_brief || '').trim();
+    if (brief.length < PROJECT_BRIEF_MIN_LENGTH) {
+      return secureResponse(
+        {
+          error: 'invalid_project_brief',
+          message: `Bitte beschreiben Sie Ihr Projekt etwas ausführlicher (mindestens ${PROJECT_BRIEF_MIN_LENGTH} Zeichen).`,
+        },
+        400
+      );
+    }
+
+    const updated = await updateFunnelLead(token, {
+      project_brief: brief,
+      industry_detail: brief,
+      status: 'project_brief_complete',
+    });
+
+    await updateFunnelLead(token, { status: 'research_running' });
+    const refreshed = (await getFunnelLeadByToken(token)) || lead;
+    void dispatchProjectAnalysis(refreshed);
+
+    return secureResponse({ lead: updated, analysisStarted: true });
   }
 
   if (intent === 'geo') {
@@ -438,6 +501,23 @@ export async function PATCH(
     const fullName = `${firstName} ${lastName}`.trim() || email;
     const companyName = String(body.companyName || '').trim();
     let customerId: string | undefined;
+    const postalCode = String(body.postalCode || lead.postal_code || '').trim();
+    const city = String(body.city || lead.city || '').trim();
+
+    if (isWachstumsarchitekturLead(lead)) {
+      if (!validatePostalCode(contactMarket, postalCode)) {
+        return secureResponse(
+          { error: 'invalid_postal', message: 'Ungültige PLZ für das gewählte Land.' },
+          400
+        );
+      }
+      if (!city) {
+        return secureResponse(
+          { error: 'invalid_city', message: 'Bitte Ort eingeben.' },
+          400
+        );
+      }
+    }
 
     if (email) {
       await ensureCustomerPortalColumns();
@@ -471,11 +551,13 @@ export async function PATCH(
         { customerType, source: 'funnel_contact' }
       );
       if (activationToken.created) {
+        const resumePath = funnelResumePath(lead.funnel_kind, token);
         void sendPortalActivationMail({
           email,
           name: fullName,
           token: activationToken.token,
           leadToken: token,
+          resumeLink: `${getPublicBaseUrl()}${resumePath}`,
           customerType,
         });
       }
@@ -489,8 +571,8 @@ export async function PATCH(
       phone: body.phone,
       street: body.street,
       house_number: body.houseNumber,
-      postal_code: body.postalCode || lead.postal_code || undefined,
-      city: body.city || lead.city || undefined,
+      postal_code: postalCode || lead.postal_code || undefined,
+      city: city || lead.city || undefined,
       market: body.market || lead.market || undefined,
       country: body.market || lead.country || undefined,
       address_verified: true,
@@ -498,6 +580,60 @@ export async function PATCH(
       status: 'contact_complete',
     });
     return secureResponse({ lead: updated });
+  }
+
+  if (intent === 'solution-selection') {
+    const selectedIds = Array.isArray(body.selectedIds)
+      ? body.selectedIds.map((id: unknown) => String(id)).filter(Boolean)
+      : [];
+    const selection: DwaSolutionSelection = {
+      selectedIds,
+      updatedAt: new Date().toISOString(),
+    };
+    const updated = await updateFunnelLead(token, { solution_selection: selection });
+    return secureResponse({ lead: updated, selection });
+  }
+
+  if (intent === 'dw-submit') {
+    if (body.zoomBookingConfirmed !== true) {
+      return secureResponse(
+        {
+          error: 'zoom_required',
+          message: 'Bitte buchen Sie einen Zoom-Termin und bestätigen Sie die Buchung.',
+        },
+        400
+      );
+    }
+
+    const selectedIds = Array.isArray(body.selectedIds)
+      ? body.selectedIds.map((id: unknown) => String(id)).filter(Boolean)
+      : lead.solution_selection?.selectedIds || [];
+
+    if (selectedIds.length === 0) {
+      return secureResponse(
+        {
+          error: 'no_solutions_selected',
+          message: 'Bitte wählen Sie mindestens einen passenden Baustein aus.',
+        },
+        400
+      );
+    }
+
+    const projectNotes = String(body.projectNotes || '').trim();
+    const selection: DwaSolutionSelection = {
+      selectedIds,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updated = await updateFunnelLead(token, {
+      solution_selection: selection,
+      project_notes: projectNotes || undefined,
+      zoom_booking_confirmed: true,
+      zoom_booking_confirmed_at: new Date(),
+      status: 'consultation_requested',
+    });
+
+    return secureResponse({ lead: updated, ok: true });
   }
 
   if (intent === 'design-preferences') {

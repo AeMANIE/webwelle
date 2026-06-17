@@ -396,3 +396,46 @@ export async function dispatchBlogPipeline(
   console.log(`n8n dispatch: seo-01 blog-chain für Job ${payload.jobId} (Lead ${payload.leadId})`);
   await postWebhook(url, seoPayload);
 }
+
+export interface N8nProjectAnalysisPayload {
+  leadId: string;
+  token: string;
+  industry: string;
+  industryRaw: string;
+  projectBrief: string;
+  callbackBaseUrl: string;
+  market?: string;
+}
+
+export async function dispatchProjectAnalysis(
+  lead: Pick<
+    FunnelLead,
+    | 'id'
+    | 'token'
+    | 'industry_raw'
+    | 'industry_normalized'
+    | 'industry_detail'
+    | 'project_brief'
+    | 'market'
+  >
+): Promise<void> {
+  const industry = buildIndustryForResearch(
+    lead.industry_normalized,
+    lead.industry_detail,
+    lead.industry_raw
+  );
+  const payload: N8nProjectAnalysisPayload = {
+    leadId: lead.id,
+    token: lead.token,
+    industry,
+    industryRaw: lead.industry_raw || '',
+    projectBrief: lead.project_brief || '',
+    callbackBaseUrl: getCallbackBaseUrl(),
+    market: lead.market || 'DE',
+  };
+  console.log(`n8n dispatch: project-analysis für Lead ${payload.leadId}`);
+  await postWebhook(
+    process.env.N8N_WEBHOOK_PROJECT_ANALYSIS_URL,
+    payload as unknown as Record<string, unknown>
+  );
+}

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import FunnelShell from '@/components/funnel/FunnelShell';
 import IndustryDetailPanel from '@/components/funnel/IndustryDetailPanel';
+import { useStarterwelleLeadGuard } from '@/components/funnel/useFunnelLeadGuard';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import {
   hasValidIndustryDetail,
@@ -19,6 +20,7 @@ function Funnel2Content() {
   const token = searchParams.get('t') || '';
 
   const [lead, setLead] = useState<{
+    funnel_kind?: string;
     industry_normalized?: string;
     industry_raw?: string;
     industry_detail?: string;
@@ -65,6 +67,8 @@ function Funnel2Content() {
       })
       .finally(() => setLeadLoaded(true));
   }, [token]);
+
+  useStarterwelleLeadGuard(token, lead, leadLoaded);
 
   const needsIndustryDetail = leadLoaded
     ? isGenericIndustry(

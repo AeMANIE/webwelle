@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { ShinyInput } from '@/components/ui/shiny-input';
 import { SHINY_SWEEP_PRESETS } from '@/components/ui/shiny-motion';
+import type { FunnelKind } from '@/lib/funnel/types';
+import { funnelKindFromSource, funnelStartPath } from '@/lib/funnel/funnel-kind';
 import { persistLeadToken } from '@/lib/funnel/client';
 import { isGenericIndustry } from '@/lib/funnel/industry';
 import AnimatedIndustryPlaceholder from '@/components/funnel/AnimatedIndustryPlaceholder';
@@ -19,6 +21,8 @@ export interface HeroIndustrySearchProps {
   className?: string;
   /** Nur Tracking (optional), z. B. homepage_hero oder products_businesswelle */
   source?: string;
+  /** Steuert Funnel-Verzweigung (z. B. wachstumsarchitektur) */
+  funnelKind?: FunnelKind;
   /** Button-Label (z. B. „Branchenanalyse starten“ auf der Homepage) */
   submitLabel?: string;
 }
@@ -30,6 +34,7 @@ export default function HeroIndustrySearch({
   inputId = 'hero-industry',
   className,
   source,
+  funnelKind,
   submitLabel = DEFAULT_SUBMIT_LABEL,
 }: HeroIndustrySearchProps) {
   const isCard = variant === 'card';
@@ -47,6 +52,7 @@ export default function HeroIndustrySearch({
   const feedbackRef = useRef<HTMLDivElement>(null);
 
   const leadSource = source ?? 'homepage_hero';
+  const resolvedFunnelKind = funnelKind ?? funnelKindFromSource(leadSource);
   const trimmedIndustry = industry.trim();
   const showGenericHint =
     trimmedIndustry.length >= 2 &&
@@ -81,6 +87,7 @@ export default function HeroIndustrySearch({
       body: JSON.stringify({
         industry: trimmed,
         source: leadSource,
+        funnelKind: resolvedFunnelKind,
         ...(acceptNormalized ? { acceptNormalized } : {}),
       }),
     });
@@ -113,7 +120,7 @@ export default function HeroIndustrySearch({
     }
 
     persistLeadToken(token);
-    router.push(`/funnel-2?t=${encodeURIComponent(token)}`);
+    router.push(funnelStartPath(resolvedFunnelKind, token));
     return true;
   }
 

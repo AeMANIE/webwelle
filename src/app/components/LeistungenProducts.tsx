@@ -5,7 +5,9 @@ import type { DottedSurfaceVariant } from '@/components/ui/dotted-surface';
 import { LazyDottedSurface } from '@/components/ui/lazy-dotted-surface';
 import { useLayoutMode } from '@/hooks/useLayoutMode';
 import { LEISTUNGEN_OFFERS } from './leistungen-offers';
+import { LEISTUNGEN_FAQS } from './leistungen-faq';
 import ProductPackageCard from './ProductPackageCard';
+import FAQ from './FAQ';
 
 export default function LeistungenProducts() {
   const layoutMode = useLayoutMode();
@@ -59,6 +61,8 @@ export default function LeistungenProducts() {
             </p>
           </div>
         </div>
+
+        <FAQ items={LEISTUNGEN_FAQS} embedded />
       </div>
     </section>
   );

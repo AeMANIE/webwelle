@@ -16,18 +16,24 @@ import {
   SEO_PROFI_ADDON,
   BLOG_UNIT_PRICE_CENTS,
 } from '@/lib/funnel/packages';
+import { DWA_SOLUTION_CATALOG } from '@/lib/funnel/dwa';
 
 interface EnrichedLead {
   lead: {
     id: string;
     token: string;
     status: string;
+    funnel_kind?: string;
     industry_normalized?: string;
     company_name?: string;
     email?: string;
     postal_code?: string;
     city?: string;
     market?: string;
+    project_brief?: string | null;
+    project_notes?: string | null;
+    solution_selection?: { selectedIds?: string[] } | null;
+    zoom_booking_confirmed?: boolean;
     selected_package?: string;
     existing_website?: boolean | null;
     existing_website_url?: string | null;
@@ -130,6 +136,12 @@ export default function OffersTab() {
             );
             const breakdown = calculateFunnelOfferTotal(addons);
             const designUrls = (lead.design_reference_urls || []).filter(Boolean);
+            const isDwa = lead.funnel_kind === 'wachstumsarchitektur';
+            const selectedSolutionIds = lead.solution_selection?.selectedIds || [];
+            const solutionLabels = selectedSolutionIds.map(
+              (id) =>
+                DWA_SOLUTION_CATALOG.find((s) => s.id === id)?.title || id
+            );
 
             return (
               <div key={lead.id} className="rounded-xl border border-border bg-card p-5">
@@ -137,13 +149,20 @@ export default function OffersTab() {
                   <div>
                     <p className="font-semibold">
                       {lead.company_name || lead.industry_normalized || 'Lead'}
+                      {isDwa && (
+                        <span className="ml-2 text-xs font-normal px-2 py-0.5 rounded bg-primary/15 text-primary">
+                          Wachstumsarchitektur
+                        </span>
+                      )}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {lead.email || '–'} · PLZ {lead.postal_code} {lead.city} · {lead.market}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
                       Website:{' '}
-                      {lead.existing_website === true ? (
+                      {isDwa ? (
+                        'DWA-Projektanfrage'
+                      ) : lead.existing_website === true ? (
                         lead.existing_website_url ? (
                           <a
                             href={lead.existing_website_url}
@@ -176,6 +195,38 @@ export default function OffersTab() {
                     </span>
                   )}
                 </p>
+
+                {isDwa && lead.project_brief && (
+                  <div className="mb-3 rounded-lg border border-border bg-background/50 p-3 text-sm">
+                    <p className="font-medium mb-1">Projektbeschreibung</p>
+                    <p className="text-muted-foreground whitespace-pre-wrap">{lead.project_brief}</p>
+                  </div>
+                )}
+
+                {isDwa && solutionLabels.length > 0 && (
+                  <div className="mb-3 rounded-lg border border-border bg-background/50 p-3 text-sm">
+                    <p className="font-medium mb-1">Gewählte Bausteine</p>
+                    <ul className="space-y-1 text-muted-foreground">
+                      {solutionLabels.map((label) => (
+                        <li key={label}>• {label}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {isDwa && lead.project_notes && (
+                  <div className="mb-3 rounded-lg border border-border bg-background/50 p-3 text-sm">
+                    <p className="font-medium mb-1">Zusätzliche Hinweise</p>
+                    <p className="text-muted-foreground whitespace-pre-wrap">{lead.project_notes}</p>
+                  </div>
+                )}
+
+                {isDwa && (
+                  <p className="text-sm mb-3 text-muted-foreground">
+                    Zoom-Termin:{' '}
+                    {lead.zoom_booking_confirmed ? 'vom Kunden bestätigt' : 'noch nicht bestätigt'}
+                  </p>
+                )}
 
                 <div className="grid gap-3 md:grid-cols-2 mb-3">
                   <div className="rounded-lg border border-border bg-background/50 p-3 text-sm">
@@ -271,7 +322,9 @@ export default function OffersTab() {
                 )}
 
                 <p className="text-sm font-semibold text-primary mb-3">
-                  Preis-Vorschau: {formatEuro(breakdown.subtotalCents)} (StarterWelle + Add-ons)
+                  {isDwa
+                    ? 'DWA-Projektanfrage (kein StarterWelle-Checkout)'
+                    : `Preis-Vorschau: ${formatEuro(breakdown.subtotalCents)} (StarterWelle + Add-ons)`}
                 </p>
 
                 {offer ? (
@@ -302,12 +355,16 @@ export default function OffersTab() {
                 )}
                 <div className="flex flex-wrap gap-2 mt-2 items-center">
                   <a
-                    href={`/analyse/${lead.token}`}
+                    href={
+                      isDwa
+                        ? `/funnel-dw/4?t=${encodeURIComponent(lead.token)}`
+                        : `/analyse/${lead.token}`
+                    }
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs text-primary underline"
                   >
-                    Analyse ansehen
+                    {isDwa ? 'DWA-Anfrage öffnen' : 'Analyse ansehen'}
                   </a>
                   {hasBlogSelection(addons) && (
                     <button

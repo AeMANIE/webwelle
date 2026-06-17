@@ -21,22 +21,18 @@ export default function ProductPackageCard({ offer }: ProductPackageCardProps) {
         </p>
       </div>
 
-      <div className="space-y-4 mb-8">
-        {offer.paragraphs.map((paragraph) => (
-          <p key={paragraph} className="text-sm text-muted-foreground leading-relaxed">
-            {paragraph}
-          </p>
-        ))}
-      </div>
-
       <div className="space-y-3 mb-8">
         <h4 className="text-base font-semibold text-foreground">{offer.audienceHeading}</h4>
-        {offer.audienceItems.map((item) => (
-          <div key={item} className="flex items-start">
-            <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0 mt-0.5" />
-            <span className="text-foreground text-sm leading-relaxed">{item}</span>
-          </div>
-        ))}
+        {offer.audienceText ? (
+          <p className="text-foreground text-sm leading-relaxed">{offer.audienceText}</p>
+        ) : (
+          offer.audienceItems.map((item) => (
+            <div key={item} className="flex items-start">
+              <Check className="w-4 h-4 text-primary mr-3 flex-shrink-0 mt-0.5" />
+              <span className="text-foreground text-sm leading-relaxed">{item}</span>
+            </div>
+          ))
+        )}
       </div>
 
       <div className="space-y-3 mb-8">
@@ -60,6 +56,7 @@ export default function ProductPackageCard({ offer }: ProductPackageCardProps) {
           variant="card"
           inputId={offer.inputId}
           source={offer.source}
+          funnelKind={offer.funnelKind}
           submitLabel={offer.submitLabel}
           className="pb-2"
         />
