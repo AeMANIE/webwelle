@@ -171,12 +171,17 @@ export function buildExternalRunId(parts: {
   leadToken?: string | null;
   keywords?: string[];
   retryCount?: number;
+  /** Admin WebWelle: neuer Job pro Klick (kein Stunden-Dedup) */
+  uniqueRun?: boolean;
 }): string {
+  const timeKey = parts.uniqueRun
+    ? String(Date.now())
+    : new Date().toISOString().slice(0, 13);
   const base = [
     parts.sourceType,
     parts.leadToken || 'webwelle',
     (parts.keywords || []).join(',').slice(0, 200),
-    new Date().toISOString().slice(0, 13),
+    timeKey,
   ].join('|');
   const hash = crypto.createHash('sha256').update(base).digest('hex').slice(0, 24);
   const suffix = parts.retryCount ? `-retry-${parts.retryCount}` : '';

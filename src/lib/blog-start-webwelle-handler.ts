@@ -6,9 +6,57 @@ import {
   ensureBlogPipelineTables,
   getBlogJobByExternalRunId,
   markBlogJobRunning,
+  type BlogJob,
 } from '@/lib/blog-jobs-database';
-import { buildWebwelleBlogPayload, dispatchBlogPipeline } from '@/lib/n8n/dispatch';
+import {
+  buildWebwelleBlogPayload,
+  dispatchBlogPipeline,
+  type N8nBlogOrchestratorPayload,
+} from '@/lib/n8n/dispatch';
 import { BLOG_PROMPT_VERSION, type BlogPublishMode } from '@/lib/blog-constants';
+
+async function dispatchN8nForJob(params: {
+  jobId: number;
+  articleCount: number;
+  keywords: string[];
+  branche: string;
+  plz: string;
+  publishMode: BlogPublishMode;
+}): Promise<{ n8nDispatched: boolean; warning?: string }> {
+  const payload = buildWebwelleBlogPayload({
+    jobId: params.jobId,
+    articleCount: params.articleCount,
+    keywords: params.keywords,
+    branche: params.branche,
+    plz: params.plz,
+    publishMode: params.publishMode,
+    promptVersion: BLOG_PROMPT_VERSION,
+  });
+  return dispatchN8nPayload(payload);
+}
+
+async function dispatchN8nPayload(
+  payload: N8nBlogOrchestratorPayload
+): Promise<{ n8nDispatched: boolean; warning?: string }> {
+  try {
+    await dispatchBlogPipeline(payload);
+    return { n8nDispatched: true };
+  } catch (e) {
+    console.error('n8n dispatch failed:', e);
+    return {
+      n8nDispatched: false,
+      warning: e instanceof Error ? e.message : 'n8n-Webhook fehlgeschlagen',
+    };
+  }
+}
+
+function shouldRedispatchExistingJob(job: BlogJob): boolean {
+  return (
+    (job.status === 'queued' || job.status === 'running') &&
+    job.completedCount === 0 &&
+    job.failedCount === 0
+  );
+}
 
 export async function handleStartWebwellePipeline(request: NextRequest) {
   try {
@@ -35,14 +83,42 @@ export async function handleStartWebwellePipeline(request: NextRequest) {
 
     const externalRunId =
       String(body.externalRunId || '').trim() ||
-      buildExternalRunId({ sourceType: 'webwelle', keywords, retryCount });
+      buildExternalRunId({ sourceType: 'webwelle', keywords, retryCount, uniqueRun: true });
 
     const existing = await getBlogJobByExternalRunId(externalRunId);
     if (existing) {
+      const keywordData = existing.keywordData as { keywords?: string[]; branche?: string; plz?: string } | null;
+      const dispatchParams = {
+        jobId: existing.id,
+        articleCount: existing.articleCount,
+        keywords: keywords.length ? keywords : keywordData?.keywords || [],
+        branche: branche || keywordData?.branche || 'Webdesign',
+        plz: plz || keywordData?.plz || '87435',
+        publishMode: existing.publishMode,
+      };
+
+      if (shouldRedispatchExistingJob(existing)) {
+        const { n8nDispatched, warning } = await dispatchN8nForJob(dispatchParams);
+        if (n8nDispatched) {
+          await markBlogJobRunning(existing.id);
+        }
+        return secureResponse({
+          jobId: existing.id,
+          status: n8nDispatched ? 'running' : existing.status,
+          existingJob: true,
+          redispatched: n8nDispatched,
+          n8nDispatched,
+          warning,
+        });
+      }
+
       return secureResponse({
         jobId: existing.id,
         status: existing.status,
         existingJob: true,
+        n8nDispatched: false,
+        warning:
+          'Job existiert bereits und wurde nicht erneut gestartet. Neues Keyword oder anderen Zeitpunkt wählen.',
       });
     }
 
@@ -57,32 +133,22 @@ export async function handleStartWebwellePipeline(request: NextRequest) {
       keywordData: { keywords, branche, plz },
     });
 
-    const payload = buildWebwelleBlogPayload({
+    const { n8nDispatched, warning } = await dispatchN8nForJob({
       jobId: job.id,
       articleCount,
       keywords,
       branche,
       plz,
       publishMode,
-      promptVersion: BLOG_PROMPT_VERSION,
     });
 
-    let n8nDispatched = false;
-    let warning: string | undefined;
-
-    try {
-      await dispatchBlogPipeline(payload);
-      n8nDispatched = true;
-    } catch (e) {
-      console.error('n8n dispatch failed:', e);
-      warning = e instanceof Error ? e.message : 'n8n-Webhook fehlgeschlagen';
+    if (n8nDispatched) {
+      await markBlogJobRunning(job.id);
     }
-
-    await markBlogJobRunning(job.id);
 
     return secureResponse({
       jobId: job.id,
-      status: 'running',
+      status: n8nDispatched ? 'running' : 'queued',
       articleCount,
       publishMode,
       externalRunId,

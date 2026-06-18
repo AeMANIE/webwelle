@@ -65,17 +65,19 @@ export default function BlogGenerateModal({ onStarted }: Props) {
         setIsError(true);
         return;
       }
-      const n8nOk = data.n8nDispatched !== false;
-      const warning = data.warning ? String(data.warning) : '';
-      if (!n8nOk || warning) {
+      if (data.n8nDispatched !== true) {
+        const warning = data.warning
+          ? String(data.warning)
+          : `Job #${data.jobId ?? '?'} angelegt, aber n8n (seo-01) wurde nicht gestartet.`;
         setMessage(
-          warning ||
-            `Job #${data.jobId} angelegt, aber n8n (seo-01) wurde nicht gestartet. Coolify-Env prüfen: N8N_WEBHOOK_SEO_01_URL, N8N_WEBHOOK_SECRET, N8N_BASE_URL.`
+          `${warning} Prüfe Coolify-Env oder GET /api/admin/blog/pipeline-env-check`
         );
         setIsError(true);
         return;
       }
-      setMessage(`Job #${data.jobId} gestartet — n8n seo-01 läuft (${data.publishMode || publishMode}).`);
+      setMessage(
+        `Job #${data.jobId} gestartet — n8n seo-01 läuft (${data.publishMode || publishMode}).`
+      );
       onStarted?.(Number(data.jobId));
       setOpen(false);
     } catch (err) {

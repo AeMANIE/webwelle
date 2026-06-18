@@ -107,6 +107,10 @@ async function main() {
 
   if (!allOk) process.exit(1);
   console.log('Fertig — alle Blog-Workflows aktiv.');
+  console.log('');
+  console.log('Coolify-Checkliste (WebWelle-App): N8N_BASE_URL, N8N_WEBHOOK_SEO_01_URL, N8N_WEBHOOK_SECRET, N8N_API_KEY');
+  console.log('Coolify-Checkliste (n8n-App): N8N_INTERNAL_WEBHOOK_BASE, N8N_BASE_URL, N8N_WEBHOOK_SECRET, OPENROUTER_API_KEY');
+  console.log('Details: node scripts/print-coolify-blog-env.mjs');
 }
 
 main().catch((e) => {

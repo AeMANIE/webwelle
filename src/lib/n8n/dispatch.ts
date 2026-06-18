@@ -452,6 +452,27 @@ export function getSeo01WebhookUrl(): string | undefined {
   return undefined;
 }
 
+export function getBlogPipelineEnvStatus() {
+  const seo01Url = getSeo01WebhookUrl();
+  const hasSecret = Boolean(process.env.N8N_WEBHOOK_SECRET?.trim());
+  const hasApiKey = Boolean(process.env.N8N_API_KEY?.trim());
+  const hasBase = Boolean(process.env.N8N_BASE_URL?.trim());
+  return {
+    n8nBaseUrl: hasBase,
+    n8nWebhookSeo01: Boolean(seo01Url),
+    n8nWebhookSecret: hasSecret,
+    n8nApiKey: hasApiKey,
+    callbackBaseUrl: getCallbackBaseUrl(),
+    ready: Boolean(seo01Url && hasSecret),
+    missing: [
+      !hasBase && 'N8N_BASE_URL',
+      !seo01Url && 'N8N_WEBHOOK_SEO_01_URL',
+      !hasSecret && 'N8N_WEBHOOK_SECRET',
+      !hasApiKey && 'N8N_API_KEY',
+    ].filter(Boolean) as string[],
+  };
+}
+
 export async function dispatchBlogPipeline(
   payload: N8nBlogOrchestratorPayload
 ): Promise<void> {

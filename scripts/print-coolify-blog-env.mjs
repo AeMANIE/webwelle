@@ -1,0 +1,49 @@
+#!/usr/bin/env node
+/**
+ * Prints Coolify env checklist for Blog Pipeline System 1 (no secrets).
+ * Run locally after .env.local is configured; copy keys/values into Coolify UI.
+ */
+import { readFileSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const envPath = join(root, '.env.local');
+
+function parseEnv(path) {
+  if (!existsSync(path)) return {};
+  const env = {};
+  for (const line of readFileSync(path, 'utf8').split('\n')) {
+    const t = line.trim();
+    if (!t || t.startsWith('#')) continue;
+    const i = t.indexOf('=');
+    if (i === -1) continue;
+    env[t.slice(0, i)] = t.slice(i + 1);
+  }
+  return env;
+}
+
+const env = parseEnv(envPath);
+const base = (env.N8N_BASE_URL || 'https://<n8n-host>').replace(/\/$/, '');
+
+console.log(`
+=== Coolify: WebWelle-App (webwelle.com) ===
+N8N_BASE_URL=${base}
+N8N_WEBHOOK_SEO_01_URL=${env.N8N_WEBHOOK_SEO_01_URL || `${base}/webhook/seo-01-research-project-setup-discovery`}
+N8N_WEBHOOK_SECRET=<gleich wie n8n>
+N8N_API_KEY=<gesetzt: ${env.N8N_API_KEY ? 'ja lokal' : 'NEIN'}>
+NEXT_PUBLIC_BASE_URL=https://webwelle.com
+
+=== Coolify: n8n-App ===
+N8N_BASE_URL=${base}
+N8N_INTERNAL_WEBHOOK_BASE=${base}/webhook
+N8N_WEBHOOK_SECRET=<identisch mit WebWelle>
+N8N_API_KEY=<für seo-06 Callback /api/blog/publish>
+OPENROUTER_API_KEY=<gesetzt: ${env.OPENROUTER_API_KEY ? 'ja lokal' : 'NEIN'}>
+DATAFORSEO_LOGIN=<gesetzt: ${env.DATAFORSEO_LOGIN ? 'ja lokal' : 'NEIN'}>
+DATAFORSEO_PASSWORD=<gesetzt: ${env.DATAFORSEO_PASSWORD ? 'ja lokal' : 'NEIN'}>
+GOOGLE_PAGESPEED_API_KEY=<optional>
+
+Danach: BEIDE Apps redeployen.
+Diagnose live: GET /api/admin/blog/pipeline-env-check (Admin eingeloggt)
+`);
