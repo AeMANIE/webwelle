@@ -76,7 +76,9 @@ const j = items[0].json || {};
 let webwelleCallbackError = null;
 const secret = $env.N8N_WEBHOOK_SECRET;
 const apiKey = $env.N8N_API_KEY;
-const base = String(j.callbackBaseUrl || '').replace(/\\/$/, '');
+const base = String(
+  j.callbackBaseUrl || $env.WEBWELLE_CALLBACK_BASE_URL || $env.CALLBACK_BASE_URL || 'https://webwelle.com'
+).replace(/\\/$/, '');
 const sourceType = j.sourceType || j.source_type || 'client';
 const keyword = j.keyword || j.approved_blog_keyword || j.content_brief?.keyword || 'unknown';
 let html = String(j.htmlContent || j.draft || '');
@@ -88,8 +90,8 @@ const idx = Number(j.articleIndex ?? 0);
 const total = Number(j.articleCount ?? 1);
 const qaPassed = j.qa_passed !== false && j.status !== 'qa_failed';
 
-if (!base || !j.jobId) {
-  return [{ json: { ...j, webwelleCallbackSkipped: true, callbackReason: !base ? 'no_base' : 'no_jobId' } }];
+if (!j.jobId) {
+  return [{ json: { ...j, webwelleCallbackSkipped: true, callbackReason: 'no_jobId' } }];
 }
 
 if (sourceType === 'webwelle') {
@@ -190,20 +192,14 @@ if (idx >= total - 1 && j.jobId) {
   }
 }
 
-return [{ json: { ...j, webwelleCallbackSent: !webwelleCallbackError, webwelleCallbackError, sink: sourceType } }];
-// dualSinkContextV4`;
+return [{ json: { ...j, webwelleCallbackSent: !webwelleCallbackError, webwelleCallbackError, sink: sourceType, callbackBaseUrl: base } }];
+// dualSinkContextV5`;
 
 function patchSeo06DualSinkV4(wf) {
   const node = wf.nodes.find((n) => n.name === 'Code - Dual Sink Blog Callback');
   if (!node) return wf;
   node.parameters.jsCode = DUAL_SINK_V4;
   node.continueOnFail = false;
-
-  // Parse Lighthouse → Dual Sink only (drop parallel empty branches)
-  wf.connections['Code - Parse Lighthouse Result'] = {
-    main: [[{ node: 'Code - Dual Sink Blog Callback', type: 'main', index: 0 }]],
-  };
-
   return wf;
 }
 

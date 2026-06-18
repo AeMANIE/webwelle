@@ -86,8 +86,9 @@ return [{ json: { ...j, triggeredSeo02: true, raw_keywords_count: raw_keywords.l
 
 const SEO02_CHAIN_CODE = `${RESOLVE_FN}
 const httpRequest = this.helpers.httpRequest.bind(this.helpers);
+const load = $('Code - Load Unqualified Keywords').first().json;
 const scored = $('Code - Compute Blog Score').first().json;
-const j = { ...scored, ...items[0].json };
+const j = { ...load, ...scored, ...items[0].json };
 const base = resolveInternalWebhookBase(j, 'Webhook - Receive Qualification Request');
 const limit = Math.max(1, Number(j.articleCount || 1));
 const sourceType = j.sourceType || j.source_type || 'client';
@@ -116,6 +117,7 @@ for (let i = 0; i < blogs.length; i++) {
       sourceType,
       publishMode: j.publishMode || j.publish_mode || 'draft',
       promptVersion: j.promptVersion || j.prompt_version,
+      keywords: j.keywords,
       _internalWebhookBase: base,
     }),
     headers: { 'Content-Type': 'application/json' },
@@ -226,10 +228,15 @@ const SEO04_MERGE_CODE = `function extractLlmText(res) {
   const c = res.choices?.[0]?.message?.content ?? res.message?.content ?? res.content ?? res.text ?? '';
   return String(c || '').trim();
 }
+let wh = {};
+try {
+  const raw = $('Webhook - Receive Blog Draft Request').first().json;
+  wh = raw.body && typeof raw.body === 'object' ? raw.body : raw;
+} catch (_) {}
 const inbound = items[0].json.body && typeof items[0].json.body === 'object' ? items[0].json.body : items[0].json;
 let brief = {};
 try { brief = $('Code - Build Content Brief').first().json || {}; } catch (_) {}
-const ctx = { ...brief, ...inbound };
+const ctx = { ...brief, ...inbound, ...wh };
 const rewriteText = extractLlmText($('HTTP - LLM Rewrite With Voice').first()?.json);
 const draftText = extractLlmText($('HTTP - LLM Draft Generation').first()?.json);
 const keyword = ctx.content_brief?.keyword || ctx.approved_blog_keyword || ctx.keyword || 'Blog';
@@ -246,13 +253,62 @@ return [{ json: {
   draft: raw,
   htmlContent,
   llm_error,
+  keyword,
   jobId: ctx.jobId,
   callbackBaseUrl: ctx.callbackBaseUrl,
   articleCount: ctx.articleCount,
   articleIndex: ctx.articleIndex,
-  sourceType: ctx.sourceType || ctx.source_type,
-  publishMode: ctx.publishMode || ctx.publish_mode,
+  sourceType: ctx.sourceType || ctx.source_type || 'client',
+  publishMode: ctx.publishMode || ctx.publish_mode || 'draft',
   promptVersion: ctx.promptVersion || ctx.prompt_version,
+} }];`;
+
+const SEO06_ONPAGE_CODE = `const whRaw = $('Webhook - Receive QA Request').first().json;
+const handoff = whRaw.body && typeof whRaw.body === 'object' ? whRaw.body : whRaw;
+const j = { ...handoff, ...(items[0].json || {}) };
+const html = String(j.htmlContent || j.draft || '');
+const keyword = String(j.keyword || j.approved_blog_keyword || j.content_brief?.keyword || '');
+const checks = {
+  h1: /<h1[^>]*>/i.test(html),
+  keyword100: keyword.length > 0 && html.toLowerCase().includes(keyword.toLowerCase().slice(0, Math.min(20, keyword.length))),
+  internal_links: /href=["']\\//i.test(html),
+  external_links: /href=["']https?:/i.test(html),
+  faq: /faq|häufig/i.test(html),
+  meta: Boolean(j.metaDesc || j.meta_desc || j.meta_description),
+};
+const wordCount = html.replace(/<[^>]+>/g, ' ').split(/\\s+/).filter(Boolean).length;
+const qa_passed = Object.values(checks).filter(Boolean).length >= 4 && wordCount >= 400;
+return [{ json: {
+  ...j,
+  htmlContent: html,
+  draft: j.draft || html,
+  title: j.title || keyword || 'Blog',
+  keyword,
+  wordCount,
+  checks,
+  qa_passed,
+  sourceType: j.sourceType || j.source_type || 'client',
+} }];`;
+
+const SEO06_PARSE_LH_CODE = `const whRaw = $('Webhook - Receive QA Request').first().json;
+const handoff = whRaw.body && typeof whRaw.body === 'object' ? whRaw.body : whRaw;
+const prev = $('Code - On Page SEO Checks').first().json;
+const j = { ...handoff, ...prev, ...(items[0].json || {}) };
+let lighthouse_score = 0.5;
+try {
+  const lh = $('HTTP - PageSpeed Lighthouse Audit').first().json;
+  lighthouse_score = lh?.lighthouseResult?.categories?.seo?.score
+    ?? lh?.lighthouseResult?.categories?.performance?.score
+    ?? lh?.seo_score
+    ?? 0.5;
+} catch (_) {}
+const qa_passed = j.qa_passed !== false && Number(lighthouse_score) >= 0.5;
+return [{ json: {
+  ...j,
+  lighthouse_score,
+  qa_passed,
+  status: qa_passed ? 'qa_passed' : 'qa_failed',
+  sourceType: j.sourceType || j.source_type || 'client',
 } }];`;
 
 async function api(method, path, body, apiKey, baseUrl) {
@@ -359,6 +415,14 @@ function patchSeo03(wf) {
   return wf;
 }
 
+function patchSeo06(wf) {
+  const onPage = wf.nodes.find((n) => n.name === 'Code - On Page SEO Checks');
+  const parseLh = wf.nodes.find((n) => n.name === 'Code - Parse Lighthouse Result');
+  if (onPage) onPage.parameters.jsCode = SEO06_ONPAGE_CODE;
+  if (parseLh) parseLh.parameters.jsCode = SEO06_PARSE_LH_CODE;
+  return wf;
+}
+
 function patchSeo04(wf) {
   const trigger = wf.nodes.find((n) => n.name === 'Code - Trigger seo-06 Chain');
   const merge = wf.nodes.find((n) => n.name === 'Code - Merge Rewrite LLM');
@@ -385,6 +449,7 @@ const WORKFLOWS = [
   { id: 'q5tqTGRjupy9JKdE', patch: patchSeo02 },
   { id: '5THEWW5gWbv8cg7p', patch: patchSeo03 },
   { id: '8BZxLGLZlCggHJ5b', patch: patchSeo04 },
+  { id: 'HV16Eux9keNnnJt8', patch: patchSeo06 },
 ];
 
 async function main() {

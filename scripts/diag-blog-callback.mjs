@@ -107,7 +107,7 @@ async function main() {
       .map(([k]) => k);
     console.log('\n=== seo-06 Workflow ===');
     console.log('inbound to Dual Sink from:', inbound.join(', ') || '(none)');
-    console.log('has dualSinkContextV4:', (dual?.parameters?.jsCode || '').includes('dualSinkContextV4'));
+    console.log('has dualSinkContextV5:', (dual?.parameters?.jsCode || '').includes('dualSinkContextV5'));
     console.log('continueOnFail:', dual?.continueOnFail);
     console.log('dual sink code start:', (dual?.parameters?.jsCode || '').slice(0, 400));
     return;
