@@ -75,13 +75,7 @@ export async function handleStartWebwellePipeline(request: NextRequest) {
       n8nDispatched = true;
     } catch (e) {
       console.error('n8n dispatch failed:', e);
-      const n8nUrlSet = Boolean(
-        process.env.N8N_WEBHOOK_SEO_01_URL?.trim() ||
-          process.env.N8N_WEBHOOK_BLOG_ORCHESTRATOR_URL?.trim()
-      );
-      warning = n8nUrlSet
-        ? 'n8n-Webhook fehlgeschlagen — Job angelegt, Pipeline manuell prüfen.'
-        : 'N8N_WEBHOOK_SEO_01_URL nicht gesetzt — Job angelegt, n8n nicht gestartet.';
+      warning = e instanceof Error ? e.message : 'n8n-Webhook fehlgeschlagen';
     }
 
     await markBlogJobRunning(job.id);

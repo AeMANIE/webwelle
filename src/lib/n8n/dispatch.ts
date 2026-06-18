@@ -138,8 +138,10 @@ async function postWebhook(
     | N8nDispatchPayload
     | N8nSitePerformancePayload
     | N8nSeo01Payload
-    | Record<string, unknown>
+    | Record<string, unknown>,
+  options?: { strict?: boolean }
 ): Promise<void> {
+  const strict = options?.strict === true;
   if (!url?.trim()) {
     const ref =
       'leadId' in payload && payload.leadId != null
@@ -147,13 +149,17 @@ async function postWebhook(
         : 'jobId' in payload
           ? `job ${payload.jobId}`
           : 'unbekannt';
+    const msg = `n8n webhook URL fehlt (${ref})`;
+    if (strict) throw new Error(msg);
     console.log(`n8n webhook übersprungen (URL leer): ${ref}`);
     return;
   }
 
   const secret = process.env.N8N_WEBHOOK_SECRET;
   if (!secret) {
-    console.warn('N8N_WEBHOOK_SECRET nicht gesetzt');
+    const msg = 'N8N_WEBHOOK_SECRET nicht gesetzt';
+    if (strict) throw new Error(msg);
+    console.warn(msg);
     return;
   }
 
@@ -175,8 +181,18 @@ async function postWebhook(
     });
     if (!res.ok) {
       const text = await res.text();
+      const msg = `n8n webhook fehlgeschlagen (${res.status}): ${text.slice(0, 200)}`;
       console.error(`n8n webhook fehlgeschlagen ${url}:`, res.status, text);
+      if (strict) throw new Error(msg);
     }
+  } catch (error) {
+    if (strict) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('n8n webhook Timeout');
+      }
+      throw error;
+    }
+    console.error('n8n webhook error:', error);
   } finally {
     clearTimeout(timer);
   }
@@ -426,15 +442,23 @@ export function buildSeo01Payload(payload: N8nBlogOrchestratorPayload): N8nSeo01
   };
 }
 
+export function getSeo01WebhookUrl(): string | undefined {
+  const direct =
+    process.env.N8N_WEBHOOK_SEO_01_URL?.trim() ||
+    process.env.N8N_WEBHOOK_BLOG_ORCHESTRATOR_URL?.trim();
+  if (direct) return direct;
+  const base = process.env.N8N_BASE_URL?.trim().replace(/\/$/, '');
+  if (base) return `${base}/webhook/seo-01-research-project-setup-discovery`;
+  return undefined;
+}
+
 export async function dispatchBlogPipeline(
   payload: N8nBlogOrchestratorPayload
 ): Promise<void> {
-  const url =
-    process.env.N8N_WEBHOOK_SEO_01_URL?.trim() ||
-    process.env.N8N_WEBHOOK_BLOG_ORCHESTRATOR_URL?.trim();
+  const url = getSeo01WebhookUrl();
   const seoPayload = buildSeo01Payload(payload);
   console.log(`n8n dispatch: seo-01 blog-chain für Job ${payload.jobId} (Lead ${payload.leadId})`);
-  await postWebhook(url, seoPayload);
+  await postWebhook(url, seoPayload, { strict: true });
 }
 
 export interface N8nProjectAnalysisPayload {
