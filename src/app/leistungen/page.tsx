@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import LeistungenRadarSection from '../components/LeistungenRadarSection';
+import LeistungenServicesOverview from '../components/LeistungenServicesOverview';
 import LeistungenProducts from '../components/LeistungenProducts';
 import ScrollToTop from '../components/ScrollToTop';
 import CookieBanner from '../components/CookieBanner';
@@ -60,6 +62,8 @@ export default function LeistungenPage() {
     <div className="min-h-screen bg-background">
       <Header />
       <main>
+        <LeistungenRadarSection />
+        <LeistungenServicesOverview />
         <LeistungenProducts />
       </main>
       <Footer />

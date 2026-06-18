@@ -1,64 +1,41 @@
 'use client';
 
-import { Palette, Search, Target, FileText, Brush, Bot } from 'lucide-react';
 import { GlowCard } from '@/components/ui/spotlight-card';
 import { useLayoutCssWidth, useLayoutMode } from '@/hooks/useLayoutMode';
 import { getServicesGridClass } from '@/lib/responsive-layout-mode';
 import { ServicesMobileGlowProvider } from './ServicesMobileGlowContext';
+import {
+  HOMEPAGE_SERVICES,
+  type ServiceOverviewItem,
+} from './services-overview-data';
 
-export default function Services() {
+type ServicesProps = {
+  services?: ServiceOverviewItem[];
+  sectionId?: string;
+  heading?: string;
+  className?: string;
+};
+
+export default function Services({
+  services = HOMEPAGE_SERVICES,
+  sectionId = 'leistungen',
+  heading = 'Leistungsübersicht',
+  className = 'py-20 bg-background',
+}: ServicesProps) {
   const layoutMode = useLayoutMode();
   const cssWidth = useLayoutCssWidth();
   const gridClass = getServicesGridClass(layoutMode, cssWidth);
-  const services = [
-    {
-      icon: Palette,
-      title: 'Webdesign',
-      description:
-        'Professionelle Websites mit klarer Struktur, modernem Auftritt und einer Nutzerführung, die Vertrauen schafft.',
-    },
-    {
-      icon: Search,
-      title: 'SEO-Basis',
-      description:
-        'Eine starke Grundlage für bessere Sichtbarkeit bei Google, damit Ihre Website regional und thematisch sauber aufgestellt ist.',
-    },
-    {
-      icon: Target,
-      title: 'SEO-Profi',
-      description:
-        'Für Unternehmen, die gezielt mehr Reichweite, bessere Rankings und mehr qualifizierte Anfragen gewinnen möchten.',
-    },
-    {
-      icon: FileText,
-      title: 'Inhalte',
-      description:
-        'Texte und Seitenstrukturen, die verständlich sind, seriös wirken und Ihr Angebot klar auf den Punkt bringen.',
-    },
-    {
-      icon: Brush,
-      title: 'Branding',
-      description:
-        'Ein einheitlicher Außenauftritt, der Ihre Marke professionell zeigt und Wiedererkennung schafft.',
-    },
-    {
-      icon: Bot,
-      title: 'Automatisierung',
-      description:
-        'Sinnvolle digitale Abläufe, die Anfragen, Kontaktprozesse oder interne Schritte effizienter und zeitsparender machen.',
-    },
-  ];
 
   return (
-    <section id="leistungen" className="py-20 bg-background">
+    <section id={sectionId} className={className}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
-            Leistungsübersicht
+            {heading}
           </h2>
         </div>
 
-        <ServicesMobileGlowProvider>
+        <ServicesMobileGlowProvider sectionId={sectionId}>
         <div className={`grid ${gridClass} gap-8 overflow-visible`}>
           {services.map((service, index) => {
             const IconComponent = service.icon;

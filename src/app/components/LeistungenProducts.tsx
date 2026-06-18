@@ -15,7 +15,7 @@ export default function LeistungenProducts() {
     layoutMode === 'desktop' ? 'desktop' : 'mobile';
 
   return (
-    <section id="produkte" className="pt-20 pb-20 lg:pt-28 bg-background overflow-x-hidden">
+    <section id="produkte" className="pb-20 bg-background overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight max-w-4xl mx-auto">
