@@ -38,7 +38,7 @@ function FunnelDw3Content() {
         token={token}
         title="Wohin dürfen wir Ihre Ersteinschätzung schicken?"
         description="Mit Ihren Kontaktdaten können wir Ihr Projekt zuordnen und Ihnen eine fundierte Ersteinschätzung zurückgeben."
-        submitLabel="Analyse-Ergebnis & Termin wählen"
+        submitLabel="Termin wählen"
         footerNote="Ihre Angaben verwenden wir ausschließlich zur Einschätzung und Vorbereitung eines möglichen Erstgesprächs."
         successPath={`/funnel-dw/4?t=${encodeURIComponent(token)}`}
         showMarketPicker

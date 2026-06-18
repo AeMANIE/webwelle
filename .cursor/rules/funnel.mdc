@@ -17,10 +17,12 @@ alwaysApply: false
 
 ## Ablauf Digitale Wachstumsarchitektur (`funnel_kind: wachstumsarchitektur`)
 
+Gilt für **Digitale Wachstumsarchitektur** und **Executive KI-Systeme** (`leistungen_executive_ki`).
+
 1. **Einstieg:** Leistungskarte → `HeroIndustrySearch` mit `funnelKind` → `/funnel-dw/2`
-2. **funnel-dw/2:** Projektbeschreibung → `intent: project-brief` → n8n `project_solutions`
+2. **funnel-dw/2:** Branche (übernehmen/bestätigen) + Projektbeschreibung → `intent: project-brief` → n8n `project_solutions` (Hintergrund, Admin/Portal)
 3. **funnel-dw/3:** Kontakt + Adresse → `intent: contact`
-4. **funnel-dw/4:** Lösungsbausteine + Zoom-Link/Checkbox → `intent: dw-submit` → Status `consultation_requested`
+4. **funnel-dw/4:** nur Zoom-Link + Checkbox → `intent: dw-submit` → Status `consultation_requested`
 
 ## Lead-Status (Auszug)
 

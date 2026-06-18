@@ -36,13 +36,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.9,
     },
-    // KI-Agenten
-    {
-      url: `${baseUrl}/ai-agent`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
     // AI-Voice / Telefonassistent
     {
       url: `${baseUrl}/ai-voice`,

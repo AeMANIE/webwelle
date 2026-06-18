@@ -62,5 +62,6 @@ export const LEISTUNGEN_OFFERS: LeistungOffer[] = [
     submitLabel: 'Bedarf einordnen',
     inputId: 'leistungen-executive-ki-systeme-industry',
     source: 'leistungen_executive_ki',
+    funnelKind: 'wachstumsarchitektur',
   },
 ];

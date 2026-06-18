@@ -704,16 +704,6 @@ async function handleFunnelPatchIntent(
       ? body.selectedIds.map((id: unknown) => String(id)).filter(Boolean)
       : lead.solution_selection?.selectedIds || [];
 
-    if (selectedIds.length === 0) {
-      return secureResponse(
-        {
-          error: 'no_solutions_selected',
-          message: 'Bitte wählen Sie mindestens einen passenden Baustein aus.',
-        },
-        400
-      );
-    }
-
     const notesPrepared = prepareCustomerFreeText(
       String(body.projectNotes || ''),
       'project_notes'
@@ -728,18 +718,24 @@ async function handleFunnelPatchIntent(
       );
     }
     const projectNotes = notesPrepared.value || '';
-    const selection: DwaSolutionSelection = {
-      selectedIds,
-      updatedAt: new Date().toISOString(),
-    };
 
-    const updated = await updateFunnelLead(token, {
-      solution_selection: selection,
-      project_notes: projectNotes || undefined,
+    const updatePayload: Parameters<typeof updateFunnelLead>[1] = {
       zoom_booking_confirmed: true,
       zoom_booking_confirmed_at: new Date(),
       status: 'consultation_requested',
-    });
+    };
+
+    if (selectedIds.length > 0) {
+      updatePayload.solution_selection = {
+        selectedIds,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    if (projectNotes) {
+      updatePayload.project_notes = projectNotes;
+    }
+
+    const updated = await updateFunnelLead(token, updatePayload);
 
     return secureResponse({ lead: updated, ok: true });
   }

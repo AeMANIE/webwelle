@@ -1,6 +1,9 @@
 import type { FunnelKind } from './types';
 
-const DWA_SOURCES = new Set(['leistungen_digitale_wachstumsarchitektur']);
+const DWA_SOURCES = new Set([
+  'leistungen_digitale_wachstumsarchitektur',
+  'leistungen_executive_ki',
+]);
 
 export function funnelKindFromSource(source?: string): FunnelKind {
   if (source && DWA_SOURCES.has(source)) return 'wachstumsarchitektur';

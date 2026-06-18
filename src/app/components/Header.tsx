@@ -70,9 +70,6 @@ export default function Header() {
             <Link href="/leistungen" className="text-foreground hover:text-primary transition-colors font-medium py-2 px-1">
               Leistungen
             </Link>
-            <Link href="/ai-agent" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap py-2 px-1">
-              KI & Automatisierung
-            </Link>
             <Link href="/app-entwicklung" className="text-foreground hover:text-primary transition-colors font-medium whitespace-nowrap py-2 px-1">
               App-Entwicklung
             </Link>
@@ -111,9 +108,6 @@ export default function Header() {
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-card rounded-lg mt-2 border border-border shadow-lg">
               <Link href="/leistungen" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
                 Leistungen
-              </Link>
-              <Link href="/ai-agent" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
-                KI & Automatisierung
               </Link>
               <Link href="/app-entwicklung" className="block px-3 py-2 text-foreground hover:text-primary font-medium rounded-md hover:bg-primary/5" onClick={closeMenu}>
                 App-Entwicklung

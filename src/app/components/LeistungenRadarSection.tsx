@@ -59,7 +59,7 @@ export default function LeistungenRadarSection() {
   const compactFloat = layoutMode === 'mobile';
 
   return (
-    <section className="relative z-0 overflow-hidden bg-background pt-20 lg:pt-28">
+    <section className="relative z-0 overflow-hidden bg-background pt-20 pb-12 sm:pb-16 lg:pt-28 lg:pb-20">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="relative mx-auto h-[28rem] w-full max-w-3xl max-sm:h-[30rem] sm:h-[26rem]">
           {RADAR_ITEMS.map((item, index) => {

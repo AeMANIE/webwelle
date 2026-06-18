@@ -1,8 +1,12 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import FunnelShell from '@/components/funnel/FunnelShell';
+import FunnelIndustryFields, {
+  type FunnelIndustryFieldsHandle,
+  type FunnelIndustryLead,
+} from '@/components/funnel/FunnelIndustryFields';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { useDwaLeadGuard } from '@/components/funnel/useFunnelLeadGuard';
 import { PROJECT_BRIEF_MIN_LENGTH } from '@/lib/funnel/dwa';
@@ -12,11 +16,15 @@ function FunnelDw2Content() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('t') || '';
+  const industryRef = useRef<FunnelIndustryFieldsHandle>(null);
   const [brief, setBrief] = useState('');
-  const [lead, setLead] = useState<{ funnel_kind?: string; project_brief?: string } | null>(null);
+  const [lead, setLead] = useState<
+    ({ funnel_kind?: string; project_brief?: string } & FunnelIndustryLead) | null
+  >(null);
   const [leadLoaded, setLeadLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [canProceedIndustry, setCanProceedIndustry] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -38,6 +46,13 @@ function FunnelDw2Content() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+
+    const industryReady = await industryRef.current?.ensureReady();
+    if (!industryReady?.ok) {
+      setError(industryReady?.message || 'Bitte übernehmen Sie zuerst Ihre Branche.');
+      return;
+    }
+
     const trimmed = brief.trim();
     if (trimmed.length < PROJECT_BRIEF_MIN_LENGTH) {
       setError(
@@ -95,6 +110,16 @@ function FunnelDw2Content() {
         onSubmit={submit}
         className="rounded-2xl border border-border bg-card p-6 md:p-8 shadow-xl space-y-6"
       >
+        <FunnelIndustryFields
+          ref={industryRef}
+          token={token}
+          leadLoaded={leadLoaded}
+          lead={lead}
+          onLeadUpdate={(patch) => setLead((prev) => (prev ? { ...prev, ...patch } : prev))}
+          onCanProceedChange={setCanProceedIndustry}
+          inputId="funnel-dw-industry"
+        />
+
         <section>
           <h1 className="text-2xl font-bold mb-2">Womit sollen wir Ihnen konkret helfen?</h1>
           <p className="text-muted-foreground text-sm mb-4">
@@ -131,8 +156,12 @@ function FunnelDw2Content() {
 
         {error && <p className="text-amber-400 text-sm">{error}</p>}
 
-        <ShinyButton type="submit" disabled={loading} className="w-full">
-          {loading ? 'Einen Moment…' : 'Projekt analysieren'}
+        <ShinyButton
+          type="submit"
+          disabled={loading || !leadLoaded || !canProceedIndustry}
+          className="w-full"
+        >
+          {loading ? 'Einen Moment…' : 'Weiter'}
         </ShinyButton>
       </form>
     </FunnelShell>
