@@ -143,7 +143,13 @@ export default function BlogGenerateModal({ onStarted }: Props) {
                   </select>
                 </div>
               </div>
-              {message && (
+              {loading && (
+                <p className="text-sm text-muted-foreground">
+                  Pipeline wird gestartet — das kann bis zu 3 Minuten dauern. Bitte dieses Fenster
+                  offen lassen.
+                </p>
+              )}
+              {message && !loading && (
                 <p className={`text-sm ${isError ? 'text-destructive' : 'text-muted-foreground'}`}>
                   {message}
                 </p>
@@ -161,7 +167,7 @@ export default function BlogGenerateModal({ onStarted }: Props) {
                   disabled={loading}
                   className="px-4 py-2 text-sm rounded-lg bg-brand text-brand-foreground disabled:opacity-50"
                 >
-                  {loading ? 'Startet…' : 'Pipeline starten'}
+                  {loading ? 'Startet… (bis 3 Min.)' : 'Pipeline starten'}
                 </button>
               </div>
             </form>
