@@ -121,14 +121,15 @@ function FunnelDw2Content() {
         />
 
         <section>
-          <h1 className="text-2xl font-bold mb-2">Womit sollen wir Ihnen konkret helfen?</h1>
+          <h1 className="text-2xl font-bold mb-2">
+            Was möchten Sie aktuell aufbauen, verbessern oder spürbar entlasten?
+          </h1>
           <p className="text-muted-foreground text-sm mb-4">
-            Beschreiben Sie kurz, welche digitale Struktur Sie aufbauen möchten – gern in Ihren
-            eigenen Worten.
+            Beschreiben Sie Ihr Vorhaben kurz in eigenen Worten. Stichpunkte reichen völlig aus.
           </p>
 
           <label className="text-sm font-medium" htmlFor="project-brief">
-            Projekt & aktuelle Situation
+            Vorhaben, Ziel oder aktuelle Engpässe
           </label>
           <textarea
             id="project-brief"
@@ -140,7 +141,7 @@ function FunnelDw2Content() {
               setError(null);
               setBrief(e.target.value);
             }}
-            placeholder="Zum Beispiel: bestehende Website wirkt veraltet, Anfragen kommen zufällig, viel manuelle Abstimmung per E-Mail, neues Kundenportal geplant …"
+            placeholder="Zum Beispiel: Website, Funnel, digitale Anfragen, Angebotsprozess, Kundenkommunikation, interne Abläufe, Onboarding, E-Mails, Dokumente, Recherche oder wiederkehrende Aufgaben."
           />
           <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
             {briefLength.toLocaleString('de-DE')} / {briefLimit.max.toLocaleString('de-DE')} Zeichen
@@ -149,8 +150,9 @@ function FunnelDw2Content() {
               : ''}
           </p>
           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-            Hilfreich ist, wenn Sie erwähnen, wo heute fehlende Klarheit, Medienbrüche oder
-            manuelle Abläufe Wachstum und Effizienz begrenzen.
+            Hilfreich ist, wenn Sie kurz nennen, wo heute noch manuelle Schritte, Medienbrüche,
+            fehlende Struktur oder unnötiger Zeitaufwand Wachstum, Effizienz oder
+            Entscheidungssicherheit begrenzen.
           </p>
         </section>
 

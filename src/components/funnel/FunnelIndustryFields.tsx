@@ -201,12 +201,14 @@ const FunnelIndustryFields = forwardRef<FunnelIndustryFieldsHandle, FunnelIndust
 
     return (
       <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-4">Ihre Branche</h2>
-        <label htmlFor={inputId} className="block text-sm font-medium mb-2">
-          Ihre Branche
-        </label>
+        <h2 className="text-lg font-semibold mb-2">Ihre Branche</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Damit wir Ihre Ausgangssituation besser einordnen und die Analyse auf Ihr geschäftliches
+          Umfeld abstimmen können.
+        </p>
         <input
           id={inputId}
+          aria-label="Ihre Branche"
           value={industryInput}
           onChange={(e) => {
             setIndustryInput(e.target.value);

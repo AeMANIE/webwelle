@@ -35,7 +35,7 @@ export const LEISTUNGEN_OFFERS: LeistungOffer[] = [
     ctaHeading: 'Projekt beschreiben',
     ctaDescription:
       'Beschreiben Sie kurz, welche digitale Struktur Sie aufbauen möchten – und an welchen Stellen fehlende Klarheit, Medienbrüche oder manuelle Abläufe heute Wachstum und Effizienz begrenzen.',
-    submitLabel: 'Projekt beschreiben starten',
+    submitLabel: 'Projekt beschreiben',
     inputId: 'leistungen-digitale-wachstumsarchitektur-industry',
     source: 'leistungen_digitale_wachstumsarchitektur',
     funnelKind: 'wachstumsarchitektur',
