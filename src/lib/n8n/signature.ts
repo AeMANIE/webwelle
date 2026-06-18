@@ -14,3 +14,18 @@ export function verifyN8nSignature(rawBody: string, signature: string | null): b
     return expected === signature;
   }
 }
+
+/** HMAC (client pipeline) or API key (webwelle publish / job-completed). */
+export function verifyN8nRequest(
+  request: { headers: { get(name: string): string | null } },
+  rawBody: string
+): boolean {
+  if (verifyN8nSignature(rawBody, request.headers.get('x-webwelle-signature'))) {
+    return true;
+  }
+  const apiKey =
+    request.headers.get('x-api-key') ||
+    request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+  const expected = process.env.N8N_API_KEY?.trim();
+  return Boolean(expected && apiKey && apiKey === expected);
+}

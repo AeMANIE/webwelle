@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { verifyN8nSignature } from '@/lib/n8n/signature';
+import { verifyN8nRequest } from '@/lib/n8n/signature';
 import { secureResponse } from '@/lib/api-security';
 import {
   ensureBlogPipelineTables,
@@ -11,7 +11,7 @@ import { FINAL_JOB_STATUSES } from '@/lib/blog-constants';
 /** Pipeline technically finished — NOT customer delivery (completed) */
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
-  if (!verifyN8nSignature(rawBody, request.headers.get('x-webwelle-signature'))) {
+  if (!verifyN8nRequest(request, rawBody)) {
     return secureResponse({ error: 'unauthorized' }, 401);
   }
 

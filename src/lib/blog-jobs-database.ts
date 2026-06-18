@@ -397,6 +397,67 @@ export async function upsertBlogArticle(params: {
   }
 }
 
+export async function blogArticleExists(jobId: number, articleIndex: number): Promise<boolean> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      'SELECT 1 FROM blog_articles WHERE job_id = $1 AND article_index = $2 LIMIT 1',
+      [jobId, articleIndex]
+    );
+    return result.rows.length > 0;
+  } finally {
+    client.release();
+  }
+}
+
+/** WebWelle publish callback: blog_posts + Job-Tracking in blog_articles. */
+export async function recordWebwellePublishDelivery(params: {
+  jobId: number;
+  articleIndex: number;
+  keyword: string;
+  title: string;
+  metaDesc?: string | null;
+  htmlContent: string;
+  wordCount?: number | null;
+  promptVersion?: string;
+}): Promise<{ article: BlogArticle; jobFinished: boolean }> {
+  await ensureBlogPipelineTables();
+
+  const job = await getBlogJobById(params.jobId);
+  if (!job) {
+    throw new Error('job_not_found');
+  }
+
+  const isNew = !(await blogArticleExists(params.jobId, params.articleIndex));
+
+  const article = await upsertBlogArticle({
+    jobId: params.jobId,
+    leadToken: job.leadToken,
+    articleIndex: params.articleIndex,
+    keyword: params.keyword,
+    title: params.title,
+    metaDesc: params.metaDesc,
+    htmlContent: params.htmlContent,
+    wordCount: params.wordCount,
+    qaStatus: 'passed',
+    promptVersion: params.promptVersion || BLOG_PROMPT_VERSION,
+  });
+
+  let jobFinished = false;
+  if (isNew) {
+    const updated = await incrementBlogJobProgress(params.jobId, { failed: false });
+    if (
+      updated &&
+      updated.completedCount + updated.failedCount >= updated.articleCount
+    ) {
+      await markPipelineFinished(params.jobId, {});
+      jobFinished = true;
+    }
+  }
+
+  return { article, jobFinished };
+}
+
 export async function incrementBlogJobProgress(
   jobId: number,
   options: { failed?: boolean }

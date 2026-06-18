@@ -76,10 +76,12 @@ export default function BlogGenerateModal({ onStarted }: Props) {
         return;
       }
       setMessage(
-        `Job #${data.jobId} gestartet — n8n seo-01 läuft (${data.publishMode || publishMode}).`
+        String(
+          data.message ||
+            `Job #${data.jobId} gestartet — Pipeline läuft im Hintergrund (typisch 5–10 Min.).`
+        )
       );
       onStarted?.(Number(data.jobId));
-      setOpen(false);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Netzwerkfehler');
       setIsError(true);
@@ -145,12 +147,12 @@ export default function BlogGenerateModal({ onStarted }: Props) {
               </div>
               {loading && (
                 <p className="text-sm text-muted-foreground">
-                  Pipeline wird gestartet — das kann bis zu 3 Minuten dauern. Bitte dieses Fenster
-                  offen lassen.
+                  Job wird angelegt — die SEO-Pipeline startet danach im Hintergrund (typisch 5–10
+                  Minuten).
                 </p>
               )}
               {message && !loading && (
-                <p className={`text-sm ${isError ? 'text-destructive' : 'text-muted-foreground'}`}>
+                <p className={`text-sm ${isError ? 'text-destructive' : 'text-green-700 dark:text-green-400'}`}>
                   {message}
                 </p>
               )}
@@ -160,15 +162,17 @@ export default function BlogGenerateModal({ onStarted }: Props) {
                   onClick={() => setOpen(false)}
                   className="px-4 py-2 text-sm rounded-lg border border-border"
                 >
-                  Abbrechen
+                  {message && !isError && !loading ? 'Schließen' : 'Abbrechen'}
                 </button>
+                {!message || isError ? (
                 <button
                   type="submit"
                   disabled={loading}
                   className="px-4 py-2 text-sm rounded-lg bg-brand text-brand-foreground disabled:opacity-50"
                 >
-                  {loading ? 'Startet… (bis 3 Min.)' : 'Pipeline starten'}
+                  {loading ? 'Wird gestartet…' : 'Pipeline starten'}
                 </button>
+                ) : null}
               </div>
             </form>
           </div>

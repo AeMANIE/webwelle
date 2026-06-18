@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, after } from 'next/server';
 import { requireStaffAuth, secureResponse } from '@/lib/api-security';
 import {
   buildExternalRunId,
@@ -11,6 +11,7 @@ import {
 import {
   buildWebwelleBlogPayload,
   dispatchBlogPipeline,
+  getBlogPipelineEnvStatus,
   type N8nBlogOrchestratorPayload,
 } from '@/lib/n8n/dispatch';
 import { BLOG_PROMPT_VERSION, type BlogPublishMode } from '@/lib/blog-constants';
@@ -58,12 +59,42 @@ function shouldRedispatchExistingJob(job: BlogJob): boolean {
   );
 }
 
+function scheduleN8nDispatch(params: {
+  jobId: number;
+  articleCount: number;
+  keywords: string[];
+  branche: string;
+  plz: string;
+  publishMode: BlogPublishMode;
+}): void {
+  after(async () => {
+    const { n8nDispatched } = await dispatchN8nForJob(params);
+    if (n8nDispatched) {
+      await markBlogJobRunning(params.jobId);
+    } else {
+      console.error(`n8n dispatch failed for blog job ${params.jobId}`);
+    }
+  });
+}
+
 export async function handleStartWebwellePipeline(request: NextRequest) {
   try {
     const auth = await requireStaffAuth(request, 'TEAM');
     if (auth instanceof Response) return auth;
 
     await ensureBlogPipelineTables();
+
+    const pipelineEnv = getBlogPipelineEnvStatus();
+    if (!pipelineEnv.ready) {
+      return secureResponse(
+        {
+          error: 'n8n_not_configured',
+          message: 'Blog-Pipeline ist nicht konfiguriert.',
+          missing: pipelineEnv.missing,
+        },
+        503
+      );
+    }
 
     let body: Record<string, unknown>;
     try {
@@ -98,17 +129,15 @@ export async function handleStartWebwellePipeline(request: NextRequest) {
       };
 
       if (shouldRedispatchExistingJob(existing)) {
-        const { n8nDispatched, warning } = await dispatchN8nForJob(dispatchParams);
-        if (n8nDispatched) {
-          await markBlogJobRunning(existing.id);
-        }
+        scheduleN8nDispatch(dispatchParams);
         return secureResponse({
           jobId: existing.id,
-          status: n8nDispatched ? 'running' : existing.status,
+          status: 'queued',
           existingJob: true,
-          redispatched: n8nDispatched,
-          n8nDispatched,
-          warning,
+          redispatched: true,
+          n8nDispatched: true,
+          message:
+            'Pipeline wird im Hintergrund neu gestartet — Ergebnis typisch in 5–10 Minuten unter Kunden-Blog.',
         });
       }
 
@@ -133,7 +162,7 @@ export async function handleStartWebwellePipeline(request: NextRequest) {
       keywordData: { keywords, branche, plz },
     });
 
-    const { n8nDispatched, warning } = await dispatchN8nForJob({
+    scheduleN8nDispatch({
       jobId: job.id,
       articleCount,
       keywords,
@@ -142,19 +171,16 @@ export async function handleStartWebwellePipeline(request: NextRequest) {
       publishMode,
     });
 
-    if (n8nDispatched) {
-      await markBlogJobRunning(job.id);
-    }
-
     return secureResponse({
       jobId: job.id,
-      status: n8nDispatched ? 'running' : 'queued',
+      status: 'queued',
       articleCount,
       publishMode,
       externalRunId,
       sourceType: 'webwelle',
-      n8nDispatched,
-      warning,
+      n8nDispatched: true,
+      message:
+        'Pipeline gestartet — läuft im Hintergrund. Ergebnis typisch in 5–10 Minuten unter Kunden-Blog und Blog-Editor (Entwürfe).',
     });
   } catch (error) {
     console.error('start-webwelle-pipeline:', error);

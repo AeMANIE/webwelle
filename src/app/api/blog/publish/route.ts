@@ -7,7 +7,11 @@ import { existsSync } from 'fs';
 import { assertSystemAOnly, BlogSystemGuardError, stripUncontrolledImages } from '@/lib/blog-guards';
 import { BLOG_PROMPT_VERSION } from '@/lib/blog-constants';
 import { revalidateBlogPaths } from '@/lib/blog-revalidation';
-import { savePostImages, type BlogImageInput } from '@/lib/blog-jobs-database';
+import {
+  recordWebwellePublishDelivery,
+  savePostImages,
+  type BlogImageInput,
+} from '@/lib/blog-jobs-database';
 
 function parseImages(raw: unknown): BlogImageInput[] {
   if (!Array.isArray(raw)) return [];
@@ -113,6 +117,13 @@ export async function POST(request: NextRequest) {
     const images = parseImages(body.images);
     const promptVersion = String(body.prompt_version || body.promptVersion || BLOG_PROMPT_VERSION);
     const sourceJobId = body.jobId != null ? Number(body.jobId) : undefined;
+    const articleIndex =
+      body.articleIndex != null
+        ? Number(body.articleIndex)
+        : body.article_index != null
+          ? Number(body.article_index)
+          : 0;
+    const keyword = String(body.keyword || title || '').trim();
 
     if (!title || !content) {
       return NextResponse.json({ error: 'Titel und Inhalt sind erforderlich' }, { status: 400 });
@@ -172,6 +183,27 @@ export async function POST(request: NextRequest) {
 
     revalidateBlogPaths(finalSlug);
 
+    let jobTracking: { articleId?: number; jobFinished?: boolean } | undefined;
+    if (sourceJobId && !Number.isNaN(sourceJobId) && sourceJobId > 0) {
+      const wordCount =
+        body.wordCount != null
+          ? Number(body.wordCount)
+          : body.word_count != null
+            ? Number(body.word_count)
+            : content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+      const delivery = await recordWebwellePublishDelivery({
+        jobId: sourceJobId,
+        articleIndex: Number.isNaN(articleIndex) ? 0 : articleIndex,
+        keyword: keyword || title,
+        title,
+        metaDesc: meta_description,
+        htmlContent: content,
+        wordCount,
+        promptVersion,
+      });
+      jobTracking = { articleId: delivery.article.id, jobFinished: delivery.jobFinished };
+    }
+
     return NextResponse.json(
       {
         success: true,
@@ -182,6 +214,7 @@ export async function POST(request: NextRequest) {
           status: post.status,
           url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/blog/${post.slug}`,
         },
+        jobTracking,
       },
       { status: 201 }
     );

@@ -164,7 +164,7 @@ async function postWebhook(
   }
 
   const body = JSON.stringify(payload);
-  const timeout = parseInt(process.env.N8N_DISPATCH_TIMEOUT_MS || '130000', 10);
+  const timeout = parseInt(process.env.N8N_DISPATCH_TIMEOUT_MS || '600000', 10);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
