@@ -7,7 +7,9 @@ import { existsSync } from 'fs';
 import { assertSystemAOnly, BlogSystemGuardError, stripUncontrolledImages } from '@/lib/blog-guards';
 import { BLOG_PROMPT_VERSION } from '@/lib/blog-constants';
 import { revalidateBlogPaths } from '@/lib/blog-revalidation';
+import { verifyN8nRequest } from '@/lib/n8n/signature';
 import {
+  getBlogArticleByJobIndex,
   recordWebwellePublishDelivery,
   savePostImages,
   type BlogImageInput,
@@ -43,24 +45,22 @@ function parseImages(raw: unknown): BlogImageInput[] {
 
 export async function POST(request: NextRequest) {
   try {
-    const apiKey =
-      request.headers.get('x-api-key') ||
-      request.headers.get('authorization')?.replace('Bearer ', '');
-    const expectedApiKey = process.env.N8N_API_KEY;
-
-    if (!expectedApiKey) {
-      return NextResponse.json({ error: 'API-Key-Konfiguration fehlt' }, { status: 500 });
-    }
-    if (!apiKey || apiKey !== expectedApiKey) {
-      return NextResponse.json({ error: 'Ungültiger API-Key' }, { status: 401 });
-    }
-
+    const contentType = request.headers.get('content-type') || '';
     let body: Record<string, unknown>;
     let featuredImageUrl: string | null = null;
 
-    const contentType = request.headers.get('content-type') || '';
-
     if (contentType.includes('multipart/form-data')) {
+      const apiKey =
+        request.headers.get('x-api-key') ||
+        request.headers.get('authorization')?.replace('Bearer ', '');
+      const expectedApiKey = process.env.N8N_API_KEY;
+      if (!expectedApiKey) {
+        return NextResponse.json({ error: 'API-Key-Konfiguration fehlt' }, { status: 500 });
+      }
+      if (!apiKey || apiKey !== expectedApiKey) {
+        return NextResponse.json({ error: 'Ungültiger API-Key' }, { status: 401 });
+      }
+
       const formData = await request.formData();
       body = {
         title: formData.get('title') as string,
@@ -93,7 +93,11 @@ export async function POST(request: NextRequest) {
         featuredImageUrl = (formData.get('featured_image_url') as string) || null;
       }
     } else {
-      body = await request.json();
+      const rawBody = await request.text();
+      if (!verifyN8nRequest(request, rawBody)) {
+        return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+      }
+      body = JSON.parse(rawBody) as Record<string, unknown>;
       featuredImageUrl = (body.featured_image_url as string) || null;
     }
 
@@ -127,6 +131,21 @@ export async function POST(request: NextRequest) {
 
     if (!title || !content) {
       return NextResponse.json({ error: 'Titel und Inhalt sind erforderlich' }, { status: 400 });
+    }
+
+    const resolvedArticleIndex = Number.isNaN(articleIndex) ? 0 : articleIndex;
+    if (sourceJobId && !Number.isNaN(sourceJobId) && sourceJobId > 0) {
+      const existingArticle = await getBlogArticleByJobIndex(sourceJobId, resolvedArticleIndex);
+      if (existingArticle) {
+        return NextResponse.json(
+          {
+            success: true,
+            alreadyDelivered: true,
+            jobTracking: { articleId: existingArticle.id, jobFinished: true },
+          },
+          { status: 200 }
+        );
+      }
     }
 
     if (status === 'published' && !featuredImageUrl && !images.some((i) => i.role === 'featured')) {
@@ -194,7 +213,7 @@ export async function POST(request: NextRequest) {
       const qaStatus = String(body.qa_status || body.qaStatus || 'passed');
       const delivery = await recordWebwellePublishDelivery({
         jobId: sourceJobId,
-        articleIndex: Number.isNaN(articleIndex) ? 0 : articleIndex,
+        articleIndex: resolvedArticleIndex,
         keyword: keyword || title,
         title,
         metaDesc: meta_description,
@@ -237,7 +256,7 @@ export async function GET() {
     name: 'WebWelle Blog Publish API',
     version: '2.0.0',
     endpoint: '/api/blog/publish',
-    authentication: 'API-Key',
+    authentication: 'API-Key or HMAC (x-webwelle-signature)',
     system: 'A-only (webwelle.com/blog)',
     defaultStatus: 'draft',
   });

@@ -15,9 +15,10 @@ export async function GET(request: NextRequest) {
     callbackBaseUrl,
     publishAuth: {
       n8nApiKeySet: Boolean(n8nApiKey),
+      hmacNote: 'Publish akzeptiert x-api-key oder x-webwelle-signature (N8N_WEBHOOK_SECRET).',
       hint: n8nApiKey
-        ? 'N8N_API_KEY muss in WebWelle-App und n8n-App identisch sein (seo-06 → /api/blog/publish).'
-        : 'N8N_API_KEY fehlt in WebWelle-App — Publish-Callbacks schlagen fehl.',
+        ? 'N8N_API_KEY in WebWelle + optional in n8n. Alternativ reicht N8N_WEBHOOK_SECRET in n8n für Publish-HMAC.'
+        : 'N8N_API_KEY fehlt in WebWelle-App — Publish per API-Key schlägt fehl (HMAC weiter möglich).',
     },
     n8nWriterEnv: {
       openRouterNote:

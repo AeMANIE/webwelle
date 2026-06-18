@@ -5,6 +5,7 @@ import {
   ensureBlogPipelineTables,
   getBlogJobById,
   markPipelineFinished,
+  setBlogJobErrorMessage,
 } from '@/lib/blog-jobs-database';
 import { FINAL_JOB_STATUSES } from '@/lib/blog-constants';
 
@@ -50,6 +51,17 @@ export async function POST(request: NextRequest) {
       : body.n8n_execution_id != null
         ? String(body.n8n_execution_id)
         : undefined;
+
+  const errorMessage =
+    body.errorMessage != null
+      ? String(body.errorMessage)
+      : body.error_message != null
+        ? String(body.error_message)
+        : undefined;
+
+  if (errorMessage) {
+    await setBlogJobErrorMessage(jobId, errorMessage);
+  }
 
   const job = await markPipelineFinished(jobId, { failedCount, n8nExecutionId });
 

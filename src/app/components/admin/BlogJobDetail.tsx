@@ -24,6 +24,7 @@ interface JobDetail {
   failedCount: number;
   lastCallbackAt: string | null;
   lastErrorAt: string | null;
+  errorMessage: string | null;
   n8nExecutionId: string | null;
   pipelineFinishedAt: string | null;
   deliveredAt: string | null;
@@ -105,21 +106,32 @@ export default function BlogJobDetail({ jobId, onBack, onRefresh }: Props) {
   }
 
   async function exportArticle(articleId: number, format: string) {
+    setMessage(null);
     const res = await fetch('/api/admin/blog/export', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ articleId, format }),
     });
-    const data = await res.json();
-    if (!res.ok) return;
+    let data: Record<string, unknown> = {};
+    try {
+      data = await res.json();
+    } catch {
+      setMessage('Export fehlgeschlagen (keine Antwort vom Server).');
+      return;
+    }
+    if (!res.ok) {
+      setMessage(String(data.message || data.error || 'Export fehlgeschlagen'));
+      return;
+    }
+    const exportData = data.export as Record<string, unknown> | undefined;
     const text =
       format === 'export_json'
-        ? JSON.stringify(data.export, null, 2)
+        ? JSON.stringify(exportData, null, 2)
         : format === 'export_markdown'
-          ? String(data.export?.markdown || '')
+          ? String(exportData?.markdown || '')
           : format === 'copy_plain'
-            ? String(data.export?.plain || '')
-            : String(data.export?.htmlContent || data.export?.content_html || '');
+            ? String(exportData?.plain || '')
+            : String(exportData?.htmlContent || exportData?.content_html || '');
     await navigator.clipboard.writeText(text);
     setMessage(`Export (${format}) in Zwischenablage kopiert.`);
   }
@@ -164,6 +176,9 @@ export default function BlogJobDetail({ jobId, onBack, onRefresh }: Props) {
           <p className="text-xs text-destructive">
             Letzter Fehler: {new Date(job.lastErrorAt).toLocaleString('de-DE')}
           </p>
+        )}
+        {job.errorMessage && (
+          <p className="text-xs text-destructive font-mono break-all">{job.errorMessage}</p>
         )}
         {job.n8nExecutionId && (
           <p className="text-xs text-muted-foreground font-mono">n8n: {job.n8nExecutionId}</p>

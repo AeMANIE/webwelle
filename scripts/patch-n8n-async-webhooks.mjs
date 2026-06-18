@@ -95,10 +95,10 @@ if (!j.jobId) {
 }
 
 if (sourceType === 'webwelle') {
-  if (!apiKey) {
-    webwelleCallbackError = 'N8N_API_KEY fehlt in n8n';
-  } else if (!html.trim()) {
+  if (!html.trim()) {
     webwelleCallbackError = 'empty_html';
+  } else if (!apiKey && !secret) {
+    webwelleCallbackError = 'N8N_API_KEY oder N8N_WEBHOOK_SECRET fehlt in n8n';
   } else {
     const publishMode = j.publishMode || j.publish_mode || 'draft';
     const publishPayload = {
@@ -117,12 +117,19 @@ if (sourceType === 'webwelle') {
       prompt_version: promptVersion,
       images,
     };
+    const publishBody = JSON.stringify(publishPayload);
+    const publishHeaders = { 'Content-Type': 'application/json' };
+    if (apiKey) {
+      publishHeaders['x-api-key'] = apiKey;
+    } else {
+      publishHeaders['x-webwelle-signature'] = crypto.createHmac('sha256', secret).update(publishBody).digest('hex');
+    }
     try {
       await httpRequest({
         method: 'POST',
         url: base + '/api/blog/publish',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
-        body: JSON.stringify(publishPayload),
+        headers: publishHeaders,
+        body: publishBody,
         timeout: 60000,
       });
     } catch (err) {
@@ -165,13 +172,16 @@ if (sourceType === 'webwelle') {
 }
 
 if (idx >= total - 1 && j.jobId) {
-  const canComplete = secret || (sourceType === 'webwelle' && apiKey);
+  const canComplete = secret || apiKey;
   if (canComplete) {
-    const doneBody = JSON.stringify({
+    const donePayload = {
       jobId: j.jobId,
       failedCount: qaPassed ? 0 : 1,
       n8nExecutionId: j.n8n_execution_id || j.n8nExecutionId || null,
-    });
+    };
+    if (webwelleCallbackError) donePayload.errorMessage = webwelleCallbackError;
+    else if (!qaPassed) donePayload.errorMessage = 'QA fehlgeschlagen — Text zu kurz oder Checks nicht bestanden';
+    const doneBody = JSON.stringify(donePayload);
     const doneHeaders = { 'Content-Type': 'application/json' };
     if (secret) {
       doneHeaders['x-webwelle-signature'] = crypto.createHmac('sha256', secret).update(doneBody).digest('hex');
@@ -193,7 +203,7 @@ if (idx >= total - 1 && j.jobId) {
 }
 
 return [{ json: { ...j, webwelleCallbackSent: !webwelleCallbackError, webwelleCallbackError, sink: sourceType, callbackBaseUrl: base } }];
-// dualSinkContextV5`;
+// dualSinkContextV6`;
 
 function patchSeo06DualSinkV4(wf) {
   const node = wf.nodes.find((n) => n.name === 'Code - Dual Sink Blog Callback');

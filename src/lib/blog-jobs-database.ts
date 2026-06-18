@@ -410,6 +410,34 @@ export async function blogArticleExists(jobId: number, articleIndex: number): Pr
   }
 }
 
+export async function getBlogArticleByJobIndex(
+  jobId: number,
+  articleIndex: number
+): Promise<BlogArticle | null> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      'SELECT * FROM blog_articles WHERE job_id = $1 AND article_index = $2 LIMIT 1',
+      [jobId, articleIndex]
+    );
+    return result.rows[0] ? mapArticle(result.rows[0]) : null;
+  } finally {
+    client.release();
+  }
+}
+
+export async function setBlogJobErrorMessage(jobId: number, message: string): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `UPDATE blog_jobs SET error_message = $2, last_error_at = NOW() WHERE id = $1`,
+      [jobId, message.slice(0, 2000)]
+    );
+  } finally {
+    client.release();
+  }
+}
+
 /** WebWelle publish callback: blog_posts + Job-Tracking in blog_articles. */
 export async function recordWebwellePublishDelivery(params: {
   jobId: number;
