@@ -1,9 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import BlogJobDetail from './BlogJobDetail';
+
 interface BlogJobRow {
   id: number;
-  leadToken: string;
+  leadToken: string | null;
+  sourceType: string;
   status: string;
   articleCount: number;
   completedCount: number;
@@ -12,27 +15,31 @@ interface BlogJobRow {
   industry: string | null;
   articleRows: number;
   createdAt: string;
-  startedAt: string | null;
-  completedAt: string | null;
+  lastCallbackAt: string | null;
 }
 
 const STATUS_LABELS: Record<string, string> = {
   queued: 'Warteschlange',
   running: 'Läuft',
-  partial: 'Teilweise',
-  completed: 'Fertig',
+  pipeline_finished: 'Pipeline fertig',
+  awaiting_article_review: 'Review ausstehend',
+  ready_for_delivery: 'Bereit zur Auslieferung',
+  completed: 'Ausgeliefert',
   failed: 'Fehlgeschlagen',
+  cancelled: 'Abgebrochen',
+  partial: 'Teilweise',
 };
 
 function statusBadgeClass(status: string): string {
   switch (status) {
     case 'completed':
+    case 'ready_for_delivery':
       return 'bg-green-500/15 text-green-600';
     case 'running':
     case 'queued':
+    case 'pipeline_finished':
+    case 'awaiting_article_review':
       return 'bg-yellow-500/15 text-yellow-700';
-    case 'partial':
-      return 'bg-orange-500/15 text-orange-700';
     case 'failed':
       return 'bg-red-500/15 text-red-600';
     default:
@@ -47,6 +54,8 @@ export default function BlogJobsTab() {
   const [forceResearch, setForceResearch] = useState(false);
   const [starting, setStarting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'client' | 'webwelle'>('all');
+  const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -56,6 +65,7 @@ export default function BlogJobsTab() {
       const rows = (data.jobs || []).map((j: Record<string, unknown>) => ({
         id: j.id,
         leadToken: j.leadToken,
+        sourceType: j.sourceType || 'client',
         status: j.status,
         articleCount: j.articleCount,
         completedCount: j.completedCount,
@@ -64,8 +74,7 @@ export default function BlogJobsTab() {
         industry: j.industry,
         articleRows: j.articleRows,
         createdAt: j.createdAt,
-        startedAt: j.startedAt,
-        completedAt: j.completedAt,
+        lastCallbackAt: j.lastCallbackAt,
       }));
       setJobs(rows);
     } finally {
@@ -91,17 +100,34 @@ export default function BlogJobsTab() {
         body: JSON.stringify({ leadToken: token, forceResearch }),
       });
       const data = await res.json();
-      if (!res.ok) {
+      if (!res.ok && !data.existingJob) {
         setMessage(data.message || data.error || 'Start fehlgeschlagen');
         return;
       }
-      setMessage(`Job #${data.jobId} gestartet (Status: ${data.status})`);
+      setMessage(
+        data.existingJob
+          ? `Bestehender Job #${data.jobId}`
+          : `Job #${data.jobId} gestartet (${data.status})`
+      );
       setLeadToken('');
       await load();
     } finally {
       setStarting(false);
     }
   }
+
+  if (selectedJobId) {
+    return (
+      <BlogJobDetail
+        jobId={selectedJobId}
+        onBack={() => setSelectedJobId(null)}
+        onRefresh={load}
+      />
+    );
+  }
+
+  const filtered =
+    sourceFilter === 'all' ? jobs : jobs.filter((j) => j.sourceType === sourceFilter);
 
   if (loading) {
     return <p className="py-8 text-center text-muted-foreground">Lade Blog-Jobs…</p>;
@@ -110,10 +136,9 @@ export default function BlogJobsTab() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Kunden-Blog-Pipeline</h2>
+        <h2 className="text-2xl font-bold mb-2">Blog-Pipeline</h2>
         <p className="text-muted-foreground text-sm mb-4">
-          10 SEO-Artikel pro Lead mit Blog-Paket. Admin-Start → n8n-Kette{' '}
-          <code className="text-xs">seo-01…06</code>.
+          Kunden-Blog (System B) und WebWelle-Blog (System A) — n8n-Kette seo-01…06.
         </p>
 
         <form
@@ -121,12 +146,12 @@ export default function BlogJobsTab() {
           className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4"
         >
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium mb-1">Lead-Token</label>
+            <label className="block text-sm font-medium mb-1">Lead-Token (Kunden-Pipeline)</label>
             <input
               type="text"
               value={leadToken}
               onChange={(e) => setLeadToken(e.target.value)}
-              placeholder="Funnel-Token (wf_token)"
+              placeholder="Funnel-Token"
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
             />
           </div>
@@ -143,7 +168,7 @@ export default function BlogJobsTab() {
             disabled={starting || !leadToken.trim()}
             className="bg-brand text-brand-foreground px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
           >
-            {starting ? 'Startet…' : 'Pipeline starten'}
+            {starting ? 'Startet…' : 'Kunden-Pipeline starten'}
           </button>
         </form>
         {message && (
@@ -154,8 +179,19 @@ export default function BlogJobsTab() {
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold mb-3">Jobs ({jobs.length})</h3>
-        {jobs.length === 0 ? (
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold">Jobs ({filtered.length})</h3>
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value as 'all' | 'client' | 'webwelle')}
+            className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+          >
+            <option value="all">Alle</option>
+            <option value="client">Kunden</option>
+            <option value="webwelle">WebWelle</option>
+          </select>
+        </div>
+        {filtered.length === 0 ? (
           <p className="text-muted-foreground">Noch keine Blog-Jobs.</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border">
@@ -163,19 +199,24 @@ export default function BlogJobsTab() {
               <thead className="bg-muted/50 text-left">
                 <tr>
                   <th className="p-3">ID</th>
+                  <th className="p-3">System</th>
                   <th className="p-3">Kunde / Branche</th>
                   <th className="p-3">Status</th>
                   <th className="p-3">Fortschritt</th>
                   <th className="p-3">Erstellt</th>
+                  <th className="p-3"></th>
                 </tr>
               </thead>
               <tbody>
-                {jobs.map((job) => (
+                {filtered.map((job) => (
                   <tr key={job.id} className="border-t border-border">
                     <td className="p-3 font-mono text-xs">#{job.id}</td>
+                    <td className="p-3 text-xs">{job.sourceType}</td>
                     <td className="p-3">
-                      <p className="font-medium">{job.companyName || '—'}</p>
-                      <p className="text-muted-foreground text-xs">{job.industry || job.leadToken.slice(0, 12)}…</p>
+                      <p className="font-medium">{job.companyName || (job.sourceType === 'webwelle' ? 'WebWelle' : '—')}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {job.industry || (job.leadToken ? `${job.leadToken.slice(0, 12)}…` : '—')}
+                      </p>
                     </td>
                     <td className="p-3">
                       <span
@@ -189,12 +230,18 @@ export default function BlogJobsTab() {
                       {job.failedCount > 0 && (
                         <span className="text-red-600 ml-1">({job.failedCount} fehlgeschlagen)</span>
                       )}
-                      <span className="text-muted-foreground text-xs block">
-                        {job.articleRows} in DB
-                      </span>
                     </td>
                     <td className="p-3 text-muted-foreground text-xs whitespace-nowrap">
                       {new Date(job.createdAt).toLocaleString('de-DE')}
+                    </td>
+                    <td className="p-3">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedJobId(job.id)}
+                        className="text-xs text-brand hover:underline"
+                      >
+                        Details
+                      </button>
                     </td>
                   </tr>
                 ))}

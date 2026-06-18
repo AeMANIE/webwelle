@@ -21,7 +21,10 @@ const EXPECTED_TABLES = [
   'reset_tokens',
   'customer_portal_tokens',
   'invoices',
-  'blog_posts'
+  'blog_posts',
+  'blog_images',
+  'blog_jobs',
+  'blog_articles',
 ];
 
 interface TableInfo {

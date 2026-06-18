@@ -1,4 +1,6 @@
 import { pool, createTempPool } from './database';
+import { assertSystemAOnly, type SystemAPublishPayload } from './blog-guards';
+import { BLOG_PROMPT_VERSION } from './blog-constants';
 
 // Helper-Funktion: Sichere Datenbankverbindung mit Fallback
 async function getDatabaseClient(): Promise<{ client: import('pg').PoolClient; tempPool: import('pg').Pool | null }> {
@@ -43,6 +45,12 @@ export interface BlogPost {
   createdAt: Date;
   updatedAt: Date;
   createdBy?: string;
+  promptVersion?: string;
+  sourceJobId?: number;
+}
+
+export interface CreateBlogPostInput extends Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'> {
+  guardPayload?: SystemAPublishPayload;
 }
 
 // Alle Blog-Posts abrufen
@@ -80,6 +88,8 @@ export async function getAllBlogPosts(
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       createdBy: row.created_by,
+      promptVersion: row.prompt_version || undefined,
+      sourceJobId: row.source_job_id != null ? Number(row.source_job_id) : undefined,
     }));
   } finally {
     client.release();
@@ -118,6 +128,8 @@ export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> 
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       createdBy: row.created_by,
+      promptVersion: row.prompt_version || undefined,
+      sourceJobId: row.source_job_id != null ? Number(row.source_job_id) : undefined,
     };
   } finally {
     client.release();
@@ -156,6 +168,8 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       createdBy: row.created_by,
+      promptVersion: row.prompt_version || undefined,
+      sourceJobId: row.source_job_id != null ? Number(row.source_job_id) : undefined,
     };
   } finally {
     client.release();
@@ -164,7 +178,10 @@ export async function getBlogPostById(id: string): Promise<BlogPost | null> {
 }
 
 // Blog-Post erstellen
-export async function createBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlogPost> {
+export async function createBlogPost(post: CreateBlogPostInput): Promise<BlogPost> {
+  if (post.guardPayload) {
+    assertSystemAOnly(post.guardPayload);
+  }
   const { client, tempPool } = await getDatabaseClient();
   
   try {
@@ -181,8 +198,9 @@ export async function createBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | '
     const result = await client.query(
       `INSERT INTO blog_posts (
         title, slug, excerpt, content, author, featured_image_url, 
-        meta_description, tags, featured, status, published_at, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        meta_description, tags, featured, status, published_at, created_by,
+        prompt_version, source_job_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *`,
       [
         post.title,
@@ -197,6 +215,8 @@ export async function createBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | '
         post.status,
         publishedAtValue,
         post.createdBy || null,
+        post.promptVersion || BLOG_PROMPT_VERSION,
+        post.sourceJobId ?? null,
       ]
     );
     
@@ -217,6 +237,8 @@ export async function createBlogPost(post: Omit<BlogPost, 'id' | 'createdAt' | '
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       createdBy: row.created_by,
+      promptVersion: row.prompt_version || undefined,
+      sourceJobId: row.source_job_id != null ? Number(row.source_job_id) : undefined,
     };
   } finally {
     client.release();
@@ -281,6 +303,14 @@ export async function updateBlogPost(id: string, updates: Partial<BlogPost>): Pr
       fields.push(`published_at = $${paramCount++}`);
       values.push(updates.publishedAt || null);
     }
+    if (updates.promptVersion !== undefined) {
+      fields.push(`prompt_version = $${paramCount++}`);
+      values.push(updates.promptVersion || null);
+    }
+    if (updates.sourceJobId !== undefined) {
+      fields.push(`source_job_id = $${paramCount++}`);
+      values.push(updates.sourceJobId ?? null);
+    }
     
     if (fields.length === 0) {
       return await getBlogPostById(id);
@@ -315,6 +345,8 @@ export async function updateBlogPost(id: string, updates: Partial<BlogPost>): Pr
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       createdBy: row.created_by,
+      promptVersion: row.prompt_version || undefined,
+      sourceJobId: row.source_job_id != null ? Number(row.source_job_id) : undefined,
     };
   } finally {
     client.release();

@@ -4,60 +4,60 @@ import { getRedisClient } from '@/lib/redis';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { assertSystemAOnly, BlogSystemGuardError, stripUncontrolledImages } from '@/lib/blog-guards';
+import { BLOG_PROMPT_VERSION } from '@/lib/blog-constants';
+import { revalidateBlogPaths } from '@/lib/blog-revalidation';
+import { savePostImages, type BlogImageInput } from '@/lib/blog-jobs-database';
 
-/**
- * n8n-API für automatische Blog-Veröffentlichung
- * 
- * Authentifizierung: API-Key (N8N_API_KEY in .env)
- * 
- * Request Body (JSON):
- * {
- *   "title": "Artikel-Titel",
- *   "content": "HTML-Content",
- *   "excerpt": "Kurzbeschreibung",
- *   "author": "Autor",
- *   "tags": ["tag1", "tag2"],
- *   "featured_image_url": "https://...",
- *   "meta_description": "SEO-Description",
- *   "status": "published"
- * }
- * 
- * ODER FormData (für Bild-Upload):
- * - title, content, excerpt, author, tags (JSON-String), meta_description, status
- * - featured_image: File (optional)
- */
+function parseImages(raw: unknown): BlogImageInput[] {
+  if (!Array.isArray(raw)) return [];
+  const out: BlogImageInput[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const url = String(o.url || '').trim();
+    if (!url) continue;
+    out.push({
+      role: String(o.role || 'featured') as BlogImageInput['role'],
+      url,
+      alt: o.alt != null ? String(o.alt) : undefined,
+      caption: o.caption != null ? String(o.caption) : undefined,
+      width: o.width != null ? Number(o.width) : undefined,
+      height: o.height != null ? Number(o.height) : undefined,
+      mimeType:
+        o.mime_type != null
+          ? String(o.mime_type)
+          : o.mimeType != null
+            ? String(o.mimeType)
+            : undefined,
+      storagePath: o.storage_path != null ? String(o.storage_path) : undefined,
+      position: o.position != null ? Number(o.position) : undefined,
+    });
+  }
+  return out;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // API-Key-Authentifizierung
-    const apiKey = request.headers.get('x-api-key') || request.headers.get('authorization')?.replace('Bearer ', '');
+    const apiKey =
+      request.headers.get('x-api-key') ||
+      request.headers.get('authorization')?.replace('Bearer ', '');
     const expectedApiKey = process.env.N8N_API_KEY;
 
     if (!expectedApiKey) {
-      console.error('⚠️ N8N_API_KEY nicht in .env gesetzt');
-      return NextResponse.json(
-        { error: 'API-Key-Konfiguration fehlt' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'API-Key-Konfiguration fehlt' }, { status: 500 });
     }
-
     if (!apiKey || apiKey !== expectedApiKey) {
-      return NextResponse.json(
-        { error: 'Ungültiger API-Key' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Ungültiger API-Key' }, { status: 401 });
     }
 
-    // Unterstützung für JSON und FormData
     let body: Record<string, unknown>;
     let featuredImageUrl: string | null = null;
-    
+
     const contentType = request.headers.get('content-type') || '';
-    
+
     if (contentType.includes('multipart/form-data')) {
-      // FormData-Verarbeitung (für Bild-Upload)
       const formData = await request.formData();
-      
-      // Text-Felder
       body = {
         title: formData.get('title') as string,
         content: formData.get('content') as string,
@@ -65,105 +65,102 @@ export async function POST(request: NextRequest) {
         author: formData.get('author') as string || null,
         tags: formData.get('tags') ? JSON.parse(formData.get('tags') as string) : [],
         meta_description: formData.get('meta_description') as string || null,
-        status: formData.get('status') as string || 'published',
+        status: formData.get('status') as string || 'draft',
         featured: formData.get('featured') === 'true',
         slug: formData.get('slug') as string || null,
+        source_type: formData.get('source_type') as string || 'webwelle',
+        jobId: formData.get('jobId') as string || null,
+        prompt_version: formData.get('prompt_version') as string || null,
       };
-      
-      // Bild-Upload verarbeiten
       const featuredImage = formData.get('featured_image') as File | null;
       if (featuredImage && featuredImage.size > 0) {
-        // Validierung
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
         if (!allowedTypes.includes(featuredImage.type)) {
-          return NextResponse.json(
-            { error: 'Nur Bilder (JPEG, PNG, WebP, GIF) sind erlaubt' },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: 'Nur Bilder erlaubt' }, { status: 400 });
         }
-        
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        if (featuredImage.size > maxSize) {
-          return NextResponse.json(
-            { error: 'Datei ist zu groß (max. 5MB)' },
-            { status: 400 }
-          );
-        }
-        
-        // Bild speichern
         const timestamp = Date.now();
-        const sanitizedName = featuredImage.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const fileName = `${timestamp}-${sanitizedName}`;
-        
+        const fileName = `${timestamp}-${featuredImage.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
         const uploadDir = join(process.cwd(), 'public', 'blog-images');
-        if (!existsSync(uploadDir)) {
-          await mkdir(uploadDir, { recursive: true });
-        }
-        
-        const bytes = await featuredImage.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        const filePath = join(uploadDir, fileName);
-        
-        await writeFile(filePath, buffer);
-        
-        // URL generieren - verwende API-Route für Bilder (funktioniert auch im standalone mode)
+        if (!existsSync(uploadDir)) await mkdir(uploadDir, { recursive: true });
+        await writeFile(join(uploadDir, fileName), Buffer.from(await featuredImage.arrayBuffer()));
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
         featuredImageUrl = `${baseUrl}/blog-images/${fileName}`;
       } else {
-        // Falls URL übergeben wurde
         featuredImageUrl = (formData.get('featured_image_url') as string) || null;
       }
     } else {
-      // JSON-Verarbeitung
       body = await request.json();
       featuredImageUrl = (body.featured_image_url as string) || null;
     }
-    
+
+    try {
+      assertSystemAOnly(body);
+    } catch (e) {
+      if (e instanceof BlogSystemGuardError) {
+        return NextResponse.json({ error: e.message }, { status: 403 });
+      }
+      throw e;
+    }
+
     const title = body.title as string;
-    const content = body.content as string;
+    const rawContent = body.content as string;
+    const content = stripUncontrolledImages(rawContent);
     const excerpt = body.excerpt as string | null;
     const author = body.author as string | null;
     const tags = body.tags as string[] | null;
     const meta_description = body.meta_description as string | null;
-    const status = (body.status as string) || 'published';
+    const status = (body.status as string) || 'draft';
+    const images = parseImages(body.images);
+    const promptVersion = String(body.prompt_version || body.promptVersion || BLOG_PROMPT_VERSION);
+    const sourceJobId = body.jobId != null ? Number(body.jobId) : undefined;
 
-    // Validierung
     if (!title || !content) {
+      return NextResponse.json({ error: 'Titel und Inhalt sind erforderlich' }, { status: 400 });
+    }
+
+    if (status === 'published' && !featuredImageUrl && !images.some((i) => i.role === 'featured')) {
       return NextResponse.json(
-        { error: 'Titel und Inhalt sind erforderlich' },
+        { error: 'Featured Image ist für veröffentlichte Artikel erforderlich.' },
         { status: 400 }
       );
     }
 
-    // Slug generieren (falls nicht vorhanden)
     const slug = (body.slug as string) || generateSlug(title);
-
-    // Prüfen ob Slug bereits existiert
     const { getAllBlogPosts } = await import('@/lib/blog-database');
     const existingPosts = await getAllBlogPosts();
     let finalSlug = slug;
     let counter = 1;
-    while (existingPosts.some(p => p.slug === finalSlug)) {
+    while (existingPosts.some((p) => p.slug === finalSlug)) {
       finalSlug = `${slug}-${counter}`;
       counter++;
     }
 
-    // Blog-Post erstellen
+    const featuredFromImages = images.find((i) => i.role === 'featured');
     const post = await createBlogPost({
       title,
       slug: finalSlug,
       excerpt: excerpt || undefined,
       content,
       author: author || 'SEO-Team WebWelle',
-      featuredImageUrl: featuredImageUrl || undefined,
+      featuredImageUrl: featuredImageUrl || featuredFromImages?.url || undefined,
       metaDescription: meta_description || undefined,
       tags: tags || [],
       featured: (body.featured as boolean) || false,
       status: status as 'draft' | 'published',
       createdBy: 'n8n-automation',
+      promptVersion,
+      sourceJobId,
+      guardPayload: body,
     });
 
-    // Cache invalidieren
+    if (images.length) {
+      await savePostImages(post.id, images);
+    } else if (featuredImageUrl) {
+      await savePostImages(post.id, [
+        { role: 'featured', url: featuredImageUrl, alt: title, width: 1200, height: 630 },
+      ]);
+    }
+
     const redis = getRedisClient();
     if (redis && (await redis.status) === 'ready') {
       await redis.del('admin:blog:all');
@@ -173,48 +170,40 @@ export async function POST(request: NextRequest) {
       await redis.del(`blog:post:${finalSlug}`);
     }
 
-    return NextResponse.json({
-      success: true,
-      post: {
-        id: post.id,
-        title: post.title,
-        slug: post.slug,
-        status: post.status,
-        url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/blog/${post.slug}`,
+    revalidateBlogPaths(finalSlug);
+
+    return NextResponse.json(
+      {
+        success: true,
+        post: {
+          id: post.id,
+          title: post.title,
+          slug: post.slug,
+          status: post.status,
+          url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/blog/${post.slug}`,
+        },
       },
-    }, { status: 201 });
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Fehler bei n8n Blog-Veröffentlichung:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Fehler beim Veröffentlichen des Blog-Posts',
-        details: error instanceof Error ? error.message : 'Unbekannter Fehler'
+        details: error instanceof Error ? error.message : 'Unbekannter Fehler',
       },
       { status: 500 }
     );
   }
 }
 
-// GET: API-Info (für n8n-Test)
 export async function GET() {
   return NextResponse.json({
     name: 'WebWelle Blog Publish API',
-    version: '1.0.0',
-    description: 'API für automatische Blog-Veröffentlichung via n8n',
+    version: '2.0.0',
     endpoint: '/api/blog/publish',
-    method: 'POST',
-    authentication: 'API-Key (Header: x-api-key oder Authorization: Bearer <key>)',
-    requiredFields: ['title', 'content'],
-    optionalFields: ['excerpt', 'author', 'tags', 'featured_image_url', 'featured_image', 'meta_description', 'status', 'featured', 'slug'],
-    imageUpload: 'Unterstützt sowohl featured_image_url (URL) als auch featured_image (File-Upload via FormData)',
-    example: {
-      title: 'Mein Blog-Artikel',
-      content: '<p>HTML-Content hier...</p>',
-      excerpt: 'Kurzbeschreibung',
-      author: 'Autor Name',
-      tags: ['SEO', 'Marketing'],
-      status: 'published',
-    },
+    authentication: 'API-Key',
+    system: 'A-only (webwelle.com/blog)',
+    defaultStatus: 'draft',
   });
 }
-

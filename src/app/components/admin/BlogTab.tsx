@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Eye, Calendar, Tag } from 'lucide-react';
 import BlogEditor from './BlogEditor';
+import BlogGenerateModal from './BlogGenerateModal';
 import { DashboardPanel } from '../dashboard/DashboardPanel';
 
 interface BlogPost {
@@ -125,6 +126,7 @@ export default function BlogTab() {
             <Plus className="w-4 h-4" />
             Neuer Artikel
           </button>
+          <BlogGenerateModal />
         </div>
       }
     >

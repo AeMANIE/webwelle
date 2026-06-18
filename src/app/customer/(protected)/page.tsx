@@ -6,10 +6,11 @@ import DashboardShell from '../../components/dashboard/DashboardShell';
 import { DashboardPanel, DashboardStatCard } from '../../components/dashboard/DashboardPanel';
 import { Package, Euro, Calendar, FileText, Eye, Download, X, Plus, Settings } from 'lucide-react';
 import DwaLeadSummary from '@/components/funnel/DwaLeadSummary';
+import CustomerBlogArticles from '../../components/customer/CustomerBlogArticles';
 import { dwaResumePath } from '@/lib/funnel/funnel-kind';
 import { dwaLeadProductTitle } from '@/app/components/leistungen-offers';
 
-type CustomerTabId = 'bookings' | 'addons' | 'analysis' | 'settings';
+type CustomerTabId = 'bookings' | 'addons' | 'analysis' | 'blog-articles' | 'settings';
 
 const CUSTOMER_TAB_META: Record<CustomerTabId, { title: string; subtitle: string }> = {
   bookings: {
@@ -23,6 +24,10 @@ const CUSTOMER_TAB_META: Record<CustomerTabId, { title: string; subtitle: string
   analysis: {
     title: 'Website-Analysen',
     subtitle: 'Funnel-Forschung und SEO-Ergebnisse',
+  },
+  'blog-articles': {
+    title: 'SEO-Artikel',
+    subtitle: 'Ihre freigegebenen Blog-Artikel zum Übernehmen',
   },
   settings: {
     title: 'Einstellungen',
@@ -443,6 +448,11 @@ export default function CustomerPortal() {
         label: 'Website-Analysen',
         icon: <Calendar className="h-4 w-4" />,
         badge: funnelAnalyses.length > 0 ? funnelAnalyses.length : undefined,
+      },
+      {
+        id: 'blog-articles',
+        label: 'SEO-Artikel',
+        icon: <FileText className="h-4 w-4" />,
       },
     ],
     [bookings.length, addonOrders.length, funnelAnalyses.length]
@@ -928,6 +938,8 @@ export default function CustomerPortal() {
                 })}
               </div>
             )
+          ) : activeTab === 'blog-articles' ? (
+            <CustomerBlogArticles />
           ) : (
             addonOrders.length === 0 ? (
               <div className="text-center py-12">

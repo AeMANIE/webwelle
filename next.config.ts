@@ -7,9 +7,13 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   images: {
     unoptimized: true,
-    // Optimierte Bildformate
     formats: ['image/webp', 'image/avif'],
-    minimumCacheTTL: 31536000, // 1 Jahr
+    minimumCacheTTL: 31536000,
+    remotePatterns: [
+      { protocol: 'https', hostname: 'webwelle.com', pathname: '/**' },
+      { protocol: 'https', hostname: '**.webwelle.com', pathname: '/**' },
+      { protocol: 'http', hostname: 'localhost', pathname: '/**' },
+    ],
   },
   // Turbopack Konfiguration - leere Config für Production (webpack wird verwendet)
   turbopack: process.env.NODE_ENV === 'development' ? {

@@ -337,6 +337,9 @@ export interface N8nBlogOrchestratorPayload extends N8nDispatchPayload {
   articleCount: number;
   companyName?: string;
   keywords?: Array<Record<string, unknown>>;
+  sourceType?: 'webwelle' | 'client';
+  publishMode?: 'draft' | 'publish';
+  promptVersion?: string;
 }
 
 export function buildBlogOrchestratorPayload(
@@ -367,7 +370,41 @@ export interface N8nSeo01Payload {
   articleCount: number;
   companyName?: string;
   keywords?: Array<Record<string, unknown>>;
+  sourceType?: 'webwelle' | 'client';
+  publishMode?: 'draft' | 'publish';
+  promptVersion?: string;
   test_mode?: boolean;
+}
+
+export function buildWebwelleBlogPayload(params: {
+  jobId: number;
+  articleCount: number;
+  keywords: string[];
+  branche: string;
+  plz: string;
+  publishMode?: 'draft' | 'publish';
+  promptVersion?: string;
+}): N8nBlogOrchestratorPayload {
+  const kwRecords = params.keywords.map((k) => ({ keyword: k }));
+  return {
+    leadId: `webwelle-job-${params.jobId}`,
+    token: `webwelle-${params.jobId}`,
+    industry: params.branche,
+    industryRaw: params.branche,
+    industryForResearch: params.branche,
+    postalCode: params.plz,
+    city: '',
+    market: 'DE',
+    country: 'DE',
+    callbackBaseUrl: getCallbackBaseUrl(),
+    jobId: params.jobId,
+    articleCount: params.articleCount,
+    companyName: 'WebWelle',
+    keywords: kwRecords,
+    sourceType: 'webwelle',
+    publishMode: params.publishMode || 'draft',
+    promptVersion: params.promptVersion,
+  };
 }
 
 export function buildSeo01Payload(payload: N8nBlogOrchestratorPayload): N8nSeo01Payload {
@@ -383,6 +420,9 @@ export function buildSeo01Payload(payload: N8nBlogOrchestratorPayload): N8nSeo01
     articleCount: payload.articleCount,
     companyName: payload.companyName,
     keywords: payload.keywords,
+    sourceType: payload.sourceType || 'client',
+    publishMode: payload.publishMode || 'draft',
+    promptVersion: payload.promptVersion,
   };
 }
 

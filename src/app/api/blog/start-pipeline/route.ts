@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
 import { requireAdminAuth, secureResponse } from '@/lib/api-security';
 import {
+  buildExternalRunId,
   createBlogJob,
   ensureBlogPipelineTables,
-  getActiveBlogJobForLead,
+  getBlogJobByExternalRunId,
   markBlogJobRunning,
 } from '@/lib/blog-jobs-database';
 import {
@@ -15,6 +16,7 @@ import {
 } from '@/lib/blog-pipeline';
 import { getFunnelLeadByToken } from '@/lib/funnel-database';
 import { buildBlogOrchestratorPayload, dispatchBlogPipeline } from '@/lib/n8n/dispatch';
+import { BLOG_PROMPT_VERSION } from '@/lib/blog-constants';
 
 export async function POST(request: NextRequest) {
   const auth = await requireAdminAuth(request);
@@ -31,13 +33,11 @@ export async function POST(request: NextRequest) {
 
   const leadToken = String(body.leadToken || body.token || '').trim();
   if (!leadToken) {
-    return secureResponse(
-      { error: 'lead_token_required', message: 'leadToken fehlt.' },
-      400
-    );
+    return secureResponse({ error: 'lead_token_required', message: 'leadToken fehlt.' }, 400);
   }
 
   const forceResearch = body.forceResearch === true;
+  const retryCount = Number(body.retryCount || 0);
 
   const lead = await getFunnelLeadByToken(leadToken);
   if (!lead) {
@@ -46,10 +46,7 @@ export async function POST(request: NextRequest) {
 
   if (!leadHasBlogAddon(lead)) {
     return secureResponse(
-      {
-        error: 'no_blog_addon',
-        message: 'Lead hat kein Blog-Paket (bundle_10 oder custom).',
-      },
+      { error: 'no_blog_addon', message: 'Lead hat kein Blog-Paket.' },
       400
     );
   }
@@ -65,35 +62,43 @@ export async function POST(request: NextRequest) {
     return secureResponse(
       {
         error: 'research_not_ready',
-        message:
-          'Funnel-Research ist noch nicht abgeschlossen. Mit forceResearch: true erzwingen.',
+        message: 'Funnel-Research noch nicht abgeschlossen.',
         researchReady: false,
       },
       409
     );
   }
 
-  const active = await getActiveBlogJobForLead(leadToken);
-  if (active) {
-    return secureResponse(
-      {
-        error: 'job_already_active',
-        message: 'Es läuft bereits ein Blog-Job für diesen Lead.',
-        jobId: active.id,
-        status: active.status,
-      },
-      409
-    );
+  const keywordRecords = extractFunnelKeywords(research);
+  const keywordStrings = keywordRecords
+    .map((k) => String(k.keyword || k.term || k.text || '').trim())
+    .filter(Boolean);
+  const externalRunId =
+    String(body.externalRunId || '').trim() ||
+    buildExternalRunId({ sourceType: 'client', leadToken, keywords: keywordStrings, retryCount });
+
+  const existing = await getBlogJobByExternalRunId(externalRunId);
+  if (existing) {
+    return secureResponse({
+      jobId: existing.id,
+      status: existing.status,
+      existingJob: true,
+      message: 'Job mit gleicher external_run_id existiert bereits.',
+    });
   }
 
   const job = await createBlogJob({
     leadToken,
     customerId: lead.customer_id,
     articleCount,
+    sourceType: 'client',
+    externalRunId,
+    promptVersion: BLOG_PROMPT_VERSION,
+    keywordData: { keywords: keywordRecords },
   });
 
-  const keywords = extractFunnelKeywords(research);
-  const payload = buildBlogOrchestratorPayload(lead, job.id, articleCount, keywords);
+  const payload = buildBlogOrchestratorPayload(lead, job.id, articleCount, keywordRecords);
+  payload.sourceType = 'client';
 
   await dispatchBlogPipeline(payload);
   await markBlogJobRunning(job.id);
@@ -108,10 +113,9 @@ export async function POST(request: NextRequest) {
     status: 'running',
     leadToken,
     articleCount,
+    externalRunId,
     researchReady,
     n8nDispatched: n8nUrlSet,
-    warning: n8nUrlSet
-      ? undefined
-      : 'N8N_WEBHOOK_SEO_01_URL nicht gesetzt – Job nur in DB.',
+    warning: n8nUrlSet ? undefined : 'N8N_WEBHOOK_SEO_01_URL nicht gesetzt.',
   });
 }

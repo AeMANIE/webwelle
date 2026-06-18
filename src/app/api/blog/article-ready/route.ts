@@ -5,8 +5,32 @@ import {
   ensureBlogPipelineTables,
   getBlogJobById,
   incrementBlogJobProgress,
+  saveArticleImages,
   upsertBlogArticle,
+  type BlogImageInput,
 } from '@/lib/blog-jobs-database';
+import { BLOG_PROMPT_VERSION } from '@/lib/blog-constants';
+
+function parseImages(raw: unknown): BlogImageInput[] {
+  if (!Array.isArray(raw)) return [];
+  const out: BlogImageInput[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const url = String(o.url || '').trim();
+    if (!url) continue;
+    out.push({
+      role: String(o.role || 'featured') as BlogImageInput['role'],
+      url,
+      alt: o.alt != null ? String(o.alt) : undefined,
+      width: o.width != null ? Number(o.width) : undefined,
+      height: o.height != null ? Number(o.height) : undefined,
+      mimeType: o.mime_type != null ? String(o.mime_type) : undefined,
+      position: o.position != null ? Number(o.position) : undefined,
+    });
+  }
+  return out;
+}
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
@@ -35,7 +59,6 @@ export async function POST(request: NextRequest) {
   }
 
   const qaStatus = String(body.qaStatus || body.qa_status || 'passed');
-  const failed = qaStatus === 'failed';
 
   const article = await upsertBlogArticle({
     jobId,
@@ -68,9 +91,21 @@ export async function POST(request: NextRequest) {
         : body.qa_fail_reason && typeof body.qa_fail_reason === 'object'
           ? (body.qa_fail_reason as Record<string, unknown>)
           : null,
+    promptVersion: String(body.promptVersion || body.prompt_version || BLOG_PROMPT_VERSION),
+    n8nExecutionId:
+      body.n8nExecutionId != null
+        ? String(body.n8nExecutionId)
+        : body.n8n_execution_id != null
+          ? String(body.n8n_execution_id)
+          : null,
   });
 
-  await incrementBlogJobProgress(jobId, { failed });
+  const images = parseImages(body.images);
+  if (images.length) {
+    await saveArticleImages(article.id, job.sourceType, images);
+  }
+
+  await incrementBlogJobProgress(jobId, { failed: qaStatus === 'failed' });
 
   return secureResponse({
     ok: true,

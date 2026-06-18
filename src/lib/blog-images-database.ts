@@ -54,7 +54,6 @@ async function ensureBlogImagesTable(): Promise<void> {
   const { client, tempPool } = await getDatabaseClient();
   
   try {
-    // Prüfe ob Tabelle existiert
     const tableCheck = await client.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
@@ -64,11 +63,13 @@ async function ensureBlogImagesTable(): Promise<void> {
     `);
     
     if (!tableCheck.rows[0].exists) {
-      // Tabelle erstellen
       await client.query(`
         CREATE TABLE blog_images (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          blog_post_id UUID REFERENCES blog_posts(id) ON DELETE CASCADE,
+          post_id UUID REFERENCES blog_posts(id) ON DELETE CASCADE,
+          article_id INT,
+          source_system VARCHAR(20) DEFAULT 'webwelle',
+          image_role VARCHAR(20) DEFAULT 'featured',
           file_name VARCHAR(255) NOT NULL,
           file_path VARCHAR(500) NOT NULL,
           file_url VARCHAR(500) NOT NULL,
@@ -81,12 +82,14 @@ async function ensureBlogImagesTable(): Promise<void> {
           caption TEXT,
           position INTEGER DEFAULT 0,
           is_featured BOOLEAN DEFAULT FALSE,
+          blur_data_url TEXT,
+          prompt_used TEXT,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           created_by VARCHAR(255)
         );
-        CREATE INDEX IF NOT EXISTS idx_blog_images_post_id ON blog_images(blog_post_id);
-        CREATE INDEX IF NOT EXISTS idx_blog_images_position ON blog_images(blog_post_id, position);
+        CREATE INDEX IF NOT EXISTS idx_blog_images_post_id ON blog_images(post_id);
+        CREATE INDEX IF NOT EXISTS idx_blog_images_position ON blog_images(post_id, position);
         CREATE INDEX IF NOT EXISTS idx_blog_images_featured ON blog_images(is_featured);
       `);
       console.log('✅ blog_images Tabelle wurde erstellt');
@@ -100,6 +103,31 @@ async function ensureBlogImagesTable(): Promise<void> {
   }
 }
 
+const POST_ID_COL = 'COALESCE(post_id, blog_post_id)';
+
+function mapBlogImageRow(row: Record<string, unknown>): BlogImage {
+  const postId = (row.post_id ?? row.blog_post_id) as string | undefined;
+  return {
+    id: row.id as string,
+    blogPostId: postId,
+    fileName: row.file_name as string,
+    filePath: row.file_path as string,
+    fileUrl: row.file_url as string,
+    fileSize: row.file_size as number | undefined,
+    mimeType: row.mime_type as string | undefined,
+    width: row.width as number | undefined,
+    height: row.height as number | undefined,
+    format: (row.format as BlogImage['format']) || 'auto',
+    altText: row.alt_text as string | undefined,
+    caption: row.caption as string | undefined,
+    position: row.position as number,
+    isFeatured: Boolean(row.is_featured),
+    createdAt: new Date(row.created_at as string),
+    updatedAt: new Date(row.updated_at as string),
+    createdBy: row.created_by as string | undefined,
+  };
+}
+
 // Blog-Image erstellen
 export async function createBlogImage(image: Omit<BlogImage, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlogImage> {
   // Stelle sicher, dass die Tabelle existiert
@@ -110,7 +138,7 @@ export async function createBlogImage(image: Omit<BlogImage, 'id' | 'createdAt' 
   try {
     const result = await client.query(
       `INSERT INTO blog_images (
-        blog_post_id, file_name, file_path, file_url, file_size, mime_type,
+        post_id, file_name, file_path, file_url, file_size, mime_type,
         width, height, format, alt_text, caption, position, is_featured, created_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *`,
@@ -133,25 +161,7 @@ export async function createBlogImage(image: Omit<BlogImage, 'id' | 'createdAt' 
     );
     
     const row = result.rows[0];
-    return {
-      id: row.id,
-      blogPostId: row.blog_post_id,
-      fileName: row.file_name,
-      filePath: row.file_path,
-      fileUrl: row.file_url,
-      fileSize: row.file_size,
-      mimeType: row.mime_type,
-      width: row.width,
-      height: row.height,
-      format: row.format,
-      altText: row.alt_text,
-      caption: row.caption,
-      position: row.position,
-      isFeatured: row.is_featured,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at),
-      createdBy: row.created_by,
-    };
+    return mapBlogImageRow(row);
   } catch (error) {
     console.error('Fehler beim Erstellen des Blog-Images:', error);
     throw error;
@@ -170,29 +180,11 @@ export async function getBlogImagesByPostId(postId: string): Promise<BlogImage[]
   
   try {
     const result = await client.query(
-      'SELECT * FROM blog_images WHERE blog_post_id = $1 ORDER BY position ASC, created_at ASC',
+      `SELECT * FROM blog_images WHERE ${POST_ID_COL} = $1 ORDER BY position ASC, created_at ASC`,
       [postId]
     );
     
-    return result.rows.map(row => ({
-      id: row.id,
-      blogPostId: row.blog_post_id,
-      fileName: row.file_name,
-      filePath: row.file_path,
-      fileUrl: row.file_url,
-      fileSize: row.file_size,
-      mimeType: row.mime_type,
-      width: row.width,
-      height: row.height,
-      format: row.format,
-      altText: row.alt_text,
-      caption: row.caption,
-      position: row.position,
-      isFeatured: row.is_featured,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at),
-      createdBy: row.created_by,
-    }));
+    return result.rows.map(mapBlogImageRow);
   } catch (error) {
     console.error('Fehler beim Abrufen der Blog-Images:', error);
     // Wenn Tabelle nicht existiert, leere Liste zurückgeben
@@ -219,25 +211,7 @@ export async function getAllBlogImages(limit = 50): Promise<BlogImage[]> {
       [limit]
     );
     
-    return result.rows.map(row => ({
-      id: row.id,
-      blogPostId: row.blog_post_id,
-      fileName: row.file_name,
-      filePath: row.file_path,
-      fileUrl: row.file_url,
-      fileSize: row.file_size,
-      mimeType: row.mime_type,
-      width: row.width,
-      height: row.height,
-      format: row.format,
-      altText: row.alt_text,
-      caption: row.caption,
-      position: row.position,
-      isFeatured: row.is_featured,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at),
-      createdBy: row.created_by,
-    }));
+    return result.rows.map(mapBlogImageRow);
   } catch (error) {
     console.error('Fehler beim Abrufen aller Blog-Images:', error);
     // Wenn Tabelle nicht existiert, leere Liste zurückgeben
@@ -298,25 +272,7 @@ export async function updateBlogImage(id: string, updates: Partial<BlogImage>): 
     }
     
     const row = result.rows[0];
-    return {
-      id: row.id,
-      blogPostId: row.blog_post_id,
-      fileName: row.file_name,
-      filePath: row.file_path,
-      fileUrl: row.file_url,
-      fileSize: row.file_size,
-      mimeType: row.mime_type,
-      width: row.width,
-      height: row.height,
-      format: row.format,
-      altText: row.alt_text,
-      caption: row.caption,
-      position: row.position,
-      isFeatured: row.is_featured,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at),
-      createdBy: row.created_by,
-    };
+    return mapBlogImageRow(row);
   } finally {
     client.release();
     if (tempPool) await tempPool.end();

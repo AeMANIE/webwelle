@@ -3,10 +3,12 @@ import { verifyN8nSignature } from '@/lib/n8n/signature';
 import { secureResponse } from '@/lib/api-security';
 import {
   ensureBlogPipelineTables,
-  finalizeBlogJob,
   getBlogJobById,
+  markPipelineFinished,
 } from '@/lib/blog-jobs-database';
+import { FINAL_JOB_STATUSES } from '@/lib/blog-constants';
 
+/** Pipeline technically finished — NOT customer delivery (completed) */
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   if (!verifyN8nSignature(rawBody, request.headers.get('x-webwelle-signature'))) {
@@ -26,6 +28,15 @@ export async function POST(request: NextRequest) {
     return secureResponse({ error: 'job_not_found' }, 404);
   }
 
+  if (FINAL_JOB_STATUSES.has(existing.status)) {
+    return secureResponse({
+      ok: true,
+      alreadyFinal: true,
+      jobId,
+      status: existing.status,
+    });
+  }
+
   const failedCount =
     body.failedCount != null
       ? Number(body.failedCount)
@@ -33,11 +44,17 @@ export async function POST(request: NextRequest) {
         ? Number(body.failed_count)
         : undefined;
 
-  const job = await finalizeBlogJob(jobId, { failedCount });
+  const n8nExecutionId =
+    body.n8nExecutionId != null
+      ? String(body.n8nExecutionId)
+      : body.n8n_execution_id != null
+        ? String(body.n8n_execution_id)
+        : undefined;
 
-  // E-Mail-Benachrichtigung: Sprint 4
-  if (job?.status === 'completed' || job?.status === 'partial') {
-    console.log(`Blog-Job ${jobId} abgeschlossen: ${job.status}`);
+  const job = await markPipelineFinished(jobId, { failedCount, n8nExecutionId });
+
+  if (job?.status === 'pipeline_finished' || job?.status === 'awaiting_article_review') {
+    console.log(`Blog-Job ${jobId} pipeline_finished`);
   }
 
   return secureResponse({
