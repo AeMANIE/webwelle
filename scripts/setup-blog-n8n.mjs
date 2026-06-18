@@ -42,6 +42,9 @@ function ensureEnvKeys(env) {
   if (!env.N8N_INTERNAL_WEBHOOK_BASE?.trim()) {
     updates.N8N_INTERNAL_WEBHOOK_BASE = `${base}/webhook`;
   }
+  console.warn(
+    'Wichtig: N8N_INTERNAL_WEBHOOK_BASE auch in der n8n-Instanz-Env setzen (Coolify n8n-App), nicht nur in .env.local.'
+  );
   if (!env.N8N_WEBHOOK_BLOG_ORCHESTRATOR_URL?.trim() && updates.N8N_WEBHOOK_SEO_01_URL) {
     updates.N8N_WEBHOOK_BLOG_ORCHESTRATOR_URL = updates.N8N_WEBHOOK_SEO_01_URL;
   }
