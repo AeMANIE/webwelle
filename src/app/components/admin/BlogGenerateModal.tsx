@@ -15,6 +15,7 @@ export default function BlogGenerateModal({ onStarted }: Props) {
   const [publishMode, setPublishMode] = useState<'draft' | 'publish'>('draft');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,6 +27,7 @@ export default function BlogGenerateModal({ onStarted }: Props) {
 
     setLoading(true);
     setMessage(null);
+    setIsError(false);
     try {
       const res = await adminFetch('/api/admin/blog/start-webwelle-pipeline', {
         method: 'POST',
@@ -46,18 +48,21 @@ export default function BlogGenerateModal({ onStarted }: Props) {
           data = JSON.parse(raw) as Record<string, unknown>;
         } catch {
           setMessage(`Server-Antwort ungültig (${res.status})`);
+          setIsError(true);
           return;
         }
       }
 
       if (res.status === 401) {
         setMessage('Session abgelaufen — bitte Admin neu einloggen und erneut versuchen.');
+        setIsError(true);
         return;
       }
       if (!res.ok && !data.existingJob) {
         setMessage(
           String(data.message || data.error || `Start fehlgeschlagen (HTTP ${res.status})`)
         );
+        setIsError(true);
         return;
       }
       const warning = data.warning ? ` Hinweis: ${data.warning}` : '';
@@ -66,6 +71,7 @@ export default function BlogGenerateModal({ onStarted }: Props) {
       setOpen(false);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Netzwerkfehler');
+      setIsError(true);
     } finally {
       setLoading(false);
     }
@@ -75,7 +81,11 @@ export default function BlogGenerateModal({ onStarted }: Props) {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+          setMessage(null);
+          setIsError(false);
+        }}
         className="flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted/50"
       >
         <Zap className="w-4 h-4" />
@@ -122,7 +132,11 @@ export default function BlogGenerateModal({ onStarted }: Props) {
                   </select>
                 </div>
               </div>
-              {message && <p className="text-sm text-muted-foreground">{message}</p>}
+              {message && (
+                <p className={`text-sm ${isError ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  {message}
+                </p>
+              )}
               <div className="flex justify-end gap-2">
                 <button
                   type="button"

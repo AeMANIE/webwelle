@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { pool } from './database';
+import { BLOG_PIPELINE_MIGRATION_SQL } from './blog-pipeline-migration-sql';
 import { BLOG_PROMPT_VERSION, FINAL_JOB_STATUSES, type BlogPublishMode, type BlogSourceType } from './blog-constants';
 import { stripUncontrolledImages } from './blog-guards';
 
@@ -183,21 +184,9 @@ export function buildExternalRunId(parts: {
 }
 
 export async function ensureBlogPipelineTables(): Promise<void> {
-  const fs = await import('fs');
-  const path = await import('path');
-  const candidates = [
-    path.join(process.cwd(), 'src/lib/sql/blog_pipeline_tables.sql'),
-    path.join(process.cwd(), 'info/database/blog_pipeline_tables.sql'),
-  ];
-  const sqlPath = candidates.find((p) => fs.existsSync(p));
-  if (!sqlPath) {
-    throw new Error('blog_pipeline_tables.sql nicht gefunden (src/lib/sql oder info/database)');
-  }
-
-  const sql = fs.readFileSync(sqlPath, 'utf8');
   const client = await pool.connect();
   try {
-    await client.query(sql);
+    await client.query(BLOG_PIPELINE_MIGRATION_SQL);
   } finally {
     client.release();
   }

@@ -67,13 +67,24 @@ export async function handleStartWebwellePipeline(request: NextRequest) {
       promptVersion: BLOG_PROMPT_VERSION,
     });
 
-    await dispatchBlogPipeline(payload);
-    await markBlogJobRunning(job.id);
+    let n8nDispatched = false;
+    let warning: string | undefined;
 
-    const n8nUrlSet = Boolean(
-      process.env.N8N_WEBHOOK_SEO_01_URL?.trim() ||
-        process.env.N8N_WEBHOOK_BLOG_ORCHESTRATOR_URL?.trim()
-    );
+    try {
+      await dispatchBlogPipeline(payload);
+      n8nDispatched = true;
+    } catch (e) {
+      console.error('n8n dispatch failed:', e);
+      const n8nUrlSet = Boolean(
+        process.env.N8N_WEBHOOK_SEO_01_URL?.trim() ||
+          process.env.N8N_WEBHOOK_BLOG_ORCHESTRATOR_URL?.trim()
+      );
+      warning = n8nUrlSet
+        ? 'n8n-Webhook fehlgeschlagen — Job angelegt, Pipeline manuell prüfen.'
+        : 'N8N_WEBHOOK_SEO_01_URL nicht gesetzt — Job angelegt, n8n nicht gestartet.';
+    }
+
+    await markBlogJobRunning(job.id);
 
     return secureResponse({
       jobId: job.id,
@@ -82,8 +93,8 @@ export async function handleStartWebwellePipeline(request: NextRequest) {
       publishMode,
       externalRunId,
       sourceType: 'webwelle',
-      n8nDispatched: n8nUrlSet,
-      warning: n8nUrlSet ? undefined : 'N8N_WEBHOOK_SEO_01_URL nicht gesetzt — Job angelegt, n8n nicht gestartet.',
+      n8nDispatched,
+      warning,
     });
   } catch (error) {
     console.error('start-webwelle-pipeline:', error);
