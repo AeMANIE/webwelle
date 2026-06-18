@@ -191,6 +191,7 @@ export async function POST(request: NextRequest) {
           : body.word_count != null
             ? Number(body.word_count)
             : content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+      const qaStatus = String(body.qa_status || body.qaStatus || 'passed');
       const delivery = await recordWebwellePublishDelivery({
         jobId: sourceJobId,
         articleIndex: Number.isNaN(articleIndex) ? 0 : articleIndex,
@@ -200,6 +201,7 @@ export async function POST(request: NextRequest) {
         htmlContent: content,
         wordCount,
         promptVersion,
+        qaStatus,
       });
       jobTracking = { articleId: delivery.article.id, jobFinished: delivery.jobFinished };
     }

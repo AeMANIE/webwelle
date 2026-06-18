@@ -344,6 +344,7 @@ export function getCallbackBaseUrl(): string {
     (process.env.COOLIFY_FQDN ? `https://${process.env.COOLIFY_FQDN}` : undefined) ||
     process.env.WEBWELLE_APP_BASE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
     'https://webwelle.com'
   ).replace(/\/$/, '');
 }

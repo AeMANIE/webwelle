@@ -420,6 +420,7 @@ export async function recordWebwellePublishDelivery(params: {
   htmlContent: string;
   wordCount?: number | null;
   promptVersion?: string;
+  qaStatus?: string | null;
 }): Promise<{ article: BlogArticle; jobFinished: boolean }> {
   await ensureBlogPipelineTables();
 
@@ -428,6 +429,7 @@ export async function recordWebwellePublishDelivery(params: {
     throw new Error('job_not_found');
   }
 
+  const qaFailed = params.qaStatus === 'failed';
   const isNew = !(await blogArticleExists(params.jobId, params.articleIndex));
 
   const article = await upsertBlogArticle({
@@ -439,13 +441,13 @@ export async function recordWebwellePublishDelivery(params: {
     metaDesc: params.metaDesc,
     htmlContent: params.htmlContent,
     wordCount: params.wordCount,
-    qaStatus: 'passed',
+    qaStatus: qaFailed ? 'failed' : 'passed',
     promptVersion: params.promptVersion || BLOG_PROMPT_VERSION,
   });
 
   let jobFinished = false;
   if (isNew) {
-    const updated = await incrementBlogJobProgress(params.jobId, { failed: false });
+    const updated = await incrementBlogJobProgress(params.jobId, { failed: qaFailed });
     if (
       updated &&
       updated.completedCount + updated.failedCount >= updated.articleCount

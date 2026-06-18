@@ -167,6 +167,136 @@ function patchSeo06WebwelleJobTracking(wf) {
   return wf;
 }
 
+function patchSeo06DualSinkContext(wf) {
+  const node = wf.nodes.find((n) => n.name === 'Code - Dual Sink Blog Callback');
+  if (!node) return wf;
+  if ((node.parameters.jsCode || '').includes('dualSinkContextV3')) return wf;
+
+  node.parameters.jsCode = `const crypto = require('crypto');
+const httpRequest = this.helpers.httpRequest.bind(this.helpers);
+const ctx =
+  $('Code - Parse Lighthouse Result').first().json ||
+  $('Code - On Page SEO Checks').first().json ||
+  {};
+const j = { ...ctx, ...items[0].json };
+let webwelleCallbackError = null;
+const secret = $env.N8N_WEBHOOK_SECRET;
+const apiKey = $env.N8N_API_KEY;
+const base = String(j.callbackBaseUrl || '').replace(/\\/$/, '');
+const sourceType = j.sourceType || j.source_type || 'client';
+const keyword = j.keyword || j.approved_blog_keyword || j.content_brief?.keyword || 'unknown';
+let html = String(j.htmlContent || j.draft || '');
+html = html.replace(/<img[^>]*>/gi, '');
+const wordCount = html.replace(/<[^>]+>/g, ' ').split(/\\s+/).filter(Boolean).length;
+const images = Array.isArray(j.images) ? j.images : [];
+const promptVersion = j.promptVersion || j.prompt_version || 'blogartikel-v1';
+const idx = Number(j.articleIndex ?? 0);
+const total = Number(j.articleCount ?? 1);
+const qaPassed = j.qa_passed !== false && j.status !== 'qa_failed';
+
+if (!base || !j.jobId) {
+  return [{ json: { ...j, webwelleCallbackSkipped: true, callbackReason: !base ? 'no_base' : 'no_jobId' } }];
+}
+
+if (sourceType === 'webwelle') {
+  if (!apiKey) throw new Error('N8N_API_KEY fehlt');
+  if (!html.trim()) {
+    webwelleCallbackError = 'empty_html';
+  } else {
+    const publishMode = j.publishMode || j.publish_mode || 'draft';
+    const publishPayload = {
+      title: j.title || keyword,
+      content: html.includes('<') ? html : \`<article><h1>\${keyword}</h1><p>\${html}</p></article>\`,
+      excerpt: j.metaDesc || j.meta_desc || \`Ratgeber: \${keyword}\`,
+      meta_description: j.metaDesc || j.meta_desc || \`Ratgeber: \${keyword}\`,
+      author: 'WebWelle',
+      status: publishMode === 'publish' && qaPassed ? 'published' : 'draft',
+      source_type: 'webwelle',
+      jobId: j.jobId,
+      articleIndex: idx,
+      keyword,
+      wordCount,
+      qa_status: qaPassed ? 'passed' : 'failed',
+      prompt_version: promptVersion,
+      images,
+    };
+    try {
+      await httpRequest({
+        method: 'POST',
+        url: base + '/api/blog/publish',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+        body: JSON.stringify(publishPayload),
+        timeout: 60000,
+      });
+    } catch (err) {
+      webwelleCallbackError = err?.message || String(err);
+    }
+  }
+} else {
+  if (!secret) throw new Error('N8N_WEBHOOK_SECRET fehlt');
+  const articlePayload = {
+    jobId: j.jobId,
+    articleIndex: idx,
+    keyword,
+    title: j.title || keyword,
+    metaDesc: j.metaDesc || j.meta_desc || \`Ratgeber: \${keyword}\`,
+    htmlContent: html.includes('<') ? html : \`<article><h1>\${keyword}</h1><p>\${html}</p></article>\`,
+    wordCount,
+    qaStatus: qaPassed ? 'passed' : 'failed',
+    promptVersion,
+    images,
+  };
+  if (!qaPassed) articlePayload.qaFailReason = { checks: j.checks, status: j.status, lighthouse: j.lighthouse_score };
+  const bodyString = JSON.stringify(articlePayload);
+  const sig = crypto.createHmac('sha256', secret).update(bodyString).digest('hex');
+  try {
+    await httpRequest({
+      method: 'POST',
+      url: base + '/api/blog/article-ready',
+      headers: { 'Content-Type': 'application/json', 'x-webwelle-signature': sig },
+      body: bodyString,
+      timeout: 30000,
+    });
+  } catch (err) {
+    webwelleCallbackError = err?.message || String(err);
+  }
+}
+
+if (idx >= total - 1 && j.jobId) {
+  const canComplete = secret || (sourceType === 'webwelle' && apiKey);
+  if (canComplete) {
+    const doneBody = JSON.stringify({
+      jobId: j.jobId,
+      failedCount: qaPassed ? 0 : 1,
+      n8nExecutionId: j.n8n_execution_id || j.n8nExecutionId || null,
+    });
+    const doneHeaders = { 'Content-Type': 'application/json' };
+    if (secret) {
+      doneHeaders['x-webwelle-signature'] = crypto.createHmac('sha256', secret).update(doneBody).digest('hex');
+    } else if (apiKey) {
+      doneHeaders['x-api-key'] = apiKey;
+    }
+    try {
+      await httpRequest({
+        method: 'POST',
+        url: base + '/api/blog/job-completed',
+        headers: doneHeaders,
+        body: doneBody,
+        timeout: 30000,
+      });
+    } catch (err) {
+      webwelleCallbackError = webwelleCallbackError || err?.message || String(err);
+    }
+  }
+}
+
+return [{ json: { ...j, webwelleCallbackSent: !webwelleCallbackError, webwelleCallbackError, sink: sourceType } }];
+// dualSinkContextV3`;
+
+  node.continueOnFail = true;
+  return wf;
+}
+
 const WORKFLOWS = [
   { id: 'HbRAuPK4Dd6ekAjd', patch: (wf) => patchSeo01Trigger(setWebhookAsync(wf)) },
   { id: 'q5tqTGRjupy9JKdE', patch: setWebhookAsync },
@@ -174,7 +304,7 @@ const WORKFLOWS = [
   { id: '8BZxLGLZlCggHJ5b', patch: setWebhookAsync },
   {
     id: 'HV16Eux9keNnnJt8',
-    patch: (wf) => patchSeo06WebwelleJobTracking(patchSeo06Callback(setWebhookAsync(wf))),
+    patch: (wf) => patchSeo06DualSinkContext(setWebhookAsync(wf)),
   },
 ];
 
