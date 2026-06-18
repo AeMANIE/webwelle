@@ -14,6 +14,7 @@ import DashboardShell from '../../../../components/dashboard/DashboardShell';
 import { splitFullName } from '@/lib/validation';
 import DwaLeadSummary from '@/components/funnel/DwaLeadSummary';
 import { dwaResumePath, dwaResumeStepLabel } from '@/lib/funnel/funnel-kind';
+import { dwaLeadProductTitle } from '@/app/components/leistungen-offers';
 
 const ADMIN_NAV = [
   { id: 'bookings', label: 'Bestellungen', icon: <Package className="h-4 w-4" /> },
@@ -73,6 +74,7 @@ interface FunnelAnalysis {
   token: string;
   status: string;
   funnel_kind?: string;
+  source?: string;
   industry_raw?: string;
   industry_normalized?: string;
   postal_code?: string;
@@ -666,7 +668,7 @@ export default function CustomerDetailPage() {
                         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between mb-4">
                           <div>
                             <p className="font-semibold text-foreground">
-                              Digitale Wachstumsarchitektur
+                              {dwaLeadProductTitle(analysis.source)}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {analysis.postal_code} {analysis.city} · {analysis.market || 'DE'} ·

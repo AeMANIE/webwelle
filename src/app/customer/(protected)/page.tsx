@@ -7,6 +7,7 @@ import { DashboardPanel, DashboardStatCard } from '../../components/dashboard/Da
 import { Package, Euro, Calendar, FileText, Eye, Download, X, Plus, Settings } from 'lucide-react';
 import DwaLeadSummary from '@/components/funnel/DwaLeadSummary';
 import { dwaResumePath } from '@/lib/funnel/funnel-kind';
+import { dwaLeadProductTitle } from '@/app/components/leistungen-offers';
 
 type CustomerTabId = 'bookings' | 'addons' | 'analysis' | 'settings';
 
@@ -82,6 +83,7 @@ interface FunnelAnalysis {
   token: string;
   status: string;
   funnel_kind?: string;
+  source?: string;
   industry_raw?: string;
   industry_normalized?: string;
   postal_code?: string;
@@ -788,7 +790,7 @@ export default function CustomerPortal() {
                         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                           <div>
                             <h3 className="text-xl font-semibold text-foreground">
-                              Digitale Wachstumsarchitektur
+                              {dwaLeadProductTitle(analysis.source)}
                             </h3>
                             <p className="text-muted-foreground">
                               {analysis.industry_normalized || analysis.industry_raw} ·{' '}

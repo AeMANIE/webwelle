@@ -17,6 +17,7 @@ import {
   BLOG_UNIT_PRICE_CENTS,
 } from '@/lib/funnel/packages';
 import { dwaResumePath, dwaResumeStepLabel } from '@/lib/funnel/funnel-kind';
+import { dwaLeadProductTitle } from '@/app/components/leistungen-offers';
 import DwaLeadSummary from '@/components/funnel/DwaLeadSummary';
 
 interface EnrichedLead {
@@ -25,6 +26,7 @@ interface EnrichedLead {
     token: string;
     status: string;
     funnel_kind?: string;
+    source?: string;
     industry_normalized?: string;
     industry_raw?: string;
     company_name?: string;
@@ -139,6 +141,7 @@ export default function OffersTab() {
             const breakdown = calculateFunnelOfferTotal(addons);
             const designUrls = (lead.design_reference_urls || []).filter(Boolean);
             const isDwa = lead.funnel_kind === 'wachstumsarchitektur';
+            const dwaProductTitle = isDwa ? dwaLeadProductTitle(lead.source) : null;
 
             return (
               <div key={lead.id} className="rounded-xl border border-border bg-card p-5">
@@ -146,9 +149,9 @@ export default function OffersTab() {
                   <div>
                     <p className="font-semibold">
                       {lead.company_name || lead.industry_normalized || 'Lead'}
-                      {isDwa && (
+                      {isDwa && dwaProductTitle && (
                         <span className="ml-2 text-xs font-normal px-2 py-0.5 rounded bg-primary/15 text-primary">
-                          Wachstumsarchitektur
+                          {dwaProductTitle}
                         </span>
                       )}
                     </p>
@@ -158,7 +161,7 @@ export default function OffersTab() {
                     <p className="text-sm text-muted-foreground mt-1">
                       Website:{' '}
                       {isDwa ? (
-                        'DWA-Projektanfrage'
+                        `${dwaProductTitle}-Projektanfrage`
                       ) : lead.existing_website === true ? (
                         lead.existing_website_url ? (
                           <a
@@ -306,7 +309,7 @@ export default function OffersTab() {
 
                 <p className="text-sm font-semibold text-primary mb-3">
                   {isDwa
-                    ? 'DWA-Projektanfrage (kein StarterWelle-Checkout)'
+                    ? `${dwaProductTitle}-Projektanfrage (kein StarterWelle-Checkout)`
                     : `Preis-Vorschau: ${formatEuro(breakdown.subtotalCents)} (StarterWelle + Add-ons)`}
                 </p>
 

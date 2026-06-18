@@ -65,3 +65,13 @@ export const LEISTUNGEN_OFFERS: LeistungOffer[] = [
     funnelKind: 'wachstumsarchitektur',
   },
 ];
+
+export function productTitleFromSource(source?: string | null): string | null {
+  if (!source) return null;
+  return LEISTUNGEN_OFFERS.find((offer) => offer.source === source)?.title ?? null;
+}
+
+/** Anzeigename für DWA-Leads (Fallback: Digitale Wachstumsarchitektur). */
+export function dwaLeadProductTitle(source?: string | null): string {
+  return productTitleFromSource(source) ?? 'Digitale Wachstumsarchitektur';
+}
