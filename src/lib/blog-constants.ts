@@ -3,9 +3,6 @@ export const BLOG_PROMPT_VERSION = 'blogartikel-v1';
 
 export type BlogSourceType = 'webwelle' | 'client';
 
-/** Sentinel for internal WebWelle jobs (no funnel lead); satisfies legacy NOT NULL on lead_token. */
-export const WEBWELLE_LEAD_TOKEN = 'webwelle';
-
 export type BlogPublishMode = 'draft' | 'publish';
 
 export type BlogImageRole = 'featured' | 'inline' | 'og';

@@ -8,7 +8,7 @@ import {
   markBlogJobRunning,
 } from '@/lib/blog-jobs-database';
 import { buildWebwelleBlogPayload, dispatchBlogPipeline } from '@/lib/n8n/dispatch';
-import { BLOG_PROMPT_VERSION, WEBWELLE_LEAD_TOKEN, type BlogPublishMode } from '@/lib/blog-constants';
+import { BLOG_PROMPT_VERSION, type BlogPublishMode } from '@/lib/blog-constants';
 
 export async function handleStartWebwellePipeline(request: NextRequest) {
   try {
@@ -47,7 +47,7 @@ export async function handleStartWebwellePipeline(request: NextRequest) {
     }
 
     const job = await createBlogJob({
-      leadToken: WEBWELLE_LEAD_TOKEN,
+      leadToken: null,
       customerId: null,
       articleCount,
       sourceType: 'webwelle',

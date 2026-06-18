@@ -65,6 +65,26 @@ CREATE TABLE IF NOT EXISTS blog_articles (
 ALTER TABLE blog_jobs ALTER COLUMN lead_token DROP NOT NULL;
 ALTER TABLE blog_articles ALTER COLUMN lead_token DROP NOT NULL;
 
+ALTER TABLE blog_jobs DROP CONSTRAINT IF EXISTS blog_jobs_lead_token_fkey;
+ALTER TABLE blog_articles DROP CONSTRAINT IF EXISTS blog_articles_lead_token_fkey;
+
+DO $$
+DECLARE
+  constraint_row RECORD;
+BEGIN
+  FOR constraint_row IN
+    SELECT c.conname, t.relname AS table_name
+    FROM pg_constraint c
+    JOIN pg_class t ON t.oid = c.conrelid
+    WHERE t.relname IN ('blog_jobs', 'blog_articles')
+      AND c.contype = 'f'
+      AND pg_get_constraintdef(c.oid) ILIKE '%lead_token%'
+  LOOP
+    EXECUTE format('ALTER TABLE %I DROP CONSTRAINT %I', constraint_row.table_name, constraint_row.conname);
+  END LOOP;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_blog_jobs_lead_token ON blog_jobs(lead_token);
 CREATE INDEX IF NOT EXISTS idx_blog_jobs_customer_id ON blog_jobs(customer_id);
 CREATE INDEX IF NOT EXISTS idx_blog_jobs_status ON blog_jobs(status);
