@@ -195,7 +195,7 @@ const httpRequest = this.helpers.httpRequest.bind(this.helpers);
 const ctx = $('Code - Merge Rewrite LLM').first().json;
 const j = { ...ctx, ...items[0].json };
 const dedupeKey = \`seo06:\${j.jobId}:\${j.articleIndex ?? 0}\`;
-const sd = getWorkflowStaticData('global');
+const sd = $getWorkflowStaticData('global');
 const now = Date.now();
 if (sd[dedupeKey] && now - sd[dedupeKey] < 3600000) {
   return [{ json: { ...j, triggeredSeo06: false, seo06DedupeSkipped: true } }];
