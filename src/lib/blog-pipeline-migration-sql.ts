@@ -62,6 +62,9 @@ CREATE TABLE IF NOT EXISTS blog_articles (
 );
 
 -- v3 additive columns (existing tables from partial migrations)
+ALTER TABLE blog_jobs ALTER COLUMN lead_token DROP NOT NULL;
+ALTER TABLE blog_articles ALTER COLUMN lead_token DROP NOT NULL;
+
 ALTER TABLE blog_jobs ADD COLUMN IF NOT EXISTS source_type VARCHAR(20) DEFAULT 'client';
 ALTER TABLE blog_jobs ADD COLUMN IF NOT EXISTS external_run_id VARCHAR(128);
 ALTER TABLE blog_jobs ADD COLUMN IF NOT EXISTS publish_mode VARCHAR(20) DEFAULT 'draft';

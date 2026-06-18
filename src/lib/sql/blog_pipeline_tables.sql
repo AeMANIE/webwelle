@@ -62,6 +62,9 @@ CREATE TABLE IF NOT EXISTS blog_articles (
   UNIQUE (job_id, article_index)
 );
 
+ALTER TABLE blog_jobs ALTER COLUMN lead_token DROP NOT NULL;
+ALTER TABLE blog_articles ALTER COLUMN lead_token DROP NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_blog_jobs_lead_token ON blog_jobs(lead_token);
 CREATE INDEX IF NOT EXISTS idx_blog_jobs_customer_id ON blog_jobs(customer_id);
 CREATE INDEX IF NOT EXISTS idx_blog_jobs_status ON blog_jobs(status);

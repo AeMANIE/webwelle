@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { pool } from './database';
 import { BLOG_PIPELINE_MIGRATION_SQL } from './blog-pipeline-migration-sql';
-import { BLOG_PROMPT_VERSION, FINAL_JOB_STATUSES, type BlogPublishMode, type BlogSourceType } from './blog-constants';
+import { BLOG_PROMPT_VERSION, FINAL_JOB_STATUSES, WEBWELLE_LEAD_TOKEN, type BlogPublishMode, type BlogSourceType } from './blog-constants';
 import { stripUncontrolledImages } from './blog-guards';
 
 export type BlogJobStatus =
@@ -183,6 +183,16 @@ export function buildExternalRunId(parts: {
   return `${parts.sourceType}-${hash}${suffix}`;
 }
 
+export function resolveBlogLeadToken(
+  sourceType: BlogSourceType,
+  leadToken?: string | null
+): string | null {
+  const trimmed = leadToken?.trim();
+  if (trimmed) return trimmed;
+  if (sourceType === 'webwelle') return WEBWELLE_LEAD_TOKEN;
+  return null;
+}
+
 export async function ensureBlogPipelineTables(): Promise<void> {
   const client = await pool.connect();
   try {
@@ -238,7 +248,7 @@ export async function createBlogJob(params: {
       ) VALUES ($1, $2, $3, 'queued', $4, $5, $6, $7, $8)
       RETURNING *`,
       [
-        params.leadToken || null,
+        resolveBlogLeadToken(params.sourceType, params.leadToken),
         params.customerId || null,
         params.articleCount,
         params.sourceType,
