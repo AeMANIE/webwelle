@@ -81,6 +81,22 @@ async function main() {
   const execArg = process.argv[2];
   const mode = process.argv[3];
 
+  if (mode === 'dual' && execArg) {
+    console.log(`\n=== Dual Sink raw output exec ${execArg} ===`);
+    const detail = await fetch(`${baseUrl}/api/v1/executions/${execArg}?includeData=true`, {
+      headers: { 'X-N8N-API-KEY': apiKey, Accept: 'application/json' },
+    });
+    const ex = await detail.json();
+    const runs = ex.data?.resultData?.runData?.['Code - Dual Sink Blog Callback'];
+    console.log('run count:', runs?.length ?? 0);
+    for (let i = 0; i < (runs?.length ?? 0); i++) {
+      const j = runs[i]?.data?.main?.[0]?.[0]?.json;
+      console.log(`run[${i}]`, JSON.stringify(j));
+      if (runs[i]?.error) console.log(`run[${i}] error:`, runs[i].error.message);
+    }
+    return;
+  }
+
   if (mode === 'wf') {
     const wf = await fetch(`${baseUrl}/api/v1/workflows/HV16Eux9keNnnJt8`, {
       headers: { 'X-N8N-API-KEY': apiKey, Accept: 'application/json' },
@@ -91,7 +107,9 @@ async function main() {
       .map(([k]) => k);
     console.log('\n=== seo-06 Workflow ===');
     console.log('inbound to Dual Sink from:', inbound.join(', ') || '(none)');
-    console.log('dual sink code start:', (dual?.parameters?.jsCode || '').slice(0, 600));
+    console.log('has dualSinkContextV4:', (dual?.parameters?.jsCode || '').includes('dualSinkContextV4'));
+    console.log('continueOnFail:', dual?.continueOnFail);
+    console.log('dual sink code start:', (dual?.parameters?.jsCode || '').slice(0, 400));
     return;
   }
 

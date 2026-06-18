@@ -59,7 +59,7 @@ function shouldRedispatchExistingJob(job: BlogJob): boolean {
   );
 }
 
-function scheduleN8nDispatch(params: {
+export function scheduleWebwelleN8nDispatch(params: {
   jobId: number;
   articleCount: number;
   keywords: string[];
@@ -129,7 +129,7 @@ export async function handleStartWebwellePipeline(request: NextRequest) {
       };
 
       if (shouldRedispatchExistingJob(existing)) {
-        scheduleN8nDispatch(dispatchParams);
+        scheduleWebwelleN8nDispatch(dispatchParams);
         return secureResponse({
           jobId: existing.id,
           status: 'queued',
@@ -162,7 +162,7 @@ export async function handleStartWebwellePipeline(request: NextRequest) {
       keywordData: { keywords, branche, plz },
     });
 
-    scheduleN8nDispatch({
+    scheduleWebwelleN8nDispatch({
       jobId: job.id,
       articleCount,
       keywords,

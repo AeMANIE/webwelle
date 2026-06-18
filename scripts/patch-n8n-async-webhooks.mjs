@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** seo-02..06: async webhook response; seo-01: tolerate chain errors; seo-06: resilient callback. */
+/** seo-02..06: async webhooks; seo-06: Dual Sink v4 (items[0].json only, no throw). */
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -48,137 +48,31 @@ function patchSeo01Trigger(wf) {
   if (!trigger) return wf;
   const code = trigger.parameters.jsCode || '';
   if (code.includes('seo02TriggerError')) return wf;
-  trigger.parameters.jsCode = code.replace(
-    'await httpRequest({',
-    `let seo02TriggerError = null;
+  trigger.parameters.jsCode = code
+    .replace(
+      'await httpRequest({',
+      `let seo02TriggerError = null;
 try {
   await httpRequest({`
-  ).replace(
-    '  timeout: 300000,\n});',
-    `  timeout: 300000,\n});
+    )
+    .replace(
+      '  timeout: 300000,\n});',
+      `  timeout: 300000,\n});
 } catch (err) {
   seo02TriggerError = err?.message || String(err);
 }
 `
-  ).replace(
-    'return [{ json: { ...j, triggeredSeo02: true,',
-    'return [{ json: { ...j, triggeredSeo02: !seo02TriggerError, seo02TriggerError,'
-  );
-  return wf;
-}
-
-function patchSeo06Callback(wf) {
-  const node = wf.nodes.find((n) => n.name === 'Code - Dual Sink Blog Callback');
-  if (!node) return wf;
-  const code = node.parameters.jsCode || '';
-  if (code.includes('webwelleCallbackError')) return wf;
-
-  node.parameters.jsCode = code
-    .replace(
-      "if (sourceType === 'webwelle') {",
-      "let webwelleCallbackError = null;\nif (sourceType === 'webwelle') {"
     )
     .replace(
-      '  await httpRequest({\n    method: \'POST\',\n    url: base + \'/api/blog/publish\',',
-      '  try {\n  await httpRequest({\n    method: \'POST\',\n    url: base + \'/api/blog/publish\','
-    )
-    .replace(
-      '    timeout: 60000,\n  });\n} else {',
-      '    timeout: 60000,\n  });\n  } catch (err) {\n    webwelleCallbackError = err?.message || String(err);\n  }\n} else {'
-    )
-    .replace(
-      '  await httpRequest({\n    method: \'POST\',\n    url: base + \'/api/blog/article-ready\',',
-      '  try {\n  await httpRequest({\n    method: \'POST\',\n    url: base + \'/api/blog/article-ready\','
-    )
-    .replace(
-      '    timeout: 30000,\n  });\n}\n\nif (idx >= total - 1 && secret) {',
-      '    timeout: 30000,\n  });\n  } catch (err) {\n    webwelleCallbackError = err?.message || String(err);\n  }\n}\n\nif (idx >= total - 1 && secret) {'
-    )
-    .replace(
-      'return [{ json: { ...j, webwelleCallbackSent: true, sink: sourceType } }];',
-      'return [{ json: { ...j, webwelleCallbackSent: !webwelleCallbackError, webwelleCallbackError, sink: sourceType } }];'
+      'return [{ json: { ...j, triggeredSeo02: true,',
+      'return [{ json: { ...j, triggeredSeo02: !seo02TriggerError, seo02TriggerError,'
     );
-
-  node.continueOnFail = true;
   return wf;
 }
 
-function patchSeo06WebwelleJobTracking(wf) {
-  const node = wf.nodes.find((n) => n.name === 'Code - Dual Sink Blog Callback');
-  if (!node) return wf;
-  let code = node.parameters.jsCode || '';
-  if (code.includes('webwelleJobTrackingV2')) return wf;
-
-  code = code.replace(
-    '    jobId: j.jobId,\n    prompt_version: promptVersion,',
-    '    jobId: j.jobId,\n    articleIndex: idx,\n    keyword,\n    wordCount,\n    prompt_version: promptVersion,'
-  );
-
-  const oldJobDone = `if (idx >= total - 1 && secret) {
-  const doneBody = JSON.stringify({
-    jobId: j.jobId,
-    failedCount: j.qa_passed ? 0 : 1,
-    n8nExecutionId: j.n8n_execution_id || j.n8nExecutionId || null,
-  });
-  const doneSig = crypto.createHmac('sha256', secret).update(doneBody).digest('hex');
-  await httpRequest({
-    method: 'POST',
-    url: base + '/api/blog/job-completed',
-    headers: { 'Content-Type': 'application/json', 'x-webwelle-signature': doneSig },
-    body: doneBody,
-    timeout: 30000,
-  });
-}`;
-
-  const newJobDone = `if (idx >= total - 1) {
-  const canComplete = secret || (sourceType === 'webwelle' && apiKey);
-  if (canComplete) {
-    const doneBody = JSON.stringify({
-      jobId: j.jobId,
-      failedCount: j.qa_passed ? 0 : 1,
-      n8nExecutionId: j.n8n_execution_id || j.n8nExecutionId || null,
-    });
-    const doneHeaders = { 'Content-Type': 'application/json' };
-    if (secret) {
-      doneHeaders['x-webwelle-signature'] = crypto.createHmac('sha256', secret).update(doneBody).digest('hex');
-    } else if (apiKey) {
-      doneHeaders['x-api-key'] = apiKey;
-    }
-    try {
-      await httpRequest({
-        method: 'POST',
-        url: base + '/api/blog/job-completed',
-        headers: doneHeaders,
-        body: doneBody,
-        timeout: 30000,
-      });
-    } catch (err) {
-      webwelleCallbackError = webwelleCallbackError || err?.message || String(err);
-    }
-  }
-}
-// webwelleJobTrackingV2`;
-
-  if (code.includes(oldJobDone)) {
-    code = code.replace(oldJobDone, newJobDone);
-  }
-
-  node.parameters.jsCode = code;
-  return wf;
-}
-
-function patchSeo06DualSinkContext(wf) {
-  const node = wf.nodes.find((n) => n.name === 'Code - Dual Sink Blog Callback');
-  if (!node) return wf;
-  if ((node.parameters.jsCode || '').includes('dualSinkContextV3')) return wf;
-
-  node.parameters.jsCode = `const crypto = require('crypto');
+const DUAL_SINK_V4 = `const crypto = require('crypto');
 const httpRequest = this.helpers.httpRequest.bind(this.helpers);
-const ctx =
-  $('Code - Parse Lighthouse Result').first().json ||
-  $('Code - On Page SEO Checks').first().json ||
-  {};
-const j = { ...ctx, ...items[0].json };
+const j = items[0].json || {};
 let webwelleCallbackError = null;
 const secret = $env.N8N_WEBHOOK_SECRET;
 const apiKey = $env.N8N_API_KEY;
@@ -199,8 +93,9 @@ if (!base || !j.jobId) {
 }
 
 if (sourceType === 'webwelle') {
-  if (!apiKey) throw new Error('N8N_API_KEY fehlt');
-  if (!html.trim()) {
+  if (!apiKey) {
+    webwelleCallbackError = 'N8N_API_KEY fehlt in n8n';
+  } else if (!html.trim()) {
     webwelleCallbackError = 'empty_html';
   } else {
     const publishMode = j.publishMode || j.publish_mode || 'draft';
@@ -233,32 +128,37 @@ if (sourceType === 'webwelle') {
     }
   }
 } else {
-  if (!secret) throw new Error('N8N_WEBHOOK_SECRET fehlt');
-  const articlePayload = {
-    jobId: j.jobId,
-    articleIndex: idx,
-    keyword,
-    title: j.title || keyword,
-    metaDesc: j.metaDesc || j.meta_desc || \`Ratgeber: \${keyword}\`,
-    htmlContent: html.includes('<') ? html : \`<article><h1>\${keyword}</h1><p>\${html}</p></article>\`,
-    wordCount,
-    qaStatus: qaPassed ? 'passed' : 'failed',
-    promptVersion,
-    images,
-  };
-  if (!qaPassed) articlePayload.qaFailReason = { checks: j.checks, status: j.status, lighthouse: j.lighthouse_score };
-  const bodyString = JSON.stringify(articlePayload);
-  const sig = crypto.createHmac('sha256', secret).update(bodyString).digest('hex');
-  try {
-    await httpRequest({
-      method: 'POST',
-      url: base + '/api/blog/article-ready',
-      headers: { 'Content-Type': 'application/json', 'x-webwelle-signature': sig },
-      body: bodyString,
-      timeout: 30000,
-    });
-  } catch (err) {
-    webwelleCallbackError = err?.message || String(err);
+  if (!secret) {
+    webwelleCallbackError = 'N8N_WEBHOOK_SECRET fehlt in n8n';
+  } else if (!html.trim()) {
+    webwelleCallbackError = 'empty_html';
+  } else {
+    const articlePayload = {
+      jobId: j.jobId,
+      articleIndex: idx,
+      keyword,
+      title: j.title || keyword,
+      metaDesc: j.metaDesc || j.meta_desc || \`Ratgeber: \${keyword}\`,
+      htmlContent: html.includes('<') ? html : \`<article><h1>\${keyword}</h1><p>\${html}</p></article>\`,
+      wordCount,
+      qaStatus: qaPassed ? 'passed' : 'failed',
+      promptVersion,
+      images,
+    };
+    if (!qaPassed) articlePayload.qaFailReason = { checks: j.checks, status: j.status, lighthouse: j.lighthouse_score };
+    const bodyString = JSON.stringify(articlePayload);
+    const sig = crypto.createHmac('sha256', secret).update(bodyString).digest('hex');
+    try {
+      await httpRequest({
+        method: 'POST',
+        url: base + '/api/blog/article-ready',
+        headers: { 'Content-Type': 'application/json', 'x-webwelle-signature': sig },
+        body: bodyString,
+        timeout: 30000,
+      });
+    } catch (err) {
+      webwelleCallbackError = err?.message || String(err);
+    }
   }
 }
 
@@ -291,9 +191,19 @@ if (idx >= total - 1 && j.jobId) {
 }
 
 return [{ json: { ...j, webwelleCallbackSent: !webwelleCallbackError, webwelleCallbackError, sink: sourceType } }];
-// dualSinkContextV3`;
+// dualSinkContextV4`;
 
-  node.continueOnFail = true;
+function patchSeo06DualSinkV4(wf) {
+  const node = wf.nodes.find((n) => n.name === 'Code - Dual Sink Blog Callback');
+  if (!node) return wf;
+  node.parameters.jsCode = DUAL_SINK_V4;
+  node.continueOnFail = false;
+
+  // Parse Lighthouse → Dual Sink only (drop parallel empty branches)
+  wf.connections['Code - Parse Lighthouse Result'] = {
+    main: [[{ node: 'Code - Dual Sink Blog Callback', type: 'main', index: 0 }]],
+  };
+
   return wf;
 }
 
@@ -302,10 +212,7 @@ const WORKFLOWS = [
   { id: 'q5tqTGRjupy9JKdE', patch: setWebhookAsync },
   { id: '5THEWW5gWbv8cg7p', patch: setWebhookAsync },
   { id: '8BZxLGLZlCggHJ5b', patch: setWebhookAsync },
-  {
-    id: 'HV16Eux9keNnnJt8',
-    patch: (wf) => patchSeo06DualSinkContext(setWebhookAsync(wf)),
-  },
+  { id: 'HV16Eux9keNnnJt8', patch: (wf) => patchSeo06DualSinkV4(setWebhookAsync(wf)) },
 ];
 
 async function saveAndActivate(wf, apiKey, baseUrl) {

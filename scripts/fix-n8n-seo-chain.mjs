@@ -89,8 +89,14 @@ const httpRequest = this.helpers.httpRequest.bind(this.helpers);
 const scored = $('Code - Compute Blog Score').first().json;
 const j = { ...scored, ...items[0].json };
 const base = resolveInternalWebhookBase(j, 'Webhook - Receive Qualification Request');
-const limit = Number(j.articleCount || 10);
-const blogs = (scored.approved_blog_keywords || j.approved_blog_keywords || []).slice(0, limit);
+const limit = Math.max(1, Number(j.articleCount || 1));
+const sourceType = j.sourceType || j.source_type || 'client';
+let blogs = (scored.approved_blog_keywords || j.approved_blog_keywords || []).slice(0, limit);
+if (sourceType === 'webwelle' && Array.isArray(j.keywords) && j.keywords.length) {
+  blogs = j.keywords.slice(0, limit).map((k) =>
+    typeof k === 'object' && k ? { keyword: String(k.keyword || k) } : { keyword: String(k) }
+  );
+}
 let triggered = 0;
 for (let i = 0; i < blogs.length; i++) {
   const kw = blogs[i];
@@ -107,7 +113,7 @@ for (let i = 0; i < blogs.length; i++) {
       articleCount: limit,
       articleIndex: i,
       test_mode: j.test_mode,
-      sourceType: j.sourceType || j.source_type || 'client',
+      sourceType,
       publishMode: j.publishMode || j.publish_mode || 'draft',
       promptVersion: j.promptVersion || j.prompt_version,
       _internalWebhookBase: base,
@@ -121,12 +127,16 @@ return [{ json: { ...j, blog_chain_triggered: triggered, approved_blog_keywords:
 
 const SEO02_LOAD_CODE = `const b = items[0].json.body && typeof items[0].json.body === 'object' ? items[0].json.body : items[0].json;
 const project_id = b.project_id || 'test-project';
+const sourceType = b.sourceType || b.source_type || 'client';
 let raw_keywords = b.raw_keywords;
 if ((!raw_keywords || !raw_keywords.length) && Array.isArray(b.keywords)) {
   raw_keywords = b.keywords.map((k) => (typeof k === 'object' && k ? { keyword: String(k.keyword || k), difficulty: Number(k.difficulty ?? 25), volume: Number(k.volume ?? 200), intent: String(k.intent || 'informational'), cpc: Number(k.cpc ?? 1.5) } : { keyword: String(k), difficulty: 25, volume: 200, intent: 'informational', cpc: 1.5 }));
 }
-if (!raw_keywords || !raw_keywords.length) {
+if ((!raw_keywords || !raw_keywords.length) && sourceType !== 'webwelle') {
   raw_keywords = [{ keyword: 'photovoltaik muenchen', difficulty: 22, volume: 240, intent: 'commercial', cpc: 4.2 }, { keyword: 'was kostet photovoltaik', difficulty: 28, volume: 590, intent: 'informational', cpc: 1.5 }];
+}
+if ((!raw_keywords || !raw_keywords.length) && sourceType === 'webwelle') {
+  throw new Error('webwelle job: keywords fehlen im seo-02 Payload');
 }
 return [{ json: {
   ...b,
@@ -136,15 +146,17 @@ return [{ json: {
   jobId: b.jobId,
   leadToken: b.leadToken || b.token,
   callbackBaseUrl: b.callbackBaseUrl,
-  articleCount: Number(b.articleCount || 10),
-  sourceType: b.sourceType || b.source_type || 'client',
+  articleCount: Number(b.articleCount || 1),
+  keywords: b.keywords || raw_keywords,
+  sourceType,
   publishMode: b.publishMode || b.publish_mode || 'draft',
   promptVersion: b.promptVersion || b.prompt_version,
 } }];`;
 
 const SEO03_CLUSTER_CODE = `const b = items[0].json.body && typeof items[0].json.body==='object' ? items[0].json.body : items[0].json;
-const approved_blog_keyword = b.approved_blog_keyword || 'photovoltaik foerderung muenchen';
-const cluster=[approved_blog_keyword, \`\${approved_blog_keyword} 2026\`, \`\${approved_blog_keyword} tipps\`];
+const approved_blog_keyword = String(b.approved_blog_keyword || b.keyword || '').trim();
+if (!approved_blog_keyword) throw new Error('approved_blog_keyword fehlt');
+const cluster = [approved_blog_keyword];
 return [{json:{...b, approved_blog_keyword, cluster, project_id:b.project_id||'test-project', test_mode:Boolean(b.test_mode), jobId:b.jobId, leadToken:b.leadToken||b.token, callbackBaseUrl:b.callbackBaseUrl, articleCount:b.articleCount, articleIndex:b.articleIndex, sourceType:b.sourceType||b.source_type||'client', publishMode:b.publishMode||b.publish_mode||'draft', promptVersion:b.promptVersion||b.prompt_version}}];`;
 
 const SEO03_TRIGGER_CODE = `${RESOLVE_FN}
@@ -208,6 +220,40 @@ await httpRequest({
   timeout: 300000,
 });
 return [{ json: { ...j, triggeredSeo06: true, _internalWebhookBase: base } }];`;
+
+const SEO04_MERGE_CODE = `function extractLlmText(res) {
+  if (!res || typeof res !== 'object') return '';
+  const c = res.choices?.[0]?.message?.content ?? res.message?.content ?? res.content ?? res.text ?? '';
+  return String(c || '').trim();
+}
+const inbound = items[0].json.body && typeof items[0].json.body === 'object' ? items[0].json.body : items[0].json;
+let brief = {};
+try { brief = $('Code - Build Content Brief').first().json || {}; } catch (_) {}
+const ctx = { ...brief, ...inbound };
+const rewriteText = extractLlmText($('HTTP - LLM Rewrite With Voice').first()?.json);
+const draftText = extractLlmText($('HTTP - LLM Draft Generation').first()?.json);
+const keyword = ctx.content_brief?.keyword || ctx.approved_blog_keyword || ctx.keyword || 'Blog';
+let llm_error = null;
+let raw = rewriteText || draftText;
+if (!raw) {
+  llm_error = 'OPENROUTER leer — OPENROUTER_API_KEY in n8n-Coolify prüfen';
+  raw = \`Hook: \${keyword} – Entwurf folgt.\`;
+}
+const htmlContent = raw.includes('<') ? raw : \`<article><h1>\${keyword}</h1><p>\${raw}</p></article>\`;
+return [{ json: {
+  ...ctx,
+  title: ctx.title || keyword,
+  draft: raw,
+  htmlContent,
+  llm_error,
+  jobId: ctx.jobId,
+  callbackBaseUrl: ctx.callbackBaseUrl,
+  articleCount: ctx.articleCount,
+  articleIndex: ctx.articleIndex,
+  sourceType: ctx.sourceType || ctx.source_type,
+  publishMode: ctx.publishMode || ctx.publish_mode,
+  promptVersion: ctx.promptVersion || ctx.prompt_version,
+} }];`;
 
 async function api(method, path, body, apiKey, baseUrl) {
   const res = await fetch(`${baseUrl}/api/v1${path}`, {
@@ -315,9 +361,11 @@ function patchSeo03(wf) {
 
 function patchSeo04(wf) {
   const trigger = wf.nodes.find((n) => n.name === 'Code - Trigger seo-06 Chain');
+  const merge = wf.nodes.find((n) => n.name === 'Code - Merge Rewrite LLM');
   if (!trigger) throw new Error('seo-04: expected nodes missing');
 
   trigger.parameters.jsCode = SEO04_TRIGGER_CODE;
+  if (merge) merge.parameters.jsCode = SEO04_MERGE_CODE;
   return wf;
 }
 

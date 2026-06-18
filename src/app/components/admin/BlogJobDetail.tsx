@@ -160,6 +160,11 @@ export default function BlogJobDetail({ jobId, onBack, onRefresh }: Props) {
             Letzter Callback: {new Date(job.lastCallbackAt).toLocaleString('de-DE')}
           </p>
         )}
+        {job.lastErrorAt && (
+          <p className="text-xs text-destructive">
+            Letzter Fehler: {new Date(job.lastErrorAt).toLocaleString('de-DE')}
+          </p>
+        )}
         {job.n8nExecutionId && (
           <p className="text-xs text-muted-foreground font-mono">n8n: {job.n8nExecutionId}</p>
         )}
