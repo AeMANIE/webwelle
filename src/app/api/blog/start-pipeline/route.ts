@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { requireAdminAuth, secureResponse } from '@/lib/api-security';
+import { requireStaffAuth, secureResponse } from '@/lib/api-security';
 import {
   buildExternalRunId,
   createBlogJob,
@@ -19,7 +19,7 @@ import { buildBlogOrchestratorPayload, dispatchBlogPipeline } from '@/lib/n8n/di
 import { BLOG_PROMPT_VERSION } from '@/lib/blog-constants';
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAdminAuth(request);
+  const auth = await requireStaffAuth(request, 'TEAM');
   if (auth instanceof Response) return auth;
 
   await ensureBlogPipelineTables();

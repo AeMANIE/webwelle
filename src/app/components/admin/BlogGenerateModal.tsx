@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Zap } from 'lucide-react';
+import { adminFetch } from '@/lib/admin-fetch';
 
 interface Props {
   onStarted?: (jobId: number) => void;
@@ -26,7 +27,7 @@ export default function BlogGenerateModal({ onStarted }: Props) {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch('/api/blog/start-webwelle-pipeline', {
+      const res = await adminFetch('/api/admin/blog/start-webwelle-pipeline', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -37,14 +38,34 @@ export default function BlogGenerateModal({ onStarted }: Props) {
           plz: '87435',
         }),
       });
-      const data = await res.json();
-      if (!res.ok && !data.existingJob) {
-        setMessage(data.error || 'Start fehlgeschlagen');
+
+      const raw = await res.text();
+      let data: Record<string, unknown> = {};
+      if (raw) {
+        try {
+          data = JSON.parse(raw) as Record<string, unknown>;
+        } catch {
+          setMessage(`Server-Antwort ungültig (${res.status})`);
+          return;
+        }
+      }
+
+      if (res.status === 401) {
+        setMessage('Session abgelaufen — bitte Admin neu einloggen und erneut versuchen.');
         return;
       }
-      setMessage(`Job #${data.jobId} gestartet (${data.publishMode || publishMode})`);
-      onStarted?.(data.jobId);
+      if (!res.ok && !data.existingJob) {
+        setMessage(
+          String(data.message || data.error || `Start fehlgeschlagen (HTTP ${res.status})`)
+        );
+        return;
+      }
+      const warning = data.warning ? ` Hinweis: ${data.warning}` : '';
+      setMessage(`Job #${data.jobId} gestartet (${data.publishMode || publishMode}).${warning}`);
+      onStarted?.(Number(data.jobId));
       setOpen(false);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Netzwerkfehler');
     } finally {
       setLoading(false);
     }

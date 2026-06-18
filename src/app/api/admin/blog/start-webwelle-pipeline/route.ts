@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import { handleStartWebwellePipeline } from '@/lib/blog-start-webwelle-handler';
 
-/** @deprecated Prefer /api/admin/blog/start-webwelle-pipeline */
 export async function POST(request: NextRequest) {
   return handleStartWebwellePipeline(request);
 }

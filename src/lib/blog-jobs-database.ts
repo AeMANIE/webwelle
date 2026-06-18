@@ -183,17 +183,21 @@ export function buildExternalRunId(parts: {
 }
 
 export async function ensureBlogPipelineTables(): Promise<void> {
+  const fs = await import('fs');
+  const path = await import('path');
+  const candidates = [
+    path.join(process.cwd(), 'src/lib/sql/blog_pipeline_tables.sql'),
+    path.join(process.cwd(), 'info/database/blog_pipeline_tables.sql'),
+  ];
+  const sqlPath = candidates.find((p) => fs.existsSync(p));
+  if (!sqlPath) {
+    throw new Error('blog_pipeline_tables.sql nicht gefunden (src/lib/sql oder info/database)');
+  }
+
+  const sql = fs.readFileSync(sqlPath, 'utf8');
   const client = await pool.connect();
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-    const sqlPath = path.join(process.cwd(), 'info/database/blog_pipeline_tables.sql');
-    if (fs.existsSync(sqlPath)) {
-      const sql = fs.readFileSync(sqlPath, 'utf8');
-      await client.query(sql);
-    }
-  } catch (e) {
-    console.warn('Blog pipeline tables migration:', e);
+    await client.query(sql);
   } finally {
     client.release();
   }

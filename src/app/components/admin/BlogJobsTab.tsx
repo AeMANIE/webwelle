@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/admin-fetch';
 import BlogJobDetail from './BlogJobDetail';
 
 interface BlogJobRow {
@@ -94,7 +95,7 @@ export default function BlogJobsTab() {
     setStarting(true);
     setMessage(null);
     try {
-      const res = await fetch('/api/blog/start-pipeline', {
+      const res = await adminFetch('/api/blog/start-pipeline', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ leadToken: token, forceResearch }),
