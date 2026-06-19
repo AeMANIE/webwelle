@@ -5,6 +5,11 @@ import sanitizeHtml from 'sanitize-html';
 import { Calendar, User, ArrowLeft, Clock, Eye } from 'lucide-react';
 import { getBlogPostById } from '@/lib/blog-database';
 import { getImagesForPost } from '@/lib/blog-jobs-database';
+import {
+  estimateReadTimeMinutes,
+  formatBlogDate,
+  normalizeBlogContent,
+} from '@/lib/blog-post-display';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,12 +34,13 @@ export default async function AdminBlogPreviewPage({
     notFound();
   }
 
-  const images = await getImagesForPost(post.id);
+  const images = await getImagesForPost(post.id).catch(() => []);
   const featured = images.find((i) => i.role === 'featured') || (post.featuredImageUrl
     ? { url: post.featuredImageUrl, alt: post.title, width: 1200, height: 630, role: 'featured' as const }
     : undefined);
   const publishDate = post.publishedAt || post.createdAt;
-  const readTime = Math.ceil(post.content.split(/\s+/).filter(Boolean).length / 200);
+  const content = normalizeBlogContent(post.content);
+  const readTime = estimateReadTimeMinutes(content);
   const isDraft = post.status !== 'published';
 
   return (
@@ -80,7 +86,7 @@ export default async function AdminBlogPreviewPage({
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              <span>{new Date(publishDate).toLocaleDateString('de-DE')}</span>
+              <span>{formatBlogDate(publishDate)}</span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
@@ -110,7 +116,7 @@ export default async function AdminBlogPreviewPage({
           <div
             className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-a:text-primary"
             dangerouslySetInnerHTML={{
-              __html: sanitizeHtml(post.content, SANITIZE_OPTIONS),
+              __html: sanitizeHtml(content, SANITIZE_OPTIONS),
             }}
           />
         </div>

@@ -3,6 +3,7 @@ import { pool } from './database';
 import { BLOG_PIPELINE_MIGRATION_SQL } from './blog-pipeline-migration-sql';
 import { BLOG_PROMPT_VERSION, FINAL_JOB_STATUSES, type BlogPublishMode, type BlogSourceType } from './blog-constants';
 import { stripUncontrolledImages } from './blog-guards';
+import { safeGetImagesForPost } from './blog-images-query';
 
 export type BlogJobStatus =
   | 'queued'
@@ -898,23 +899,7 @@ export async function savePostImages(
 export async function getImagesForPost(postId: string): Promise<BlogImageInput[]> {
   const client = await pool.connect();
   try {
-    const result = await client.query(
-      `SELECT * FROM blog_images WHERE COALESCE(post_id, blog_post_id) = $1 ORDER BY position`,
-      [postId]
-    );
-    return result.rows.map((row) => ({
-      role: (row.image_role || 'featured') as BlogImageInput['role'],
-      url: row.file_url,
-      alt: row.alt_text,
-      caption: row.caption,
-      width: row.width,
-      height: row.height,
-      mimeType: row.mime_type,
-      storagePath: row.file_path,
-      blurDataUrl: row.blur_data_url,
-      promptUsed: row.prompt_used,
-      position: row.position,
-    }));
+    return await safeGetImagesForPost(client, postId);
   } finally {
     client.release();
   }

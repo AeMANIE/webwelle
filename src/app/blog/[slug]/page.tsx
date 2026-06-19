@@ -9,6 +9,13 @@ import Footer from '../../components/Footer';
 import ScrollToTop from '../../components/ScrollToTop';
 import { getBlogPostBySlug } from '@/lib/blog-database';
 import { getImagesForPost } from '@/lib/blog-jobs-database';
+import {
+  estimateReadTimeMinutes,
+  formatBlogDate,
+  normalizeBlogContent,
+  normalizePostTags,
+  safeToIsoDate,
+} from '@/lib/blog-post-display';
 import { getRedisClient } from '@/lib/redis';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://webwelle.com';
@@ -40,7 +47,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return { title: 'Artikel nicht gefunden | WebWelle' };
   }
 
-  const images = await getImagesForPost(post.id);
+  const images = await getImagesForPost(post.id).catch(() => []);
   const featured = images.find((i) => i.role === 'featured') || images[0];
   const description = post.metaDescription || post.excerpt || '';
   const canonical = `${BASE_URL}/blog/${slug}`;
@@ -82,12 +89,16 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     notFound();
   }
 
-  const images = await getImagesForPost(post.id);
+  const images = await getImagesForPost(post.id).catch(() => []);
   const featured = images.find((i) => i.role === 'featured');
   const inlineImages = images.filter((i) => i.role === 'inline');
+  const content = normalizeBlogContent(post.content);
+  const tags = normalizePostTags(post.tags);
   const publishDate = post.publishedAt || post.createdAt;
-  const readTime = Math.ceil(post.content.split(' ').length / 200);
+  const readTime = estimateReadTimeMinutes(content);
   const canonical = `${BASE_URL}/blog/${slug}`;
+  const datePublished = safeToIsoDate(publishDate);
+  const dateModified = safeToIsoDate(post.updatedAt || publishDate);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -95,8 +106,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     headline: post.title,
     description: post.metaDescription || post.excerpt || '',
     author: { '@type': 'Organization', name: post.author || 'WebWelle' },
-    datePublished: new Date(publishDate).toISOString(),
-    dateModified: new Date(post.updatedAt || publishDate).toISOString(),
+    ...(datePublished ? { datePublished } : {}),
+    ...(dateModified ? { dateModified } : {}),
     mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
     image: images.length
       ? images.map((img) => img.url)
@@ -144,7 +155,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              <span>{new Date(publishDate).toLocaleDateString('de-DE')}</span>
+              <span>{formatBlogDate(publishDate)}</span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
@@ -152,9 +163,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             </div>
           </div>
 
-          {post.tags && post.tags.length > 0 && (
+          {tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {post.tags.map((tag: string, index: number) => (
+              {tags.map((tag: string, index: number) => (
                 <span key={index} className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
                   {tag}
                 </span>
@@ -186,7 +197,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           <div
             className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline"
             dangerouslySetInnerHTML={{
-              __html: sanitizeHtml(post.content, {
+              __html: sanitizeHtml(content, {
                 allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1', 'h2']),
                 allowedAttributes: {
                   ...sanitizeHtml.defaults.allowedAttributes,

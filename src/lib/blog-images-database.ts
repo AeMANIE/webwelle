@@ -1,4 +1,5 @@
 import { pool, createTempPool } from './database';
+import { queryBlogImagesByPostId } from './blog-images-query';
 
 // Helper-Funktion: Sichere Datenbankverbindung mit Fallback
 async function getDatabaseClient(): Promise<{ client: import('pg').PoolClient; tempPool: import('pg').Pool | null }> {
@@ -103,8 +104,6 @@ async function ensureBlogImagesTable(): Promise<void> {
   }
 }
 
-const POST_ID_COL = 'COALESCE(post_id, blog_post_id)';
-
 function mapBlogImageRow(row: Record<string, unknown>): BlogImage {
   const postId = (row.post_id ?? row.blog_post_id) as string | undefined;
   return {
@@ -179,12 +178,8 @@ export async function getBlogImagesByPostId(postId: string): Promise<BlogImage[]
   const { client, tempPool } = await getDatabaseClient();
   
   try {
-    const result = await client.query(
-      `SELECT * FROM blog_images WHERE ${POST_ID_COL} = $1 ORDER BY position ASC, created_at ASC`,
-      [postId]
-    );
-    
-    return result.rows.map(mapBlogImageRow);
+    const rows = await queryBlogImagesByPostId(client, postId, 'position, created_at');
+    return rows.map(mapBlogImageRow);
   } catch (error) {
     console.error('Fehler beim Abrufen der Blog-Images:', error);
     // Wenn Tabelle nicht existiert, leere Liste zurückgeben
