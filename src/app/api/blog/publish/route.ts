@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createBlogPost, generateSlug } from '@/lib/blog-database';
+import { createBlogPost, generateSlug, getBlogPostBySourceJobId } from '@/lib/blog-database';
 import { getRedisClient } from '@/lib/redis';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
@@ -156,33 +156,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const slug = (body.slug as string) || generateSlug(title);
-    const { getAllBlogPosts } = await import('@/lib/blog-database');
-    const existingPosts = await getAllBlogPosts();
-    let finalSlug = slug;
-    let counter = 1;
-    while (existingPosts.some((p) => p.slug === finalSlug)) {
-      finalSlug = `${slug}-${counter}`;
-      counter++;
-    }
-
     const featuredFromImages = images.find((i) => i.role === 'featured');
-    const post = await createBlogPost({
-      title,
-      slug: finalSlug,
-      excerpt: excerpt || undefined,
-      content,
-      author: author || 'SEO-Team WebWelle',
-      featuredImageUrl: featuredImageUrl || featuredFromImages?.url || undefined,
-      metaDescription: meta_description || undefined,
-      tags: tags || [],
-      featured: (body.featured as boolean) || false,
-      status: status as 'draft' | 'published',
-      createdBy: 'n8n-automation',
-      promptVersion,
-      sourceJobId,
-      guardPayload: body,
-    });
+    let post =
+      sourceJobId && !Number.isNaN(sourceJobId) && sourceJobId > 0
+        ? await getBlogPostBySourceJobId(sourceJobId)
+        : null;
+
+    if (!post) {
+      const slug = (body.slug as string) || generateSlug(title);
+      const { getAllBlogPosts } = await import('@/lib/blog-database');
+      const existingPosts = await getAllBlogPosts();
+      let finalSlug = slug;
+      let counter = 1;
+      while (existingPosts.some((p) => p.slug === finalSlug)) {
+        finalSlug = `${slug}-${counter}`;
+        counter++;
+      }
+
+      post = await createBlogPost({
+        title,
+        slug: finalSlug,
+        excerpt: excerpt || undefined,
+        content,
+        author: author || 'SEO-Team WebWelle',
+        featuredImageUrl: featuredImageUrl || featuredFromImages?.url || undefined,
+        metaDescription: meta_description || undefined,
+        tags: tags || [],
+        featured: (body.featured as boolean) || false,
+        status: status as 'draft' | 'published',
+        createdBy: 'n8n-automation',
+        promptVersion,
+        sourceJobId,
+        guardPayload: body,
+      });
+    }
 
     if (images.length) {
       await savePostImages(post.id, images);
@@ -198,10 +205,10 @@ export async function POST(request: NextRequest) {
       await redis.del('admin:blog:draft');
       await redis.del('admin:blog:published');
       await redis.del('blog:public:list');
-      await redis.del(`blog:post:${finalSlug}`);
+      await redis.del(`blog:post:${post.slug}`);
     }
 
-    revalidateBlogPaths(finalSlug);
+    revalidateBlogPaths(post.slug);
 
     let jobTracking: { articleId?: number; jobFinished?: boolean } | undefined;
     if (sourceJobId && !Number.isNaN(sourceJobId) && sourceJobId > 0) {

@@ -258,7 +258,7 @@ const openrouterDraftBody = {
   max_tokens: resolveOpenRouterMaxTokens('draft'),
   temperature: 0.7,
   messages: [
-    { role: 'system', content: 'Du bist ein deutscher SEO-Ratgeber-Autor (Prompt blogartikel-v1). Schreibe einen vollstaendigen Blogartikel als HTML mit h1, h2, h3, p, ul, ol, li, strong, em, a, blockquote. KEINE img-Tags. Mindestens 1200 Woerter. Klar, praxisnah, E-E-A-T.' },
+    { role: 'system', content: 'Du bist ein deutscher SEO-Ratgeber-Autor (Prompt blogartikel-v1). Antworte NUR mit HTML (article, h1-h3, p, ul, ol, li) — kein Markdown, keine Einleitung wie \"Hier ist der Artikel\". KEINE img-Tags. Mindestens 1200 Woerter.' },
     { role: 'user', content: 'Schreibe Blog-Draft zu: ' + keyword + '. Ziel: ' + targetWords + ' Woerter. Markenstimme: ' + JSON.stringify(voice) },
   ],
 };
@@ -307,7 +307,7 @@ const openrouterRewriteBody = {
   max_tokens: resolveOpenRouterMaxTokens('rewrite'),
   temperature: 0.5,
   messages: [
-    { role: 'system', content: 'Ueberarbeite den Artikel gemaess blogartikel-v1. HTML ohne img-Tags. Erlaubt: h1-h3, p, ul, ol, li, strong, em, a, blockquote.' },
+    { role: 'system', content: 'Ueberarbeite den Artikel gemaess blogartikel-v1. Antworte NUR mit HTML — kein Markdown, keine Meta-Einleitung. Erlaubt: h1-h3, p, ul, ol, li, strong, em, a, blockquote. KEINE img-Tags.' },
     { role: 'user', content: 'Markenstimme: ' + JSON.stringify(j.brand_voice || {}) + '\\n\\nArtikel:\\n' + draft },
   ],
 };
@@ -333,6 +333,30 @@ const SEO04_MERGE_CODE = `function parseOpenRouter(res) {
   const hint = res.message || (res.status ? 'HTTP ' + res.status : '') || 'choices leer';
   return { text: '', error: 'OPENROUTER: ' + hint };
 }
+function normalizeBlogHtml(raw, keyword) {
+  let text = String(raw || '').trim();
+  text = text.replace(/^Hier ist der[^\\n]{0,120}:?\\s*/i, '');
+  const fence = text.match(/\`\`\`(?:html)?\\s*([\\s\\S]*?)\`\`\`/i);
+  if (fence) text = fence[1].trim();
+  if (!/<[a-z][\\s>/]/i.test(text)) {
+    const parts = [];
+    for (const line of text.split(/\\n+/)) {
+      const t = line.trim();
+      if (!t) continue;
+      if (/^#{1}\\s+/.test(t)) parts.push('<h1>' + t.replace(/^#+\\s+/, '') + '</h1>');
+      else if (/^#{2}\\s+/.test(t)) parts.push('<h2>' + t.replace(/^#+\\s+/, '') + '</h2>');
+      else if (/^#{3}\\s+/.test(t)) parts.push('<h3>' + t.replace(/^#+\\s+/, '') + '</h3>');
+      else if (/^[-*]\\s+/.test(t)) parts.push('<li>' + t.replace(/^[-*]\\s+/, '') + '</li>');
+      else if (/^\\d+\\.\\s+/.test(t)) parts.push('<li>' + t.replace(/^\\d+\\.\\s+/, '') + '</li>');
+      else parts.push('<p>' + t + '</p>');
+    }
+    text = '<article>' + parts.join('\\n') + '</article>';
+  }
+  if (!/<h1/i.test(text)) {
+    text = text.includes('<article') ? text.replace(/<article[^>]*>/i, '<article><h1>' + keyword + '</h1>') : '<article><h1>' + keyword + '</h1>' + text + '</article>';
+  }
+  return text.replace(/<img[^>]*>/gi, '');
+}
 let wh = {};
 try {
   const raw = $('Webhook - Receive Blog Draft Request').first().json;
@@ -347,7 +371,7 @@ if (!raw) {
   llm_error = llm_error || 'OPENROUTER leer — OPENROUTER_API_KEY und OPENROUTER_MODEL in n8n-Coolify prüfen';
   raw = 'Hook: ' + keyword + ' – Entwurf folgt.';
 }
-const htmlContent = raw.includes('<') ? raw : '<article><h1>' + keyword + '</h1><p>' + raw + '</p></article>';
+const htmlContent = normalizeBlogHtml(raw, keyword);
 return [{ json: {
   ...hook,
   ...wh,
@@ -391,7 +415,9 @@ const checks = {
 };
 const wordCount = html.replace(/<[^>]+>/g, ' ').split(/\\s+/).filter(Boolean).length;
 const stubOnly = /Entwurf folgt\\./i.test(html) && wordCount < 50;
-const qa_passed = !j.llm_error && !stubOnly && Object.values(checks).filter(Boolean).length >= 4 && wordCount >= 400;
+const sourceType = j.sourceType || j.source_type || 'client';
+const minWords = sourceType === 'webwelle' ? 250 : 400;
+const qa_passed = !j.llm_error && !stubOnly && Object.values(checks).filter(Boolean).length >= 3 && wordCount >= minWords;
 return [{ json: {
   ...j,
   htmlContent: html,

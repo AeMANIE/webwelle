@@ -137,6 +137,45 @@ export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> 
   }
 }
 
+export async function getBlogPostBySourceJobId(sourceJobId: number): Promise<BlogPost | null> {
+  const { client, tempPool } = await getDatabaseClient();
+
+  try {
+    const result = await client.query(
+      'SELECT * FROM blog_posts WHERE source_job_id = $1 ORDER BY created_at DESC LIMIT 1',
+      [sourceJobId]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      excerpt: row.excerpt,
+      content: row.content,
+      author: row.author,
+      featuredImageUrl: row.featured_image_url,
+      metaDescription: row.meta_description,
+      tags: row.tags || [],
+      featured: row.featured || false,
+      status: row.status,
+      publishedAt: row.published_at ? new Date(row.published_at) : undefined,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at),
+      createdBy: row.created_by,
+      promptVersion: row.prompt_version || undefined,
+      sourceJobId: row.source_job_id != null ? Number(row.source_job_id) : undefined,
+    };
+  } finally {
+    client.release();
+    if (tempPool) await tempPool.end();
+  }
+}
+
 // Blog-Post nach ID
 export async function getBlogPostById(id: string): Promise<BlogPost | null> {
   const { client, tempPool } = await getDatabaseClient();

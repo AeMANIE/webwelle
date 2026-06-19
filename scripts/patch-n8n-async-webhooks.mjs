@@ -94,6 +94,13 @@ if (!j.jobId) {
   return [{ json: { ...j, webwelleCallbackSkipped: true, callbackReason: 'no_jobId' } }];
 }
 
+const dedupeKey = 'publish:' + j.jobId + ':' + idx;
+const sd = $getWorkflowStaticData('global');
+if (sd[dedupeKey]) {
+  return [{ json: { ...j, webwelleCallbackSkipped: true, callbackDedupe: true } }];
+}
+sd[dedupeKey] = Date.now();
+
 if (sourceType === 'webwelle') {
   if (!html.trim()) {
     webwelleCallbackError = 'empty_html';
