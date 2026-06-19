@@ -9,6 +9,7 @@ import {
   PenLine,
   Newspaper,
   Database,
+  Search,
 } from 'lucide-react';
 import DashboardShell from '../../components/dashboard/DashboardShell';
 import BookingsTab from '../../components/admin/BookingsTab';
@@ -18,8 +19,9 @@ import BlogTab from '../../components/admin/BlogTab';
 import BlogJobsTab from '../../components/admin/BlogJobsTab';
 import DatabaseTab from '../../components/admin/DatabaseTab';
 import OffersTab from '../../components/admin/OffersTab';
+import SeoTab from '../../components/admin/SeoTab';
 
-type TabId = 'bookings' | 'customers' | 'invoices' | 'offers' | 'blog' | 'blog-jobs' | 'database';
+type TabId = 'bookings' | 'customers' | 'invoices' | 'offers' | 'blog' | 'blog-jobs' | 'seo' | 'database';
 
 const TAB_META: Record<TabId, { title: string; subtitle: string }> = {
   bookings: {
@@ -45,6 +47,10 @@ const TAB_META: Record<TabId, { title: string; subtitle: string }> = {
   'blog-jobs': {
     title: 'Kunden-Blog',
     subtitle: 'SEO-Pipeline-Jobs und generierte Artikel',
+  },
+  seo: {
+    title: 'SEO',
+    subtitle: 'Keyword-Research und Qualifizierung pro Pipeline-Job',
   },
   database: {
     title: 'Datenbank',
@@ -110,6 +116,7 @@ export default function AdminPage() {
       { id: 'offers', label: 'Leads & Angebote', icon: <FileText className="h-4 w-4" /> },
       { id: 'blog', label: 'Blog-Editor', icon: <PenLine className="h-4 w-4" /> },
       { id: 'blog-jobs', label: 'Kunden-Blog', icon: <Newspaper className="h-4 w-4" /> },
+      { id: 'seo', label: 'SEO', icon: <Search className="h-4 w-4" /> },
       { id: 'database', label: 'Datenbank', icon: <Database className="h-4 w-4" /> },
     ],
     []
@@ -143,6 +150,7 @@ export default function AdminPage() {
       {activeTab === 'offers' && <OffersTab />}
       {activeTab === 'blog' && <BlogTab />}
       {activeTab === 'blog-jobs' && <BlogJobsTab />}
+      {activeTab === 'seo' && <SeoTab />}
       {activeTab === 'database' && <DatabaseTab />}
     </DashboardShell>
   );

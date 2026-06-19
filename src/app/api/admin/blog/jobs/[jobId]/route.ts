@@ -31,5 +31,5 @@ export async function GET(
     failed: articles.filter((a) => a.status === 'failed').length,
   };
 
-  return secureResponse({ job, articles, stats });
+  return secureResponse({ job, articles, stats, keywordData: job.keywordData });
 }

@@ -82,6 +82,27 @@ await httpRequest({
   headers: { 'Content-Type': 'application/json' },
   timeout: 300000,
 });
+try {
+  const cb = String(j.callbackBaseUrl || validated.callbackBaseUrl || '').replace(/\\/$/, '');
+  const apiKey = $env.N8N_API_KEY || $env.WEBWELLE_N8N_API_KEY || '';
+  if (cb && j.jobId && apiKey) {
+    await httpRequest({
+      method: 'POST',
+      url: cb + '/api/blog/pipeline-step',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+      body: JSON.stringify({
+        jobId: j.jobId,
+        step: 'seo01',
+        raw_keywords,
+        root_keywords: j.root_keywords || [],
+        dataforseo_status: j.dataforseo_status,
+        discovery_error: j.discovery_error || null,
+        status: j.status || 'research_done',
+      }),
+      timeout: 15000,
+    });
+  }
+} catch (_) {}
 return [{ json: { ...j, triggeredSeo02: true, raw_keywords_count: raw_keywords.length, _internalWebhookBase: base } }];`;
 
 const SEO02_CHAIN_CODE = `${RESOLVE_FN}
@@ -98,6 +119,25 @@ if (sourceType === 'webwelle' && Array.isArray(j.keywords) && j.keywords.length)
     typeof k === 'object' && k ? { keyword: String(k.keyword || k) } : { keyword: String(k) }
   );
 }
+try {
+  const cb = String(j.callbackBaseUrl || '').replace(/\\/$/, '');
+  const apiKey = $env.N8N_API_KEY || $env.WEBWELLE_N8N_API_KEY || '';
+  if (cb && j.jobId && apiKey) {
+    await httpRequest({
+      method: 'POST',
+      url: cb + '/api/blog/pipeline-step',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+      body: JSON.stringify({
+        jobId: j.jobId,
+        step: 'seo02',
+        approved_blog_keywords: blogs,
+        approved_service_keywords: scored.approved_service_keywords || [],
+        sourceType,
+      }),
+      timeout: 15000,
+    });
+  }
+} catch (_) {}
 let triggered = 0;
 for (let i = 0; i < blogs.length; i++) {
   const kw = blogs[i];

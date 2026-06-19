@@ -4,6 +4,7 @@ import { BLOG_PIPELINE_MIGRATION_SQL } from './blog-pipeline-migration-sql';
 import { BLOG_PROMPT_VERSION, FINAL_JOB_STATUSES, type BlogPublishMode, type BlogSourceType } from './blog-constants';
 import { stripUncontrolledImages } from './blog-guards';
 import { safeGetImagesForPost } from './blog-images-query';
+import { mergeKeywordDataRoot } from './blog-pipeline-keyword-data';
 
 export type BlogJobStatus =
   | 'queued'
@@ -915,6 +916,27 @@ export async function updateBlogJobKeywordData(
       jobId,
       JSON.stringify(keywordData),
     ]);
+  } finally {
+    client.release();
+  }
+}
+
+export async function mergeBlogJobKeywordData(
+  jobId: number,
+  partial: Record<string, unknown>
+): Promise<boolean> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query('SELECT keyword_data FROM blog_jobs WHERE id = $1', [jobId]);
+    if (result.rows.length === 0) return false;
+
+    const current = (result.rows[0].keyword_data as Record<string, unknown> | null) || {};
+    const merged = mergeKeywordDataRoot(current, partial);
+    await client.query('UPDATE blog_jobs SET keyword_data = $2 WHERE id = $1', [
+      jobId,
+      JSON.stringify(merged),
+    ]);
+    return true;
   } finally {
     client.release();
   }
