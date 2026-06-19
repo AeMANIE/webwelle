@@ -9,6 +9,10 @@ import BlogImageGallery from './BlogImageGallery';
 import ImageInsertModal from './ImageInsertModal';
 import type { BlogPost } from '@/lib/blog-database';
 import { getBlogPreviewUrl } from '@/lib/blog-preview';
+import {
+  isBlogStubContent,
+  normalizeHtmlForQuill,
+} from '@/lib/blog-html-for-editor';
 
 // Erweitertes Interface, das auch string für Datumsfelder akzeptiert (für Kompatibilität)
 interface BlogPostInput extends Omit<Partial<BlogPost>, 'publishedAt' | 'createdAt' | 'updatedAt'> {
@@ -92,6 +96,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
   const [activeTab, setActiveTab] = useState<'content' | 'seo' | 'settings' | 'images'>('content');
   const [selectedImageFormat, setSelectedImageFormat] = useState<'landscape' | 'square' | 'portrait' | undefined>();
   const [imageInsertModal, setImageInsertModal] = useState<{ url: string } | null>(null);
+  const [importingPipeline, setImportingPipeline] = useState(false);
   const quillEditorRef = useRef<{ 
     insertImageAtCursor?: (url: string, size?: 'small' | 'medium' | 'large' | 'full', align?: 'left' | 'center' | 'right') => void;
     saveCursorPosition?: () => void;
@@ -115,6 +120,12 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
       setSlug(generatedSlug);
     }
   }, [title, slug, post]);
+
+  useEffect(() => {
+    if (post?.content != null) {
+      setContent(normalizeHtmlForQuill(post.content));
+    }
+  }, [post?.id]);
 
   // Auto-Save (alle 30 Sekunden)
   useEffect(() => {
@@ -233,6 +244,30 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
       ? getBlogPreviewUrl({ id: post.id, slug, status })
       : undefined;
 
+  async function importPipelineContent() {
+    if (!post?.id) return;
+    setImportingPipeline(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/admin/blog/${post.id}/import-pipeline`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || data.message || 'Import fehlgeschlagen');
+      }
+      if (data.post?.content) {
+        setContent(normalizeHtmlForQuill(data.post.content));
+      }
+      setSuccess(data.message || 'Pipeline-Text importiert.');
+      setTimeout(() => setSuccess(''), 4000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Import fehlgeschlagen');
+    } finally {
+      setImportingPipeline(false);
+    }
+  }
+
   // Drag & Drop für Bilder
   const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
@@ -294,6 +329,10 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
   };
 
   const seoAnalysis = analyzeSEO(title, metaDescription, content);
+
+  const showPipelineImport =
+    Boolean(post?.id && post.sourceJobId) &&
+    (isBlogStubContent(content) || seoAnalysis.wordCount < 80);
 
   // Quill-Module werden jetzt im QuillEditor selbst definiert (mit Bild-Upload-Handler)
   const quillModules = {
@@ -428,6 +467,23 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
           {/* Content Tab */}
           {activeTab === 'content' && (
             <div className="space-y-6">
+              {showPipelineImport && (
+                <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+                  <p className="text-foreground mb-2">
+                    Der gespeicherte Text wirkt wie ein Pipeline-Stub oder ist sehr kurz. Du kannst
+                    den vollständigen SEO-Text aus dem verknüpften Job #{post?.sourceJobId}{' '}
+                    importieren (Tab Kunden-Blog → Job-Details).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={importPipelineContent}
+                    disabled={importingPipeline}
+                    className="rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-brand-foreground disabled:opacity-50"
+                  >
+                    {importingPipeline ? 'Importiere…' : 'Pipeline-Text importieren'}
+                  </button>
+                </div>
+              )}
 
               {/* Titel */}
               <div>

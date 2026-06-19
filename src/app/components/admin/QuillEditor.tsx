@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle } from 'react';
-// Quill CSS importieren
 import 'quill/dist/quill.snow.css';
+import { normalizeHtmlForQuill } from '@/lib/blog-html-for-editor';
 
 // React 19 Kompatibilität: react-quill verwendet findDOMNode, das entfernt wurde
 // Wir verwenden Quill direkt ohne react-quill Wrapper
@@ -351,7 +351,7 @@ const QuillEditor = forwardRef<any, QuillEditorProps>(({ value, onChange, module
 
         // Initialen Wert setzen
         if (value) {
-          quill.root.innerHTML = value;
+          quill.clipboard.dangerouslyPasteHTML(normalizeHtmlForQuill(value));
         }
 
         // Hilfsfunktion: Verschiebe-Buttons für Bilder hinzufügen
@@ -715,8 +715,13 @@ const QuillEditor = forwardRef<any, QuillEditorProps>(({ value, onChange, module
 
   // Wert aktualisieren, wenn sich value ändert (von außen)
   useEffect(() => {
-    if (quillInstanceRef.current && value !== quillInstanceRef.current.root.innerHTML) {
-      quillInstanceRef.current.root.innerHTML = value;
+    if (!quillInstanceRef.current || value === undefined) return;
+    const normalized = normalizeHtmlForQuill(value);
+    const current = quillInstanceRef.current.root.innerHTML;
+    if (normalized !== current && value !== current) {
+      const sel = quillInstanceRef.current.getSelection();
+      quillInstanceRef.current.clipboard.dangerouslyPasteHTML(normalized);
+      if (sel) quillInstanceRef.current.setSelection(sel);
     }
   }, [value]);
 

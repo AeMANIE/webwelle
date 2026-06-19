@@ -435,6 +435,24 @@ export async function getBlogArticleByJobIndex(
   }
 }
 
+/** Best available HTML from blog_articles for a job (longest content). */
+export async function getPipelineHtmlForJob(jobId: number): Promise<string | null> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT html_content FROM blog_articles
+       WHERE job_id = $1 AND html_content IS NOT NULL AND length(trim(html_content)) > 0
+       ORDER BY word_count DESC NULLS LAST, article_index ASC
+       LIMIT 1`,
+      [jobId]
+    );
+    const html = result.rows[0]?.html_content;
+    return html ? String(html) : null;
+  } finally {
+    client.release();
+  }
+}
+
 export async function setBlogJobErrorMessage(jobId: number, message: string): Promise<void> {
   const client = await pool.connect();
   try {

@@ -19,6 +19,7 @@ interface BlogPost {
   createdAt: string;
   publishedAt?: string;
   tags?: string[];
+  sourceJobId?: number;
 }
 
 export default function BlogTab() {
@@ -68,6 +69,25 @@ export default function BlogTab() {
       console.error('Fehler beim Löschen:', error);
     }
   };
+
+  async function openEditor(post: BlogPost | null) {
+    if (!post?.id) {
+      setEditingPost(null);
+      setShowEditor(true);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/blog/${post.id}`);
+      if (res.ok) {
+        setEditingPost(await res.json());
+      } else {
+        setEditingPost(post);
+      }
+    } catch {
+      setEditingPost(post);
+    }
+    setShowEditor(true);
+  }
 
   if (loading) {
     return <div className="text-center py-8">Lade Blog-Artikel...</div>;
@@ -119,10 +139,7 @@ export default function BlogTab() {
           </select>
           <button
             type="button"
-            onClick={() => {
-              setEditingPost(null);
-              setShowEditor(true);
-            }}
+            onClick={() => openEditor(null)}
             className="flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-brand-foreground hover:bg-brand/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -202,10 +219,7 @@ export default function BlogTab() {
                 
                 <div className="flex items-center gap-2 ml-4">
                   <button
-                    onClick={() => {
-                      setEditingPost(post);
-                      setShowEditor(true);
-                    }}
+                    onClick={() => openEditor(post)}
                     className="p-2 text-primary hover:bg-primary/10 rounded transition-colors"
                     title="Bearbeiten"
                   >
