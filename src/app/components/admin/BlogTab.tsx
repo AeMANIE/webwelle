@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, Eye, Calendar, Tag } from 'lucide-react';
 import BlogEditor from './BlogEditor';
 import BlogGenerateModal from './BlogGenerateModal';
 import { DashboardPanel } from '../dashboard/DashboardPanel';
+import { getBlogPreviewUrl } from '@/lib/blog-preview';
 
 interface BlogPost {
   id: string;
@@ -26,6 +27,7 @@ export default function BlogTab() {
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all');
+  const [pendingJobId, setPendingJobId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchPosts();
@@ -126,10 +128,22 @@ export default function BlogTab() {
             <Plus className="w-4 h-4" />
             Neuer Artikel
           </button>
-          <BlogGenerateModal />
+          <BlogGenerateModal
+            onStarted={(jobId) => {
+              setPendingJobId(jobId);
+              setStatusFilter('draft');
+            }}
+          />
         </div>
       }
     >
+      {pendingJobId && (
+        <div className="mx-6 mt-4 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          Job #{pendingJobId} läuft — der Entwurf erscheint in ca. 5–10 Min. unter{' '}
+          <strong className="text-foreground">Entwürfe</strong>. Danach bearbeiten, Vorschau
+          prüfen und veröffentlichen.
+        </div>
+      )}
       {filtered.length === 0 ? (
         <div className="px-6 py-12 text-center text-muted-foreground">
           Keine Blog-Artikel gefunden.
@@ -198,11 +212,11 @@ export default function BlogTab() {
                     <Edit className="w-4 h-4" />
                   </button>
                   <a
-                    href={`/blog/${post.slug}`}
+                    href={getBlogPreviewUrl(post)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-2 text-primary hover:bg-primary/10 rounded transition-colors"
-                    title="Vorschau"
+                    title={post.status === 'draft' ? 'Admin-Vorschau (Entwurf)' : 'Live-Vorschau'}
                   >
                     <Eye className="w-4 h-4" />
                   </a>

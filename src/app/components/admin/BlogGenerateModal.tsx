@@ -78,7 +78,7 @@ export default function BlogGenerateModal({ onStarted }: Props) {
       setMessage(
         String(
           data.message ||
-            `Job #${data.jobId} gestartet — Pipeline läuft im Hintergrund (typisch 5–10 Min.).`
+            `Job #${data.jobId} gestartet. Entwurf erscheint in 5–10 Min. unter Blog-Editor → Entwürfe. Dort bearbeiten, Vorschau prüfen und veröffentlichen.`
         )
       );
       onStarted?.(Number(data.jobId));

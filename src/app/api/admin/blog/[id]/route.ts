@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/api-security';
 import { getBlogPostById, updateBlogPost, deleteBlogPost } from '@/lib/blog-database';
 import { getRedisClient } from '@/lib/redis';
+import { revalidateBlogPaths } from '@/lib/blog-revalidation';
 
 export async function GET(
   request: NextRequest,
@@ -92,12 +93,13 @@ export async function PUT(
         await redis.del(`blog:post:${updated.slug}`);
         await redis.del('blog:public:list');
       } catch (cacheError) {
-        // Redis Fehler ignorieren - Cache wird beim nächsten Request neu geladen
         if (process.env.NODE_ENV === 'development') {
           console.warn('⚠️ Redis Cache-Invalidierung-Fehler (ignoriert):', cacheError);
         }
       }
     }
+
+    revalidateBlogPaths(updated.status === 'published' ? updated.slug : undefined);
 
     return NextResponse.json(updated);
   } catch (error) {

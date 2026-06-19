@@ -8,6 +8,7 @@ import 'react-quill/dist/quill.snow.css';
 import BlogImageGallery from './BlogImageGallery';
 import ImageInsertModal from './ImageInsertModal';
 import type { BlogPost } from '@/lib/blog-database';
+import { getBlogPreviewUrl } from '@/lib/blog-preview';
 
 // Erweitertes Interface, das auch string für Datumsfelder akzeptiert (für Kompatibilität)
 interface BlogPostInput extends Omit<Partial<BlogPost>, 'publishedAt' | 'createdAt' | 'updatedAt'> {
@@ -138,13 +139,19 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
     };
   }, [title, slug, content, excerpt, metaDescription, post?.id]);
 
-  const handleSave = async (isAutoSave = false) => {
+  const handleSave = async (
+    isAutoSave = false,
+    overrideStatus?: 'draft' | 'published'
+  ) => {
     if (!title || !slug || !content) {
       if (!isAutoSave) {
         setError('Titel, Slug und Inhalt sind erforderlich');
       }
       return;
     }
+
+    const saveStatus: 'draft' | 'published' = overrideStatus
+      ?? (isAutoSave ? (post?.status || 'draft') : status);
 
     setSaving(true);
     setError('');
@@ -156,16 +163,14 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
         .map(t => t.trim())
         .filter(t => t.length > 0);
 
-      // Datum zusammenstellen
       let publishedAtDate: string | null = null;
-      if (status === 'published' && !isAutoSave) {
+      if (saveStatus === 'published' && !isAutoSave) {
         if (publishedAt && publishedAtTime) {
           publishedAtDate = `${publishedAt}T${publishedAtTime}:00`;
         } else {
-          publishedAtDate = new Date().toISOString(); // Standard: aktuelles Datum
+          publishedAtDate = new Date().toISOString();
         }
-      } else if (post?.publishedAt && !isAutoSave) {
-        // Bestehendes Datum beibehalten
+      } else if (post?.publishedAt && !isAutoSave && saveStatus === 'published') {
         const date = post.publishedAt instanceof Date ? post.publishedAt : new Date(post.publishedAt);
         publishedAtDate = date.toISOString();
       }
@@ -180,7 +185,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
         metaDescription: metaDescription || null,
         tags: tagsArray,
         featured,
-        status: isAutoSave ? (post?.status || 'draft') : status, // Status bei Auto-Save nicht ändern
+        status: saveStatus,
         publishedAt: publishedAtDate,
       };
 
@@ -198,10 +203,18 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
         throw new Error(data.error || 'Fehler beim Speichern');
       }
 
+      if (!isAutoSave && overrideStatus) {
+        setStatus(overrideStatus);
+      }
+
       lastSavedRef.current = JSON.stringify({ title, slug, content, excerpt, metaDescription });
-      
+
       if (!isAutoSave) {
-        setSuccess('Artikel erfolgreich gespeichert!');
+        setSuccess(
+          saveStatus === 'published'
+            ? 'Artikel veröffentlicht!'
+            : 'Artikel erfolgreich gespeichert!'
+        );
         setTimeout(() => {
           onSave();
         }, 1000);
@@ -214,6 +227,11 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
       setSaving(false);
     }
   };
+
+  const previewHref =
+    post?.id && slug
+      ? getBlogPreviewUrl({ id: post.id, slug, status })
+      : undefined;
 
   // Drag & Drop für Bilder
   const handleDrop = useCallback(async (e: React.DragEvent) => {
@@ -298,9 +316,9 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
             {post?.id ? 'Blog-Post bearbeiten' : 'Neuen Blog-Post erstellen'}
           </h2>
           <div className="flex items-center gap-2">
-            {post?.id && (
+            {post?.id && previewHref && (
               <a
-                href={`/blog/${slug || post.slug}`}
+                href={previewHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
@@ -873,10 +891,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
         </button>
         {status === 'draft' && (
           <button
-            onClick={() => {
-              setStatus('published');
-              setTimeout(() => handleSave(false), 100);
-            }}
+            onClick={() => handleSave(false, 'published')}
             disabled={saving || !title || !content}
             className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >

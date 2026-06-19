@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth, secureResponse, validateAPIInput } from '@/lib/api-security';
 import { getAllBlogPosts, createBlogPost } from '@/lib/blog-database';
 import { getRedisClient } from '@/lib/redis';
+import { revalidateBlogPaths } from '@/lib/blog-revalidation';
 
 export async function GET(request: NextRequest) {
   try {
@@ -127,6 +128,10 @@ export async function POST(request: NextRequest) {
       } catch (cacheError) {
         console.warn('⚠️ Redis Cache-Invalidierung-Fehler (ignoriert):', cacheError);
       }
+    }
+
+    if (post.status === 'published') {
+      revalidateBlogPaths(post.slug);
     }
 
     return secureResponse(post, 201);
