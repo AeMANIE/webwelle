@@ -438,13 +438,27 @@ export async function getBlogArticleByJobIndex(
 export async function setBlogJobErrorMessage(jobId: number, message: string): Promise<void> {
   const client = await pool.connect();
   try {
+    const formatted = formatBlogLlmError(message);
     await client.query(
       `UPDATE blog_jobs SET error_message = $2, last_error_at = NOW() WHERE id = $1`,
-      [jobId, message.slice(0, 2000)]
+      [jobId, formatted.slice(0, 2000)]
     );
   } finally {
     client.release();
   }
+}
+
+function formatBlogLlmError(raw: string): string {
+  if (/402/.test(raw) && /afford|Credits|credit/i.test(raw)) {
+    const afford = raw.match(/afford (\d+)/i)?.[1];
+    return afford
+      ? `OpenRouter-Guthaben reicht nicht (Key erlaubt max. ~${afford} Tokens). Bitte Key-Limit unter https://openrouter.ai/settings/keys erhöhen oder Credits aufladen. In n8n optional: OPENROUTER_MAX_TOKENS=1200`
+      : 'OpenRouter-Guthaben reicht nicht (402). Key-Limit erhöhen oder OPENROUTER_MAX_TOKENS=1200 in n8n setzen.';
+  }
+  if (/402/.test(raw)) {
+    return 'OpenRouter 402: Credits/Key-Limit erschöpft. Limit erhöhen oder OPENROUTER_MAX_TOKENS in n8n senken.';
+  }
+  return raw;
 }
 
 /** WebWelle publish callback: blog_posts + Job-Tracking in blog_articles. */

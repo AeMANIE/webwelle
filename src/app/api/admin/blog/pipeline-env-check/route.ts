@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     },
     n8nWriterEnv: {
       openRouterNote:
-        'OPENROUTER_API_KEY + OPENROUTER_MODEL in n8n-Coolify (seo-04). Empfohlen: anthropic/claude-3.5-haiku — nicht google/gemma-2-9b-it:free.',
+        'OPENROUTER_API_KEY + OPENROUTER_MODEL in n8n-Coolify (seo-04). Empfohlen: openai/gpt-4o-mini — bei 402 OPENROUTER_MAX_TOKENS=1200.',
       dataForSeoNote:
         'DATAFORSEO_LOGIN + DATAFORSEO_PASSWORD in n8n-Coolify (seo-01 + seo-03). Demo-Konto: API Access unter dataforseo.com.',
     },

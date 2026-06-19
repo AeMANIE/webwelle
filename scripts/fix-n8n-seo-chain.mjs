@@ -231,8 +231,8 @@ await httpRequest({
 });
 return [{ json: { ...j, triggeredSeo06: true, _internalWebhookBase: base } }];`;
 
-const OPENROUTER_MODEL_DEFAULT = 'anthropic/claude-3.5-haiku';
-const OPENROUTER_MODEL_FALLBACKS = ['openai/gpt-4o-mini', 'google/gemini-2.0-flash-001'];
+const OPENROUTER_MODEL_DEFAULT = 'openai/gpt-4o-mini';
+const OPENROUTER_MODEL_FALLBACKS = ['google/gemini-2.0-flash-001', 'anthropic/claude-3.5-haiku'];
 
 const OPENROUTER_MODEL_RESOLVE_FN = `function resolveOpenRouterModel() {
   const blocked = /gemma-2-9b-it|:free$/i;
@@ -243,11 +243,87 @@ const OPENROUTER_MODEL_RESOLVE_FN = `function resolveOpenRouterModel() {
 function resolveOpenRouterMaxTokens(kind) {
   const fromEnv = Number($env.OPENROUTER_MAX_TOKENS || $env.WEBWELLE_OPENROUTER_MAX_TOKENS || 0);
   if (fromEnv > 0) {
-    const cap = Math.min(Math.max(fromEnv, 512), 8192);
-    return kind === 'rewrite' ? Math.min(Math.round(cap * 0.75), cap - 256) : cap;
+    const cap = Math.min(Math.max(fromEnv, 400), 8192);
+    return kind === 'rewrite' ? Math.min(Math.round(cap * 0.7), cap - 200) : cap;
   }
-  return kind === 'rewrite' ? 2200 : 2800;
+  return kind === 'rewrite' ? 900 : 1200;
 }`;
+
+const OPENROUTER_HTTP_CALL_BLOCK = `${OPENROUTER_MODEL_RESOLVE_FN}
+const httpRequest = this.helpers.httpRequest.bind(this.helpers);
+
+function parseAffordableTokens(errMsg) {
+  const m = String(errMsg || '').match(/can only afford (\\d+)/i);
+  return m ? Math.max(400, Math.floor(Number(m[1]) * 0.9)) : null;
+}
+
+async function callOpenRouter(body) {
+  const apiKey = $env.OPENROUTER_API_KEY;
+  if (!apiKey) return { error: { message: 'OPENROUTER_API_KEY fehlt in n8n-Coolify', code: 401 } };
+  let maxTok = Number(body.max_tokens) || resolveOpenRouterMaxTokens('draft');
+  const headers = {
+    Authorization: 'Bearer ' + apiKey,
+    'Content-Type': 'application/json',
+    'HTTP-Referer': 'https://webwelle.com',
+    'X-Title': 'WebWelle Blog Pipeline',
+  };
+  let lastMsg = '';
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const reqBody = { ...body, max_tokens: maxTok };
+    try {
+      const res = await httpRequest({
+        method: 'POST',
+        url: 'https://openrouter.ai/api/v1/chat/completions',
+        headers,
+        body: JSON.stringify(reqBody),
+        returnFullResponse: true,
+        ignoreHttpStatusErrors: true,
+      });
+      const status = res.statusCode ?? res.status ?? 200;
+      let data = res.body;
+      if (typeof data === 'string') {
+        try { data = JSON.parse(data); } catch (_) { data = { error: { message: data } }; }
+      }
+      if (status === 402 || data?.error?.code === 402) {
+        lastMsg = data?.error?.message || JSON.stringify(data?.error || data);
+        const afford = parseAffordableTokens(lastMsg);
+        if (afford && afford < maxTok) { maxTok = afford; continue; }
+        maxTok = Math.max(400, Math.floor(maxTok * 0.55));
+        if (attempt < 4) continue;
+        return {
+          statusCode: 402,
+          error: {
+            message: '402 - OpenRouter Credits reichen nicht (max. ~' + (parseAffordableTokens(lastMsg) || maxTok) + ' Tokens). Key-Limit erhöhen: https://openrouter.ai/settings/keys',
+            code: 402,
+          },
+        };
+      }
+      if (status >= 400) {
+        return { statusCode: status, error: data?.error || { message: String(status) } };
+      }
+      return data;
+    } catch (e) {
+      lastMsg = e?.message || String(e);
+      if (attempt < 4) continue;
+      return { error: { message: lastMsg } };
+    }
+  }
+  return { error: { message: 'OPENROUTER: ' + (lastMsg || '402 Credits erschoepft'), code: 402 } };
+}`;
+
+const SEO04_DRAFT_LLM_CODE = `${OPENROUTER_HTTP_CALL_BLOCK}
+const j = items[0].json;
+const result = await callOpenRouter(j.openrouterDraftBody);
+return [{ json: result }];`;
+
+const SEO04_REWRITE_LLM_CODE = `${OPENROUTER_HTTP_CALL_BLOCK}
+const j = items[0].json;
+const skipEnv = String($env.OPENROUTER_SKIP_REWRITE || $env.WEBWELLE_OPENROUTER_SKIP_REWRITE || '1').match(/^(1|true|yes)$/i);
+if (skipEnv || j.draft_llm_error) {
+  return [{ json: { choices: [{ message: { content: j.draft || j.htmlContent || '' } }], rewrite_skipped: true } }];
+}
+const result = await callOpenRouter(j.openrouterRewriteBody);
+return [{ json: result }];`;
 
 const SEO04_VOICE_CONTEXT_CODE = `${OPENROUTER_MODEL_RESOLVE_FN}
 const b = items[0].json.body && typeof items[0].json.body === 'object' ? items[0].json.body : items[0].json;
@@ -255,13 +331,13 @@ const brief = b.content_brief || { keyword: b.approved_blog_keyword || 'Blog', t
 const voice = b.brand_voice || { voice: 'klar, direkt', humor: 'leicht', stories: ['Kundenbeispiel'], opinions: ['ehrliche Bewertung'], stats: ['bis zu 30% Ersparnis'], proof_points: ['regionale Erfahrung'], forbidden_phrases: ['revolutionaer'], preferred_phrases: ['praxisnah'] };
 const model = resolveOpenRouterModel();
 const keyword = String(brief.keyword || b.approved_blog_keyword || 'Blog');
-const targetWords = Number(brief.target_words || 1800);
+const targetWords = Math.min(Number(brief.target_words || 900), 900);
 const openrouterDraftBody = {
   model,
   max_tokens: resolveOpenRouterMaxTokens('draft'),
   temperature: 0.7,
   messages: [
-    { role: 'system', content: 'Du bist ein deutscher SEO-Ratgeber-Autor (Prompt blogartikel-v1). Antworte NUR mit HTML (article, h1-h3, p, ul, ol, li) — kein Markdown, keine Einleitung wie \"Hier ist der Artikel\". KEINE img-Tags. Mindestens 1200 Woerter.' },
+    { role: 'system', content: 'Du bist ein deutscher SEO-Ratgeber-Autor (Prompt blogartikel-v1). Antworte NUR mit HTML (article, h1-h3, p, ul, ol, li) — kein Markdown, keine Einleitung. KEINE img-Tags. Ziel: 600-900 Woerter, kompakt und praxisnah.' },
     { role: 'user', content: 'Schreibe Blog-Draft zu: ' + keyword + '. Ziel: ' + targetWords + ' Woerter. Markenstimme: ' + JSON.stringify(voice) },
   ],
 };
@@ -634,19 +710,15 @@ function patchSeo04(wf) {
   if (voice) voice.parameters.jsCode = SEO04_VOICE_CONTEXT_CODE;
   if (validateHook) validateHook.parameters.jsCode = SEO04_VALIDATE_HOOK_CODE;
 
-  for (const httpNode of [draftHttp, rewriteHttp]) {
-    if (!httpNode) continue;
-    httpNode.parameters.sendHeaders = true;
-    httpNode.parameters.headerParameters = OPENROUTER_HTTP_HEADERS.headerParameters;
-    httpNode.parameters.specifyBody = 'json';
-    httpNode.parameters.sendBody = true;
-    httpNode.parameters.options = { ...(httpNode.parameters.options || {}), ignoreResponseCode: true, timeout: 120000 };
-    if (httpNode.name === 'HTTP - LLM Draft Generation') {
-      httpNode.parameters.jsonBody = '={{ $json.openrouterDraftBody }}';
-    } else {
-      httpNode.parameters.jsonBody = '={{ $json.openrouterRewriteBody }}';
-    }
+  function convertToOpenRouterCode(httpNode, jsCode) {
+    if (!httpNode) return;
+    httpNode.type = 'n8n-nodes-base.code';
+    httpNode.typeVersion = 2;
+    httpNode.parameters = { jsCode, mode: 'runOnceForAllItems' };
   }
+
+  convertToOpenRouterCode(draftHttp, SEO04_DRAFT_LLM_CODE);
+  convertToOpenRouterCode(rewriteHttp, SEO04_REWRITE_LLM_CODE);
   return wf;
 }
 
