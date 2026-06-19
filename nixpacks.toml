@@ -1,12 +1,23 @@
-# Coolify/Nixpacks: Dev-Dependencies für next build (TypeScript, Tailwind) mitinstallieren
+# Coolify/Nixpacks – Next.js standalone (next.config: output = 'standalone')
+# Tipp: In Coolify unter Build Pack „Dockerfile“ wählen (kleineres Image, stabilerer Export).
+
 [variables]
 NPM_CONFIG_PRODUCTION = "false"
+NODE_ENV = "production"
 
 [phases.install]
 cmds = ["npm ci --include=dev"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = [
+  "npm run build",
+  "cp -r public .next/standalone/",
+  "cp -r .next/static .next/standalone/.next/static",
+  "mkdir -p .next/standalone/src/lib/sql",
+  "cp -r src/lib/sql .next/standalone/src/lib/sql",
+  "npm prune --omit=dev",
+  "rm -rf .next/cache node_modules/.cache"
+]
 
 [start]
-cmd = "npm run start"
+cmd = "sh -c 'cd .next/standalone && node server.js'"
