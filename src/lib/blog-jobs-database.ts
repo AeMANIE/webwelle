@@ -347,7 +347,16 @@ export async function upsertBlogArticle(params: {
   const client = await pool.connect();
   try {
     const failed = params.qaStatus === 'failed';
-    const status: BlogArticleStatus = failed ? 'failed' : 'review_pending';
+    const wordCount = params.wordCount ?? 0;
+    const htmlLen = params.htmlContent?.length ?? 0;
+    const stubOnly =
+      params.htmlContent != null &&
+      /Entwurf folgt\./i.test(params.htmlContent) &&
+      wordCount < 50;
+    const hasUsableContent =
+      params.htmlContent != null && !stubOnly && wordCount >= 100 && htmlLen > 300;
+    const status: BlogArticleStatus =
+      failed && !hasUsableContent ? 'failed' : 'review_pending';
     const cleanHtml = params.htmlContent ? stripUncontrolledImages(params.htmlContent) : null;
 
     const result = await client.query(
@@ -461,6 +470,12 @@ export async function recordWebwellePublishDelivery(params: {
   const qaFailed = params.qaStatus === 'failed';
   const isNew = !(await blogArticleExists(params.jobId, params.articleIndex));
 
+  const wordCount = params.wordCount ?? 0;
+  const htmlLen = params.htmlContent?.length ?? 0;
+  const stubOnly = /Entwurf folgt\./i.test(params.htmlContent) && wordCount < 50;
+  const hasUsableContent = !stubOnly && wordCount >= 100 && htmlLen > 300;
+  const terminalFailed = qaFailed && !hasUsableContent;
+
   const article = await upsertBlogArticle({
     jobId: params.jobId,
     leadToken: job.leadToken,
@@ -470,14 +485,18 @@ export async function recordWebwellePublishDelivery(params: {
     metaDesc: params.metaDesc,
     htmlContent: params.htmlContent,
     wordCount: params.wordCount,
-    qaStatus: qaFailed ? 'failed' : 'passed',
-    qaFailReason: params.llmError ? { llm_error: params.llmError } : qaFailed ? { reason: 'qa_failed' } : null,
+    qaStatus: terminalFailed ? 'failed' : hasUsableContent && qaFailed ? 'partial' : qaFailed ? 'failed' : 'passed',
+    qaFailReason: params.llmError
+      ? { llm_error: params.llmError, partial: hasUsableContent && qaFailed }
+      : qaFailed
+        ? { reason: 'qa_failed' }
+        : null,
     promptVersion: params.promptVersion || BLOG_PROMPT_VERSION,
   });
 
   let jobFinished = false;
   if (isNew) {
-    const updated = await incrementBlogJobProgress(params.jobId, { failed: qaFailed });
+    const updated = await incrementBlogJobProgress(params.jobId, { failed: terminalFailed });
     if (
       updated &&
       updated.completedCount + updated.failedCount >= updated.articleCount

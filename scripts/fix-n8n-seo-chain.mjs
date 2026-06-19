@@ -242,8 +242,11 @@ const OPENROUTER_MODEL_RESOLVE_FN = `function resolveOpenRouterModel() {
 }
 function resolveOpenRouterMaxTokens(kind) {
   const fromEnv = Number($env.OPENROUTER_MAX_TOKENS || $env.WEBWELLE_OPENROUTER_MAX_TOKENS || 0);
-  if (fromEnv > 0) return Math.min(Math.max(fromEnv, 512), 8192);
-  return kind === 'rewrite' ? 2800 : 3500;
+  if (fromEnv > 0) {
+    const cap = Math.min(Math.max(fromEnv, 512), 8192);
+    return kind === 'rewrite' ? Math.min(Math.round(cap * 0.75), cap - 256) : cap;
+  }
+  return kind === 'rewrite' ? 2200 : 2800;
 }`;
 
 const SEO04_VOICE_CONTEXT_CODE = `${OPENROUTER_MODEL_RESOLVE_FN}
@@ -367,6 +370,12 @@ const rewriteParsed = parseOpenRouter($('HTTP - LLM Rewrite With Voice').first()
 const keyword = hook.content_brief?.keyword || hook.approved_blog_keyword || wh.approved_blog_keyword || 'Blog';
 let llm_error = hook.draft_llm_error || rewriteParsed.error || null;
 let raw = rewriteParsed.text || hook.draft || '';
+const draftText = String(hook.draft || '');
+const draftWords = draftText.replace(/<[^>]+>/g, ' ').split(/\\s+/).filter(Boolean).length;
+if (rewriteParsed.error && !hook.draft_llm_error && !rewriteParsed.text && draftWords >= 150) {
+  llm_error = null;
+  raw = draftText;
+}
 if (!raw) {
   llm_error = llm_error || 'OPENROUTER leer — OPENROUTER_API_KEY und OPENROUTER_MODEL in n8n-Coolify prüfen';
   raw = 'Hook: ' + keyword + ' – Entwurf folgt.';
