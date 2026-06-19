@@ -232,15 +232,31 @@ await httpRequest({
 return [{ json: { ...j, triggeredSeo06: true, _internalWebhookBase: base } }];`;
 
 const OPENROUTER_MODEL_DEFAULT = 'anthropic/claude-3.5-haiku';
+const OPENROUTER_MODEL_FALLBACKS = ['openai/gpt-4o-mini', 'google/gemini-2.0-flash-001'];
 
-const SEO04_VOICE_CONTEXT_CODE = `const b = items[0].json.body && typeof items[0].json.body === 'object' ? items[0].json.body : items[0].json;
+const OPENROUTER_MODEL_RESOLVE_FN = `function resolveOpenRouterModel() {
+  const blocked = /gemma-2-9b-it|:free$/i;
+  const raw = String($env.OPENROUTER_MODEL || $env.WEBWELLE_OPENROUTER_MODEL || '').trim();
+  if (raw && !blocked.test(raw)) return raw;
+  return '${OPENROUTER_MODEL_DEFAULT}';
+}
+function resolveOpenRouterMaxTokens(kind) {
+  const fromEnv = Number($env.OPENROUTER_MAX_TOKENS || $env.WEBWELLE_OPENROUTER_MAX_TOKENS || 0);
+  if (fromEnv > 0) return Math.min(Math.max(fromEnv, 512), 8192);
+  return kind === 'rewrite' ? 2800 : 3500;
+}`;
+
+const SEO04_VOICE_CONTEXT_CODE = `${OPENROUTER_MODEL_RESOLVE_FN}
+const b = items[0].json.body && typeof items[0].json.body === 'object' ? items[0].json.body : items[0].json;
 const brief = b.content_brief || { keyword: b.approved_blog_keyword || 'Blog', target_words: 1800 };
 const voice = b.brand_voice || { voice: 'klar, direkt', humor: 'leicht', stories: ['Kundenbeispiel'], opinions: ['ehrliche Bewertung'], stats: ['bis zu 30% Ersparnis'], proof_points: ['regionale Erfahrung'], forbidden_phrases: ['revolutionaer'], preferred_phrases: ['praxisnah'] };
-const model = String($env.OPENROUTER_MODEL || $env.WEBWELLE_OPENROUTER_MODEL || '${OPENROUTER_MODEL_DEFAULT}').trim();
+const model = resolveOpenRouterModel();
 const keyword = String(brief.keyword || b.approved_blog_keyword || 'Blog');
 const targetWords = Number(brief.target_words || 1800);
 const openrouterDraftBody = {
   model,
+  max_tokens: resolveOpenRouterMaxTokens('draft'),
+  temperature: 0.7,
   messages: [
     { role: 'system', content: 'Du bist ein deutscher SEO-Ratgeber-Autor (Prompt blogartikel-v1). Schreibe einen vollstaendigen Blogartikel als HTML mit h1, h2, h3, p, ul, ol, li, strong, em, a, blockquote. KEINE img-Tags. Mindestens 1200 Woerter. Klar, praxisnah, E-E-A-T.' },
     { role: 'user', content: 'Schreibe Blog-Draft zu: ' + keyword + '. Ziel: ' + targetWords + ' Woerter. Markenstimme: ' + JSON.stringify(voice) },
@@ -265,7 +281,8 @@ return [{ json: {
   promptVersion: b.promptVersion || b.prompt_version || 'blogartikel-v1',
 } }];`;
 
-const SEO04_VALIDATE_HOOK_CODE = `function parseOpenRouter(res) {
+const SEO04_VALIDATE_HOOK_CODE = `${OPENROUTER_MODEL_RESOLVE_FN}
+function parseOpenRouter(res) {
   if (!res || typeof res !== 'object') return { text: '', error: 'OPENROUTER: leere Antwort' };
   if (res.error) {
     const msg = typeof res.error === 'string' ? res.error : (res.error.message || JSON.stringify(res.error));
@@ -284,9 +301,11 @@ const draft = draftParsed.text || ('Hook: ' + kw + ' – Entwurf folgt.');
 const weak = !draftParsed.text || draft.length < 200;
 let htmlContent = draft.includes('<') ? draft : '<article><h1>' + kw + '</h1><p>' + draft.replace(/\\n\\n/g, '</p><p>').replace(/\\n/g, '<br>') + '</p></article>';
 htmlContent = htmlContent.replace(/<img[^>]*>/gi, '');
-const model = j.openrouterModel || String($env.OPENROUTER_MODEL || $env.WEBWELLE_OPENROUTER_MODEL || '${OPENROUTER_MODEL_DEFAULT}').trim();
+const model = j.openrouterModel || resolveOpenRouterModel();
 const openrouterRewriteBody = {
   model,
+  max_tokens: resolveOpenRouterMaxTokens('rewrite'),
+  temperature: 0.5,
   messages: [
     { role: 'system', content: 'Ueberarbeite den Artikel gemaess blogartikel-v1. HTML ohne img-Tags. Erlaubt: h1-h3, p, ul, ol, li, strong, em, a, blockquote.' },
     { role: 'user', content: 'Markenstimme: ' + JSON.stringify(j.brand_voice || {}) + '\\n\\nArtikel:\\n' + draft },
@@ -422,13 +441,60 @@ async function api(method, path, body, apiKey, baseUrl) {
   return text ? JSON.parse(text) : null;
 }
 
+const DATAFORSEO_AUTH_HEADER =
+  "={{ 'Basic ' + Buffer.from(($env.DATAFORSEO_LOGIN || '') + ':' + ($env.DATAFORSEO_PASSWORD || '')).toString('base64') }}";
+
+const SEO01_SEED_SERVICES_CODE = `const prior = $('Code - Resolve Target Area From Zip').first().json;
+const pg = items[0].json;
+const j = { ...prior, ...pg, project_id: pg.project_id || pg.id || prior.project_id };
+const base = j.branche_normalized || String(j.branche || '').toLowerCase();
+const seed_services = [base, \`\${base} service\`, \`\${base} angebot\`];
+return [{ json: { ...j, seed_services } }];`;
+
+const SEO01_NORMALIZE_KEYWORD_CODE = `const j = $('Code - Generate Root Keyword Matrix').first().json;
+const k = $('HTTP - DataForSEO Keyword Research').first().json || {};
+const q = $('HTTP - DataForSEO Questions Suggestions').first().json || {};
+const r = $('HTTP - DataForSEO Related Suggestions').first().json || {};
+const apiStatus = (x) => x?.tasks?.[0]?.status_code ?? x?.status_code ?? null;
+const apiMessage = (x) => x?.tasks?.[0]?.status_message ?? x?.status_message ?? x?.message ?? x?.error ?? null;
+const httpErr = (x) => (typeof x?.message === 'object' ? x.message?.message : x?.message) || null;
+const hasErr = [k, q, r].some((x) => apiStatus(x) === 40100 || /401|not authorized/i.test(String(httpErr(x) || apiMessage(x) || '')));
+const discovery_error = hasErr
+  ? (httpErr(k) || httpErr(q) || httpErr(r) || apiMessage(k) || apiMessage(q) || apiMessage(r) || 'dataforseo_auth_failed')
+  : null;
+return [{ json: {
+  ...j,
+  keyword_count: (j.root_keywords || []).length,
+  dataforseo_status: { keyword: apiStatus(k), questions: apiStatus(q), related: apiStatus(r) },
+  status: hasErr ? 'fix_queued' : 'research_done',
+  discovery_error,
+} }];`;
+
+function patchDataForSeoHttpNodes(wf) {
+  for (const name of [
+    'HTTP - DataForSEO Keyword Research',
+    'HTTP - DataForSEO Questions Suggestions',
+    'HTTP - DataForSEO Related Suggestions',
+  ]) {
+    const node = wf.nodes.find((n) => n.name === name);
+    if (!node?.parameters?.headerParameters?.parameters) continue;
+    const auth = node.parameters.headerParameters.parameters.find((p) => p.name === 'Authorization');
+    if (auth) auth.value = DATAFORSEO_AUTH_HEADER;
+  }
+}
+
 function patchSeo01(wf) {
   const validate = wf.nodes.find((n) => n.name === 'Code - Validate Research Input');
   const trigger = wf.nodes.find((n) => n.name === 'Code - Trigger seo-02 Chain');
+  const seed = wf.nodes.find((n) => n.name === 'Code - Generate Seed Services');
+  const normalizeKw = wf.nodes.find((n) => n.name === 'Code - Normalize Keyword Payload');
   if (!validate || !trigger) throw new Error('seo-01: expected nodes missing');
 
   validate.parameters.jsCode = SEO01_VALIDATE_CODE;
   trigger.parameters.jsCode = SEO01_TRIGGER_CODE;
+  if (seed) seed.parameters.jsCode = SEO01_SEED_SERVICES_CODE;
+  if (normalizeKw) normalizeKw.parameters.jsCode = SEO01_NORMALIZE_KEYWORD_CODE;
+  patchDataForSeoHttpNodes(wf);
 
   const hasMerge = wf.nodes.some((n) => n.name === 'Merge - Wait DataForSEO');
   if (!hasMerge) {

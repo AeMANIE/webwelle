@@ -41,6 +41,8 @@ N8N_WEBHOOK_SECRET=<identisch mit WebWelle>
 N8N_API_KEY=<IDENTISCH mit WebWelle-App — für seo-06 → /api/blog/publish>
 OPENROUTER_API_KEY=<PFLICHT für seo-04 — gesetzt: ${env.OPENROUTER_API_KEY ? 'ja lokal' : 'NEIN'}>
 OPENROUTER_MODEL=anthropic/claude-3.5-haiku
+# OPENROUTER_MAX_TOKENS=3500  # bei 402 Credit-Limit in n8n setzen (Default im Workflow: Draft 3500, Rewrite 2800)
+# NICHT google/gemma-2-9b-it:free — OpenRouter 404, Pipeline liefert nur Stubs
 DATAFORSEO_LOGIN=<PFLICHT n8n seo-01/03 — gesetzt: ${env.DATAFORSEO_LOGIN ? 'ja lokal' : 'NEIN'}>
 DATAFORSEO_PASSWORD=<PFLICHT n8n seo-01/03 — gesetzt: ${env.DATAFORSEO_PASSWORD ? 'ja lokal' : 'NEIN'}>
 GOOGLE_PAGESPEED_API_KEY=<optional>

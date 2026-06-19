@@ -155,9 +155,11 @@ async function main() {
       console.log(
         name,
         JSON.stringify({
-          status_code: j.status_code,
+          status_code: j.status_code ?? j.dataforseo_status?.keyword ?? null,
+          dataforseo_status: j.dataforseo_status || null,
           message: j.message || j.error || j.discovery_error || null,
           keyword_count: j.keyword_count,
+          root_keywords: Array.isArray(j.root_keywords) ? j.root_keywords.slice(0, 5) : undefined,
         })
       );
     }
