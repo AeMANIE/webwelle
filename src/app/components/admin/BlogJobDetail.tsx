@@ -10,6 +10,7 @@ interface ArticleRow {
   status: string;
   wordCount: number | null;
   qaStatus: string | null;
+  qaFailReason: Record<string, unknown> | null;
   htmlContent: string | null;
   internalNote: string | null;
   customerNote: string | null;
@@ -223,6 +224,19 @@ export default function BlogJobDetail({ jobId, onBack, onRefresh }: Props) {
                 {a.wordCount != null && (
                   <span className="text-xs text-muted-foreground ml-2">{a.wordCount} Wörter</span>
                 )}
+                {a.status === 'failed' && a.qaFailReason?.llm_error != null && (
+                  <p className="text-xs text-destructive mt-1 font-mono break-all">
+                    {String(a.qaFailReason.llm_error)}
+                  </p>
+                )}
+                {a.status === 'failed' &&
+                  a.wordCount != null &&
+                  a.wordCount < 50 &&
+                  !a.qaFailReason?.llm_error && (
+                    <p className="text-xs text-destructive mt-1">
+                      OpenRouter-Stub — Modell/Key in n8n prüfen (OPENROUTER_MODEL)
+                    </p>
+                  )}
               </div>
             ))
           )}

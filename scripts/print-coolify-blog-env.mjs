@@ -40,8 +40,9 @@ N8N_INTERNAL_WEBHOOK_BASE=${base}/webhook
 N8N_WEBHOOK_SECRET=<identisch mit WebWelle>
 N8N_API_KEY=<IDENTISCH mit WebWelle-App — für seo-06 → /api/blog/publish>
 OPENROUTER_API_KEY=<PFLICHT für seo-04 — gesetzt: ${env.OPENROUTER_API_KEY ? 'ja lokal' : 'NEIN'}>
-DATAFORSEO_LOGIN=<gesetzt: ${env.DATAFORSEO_LOGIN ? 'ja lokal' : 'NEIN'}>
-DATAFORSEO_PASSWORD=<gesetzt: ${env.DATAFORSEO_PASSWORD ? 'ja lokal' : 'NEIN'}>
+OPENROUTER_MODEL=anthropic/claude-3.5-haiku
+DATAFORSEO_LOGIN=<PFLICHT n8n seo-01/03 — gesetzt: ${env.DATAFORSEO_LOGIN ? 'ja lokal' : 'NEIN'}>
+DATAFORSEO_PASSWORD=<PFLICHT n8n seo-01/03 — gesetzt: ${env.DATAFORSEO_PASSWORD ? 'ja lokal' : 'NEIN'}>
 GOOGLE_PAGESPEED_API_KEY=<optional>
 
 Diagnose: node scripts/diag-blog-callback.mjs [execId] [wf|dual|seo04]

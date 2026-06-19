@@ -88,7 +88,7 @@ const images = Array.isArray(j.images) ? j.images : [];
 const promptVersion = j.promptVersion || j.prompt_version || 'blogartikel-v1';
 const idx = Number(j.articleIndex ?? 0);
 const total = Number(j.articleCount ?? 1);
-const qaPassed = j.qa_passed !== false && j.status !== 'qa_failed';
+const qaPassed = j.qa_passed !== false && j.status !== 'qa_failed' && !j.llm_error;
 
 if (!j.jobId) {
   return [{ json: { ...j, webwelleCallbackSkipped: true, callbackReason: 'no_jobId' } }];
@@ -117,6 +117,7 @@ if (sourceType === 'webwelle') {
       prompt_version: promptVersion,
       images,
     };
+    if (j.llm_error) publishPayload.llm_error = j.llm_error;
     const publishBody = JSON.stringify(publishPayload);
     const publishHeaders = { 'Content-Type': 'application/json' };
     if (apiKey) {
@@ -180,6 +181,7 @@ if (idx >= total - 1 && j.jobId) {
       n8nExecutionId: j.n8n_execution_id || j.n8nExecutionId || null,
     };
     if (webwelleCallbackError) donePayload.errorMessage = webwelleCallbackError;
+    else if (j.llm_error) donePayload.errorMessage = j.llm_error;
     else if (!qaPassed) donePayload.errorMessage = 'QA fehlgeschlagen — Text zu kurz oder Checks nicht bestanden';
     const doneBody = JSON.stringify(donePayload);
     const doneHeaders = { 'Content-Type': 'application/json' };

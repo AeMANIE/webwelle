@@ -223,6 +223,7 @@ await httpRequest({
     images: j.images || [],
     page_type: 'blog',
     test_mode: j.test_mode,
+    llm_error: j.llm_error || null,
     _internalWebhookBase: base,
   }),
   headers: { 'Content-Type': 'application/json' },
@@ -230,45 +231,131 @@ await httpRequest({
 });
 return [{ json: { ...j, triggeredSeo06: true, _internalWebhookBase: base } }];`;
 
-const SEO04_MERGE_CODE = `function extractLlmText(res) {
-  if (!res || typeof res !== 'object') return '';
-  const c = res.choices?.[0]?.message?.content ?? res.message?.content ?? res.content ?? res.text ?? '';
-  return String(c || '').trim();
+const OPENROUTER_MODEL_DEFAULT = 'anthropic/claude-3.5-haiku';
+
+const SEO04_VOICE_CONTEXT_CODE = `const b = items[0].json.body && typeof items[0].json.body === 'object' ? items[0].json.body : items[0].json;
+const brief = b.content_brief || { keyword: b.approved_blog_keyword || 'Blog', target_words: 1800 };
+const voice = b.brand_voice || { voice: 'klar, direkt', humor: 'leicht', stories: ['Kundenbeispiel'], opinions: ['ehrliche Bewertung'], stats: ['bis zu 30% Ersparnis'], proof_points: ['regionale Erfahrung'], forbidden_phrases: ['revolutionaer'], preferred_phrases: ['praxisnah'] };
+const model = String($env.OPENROUTER_MODEL || $env.WEBWELLE_OPENROUTER_MODEL || '${OPENROUTER_MODEL_DEFAULT}').trim();
+const keyword = String(brief.keyword || b.approved_blog_keyword || 'Blog');
+const targetWords = Number(brief.target_words || 1800);
+const openrouterDraftBody = {
+  model,
+  messages: [
+    { role: 'system', content: 'Du bist ein deutscher SEO-Ratgeber-Autor (Prompt blogartikel-v1). Schreibe einen vollstaendigen Blogartikel als HTML mit h1, h2, h3, p, ul, ol, li, strong, em, a, blockquote. KEINE img-Tags. Mindestens 1200 Woerter. Klar, praxisnah, E-E-A-T.' },
+    { role: 'user', content: 'Schreibe Blog-Draft zu: ' + keyword + '. Ziel: ' + targetWords + ' Woerter. Markenstimme: ' + JSON.stringify(voice) },
+  ],
+};
+return [{ json: {
+  ...b,
+  project_id: b.project_id || 'test-project',
+  content_brief: brief,
+  brand_voice: voice,
+  openrouterModel: model,
+  openrouterDraftBody,
+  test_mode: Boolean(b.test_mode),
+  jobId: b.jobId,
+  leadToken: b.leadToken || b.token,
+  callbackBaseUrl: b.callbackBaseUrl,
+  articleCount: b.articleCount,
+  articleIndex: b.articleIndex,
+  approved_blog_keyword: b.approved_blog_keyword,
+  sourceType: b.sourceType || b.source_type || 'client',
+  publishMode: b.publishMode || b.publish_mode || 'draft',
+  promptVersion: b.promptVersion || b.prompt_version || 'blogartikel-v1',
+} }];`;
+
+const SEO04_VALIDATE_HOOK_CODE = `function parseOpenRouter(res) {
+  if (!res || typeof res !== 'object') return { text: '', error: 'OPENROUTER: leere Antwort' };
+  if (res.error) {
+    const msg = typeof res.error === 'string' ? res.error : (res.error.message || JSON.stringify(res.error));
+    return { text: '', error: 'OPENROUTER: ' + msg };
+  }
+  const text = String(res.choices?.[0]?.message?.content || res.message?.content || '').trim();
+  if (text) return { text, error: null };
+  const hint = res.message || (res.status ? 'HTTP ' + res.status : '') || 'choices leer';
+  return { text: '', error: 'OPENROUTER: ' + hint };
+}
+const j = $('Code - Build Voice Humor Stories Opinions Stats Context').first().json;
+const llmRaw = $('HTTP - LLM Draft Generation').first()?.json || {};
+const draftParsed = parseOpenRouter(llmRaw);
+const kw = j.content_brief?.keyword || j.approved_blog_keyword || 'Blog';
+const draft = draftParsed.text || ('Hook: ' + kw + ' – Entwurf folgt.');
+const weak = !draftParsed.text || draft.length < 200;
+let htmlContent = draft.includes('<') ? draft : '<article><h1>' + kw + '</h1><p>' + draft.replace(/\\n\\n/g, '</p><p>').replace(/\\n/g, '<br>') + '</p></article>';
+htmlContent = htmlContent.replace(/<img[^>]*>/gi, '');
+const model = j.openrouterModel || String($env.OPENROUTER_MODEL || $env.WEBWELLE_OPENROUTER_MODEL || '${OPENROUTER_MODEL_DEFAULT}').trim();
+const openrouterRewriteBody = {
+  model,
+  messages: [
+    { role: 'system', content: 'Ueberarbeite den Artikel gemaess blogartikel-v1. HTML ohne img-Tags. Erlaubt: h1-h3, p, ul, ol, li, strong, em, a, blockquote.' },
+    { role: 'user', content: 'Markenstimme: ' + JSON.stringify(j.brand_voice || {}) + '\\n\\nArtikel:\\n' + draft },
+  ],
+};
+return [{ json: {
+  ...j,
+  draft,
+  htmlContent,
+  title: kw,
+  weak_hook: weak,
+  draft_llm_error: draftParsed.error,
+  openrouterRewriteBody,
+  promptVersion: j.promptVersion || j.prompt_version || 'blogartikel-v1',
+} }];`;
+
+const SEO04_MERGE_CODE = `function parseOpenRouter(res) {
+  if (!res || typeof res !== 'object') return { text: '', error: 'OPENROUTER: leere Antwort' };
+  if (res.error) {
+    const msg = typeof res.error === 'string' ? res.error : (res.error.message || JSON.stringify(res.error));
+    return { text: '', error: 'OPENROUTER: ' + msg };
+  }
+  const text = String(res.choices?.[0]?.message?.content || res.message?.content || '').trim();
+  if (text) return { text, error: null };
+  const hint = res.message || (res.status ? 'HTTP ' + res.status : '') || 'choices leer';
+  return { text: '', error: 'OPENROUTER: ' + hint };
 }
 let wh = {};
 try {
   const raw = $('Webhook - Receive Blog Draft Request').first().json;
   wh = raw.body && typeof raw.body === 'object' ? raw.body : raw;
 } catch (_) {}
-const inbound = items[0].json.body && typeof items[0].json.body === 'object' ? items[0].json.body : items[0].json;
-let brief = {};
-try { brief = $('Code - Build Content Brief').first().json || {}; } catch (_) {}
-const ctx = { ...brief, ...inbound, ...wh };
-const rewriteText = extractLlmText($('HTTP - LLM Rewrite With Voice').first()?.json);
-const draftText = extractLlmText($('HTTP - LLM Draft Generation').first()?.json);
-const keyword = ctx.content_brief?.keyword || ctx.approved_blog_keyword || ctx.keyword || 'Blog';
-let llm_error = null;
-let raw = rewriteText || draftText;
+const hook = $('Code - Validate First 50 Words Hook').first()?.json || {};
+const rewriteParsed = parseOpenRouter($('HTTP - LLM Rewrite With Voice').first()?.json);
+const keyword = hook.content_brief?.keyword || hook.approved_blog_keyword || wh.approved_blog_keyword || 'Blog';
+let llm_error = hook.draft_llm_error || rewriteParsed.error || null;
+let raw = rewriteParsed.text || hook.draft || '';
 if (!raw) {
-  llm_error = 'OPENROUTER leer — OPENROUTER_API_KEY in n8n-Coolify prüfen';
-  raw = \`Hook: \${keyword} – Entwurf folgt.\`;
+  llm_error = llm_error || 'OPENROUTER leer — OPENROUTER_API_KEY und OPENROUTER_MODEL in n8n-Coolify prüfen';
+  raw = 'Hook: ' + keyword + ' – Entwurf folgt.';
 }
-const htmlContent = raw.includes('<') ? raw : \`<article><h1>\${keyword}</h1><p>\${raw}</p></article>\`;
+const htmlContent = raw.includes('<') ? raw : '<article><h1>' + keyword + '</h1><p>' + raw + '</p></article>';
 return [{ json: {
-  ...ctx,
-  title: ctx.title || keyword,
+  ...hook,
+  ...wh,
+  title: hook.title || keyword,
   draft: raw,
   htmlContent,
   llm_error,
   keyword,
-  jobId: ctx.jobId,
-  callbackBaseUrl: ctx.callbackBaseUrl,
-  articleCount: ctx.articleCount,
-  articleIndex: ctx.articleIndex,
-  sourceType: ctx.sourceType || ctx.source_type || 'client',
-  publishMode: ctx.publishMode || ctx.publish_mode || 'draft',
-  promptVersion: ctx.promptVersion || ctx.prompt_version,
+  jobId: hook.jobId || wh.jobId,
+  callbackBaseUrl: hook.callbackBaseUrl || wh.callbackBaseUrl,
+  articleCount: hook.articleCount ?? wh.articleCount,
+  articleIndex: hook.articleIndex ?? wh.articleIndex,
+  sourceType: hook.sourceType || hook.source_type || wh.sourceType || wh.source_type || 'client',
+  publishMode: hook.publishMode || hook.publish_mode || wh.publishMode || wh.publish_mode || 'draft',
+  promptVersion: hook.promptVersion || hook.prompt_version || wh.promptVersion || wh.prompt_version,
 } }];`;
+
+const OPENROUTER_HTTP_HEADERS = {
+  headerParameters: {
+    parameters: [
+      { name: 'Authorization', value: '=Bearer {{ $env.OPENROUTER_API_KEY }}' },
+      { name: 'Content-Type', value: 'application/json' },
+      { name: 'HTTP-Referer', value: '=https://webwelle.com' },
+      { name: 'X-Title', value: '=WebWelle Blog Pipeline' },
+    ],
+  },
+};
 
 const SEO06_ONPAGE_CODE = `const whRaw = $('Webhook - Receive QA Request').first().json;
 const handoff = whRaw.body && typeof whRaw.body === 'object' ? whRaw.body : whRaw;
@@ -284,7 +371,8 @@ const checks = {
   meta: Boolean(j.metaDesc || j.meta_desc || j.meta_description),
 };
 const wordCount = html.replace(/<[^>]+>/g, ' ').split(/\\s+/).filter(Boolean).length;
-const qa_passed = Object.values(checks).filter(Boolean).length >= 4 && wordCount >= 400;
+const stubOnly = /Entwurf folgt\\./i.test(html) && wordCount < 50;
+const qa_passed = !j.llm_error && !stubOnly && Object.values(checks).filter(Boolean).length >= 4 && wordCount >= 400;
 return [{ json: {
   ...j,
   htmlContent: html,
@@ -294,6 +382,7 @@ return [{ json: {
   wordCount,
   checks,
   qa_passed,
+  llm_error: j.llm_error || (stubOnly ? 'OPENROUTER Stub — kein echter Artikeltext' : null),
   sourceType: j.sourceType || j.source_type || 'client',
 } }];`;
 
@@ -433,10 +522,30 @@ function patchSeo06(wf) {
 function patchSeo04(wf) {
   const trigger = wf.nodes.find((n) => n.name === 'Code - Trigger seo-06 Chain');
   const merge = wf.nodes.find((n) => n.name === 'Code - Merge Rewrite LLM');
+  const voice = wf.nodes.find((n) => n.name === 'Code - Build Voice Humor Stories Opinions Stats Context');
+  const validateHook = wf.nodes.find((n) => n.name === 'Code - Validate First 50 Words Hook');
+  const draftHttp = wf.nodes.find((n) => n.name === 'HTTP - LLM Draft Generation');
+  const rewriteHttp = wf.nodes.find((n) => n.name === 'HTTP - LLM Rewrite With Voice');
   if (!trigger) throw new Error('seo-04: expected nodes missing');
 
   trigger.parameters.jsCode = SEO04_TRIGGER_CODE;
   if (merge) merge.parameters.jsCode = SEO04_MERGE_CODE;
+  if (voice) voice.parameters.jsCode = SEO04_VOICE_CONTEXT_CODE;
+  if (validateHook) validateHook.parameters.jsCode = SEO04_VALIDATE_HOOK_CODE;
+
+  for (const httpNode of [draftHttp, rewriteHttp]) {
+    if (!httpNode) continue;
+    httpNode.parameters.sendHeaders = true;
+    httpNode.parameters.headerParameters = OPENROUTER_HTTP_HEADERS.headerParameters;
+    httpNode.parameters.specifyBody = 'json';
+    httpNode.parameters.sendBody = true;
+    httpNode.parameters.options = { ...(httpNode.parameters.options || {}), ignoreResponseCode: true, timeout: 120000 };
+    if (httpNode.name === 'HTTP - LLM Draft Generation') {
+      httpNode.parameters.jsonBody = '={{ $json.openrouterDraftBody }}';
+    } else {
+      httpNode.parameters.jsonBody = '={{ $json.openrouterRewriteBody }}';
+    }
+  }
   return wf;
 }
 

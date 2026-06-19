@@ -12,6 +12,7 @@ import {
   getBlogArticleByJobIndex,
   recordWebwellePublishDelivery,
   savePostImages,
+  setBlogJobErrorMessage,
   type BlogImageInput,
 } from '@/lib/blog-jobs-database';
 
@@ -211,6 +212,12 @@ export async function POST(request: NextRequest) {
             ? Number(body.word_count)
             : content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
       const qaStatus = String(body.qa_status || body.qaStatus || 'passed');
+      const llmError =
+        body.llm_error != null
+          ? String(body.llm_error)
+          : body.llmError != null
+            ? String(body.llmError)
+            : null;
       const delivery = await recordWebwellePublishDelivery({
         jobId: sourceJobId,
         articleIndex: resolvedArticleIndex,
@@ -221,7 +228,11 @@ export async function POST(request: NextRequest) {
         wordCount,
         promptVersion,
         qaStatus,
+        llmError,
       });
+      if (llmError) {
+        await setBlogJobErrorMessage(sourceJobId, llmError);
+      }
       jobTracking = { articleId: delivery.article.id, jobFinished: delivery.jobFinished };
     }
 

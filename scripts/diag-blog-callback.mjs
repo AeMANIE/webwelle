@@ -70,6 +70,7 @@ async function main() {
         skipped: run.webwelleCallbackSkipped,
         webwelleCallbackError: run.webwelleCallbackError || null,
         webwelleCallbackSent: run.webwelleCallbackSent,
+        llm_error: run.llm_error || null,
         qa_passed: run.qa_passed,
         htmlLen: String(run.htmlContent || run.draft || '').length,
         title: (run.title || '').slice(0, 80),
@@ -122,14 +123,41 @@ async function main() {
     for (const [name, runs] of Object.entries(ex.data?.resultData?.runData || {})) {
       const j = runs?.[0]?.data?.main?.[0]?.[0]?.json;
       if (!j) continue;
-      if (!/merge|writer|llm|draft|rewrite/i.test(name)) continue;
+      if (!/merge|writer|llm|draft|rewrite|voice|hook|openrouter/i.test(name)) continue;
+      const out = {
+        jobId: j.jobId,
+        htmlLen: String(j.htmlContent || j.draft || '').length,
+        title: j.title,
+        llm_error: j.llm_error || j.draft_llm_error || null,
+        openrouterModel: j.openrouterModel || null,
+        preview: (j.draft || j.htmlContent || '').slice(0, 120),
+      };
+      if (/HTTP - LLM/i.test(name)) {
+        out.openrouterError = j.error?.message || j.message || j.error || null;
+        out.choicesLen = j.choices?.[0]?.message?.content?.length ?? 0;
+        delete out.preview;
+      }
+      console.log(name, JSON.stringify(out));
+    }
+    return;
+  }
+
+  if (mode === 'dataforseo' && execArg) {
+    console.log(`\n=== seo-01 Execution ${execArg} — DataForSEO ===`);
+    const detail = await fetch(`${baseUrl}/api/v1/executions/${execArg}?includeData=true`, {
+      headers: { 'X-N8N-API-KEY': apiKey, Accept: 'application/json' },
+    });
+    const ex = await detail.json();
+    for (const [name, runs] of Object.entries(ex.data?.resultData?.runData || {})) {
+      if (!/DataForSEO|Normalize|discovery/i.test(name)) continue;
+      const j = runs?.[0]?.data?.main?.[0]?.[0]?.json;
+      if (!j) continue;
       console.log(
         name,
         JSON.stringify({
-          jobId: j.jobId,
-          htmlLen: String(j.htmlContent || j.draft || '').length,
-          title: j.title,
-          preview: (j.draft || j.htmlContent || '').slice(0, 120),
+          status_code: j.status_code,
+          message: j.message || j.error || j.discovery_error || null,
+          keyword_count: j.keyword_count,
         })
       );
     }

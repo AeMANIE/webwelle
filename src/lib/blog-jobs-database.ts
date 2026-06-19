@@ -449,6 +449,7 @@ export async function recordWebwellePublishDelivery(params: {
   wordCount?: number | null;
   promptVersion?: string;
   qaStatus?: string | null;
+  llmError?: string | null;
 }): Promise<{ article: BlogArticle; jobFinished: boolean }> {
   await ensureBlogPipelineTables();
 
@@ -470,6 +471,7 @@ export async function recordWebwellePublishDelivery(params: {
     htmlContent: params.htmlContent,
     wordCount: params.wordCount,
     qaStatus: qaFailed ? 'failed' : 'passed',
+    qaFailReason: params.llmError ? { llm_error: params.llmError } : qaFailed ? { reason: 'qa_failed' } : null,
     promptVersion: params.promptVersion || BLOG_PROMPT_VERSION,
   });
 

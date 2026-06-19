@@ -22,7 +22,9 @@ export async function GET(request: NextRequest) {
     },
     n8nWriterEnv: {
       openRouterNote:
-        'OPENROUTER_API_KEY muss in der n8n-Coolify-App gesetzt sein (seo-04 LLM).',
+        'OPENROUTER_API_KEY + OPENROUTER_MODEL in n8n-Coolify (seo-04). Empfohlen: anthropic/claude-3.5-haiku — nicht google/gemma-2-9b-it:free.',
+      dataForSeoNote:
+        'DATAFORSEO_LOGIN + DATAFORSEO_PASSWORD in n8n-Coolify (seo-01 + seo-03). Demo-Konto: API Access unter dataforseo.com.',
     },
     hint: status.ready
       ? 'Blog-Pipeline Env OK — seo-01 kann dispatched werden.'
