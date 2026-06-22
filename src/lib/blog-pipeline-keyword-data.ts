@@ -20,6 +20,7 @@ export interface Seo01PipelineData {
   status?: string;
   sourceType?: string;
   raw_keywords?: PipelineKeywordRecord[];
+  filtered_keywords?: PipelineKeywordRecord[];
   root_keywords?: string[];
   dataforseo_status?: Record<string, unknown>;
   discovery_error?: string | null;
@@ -172,6 +173,7 @@ export function parseBlogJobKeywordData(raw: unknown): BlogJobKeywordDataView {
             status: seo01Raw.status != null ? String(seo01Raw.status) : undefined,
             sourceType: seo01Raw.sourceType != null ? String(seo01Raw.sourceType) : undefined,
             raw_keywords: normalizeKeywordRecords(seo01Raw.raw_keywords),
+            filtered_keywords: normalizeKeywordRecords(seo01Raw.filtered_keywords),
             root_keywords: asStringArray(seo01Raw.root_keywords),
             dataforseo_status:
               seo01Raw.dataforseo_status && typeof seo01Raw.dataforseo_status === 'object'
@@ -245,6 +247,7 @@ export function buildPipelineStepPatch(
           status: body.status != null ? String(body.status) : 'research_done',
           sourceType: body.sourceType != null ? String(body.sourceType) : undefined,
           raw_keywords: body.raw_keywords ?? [],
+          filtered_keywords: body.filtered_keywords ?? [],
           root_keywords: body.root_keywords ?? [],
           dataforseo_status: body.dataforseo_status ?? undefined,
           discovery_error: body.discovery_error ?? null,

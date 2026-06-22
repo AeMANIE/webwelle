@@ -366,10 +366,23 @@ function SeoJobDetail({
                   {new Date(seo01.recordedAt).toLocaleString('de-DE')}
                 </span>
               )}
-              {seo01.dataforseo_status && (
-                <span className="rounded-full bg-muted px-2 py-0.5">
-                  DataForSEO: {JSON.stringify(seo01.dataforseo_status)}
-                </span>
+              {seo01.dataforseo_status && typeof seo01.dataforseo_status === 'object' && (
+                <>
+                  <span className="rounded-full bg-muted px-2 py-0.5">
+                    Gefunden:{' '}
+                    {String(
+                      (seo01.dataforseo_status as Record<string, unknown>).discovered_count ??
+                        (seo01.dataforseo_status as Record<string, unknown>).before_intent_filter ??
+                        '—'
+                    )}
+                  </span>
+                  <span className="rounded-full bg-muted px-2 py-0.5">
+                    Pipeline:{' '}
+                    {String(
+                      (seo01.dataforseo_status as Record<string, unknown>).after_intent_filter ?? '—'
+                    )}
+                  </span>
+                </>
               )}
             </div>
             {seo01.discovery_error && (
@@ -379,6 +392,18 @@ function SeoJobDetail({
               rows={seo01.raw_keywords || []}
               emptyText="Keine Keyword-Liste von seo-01."
             />
+            {(seo01.filtered_keywords?.length ?? 0) > 0 &&
+              (seo01.filtered_keywords?.length ?? 0) !== (seo01.raw_keywords?.length ?? 0) && (
+              <div className="mt-4">
+                <h4 className="mb-2 text-sm font-semibold text-primary">
+                  Für seo-02 Qualification ({seo01.filtered_keywords?.length} Keywords)
+                </h4>
+                <KeywordTable
+                  rows={seo01.filtered_keywords || []}
+                  emptyText=""
+                />
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
@@ -543,7 +568,10 @@ export default function SeoTab() {
             <tbody>
               {filtered.map((job) => {
                 const parsed = parseBlogJobKeywordData(job.keywordData);
-                const seo01Count = parsed.pipeline?.seo01?.raw_keywords?.length ?? 0;
+                const seo01Count =
+                  parsed.pipeline?.seo01?.raw_keywords?.length ??
+                  parsed.pipeline?.seo01?.filtered_keywords?.length ??
+                  0;
                 const seo02Count = parsed.pipeline?.seo02?.approved_blog_keywords?.length ?? 0;
                 const isResearchOnly = parsed.mode === 'seo_research_only';
                 return (
