@@ -370,9 +370,14 @@ function SeoJobDetail({
               )}
             {seo01.dataforseo_status && typeof seo01.dataforseo_status === 'object' && (
                 <>
-                  {(seo01.dataforseo_status as Record<string, unknown>).location != null && (
+                  {((seo01.dataforseo_status as Record<string, unknown>).serp_location != null ||
+                    (seo01.dataforseo_status as Record<string, unknown>).location != null) && (
                     <span className="rounded-full bg-muted px-2 py-0.5">
-                      Standort: {String((seo01.dataforseo_status as Record<string, unknown>).location)}
+                      SERP:{' '}
+                      {String(
+                        (seo01.dataforseo_status as Record<string, unknown>).serp_location ??
+                          (seo01.dataforseo_status as Record<string, unknown>).location
+                      )}
                     </span>
                   )}
                   <span className="rounded-full bg-muted px-2 py-0.5">
