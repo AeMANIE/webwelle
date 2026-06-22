@@ -64,8 +64,12 @@ export async function POST(request: NextRequest) {
     }
 
     const patch = buildPipelineStepPatch(step as 'seo01' | 'seo02', body);
-    await mergeBlogJobKeywordData(jobId, patch);
+    const stored = await mergeBlogJobKeywordData(jobId, patch);
+    if (!stored) {
+      return secureResponse({ error: 'merge_failed', jobId, step }, 500);
+    }
 
+    let finished = false;
     if (step === 'seo02') {
       const existingData = (existing.keywordData as Record<string, unknown> | null) || {};
       const refreshed = await getBlogJobById(jobId);
@@ -75,13 +79,19 @@ export async function POST(request: NextRequest) {
         isSeoResearchOnlyJob(existingData) ||
         (existing.articleCount === 0 && existing.sourceType === 'webwelle');
       if (isResearchJob) {
-        await markSeoResearchJobFinished(jobId);
+        try {
+          await markSeoResearchJobFinished(jobId);
+          finished = true;
+        } catch (finishError) {
+          console.error('pipeline-step seo02 finish failed:', finishError);
+        }
       }
     }
 
-    return secureResponse({ ok: true, jobId, step });
+    return secureResponse({ ok: true, jobId, step, ...(step === 'seo02' ? { finished } : {}) });
   } catch (error) {
     console.error('pipeline-step callback failed:', error);
-    return secureResponse({ ok: true, jobId, step, stored: false });
+    const message = error instanceof Error ? error.message : 'unknown_error';
+    return secureResponse({ error: 'pipeline_step_failed', jobId, step, message }, 500);
   }
 }

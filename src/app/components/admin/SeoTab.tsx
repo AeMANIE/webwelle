@@ -234,6 +234,8 @@ function SeoJobDetail({
 }) {
   const [job, setJob] = useState<BlogJobRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [retryingSeo02, setRetryingSeo02] = useState(false);
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
 
   const load = useCallback(async (options?: { silent?: boolean }) => {
     const silent = options?.silent === true;
@@ -299,6 +301,31 @@ function SeoJobDetail({
   const isResearchOnly = parsed.mode === 'seo_research_only';
   const isWebwelleManual =
     job.sourceType === 'webwelle' && seo02?.sourceType === 'webwelle';
+  const canRetrySeo02 =
+    isResearchOnly &&
+    (seo01?.filtered_keywords?.length ?? 0) > 0 &&
+    !seo02?.approved_blog_keywords?.length;
+
+  const retrySeo02 = async () => {
+    setRetryingSeo02(true);
+    setRetryMessage(null);
+    try {
+      const res = await adminFetch('/api/admin/blog/retry-seo-qualification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRetryMessage(data.message || data.error || 'seo-02 konnte nicht gestartet werden.');
+        return;
+      }
+      setRetryMessage(data.message || 'seo-02 Qualification gestartet.');
+      await load({ silent: true });
+    } finally {
+      setRetryingSeo02(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -472,9 +499,25 @@ function SeoJobDetail({
             )}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            Noch keine Pipeline-Daten von seo-02. Nach n8n-Patch einen neuen Job starten.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Noch keine Pipeline-Daten von seo-02.
+              {canRetrySeo02
+                ? ' WF2 kann mit den seo-01 Keywords erneut gestartet werden.'
+                : ' Nach n8n-Patch einen neuen Job starten.'}
+            </p>
+            {canRetrySeo02 && (
+              <button
+                type="button"
+                onClick={() => void retrySeo02()}
+                disabled={retryingSeo02}
+                className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground disabled:opacity-60"
+              >
+                {retryingSeo02 ? 'Starte seo-02…' : 'seo-02 Qualification erneut starten'}
+              </button>
+            )}
+            {retryMessage && <p className="text-sm text-muted-foreground">{retryMessage}</p>}
+          </div>
         )}
       </DashboardPanel>
     </div>

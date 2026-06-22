@@ -286,8 +286,7 @@ export async function markSeoResearchJobFinished(jobId: number): Promise<void> {
       `UPDATE blog_jobs SET
         status = 'pipeline_finished',
         pipeline_finished_at = NOW(),
-        status_changed_at = NOW(),
-        last_callback_at = NOW()
+        status_changed_at = NOW()
        WHERE id = $1`,
       [jobId]
     );
@@ -307,8 +306,7 @@ export async function markSeoResearchJobFailed(
         status = 'failed',
         error_message = $2,
         last_error_at = NOW(),
-        status_changed_at = NOW(),
-        last_callback_at = NOW()
+        status_changed_at = NOW()
        WHERE id = $1`,
       [jobId, errorMessage.slice(0, 2000)]
     );

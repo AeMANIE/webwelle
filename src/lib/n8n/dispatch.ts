@@ -1,5 +1,6 @@
 import { signPayload } from './signature';
 import { buildIndustryForResearch } from '@/lib/funnel/industry';
+import type { PipelineKeywordRecord } from '@/lib/blog-pipeline-keyword-data';
 import type { FunnelLead } from '@/lib/funnel/types';
 
 export interface N8nDispatchPayload {
@@ -489,6 +490,60 @@ export function buildSeoAdmin01Payload(params: {
     callbackBaseUrl: getCallbackBaseUrl(),
     sourceType: 'admin_research',
   };
+}
+
+export function getSeoAdmin02WebhookUrl(): string | undefined {
+  const direct = process.env.N8N_WEBHOOK_SEO_ADMIN_02_URL?.trim();
+  if (direct) return direct;
+  const base = process.env.N8N_BASE_URL?.trim().replace(/\/$/, '');
+  if (base) return `${base}/webhook/seo-admin-02-gap-qualification`;
+  return undefined;
+}
+
+export async function dispatchSeoAdminQualification(payload: {
+  jobId: number;
+  branche: string;
+  plz: string;
+  city?: string;
+  website?: string;
+  callbackBaseUrl?: string;
+  locationCode?: number;
+  locationLabel?: string;
+  keywords: PipelineKeywordRecord[];
+}): Promise<void> {
+  const url = getSeoAdmin02WebhookUrl();
+  if (!url?.trim()) {
+    throw new Error('N8N_WEBHOOK_SEO_ADMIN_02_URL oder N8N_BASE_URL fehlt');
+  }
+
+  const body = JSON.stringify({
+    jobId: payload.jobId,
+    branche: payload.branche,
+    plz: payload.plz,
+    city: payload.city,
+    website: payload.website,
+    callbackBaseUrl: payload.callbackBaseUrl || getCallbackBaseUrl(),
+    locationCode: payload.locationCode,
+    locationLabel: payload.locationLabel,
+    keywords: payload.keywords,
+  });
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`seo-admin-02 webhook fehlgeschlagen (${res.status}): ${text.slice(0, 200)}`);
+    }
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function dispatchSeoAdminResearch(payload: N8nSeoAdmin01Payload): Promise<void> {
