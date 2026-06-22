@@ -51,6 +51,87 @@ function statusBadgeClass(status: string): string {
   }
 }
 
+const SEO01_COLUMN_HELP: Array<{ label: string; hint: string }> = [
+  {
+    label: 'Volume',
+    hint: 'Geschätzte monatliche Suchanfragen in Deutschland (DataForSEO Labs).',
+  },
+  {
+    label: 'Difficulty',
+    hint: 'Keyword-Schwierigkeit von 0–100 – niedriger bedeutet leichter zu ranken.',
+  },
+  {
+    label: 'Intent',
+    hint: 'Suchintention: informational, commercial oder transactional – Blog-Fokus auf informational/commercial.',
+  },
+  {
+    label: 'CPC',
+    hint: 'Durchschnittlicher Klickpreis in EUR (Google Ads) – Hinweis auf kommerziellen Wert.',
+  },
+];
+
+const SEO02_COLUMN_HELP: Array<{ label: string; hint: string }> = [
+  {
+    label: 'Volume',
+    hint: 'Geschätzte monatliche Suchanfragen am gewählten SERP-Standort.',
+  },
+  {
+    label: 'Difficulty',
+    hint: 'Keyword-Schwierigkeit von 0–100 – niedriger bedeutet leichter zu ranken.',
+  },
+  {
+    label: 'Score',
+    hint: 'Interner Qualitätswert aus Volume, KD, lokaler Lücke und Branchenrelevanz.',
+  },
+  {
+    label: 'Lokal',
+    hint: 'Anzahl lokaler .de-Wettbewerber in den Top-10 – weniger = oft bessere Chance.',
+  },
+  {
+    label: 'Ø Wörter',
+    hint: 'Durchschnittliche Wortanzahl der Top-3-Rankingseiten (Content-Tiefe der Konkurrenz).',
+  },
+  {
+    label: 'Ø H2',
+    hint: 'Durchschnittliche Anzahl H2-Überschriften in den Top-3-Seiten (Struktur der Konkurrenz).',
+  },
+  {
+    label: 'Cluster',
+    hint: 'H2-Themen der Konkurrenz als Vorschlag für verwandte Unterthemen im Artikel.',
+  },
+];
+
+const COLUMN_HELP_LOOKUP: Record<string, string> = Object.fromEntries(
+  [...SEO01_COLUMN_HELP, ...SEO02_COLUMN_HELP].map((item) => [item.label, item.hint])
+);
+
+function ColumnLegend({ items }: { items: Array<{ label: string; hint: string }> }) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+      <p className="mb-1.5 font-medium text-foreground/80">Spaltenhilfe</p>
+      <dl className="grid gap-x-4 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map(({ label, hint }) => (
+          <div key={label}>
+            <dt className="inline font-medium text-foreground/90">{label}:</dt>{' '}
+            <dd className="inline">{hint}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function ColumnHeader({ label }: { label: string }) {
+  const hint = COLUMN_HELP_LOOKUP[label];
+  return (
+    <th className="p-2" title={hint}>
+      <span className={hint ? 'cursor-help border-b border-dotted border-muted-foreground/50' : undefined}>
+        {label}
+      </span>
+    </th>
+  );
+}
+
 function KeywordTable({
   rows,
   emptyText,
@@ -70,21 +151,21 @@ function KeywordTable({
         <thead className="bg-muted/50 text-left">
           <tr>
             <th className="p-2">Keyword</th>
-            <th className="p-2">Volume</th>
-            <th className="p-2">Difficulty</th>
+            <ColumnHeader label="Volume" />
+            <ColumnHeader label="Difficulty" />
             {variant === 'basic' && (
               <>
-                <th className="p-2">Intent</th>
-                <th className="p-2">CPC</th>
+                <ColumnHeader label="Intent" />
+                <ColumnHeader label="CPC" />
               </>
             )}
             {variant === 'approved' && (
               <>
-                <th className="p-2">Score</th>
-                <th className="p-2">Lokal</th>
-                <th className="p-2">Ø Wörter</th>
-                <th className="p-2">Ø H2</th>
-                <th className="p-2">Cluster</th>
+                <ColumnHeader label="Score" />
+                <ColumnHeader label="Lokal" />
+                <ColumnHeader label="Ø Wörter" />
+                <ColumnHeader label="Ø H2" />
+                <ColumnHeader label="Cluster" />
               </>
             )}
             {variant === 'skipped' && <th className="p-2">Grund</th>}
@@ -433,6 +514,7 @@ function SeoJobDetail({
             {seo01.discovery_error && (
               <p className="text-sm text-red-600">DataForSEO: {seo01.discovery_error}</p>
             )}
+            <ColumnLegend items={SEO01_COLUMN_HELP} />
             <KeywordTable
               rows={(seo01.raw_keywords || []).filter((r) => r.intent !== 'navigational')}
               emptyText="Keine branchenrelevanten Keywords von seo-01."
@@ -470,6 +552,7 @@ function SeoJobDetail({
                 Erfasst: {new Date(seo02.recordedAt).toLocaleString('de-DE')}
               </p>
             )}
+            {isResearchOnly && <ColumnLegend items={SEO02_COLUMN_HELP} />}
             <div>
               <h4 className="mb-2 text-sm font-semibold text-primary">Approved Blog-Keywords</h4>
               <KeywordTable
