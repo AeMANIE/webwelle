@@ -279,6 +279,44 @@ export async function markBlogJobRunning(jobId: number): Promise<void> {
   }
 }
 
+export async function markSeoResearchJobFinished(jobId: number): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `UPDATE blog_jobs SET
+        status = 'pipeline_finished',
+        pipeline_finished_at = NOW(),
+        status_changed_at = NOW(),
+        last_callback_at = NOW()
+       WHERE id = $1`,
+      [jobId]
+    );
+  } finally {
+    client.release();
+  }
+}
+
+export async function markSeoResearchJobFailed(
+  jobId: number,
+  errorMessage: string
+): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `UPDATE blog_jobs SET
+        status = 'failed',
+        error_message = $2,
+        last_error_at = NOW(),
+        status_changed_at = NOW(),
+        last_callback_at = NOW()
+       WHERE id = $1`,
+      [jobId, errorMessage.slice(0, 2000)]
+    );
+  } finally {
+    client.release();
+  }
+}
+
 export async function getBlogJobById(jobId: number): Promise<BlogJob | null> {
   const client = await pool.connect();
   try {

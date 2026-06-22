@@ -4,11 +4,16 @@ import { secureResponse } from '@/lib/api-security';
 import {
   ensureBlogPipelineTables,
   getBlogJobById,
+  markSeoResearchJobFailed,
+  markSeoResearchJobFinished,
   mergeBlogJobKeywordData,
 } from '@/lib/blog-jobs-database';
-import { buildPipelineStepPatch } from '@/lib/blog-pipeline-keyword-data';
+import {
+  buildPipelineStepPatch,
+  isSeoResearchOnlyJob,
+} from '@/lib/blog-pipeline-keyword-data';
 
-const VALID_STEPS = new Set(['seo01', 'seo02']);
+const VALID_STEPS = new Set(['seo01', 'seo02', 'seo02_error']);
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
@@ -41,13 +46,37 @@ export async function POST(request: NextRequest) {
       return secureResponse({ error: 'job_not_found' }, 404);
     }
 
+    if (step === 'seo02_error') {
+      const errorText = String(body.error || body.message || 'seo02 workflow failed');
+      const current = (existing.keywordData as Record<string, unknown> | null) || {};
+      await mergeBlogJobKeywordData(jobId, {
+        pipeline: {
+          seo02: {
+            error: errorText,
+            recordedAt: new Date().toISOString(),
+          },
+        },
+      });
+      if (isSeoResearchOnlyJob(current)) {
+        await markSeoResearchJobFailed(jobId, errorText);
+      }
+      return secureResponse({ ok: true, jobId, step, failed: true });
+    }
+
     const patch = buildPipelineStepPatch(step as 'seo01' | 'seo02', body);
     await mergeBlogJobKeywordData(jobId, patch);
+
+    if (step === 'seo02') {
+      const refreshed = await getBlogJobById(jobId);
+      const keywordData = (refreshed?.keywordData as Record<string, unknown> | null) || {};
+      if (isSeoResearchOnlyJob(keywordData)) {
+        await markSeoResearchJobFinished(jobId);
+      }
+    }
 
     return secureResponse({ ok: true, jobId, step });
   } catch (error) {
     console.error('pipeline-step callback failed:', error);
-    // Non-blocking for n8n — report success so the chain continues
     return secureResponse({ ok: true, jobId, step, stored: false });
   }
 }

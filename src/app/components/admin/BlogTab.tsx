@@ -6,6 +6,7 @@ import BlogEditor from './BlogEditor';
 import BlogGenerateModal from './BlogGenerateModal';
 import { DashboardPanel } from '../dashboard/DashboardPanel';
 import { getBlogPreviewUrl } from '@/lib/blog-preview';
+import { adminFetch } from '@/lib/admin-fetch';
 
 interface BlogPost {
   id: string;
@@ -29,6 +30,7 @@ export default function BlogTab() {
   const [showEditor, setShowEditor] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all');
   const [pendingJobId, setPendingJobId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPosts();
@@ -57,16 +59,28 @@ export default function BlogTab() {
       return;
     }
 
+    setActionError(null);
     try {
-      const response = await fetch(`/api/admin/blog/${id}`, {
+      const response = await adminFetch(`/api/admin/blog/${id}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
-        fetchPosts();
+        await fetchPosts();
+        return;
       }
+
+      let message = 'Artikel konnte nicht gelöscht werden.';
+      try {
+        const data = await response.json();
+        if (data.error) message = String(data.error);
+      } catch {
+        // ignore
+      }
+      setActionError(message);
     } catch (error) {
       console.error('Fehler beim Löschen:', error);
+      setActionError('Artikel konnte nicht gelöscht werden.');
     }
   };
 
@@ -154,6 +168,11 @@ export default function BlogTab() {
         </div>
       }
     >
+      {actionError && (
+        <div className="mx-6 mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {actionError}
+        </div>
+      )}
       {pendingJobId && (
         <div className="mx-6 mt-4 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
           Job #{pendingJobId} läuft — der Entwurf erscheint in ca. 5–10 Min. unter{' '}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DashboardPanel } from '../dashboard/DashboardPanel';
+import { adminFetch } from '@/lib/admin-fetch';
 import {
   parseBlogJobKeywordData,
   type PipelineKeywordRecord,
@@ -53,9 +54,11 @@ function statusBadgeClass(status: string): string {
 function KeywordTable({
   rows,
   emptyText,
+  variant = 'basic',
 }: {
   rows: PipelineKeywordRecord[];
   emptyText: string;
+  variant?: 'basic' | 'approved' | 'skipped';
 }) {
   if (rows.length === 0) {
     return <p className="text-sm text-muted-foreground">{emptyText}</p>;
@@ -69,8 +72,22 @@ function KeywordTable({
             <th className="p-2">Keyword</th>
             <th className="p-2">Volume</th>
             <th className="p-2">Difficulty</th>
-            <th className="p-2">Intent</th>
-            <th className="p-2">CPC</th>
+            {variant === 'basic' && (
+              <>
+                <th className="p-2">Intent</th>
+                <th className="p-2">CPC</th>
+              </>
+            )}
+            {variant === 'approved' && (
+              <>
+                <th className="p-2">Score</th>
+                <th className="p-2">Lokal</th>
+                <th className="p-2">Ø Wörter</th>
+                <th className="p-2">Ø H2</th>
+                <th className="p-2">Cluster</th>
+              </>
+            )}
+            {variant === 'skipped' && <th className="p-2">Grund</th>}
           </tr>
         </thead>
         <tbody>
@@ -79,15 +96,130 @@ function KeywordTable({
               <td className="p-2 font-medium">{row.keyword}</td>
               <td className="p-2 text-muted-foreground">{row.volume ?? '—'}</td>
               <td className="p-2 text-muted-foreground">{row.difficulty ?? '—'}</td>
-              <td className="p-2 text-muted-foreground">{row.intent ?? '—'}</td>
-              <td className="p-2 text-muted-foreground">
-                {row.cpc != null ? row.cpc.toFixed(2) : '—'}
-              </td>
+              {variant === 'basic' && (
+                <>
+                  <td className="p-2 text-muted-foreground">{row.intent ?? '—'}</td>
+                  <td className="p-2 text-muted-foreground">
+                    {row.cpc != null ? row.cpc.toFixed(2) : '—'}
+                  </td>
+                </>
+              )}
+              {variant === 'approved' && (
+                <>
+                  <td className="p-2 text-muted-foreground">{row.score ?? '—'}</td>
+                  <td className="p-2 text-muted-foreground">{row.localCompetitors ?? '—'}</td>
+                  <td className="p-2 text-muted-foreground">{row.avgWordCount ?? '—'}</td>
+                  <td className="p-2 text-muted-foreground">{row.avgH2Count ?? '—'}</td>
+                  <td className="p-2 text-muted-foreground max-w-[200px] truncate" title={row.keywordCluster}>
+                    {row.keywordCluster ?? '—'}
+                  </td>
+                </>
+              )}
+              {variant === 'skipped' && (
+                <td className="p-2 text-muted-foreground">{row.error || row.status || 'skip'}</td>
+              )}
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function SeoResearchForm({ onStarted }: { onStarted?: () => void }) {
+  const [branche, setBranche] = useState('');
+  const [plz, setPlz] = useState('');
+  const [website, setWebsite] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setMessage(null);
+    setIsError(false);
+
+    try {
+      const res = await adminFetch('/api/admin/blog/start-seo-research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          branche: branche.trim(),
+          plz: plz.trim(),
+          ...(website.trim() ? { website: website.trim() } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.n8nDispatched !== true) {
+        setMessage(String(data.message || data.error || 'Start fehlgeschlagen'));
+        setIsError(true);
+        return;
+      }
+      setMessage(String(data.message || `Job #${data.jobId} gestartet.`));
+      setBranche('');
+      setPlz('');
+      setWebsite('');
+      onStarted?.();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Netzwerkfehler');
+      setIsError(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <DashboardPanel title="Neue Keyword-Research">
+      <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-sm font-medium">Branche</label>
+          <input
+            value={branche}
+            onChange={(e) => setBranche(e.target.value)}
+            required
+            minLength={2}
+            placeholder="z. B. Sanitär"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">PLZ</label>
+          <input
+            value={plz}
+            onChange={(e) => setPlz(e.target.value.replace(/\D/g, '').slice(0, 5))}
+            required
+            pattern="\d{4,5}"
+            placeholder="87435"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-sm font-medium">Website (optional)</label>
+          <input
+            type="url"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            placeholder="https://ihre-website.de"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          />
+        </div>
+        <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-brand-foreground disabled:opacity-50"
+          >
+            {loading ? 'Wird gestartet…' : 'Research starten'}
+          </button>
+          {message && (
+            <p className={`text-sm ${isError ? 'text-destructive' : 'text-green-700 dark:text-green-400'}`}>
+              {message}
+            </p>
+          )}
+        </div>
+      </form>
+    </DashboardPanel>
   );
 }
 
@@ -157,6 +289,7 @@ function SeoJobDetail({
 
   const seo01 = parsed.pipeline?.seo01;
   const seo02 = parsed.pipeline?.seo02;
+  const isResearchOnly = parsed.mode === 'seo_research_only';
   const isWebwelleManual =
     job.sourceType === 'webwelle' && seo02?.sourceType === 'webwelle';
 
@@ -168,6 +301,11 @@ function SeoJobDetail({
 
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-xl font-bold">Job #{job.id}</h2>
+        {isResearchOnly && (
+          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+            Keyword-Research
+          </span>
+        )}
         <span className="text-xs uppercase tracking-wide text-muted-foreground">{job.sourceType}</span>
         <span
           className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeClass(job.status)}`}
@@ -176,8 +314,14 @@ function SeoJobDetail({
         </span>
       </div>
 
+      {seo02?.error && (
+        <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-600">
+          Fehler: {seo02.error}
+        </p>
+      )}
+
       <DashboardPanel title="Eingabe">
-        <dl className="grid gap-3 text-sm sm:grid-cols-3">
+        <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <dt className="text-muted-foreground">Branche</dt>
             <dd className="font-medium">{parsed.branche || '—'}</dd>
@@ -187,11 +331,21 @@ function SeoJobDetail({
             <dd className="font-medium">{parsed.plz || '—'}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Manuelle Keywords</dt>
-            <dd className="font-medium">
-              {parsed.keywords.length ? parsed.keywords.join(', ') : '—'}
-            </dd>
+            <dt className="text-muted-foreground">Stadt</dt>
+            <dd className="font-medium">{parsed.city || '—'}</dd>
           </div>
+          <div>
+            <dt className="text-muted-foreground">Website</dt>
+            <dd className="font-medium break-all">{parsed.website || '—'}</dd>
+          </div>
+          {!isResearchOnly && (
+            <div className="sm:col-span-2">
+              <dt className="text-muted-foreground">Manuelle Keywords</dt>
+              <dd className="font-medium">
+                {parsed.keywords.length ? parsed.keywords.join(', ') : '—'}
+              </dd>
+            </div>
+          )}
         </dl>
       </DashboardPanel>
 
@@ -246,8 +400,19 @@ function SeoJobDetail({
               <KeywordTable
                 rows={seo02.approved_blog_keywords || []}
                 emptyText="Keine qualifizierten Blog-Keywords."
+                variant={isResearchOnly ? 'approved' : 'basic'}
               />
             </div>
+            {(seo02.skipped_keywords?.length ?? 0) > 0 && (
+              <div>
+                <h4 className="mb-2 text-sm font-semibold text-muted-foreground">Übersprungen (skip)</h4>
+                <KeywordTable
+                  rows={seo02.skipped_keywords || []}
+                  emptyText=""
+                  variant="skipped"
+                />
+              </div>
+            )}
             {(seo02.approved_service_keywords?.length ?? 0) > 0 && (
               <div>
                 <h4 className="mb-2 text-sm font-semibold">Service-Keywords</h4>
@@ -325,9 +490,11 @@ export default function SeoTab() {
       <div>
         <h2 className="mb-1 text-2xl font-bold">SEO-Pipeline</h2>
         <p className="text-sm text-muted-foreground">
-          Ergebnisse von seo-01 (Keyword-Liste) und seo-02 (qualifizierte Blog-Keywords) pro Job.
+          Keyword-Research (Admin) und Blog-Pipeline-Ergebnisse (seo-01 / seo-02) pro Job.
         </p>
       </div>
+
+      <SeoResearchForm onStarted={load} />
 
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Jobs ({filtered.length})</h3>
@@ -364,15 +531,22 @@ export default function SeoTab() {
                 const parsed = parseBlogJobKeywordData(job.keywordData);
                 const seo01Count = parsed.pipeline?.seo01?.raw_keywords?.length ?? 0;
                 const seo02Count = parsed.pipeline?.seo02?.approved_blog_keywords?.length ?? 0;
+                const isResearchOnly = parsed.mode === 'seo_research_only';
                 return (
                   <tr key={job.id} className="border-t border-border">
                     <td className="p-3 font-mono text-xs">#{job.id}</td>
-                    <td className="p-3 text-xs">{job.sourceType}</td>
+                    <td className="p-3 text-xs">
+                      {isResearchOnly ? 'Research' : job.sourceType}
+                    </td>
                     <td className="p-3">
                       <p className="font-medium">
-                        {job.companyName || (job.sourceType === 'webwelle' ? 'WebWelle' : '—')}
+                        {parsed.branche ||
+                          job.companyName ||
+                          (job.sourceType === 'webwelle' ? 'WebWelle' : '—')}
                       </p>
-                      <p className="text-xs text-muted-foreground">{job.industry || '—'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {parsed.plz ? `PLZ ${parsed.plz}` : job.industry || '—'}
+                      </p>
                     </td>
                     <td className="p-3">
                       <span

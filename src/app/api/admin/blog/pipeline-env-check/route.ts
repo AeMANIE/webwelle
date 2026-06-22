@@ -29,7 +29,10 @@ export async function GET(request: NextRequest) {
     hint: status.ready
       ? 'Blog-Pipeline Env OK — seo-01 kann dispatched werden.'
       : `Fehlende Variablen in Coolify WebWelle-App: ${status.missing.join(', ')}`,
+    seoAdminHint: status.seoAdminReady
+      ? 'SEO-Admin-Pipeline Env OK — seo-admin-01 kann dispatched werden.'
+      : `SEO-Admin fehlend: ${status.seoAdminMissing.join(', ')}`,
     n8nInternalNote:
-      'N8N_INTERNAL_WEBHOOK_BASE muss zusätzlich in der Coolify n8n-App gesetzt sein (seo-02…06 Kette). N8N_API_KEY + OPENROUTER_API_KEY ebenfalls in n8n.',
+      'N8N_INTERNAL_WEBHOOK_BASE in der Coolify n8n-App auf interne URL setzen (z. B. http://n8n:5678/webhook) für WF1→WF2. DATAFORSEO_LOGIN/PASSWORD in n8n.',
   });
 }

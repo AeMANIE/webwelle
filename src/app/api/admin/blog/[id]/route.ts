@@ -120,6 +120,14 @@ export async function DELETE(
     const auth = await requireAdminAuth(request);
     if (auth instanceof NextResponse) return auth;
 
+    const existing = await getBlogPostById(params.id);
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Blog-Post nicht gefunden' },
+        { status: 404 }
+      );
+    }
+
     const deleted = await deleteBlogPost(params.id);
 
     if (!deleted) {
@@ -136,15 +144,17 @@ export async function DELETE(
         await redis.del('admin:blog:all');
         await redis.del('admin:blog:draft');
         await redis.del('admin:blog:published');
-        await redis.del(`blog:post:${params.id}`); // Note: Would need slug for proper invalidation
+        await redis.del(`blog:post:${existing.slug}`);
+        await redis.del('blog:posts:published');
         await redis.del('blog:public:list');
       } catch (cacheError) {
-        // Redis Fehler ignorieren - Cache wird beim nächsten Request neu geladen
         if (process.env.NODE_ENV === 'development') {
           console.warn('⚠️ Redis Cache-Invalidierung-Fehler (ignoriert):', cacheError);
         }
       }
     }
+
+    revalidateBlogPaths(existing.slug);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -138,6 +138,7 @@ async function postWebhook(
     | N8nDispatchPayload
     | N8nSitePerformancePayload
     | N8nSeo01Payload
+    | N8nSeoAdmin01Payload
     | Record<string, unknown>,
   options?: { strict?: boolean }
 ): Promise<void> {
@@ -453,23 +454,74 @@ export function getSeo01WebhookUrl(): string | undefined {
   return undefined;
 }
 
+export interface N8nSeoAdmin01Payload {
+  jobId: number;
+  branche: string;
+  plz: string;
+  land: string;
+  website?: string;
+  callbackBaseUrl: string;
+  sourceType: 'admin_research';
+}
+
+export function getSeoAdmin01WebhookUrl(): string | undefined {
+  const direct = process.env.N8N_WEBHOOK_SEO_ADMIN_01_URL?.trim();
+  if (direct) return direct;
+  const base = process.env.N8N_BASE_URL?.trim().replace(/\/$/, '');
+  if (base) return `${base}/webhook/seo-admin-01-keyword-discovery`;
+  return undefined;
+}
+
+export function buildSeoAdmin01Payload(params: {
+  jobId: number;
+  branche: string;
+  plz: string;
+  website?: string;
+  land?: string;
+}): N8nSeoAdmin01Payload {
+  const land = (params.land || 'DE').toUpperCase();
+  return {
+    jobId: params.jobId,
+    branche: params.branche,
+    plz: params.plz,
+    land: ['DE', 'AT', 'CH'].includes(land) ? land : 'DE',
+    website: params.website || undefined,
+    callbackBaseUrl: getCallbackBaseUrl(),
+    sourceType: 'admin_research',
+  };
+}
+
+export async function dispatchSeoAdminResearch(payload: N8nSeoAdmin01Payload): Promise<void> {
+  const url = getSeoAdmin01WebhookUrl();
+  console.log(`n8n dispatch: seo-admin-01 für Job ${payload.jobId}`);
+  await postWebhook(url, payload, { strict: true });
+}
+
 export function getBlogPipelineEnvStatus() {
   const seo01Url = getSeo01WebhookUrl();
+  const seoAdmin01Url = getSeoAdmin01WebhookUrl();
   const hasSecret = Boolean(process.env.N8N_WEBHOOK_SECRET?.trim());
   const hasApiKey = Boolean(process.env.N8N_API_KEY?.trim());
   const hasBase = Boolean(process.env.N8N_BASE_URL?.trim());
   return {
     n8nBaseUrl: hasBase,
     n8nWebhookSeo01: Boolean(seo01Url),
+    n8nWebhookSeoAdmin01: Boolean(seoAdmin01Url),
     n8nWebhookSecret: hasSecret,
     n8nApiKey: hasApiKey,
     callbackBaseUrl: getCallbackBaseUrl(),
     ready: Boolean(seo01Url && hasSecret),
+    seoAdminReady: Boolean(seoAdmin01Url && hasSecret),
     missing: [
       !hasBase && 'N8N_BASE_URL',
       !seo01Url && 'N8N_WEBHOOK_SEO_01_URL',
       !hasSecret && 'N8N_WEBHOOK_SECRET',
       !hasApiKey && 'N8N_API_KEY',
+    ].filter(Boolean) as string[],
+    seoAdminMissing: [
+      !hasBase && 'N8N_BASE_URL',
+      !seoAdmin01Url && 'N8N_WEBHOOK_SEO_ADMIN_01_URL',
+      !hasSecret && 'N8N_WEBHOOK_SECRET',
     ].filter(Boolean) as string[],
   };
 }

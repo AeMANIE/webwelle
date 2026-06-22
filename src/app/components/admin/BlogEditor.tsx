@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import QuillEditor from './QuillEditor';
-import { Eye, Save, Upload, X, CheckCircle, AlertCircle, Search, Image as ImageIcon, FileText, Settings, Zap, Images } from 'lucide-react';
+import { Save, Upload, X, CheckCircle, AlertCircle, Search, Image as ImageIcon, FileText, Settings, Zap, Images } from 'lucide-react';
 // CSS für ReactQuill importieren
 import 'react-quill/dist/quill.snow.css';
 import BlogImageGallery from './BlogImageGallery';
@@ -240,7 +240,7 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
   };
 
   const previewHref =
-    post?.id && slug
+    post?.id && slug && status === 'draft'
       ? getBlogPreviewUrl({ id: post.id, slug, status })
       : undefined;
 
@@ -355,22 +355,22 @@ export default function BlogEditor({ post, onSave }: BlogEditorProps) {
             {post?.id ? 'Blog-Post bearbeiten' : 'Neuen Blog-Post erstellen'}
           </h2>
           <div className="flex items-center gap-2">
-            {post?.id && previewHref && (
+            {post?.id && status === 'draft' && previewHref && (
               <a
                 href={previewHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
               >
-                <Eye className="w-4 h-4" />
-                Vorschau
+                <FileText className="w-4 h-4" />
+                Admin-Vorschau
               </a>
             )}
             <button
               onClick={() => setShowPreview(!showPreview)}
               className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
             >
-              <Eye className="w-4 h-4" />
+              <FileText className="w-4 h-4" />
               {showPreview ? 'Editor' : 'Vorschau'}
             </button>
           </div>
