@@ -116,7 +116,9 @@ function KeywordTable({
                 </>
               )}
               {variant === 'skipped' && (
-                <td className="p-2 text-muted-foreground">{row.error || row.status || 'skip'}</td>
+                <td className="p-2 text-muted-foreground">
+                  {row.error || row.status || 'skip'}
+                </td>
               )}
             </tr>
           ))}
@@ -366,13 +368,18 @@ function SeoJobDetail({
                   {new Date(seo01.recordedAt).toLocaleString('de-DE')}
                 </span>
               )}
-              {seo01.dataforseo_status && typeof seo01.dataforseo_status === 'object' && (
+            {seo01.dataforseo_status && typeof seo01.dataforseo_status === 'object' && (
                 <>
+                  {(seo01.dataforseo_status as Record<string, unknown>).location != null && (
+                    <span className="rounded-full bg-muted px-2 py-0.5">
+                      Standort: {String((seo01.dataforseo_status as Record<string, unknown>).location)}
+                    </span>
+                  )}
                   <span className="rounded-full bg-muted px-2 py-0.5">
-                    Gefunden:{' '}
+                    Relevant:{' '}
                     {String(
                       (seo01.dataforseo_status as Record<string, unknown>).discovered_count ??
-                        (seo01.dataforseo_status as Record<string, unknown>).before_intent_filter ??
+                        (seo01.dataforseo_status as Record<string, unknown>).relevance_filtered_count ??
                         '—'
                     )}
                   </span>
@@ -382,6 +389,12 @@ function SeoJobDetail({
                       (seo01.dataforseo_status as Record<string, unknown>).after_intent_filter ?? '—'
                     )}
                   </span>
+                  {Number((seo01.dataforseo_status as Record<string, unknown>).navigational_excluded_count) > 0 && (
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
+                      Navigational ausgeblendet:{' '}
+                      {String((seo01.dataforseo_status as Record<string, unknown>).navigational_excluded_count)}
+                    </span>
+                  )}
                 </>
               )}
             </div>
@@ -389,8 +402,8 @@ function SeoJobDetail({
               <p className="text-sm text-red-600">DataForSEO: {seo01.discovery_error}</p>
             )}
             <KeywordTable
-              rows={seo01.raw_keywords || []}
-              emptyText="Keine Keyword-Liste von seo-01."
+              rows={(seo01.raw_keywords || []).filter((r) => r.intent !== 'navigational')}
+              emptyText="Keine branchenrelevanten Keywords von seo-01."
             />
             {(seo01.filtered_keywords?.length ?? 0) > 0 &&
               (seo01.filtered_keywords?.length ?? 0) !== (seo01.raw_keywords?.length ?? 0) && (
