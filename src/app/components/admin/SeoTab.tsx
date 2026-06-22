@@ -233,7 +233,9 @@ function SeoJobDetail({
   const [job, setJob] = useState<BlogJobRow | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent === true;
+    if (!silent) setLoading(true);
     try {
       const res = await fetch(`/api/admin/blog/jobs/${jobId}`);
       const data = await res.json();
@@ -253,7 +255,7 @@ function SeoJobDetail({
         });
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [jobId]);
 
@@ -263,7 +265,9 @@ function SeoJobDetail({
 
   useEffect(() => {
     if (!job || !['queued', 'running'].includes(job.status)) return;
-    const timer = window.setInterval(load, 5000);
+    const timer = window.setInterval(() => {
+      void load({ silent: true });
+    }, 5000);
     return () => window.clearInterval(timer);
   }, [job, load]);
 
@@ -439,8 +443,9 @@ export default function SeoTab() {
   const [sourceFilter, setSourceFilter] = useState<'all' | 'client' | 'webwelle'>('all');
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent === true;
+    if (!silent) setLoading(true);
     try {
       const res = await fetch('/api/admin/blog/jobs');
       const data = await res.json();
@@ -459,7 +464,7 @@ export default function SeoTab() {
       }));
       setJobs(rows);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -468,9 +473,16 @@ export default function SeoTab() {
   }, [load]);
 
   useEffect(() => {
-    const hasActive = jobs.some((j) => ['queued', 'running'].includes(j.status));
+    const hasActive = jobs.some((job) => {
+      if (!['queued', 'running'].includes(job.status)) return false;
+      const parsed = parseBlogJobKeywordData(job.keywordData);
+      if (parsed.mode === 'seo_research_only') return true;
+      return job.articleCount > 0;
+    });
     if (!hasActive || selectedJobId) return;
-    const timer = window.setInterval(load, 5000);
+    const timer = window.setInterval(() => {
+      void load({ silent: true });
+    }, 5000);
     return () => window.clearInterval(timer);
   }, [jobs, selectedJobId, load]);
 
@@ -494,7 +506,7 @@ export default function SeoTab() {
         </p>
       </div>
 
-      <SeoResearchForm onStarted={load} />
+      <SeoResearchForm onStarted={() => load({ silent: true })} />
 
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Jobs ({filtered.length})</h3>
