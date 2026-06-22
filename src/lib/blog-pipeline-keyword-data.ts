@@ -239,7 +239,7 @@ export function buildPipelineStepPatch(
 ): Record<string, unknown> {
   const recordedAt = new Date().toISOString();
   if (step === 'seo01') {
-    return {
+    const patch: Record<string, unknown> = {
       pipeline: {
         seo01: {
           status: body.status != null ? String(body.status) : 'research_done',
@@ -252,6 +252,10 @@ export function buildPipelineStepPatch(
         },
       },
     };
+    if (body.city != null) patch.city = String(body.city);
+    if (body.branche != null) patch.branche = String(body.branche);
+    if (body.plz != null) patch.plz = String(body.plz);
+    return patch;
   }
 
   return {

@@ -237,7 +237,8 @@ function SeoJobDetail({
     const silent = options?.silent === true;
     if (!silent) setLoading(true);
     try {
-      const res = await fetch(`/api/admin/blog/jobs/${jobId}`);
+      const res = await adminFetch(`/api/admin/blog/jobs/${jobId}`);
+      if (res.status === 401) return;
       const data = await res.json();
       if (data.job) {
         setJob({
@@ -447,7 +448,8 @@ export default function SeoTab() {
     const silent = options?.silent === true;
     if (!silent) setLoading(true);
     try {
-      const res = await fetch('/api/admin/blog/jobs');
+      const res = await adminFetch('/api/admin/blog/jobs');
+      if (res.status === 401) return;
       const data = await res.json();
       const rows = (data.jobs || []).map((j: Record<string, unknown>) => ({
         id: j.id as number,

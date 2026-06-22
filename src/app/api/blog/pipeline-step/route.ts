@@ -67,9 +67,14 @@ export async function POST(request: NextRequest) {
     await mergeBlogJobKeywordData(jobId, patch);
 
     if (step === 'seo02') {
+      const existingData = (existing.keywordData as Record<string, unknown> | null) || {};
       const refreshed = await getBlogJobById(jobId);
       const keywordData = (refreshed?.keywordData as Record<string, unknown> | null) || {};
-      if (isSeoResearchOnlyJob(keywordData)) {
+      const isResearchJob =
+        isSeoResearchOnlyJob(keywordData) ||
+        isSeoResearchOnlyJob(existingData) ||
+        (existing.articleCount === 0 && existing.sourceType === 'webwelle');
+      if (isResearchJob) {
         await markSeoResearchJobFinished(jobId);
       }
     }
