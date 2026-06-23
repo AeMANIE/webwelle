@@ -200,6 +200,23 @@ async function postWebhook(
   }
 }
 
+/** StarterWelle-Funnel: Kern-Webhook-URLs + Secret für dispatchAllResearch. */
+export function getFunnelResearchDispatchReadiness(): {
+  ready: boolean;
+  missing: string[];
+} {
+  const missing = [
+    !process.env.N8N_WEBHOOK_SECRET?.trim() && 'N8N_WEBHOOK_SECRET',
+    !process.env.N8N_WEBHOOK_INDUSTRY_QUESTIONS_URL?.trim() &&
+      'N8N_WEBHOOK_INDUSTRY_QUESTIONS_URL',
+    !process.env.N8N_WEBHOOK_SEO_KEYWORDS_URL?.trim() && 'N8N_WEBHOOK_SEO_KEYWORDS_URL',
+    !process.env.N8N_WEBHOOK_COMPETITOR_DESIGN_URL?.trim() &&
+      'N8N_WEBHOOK_COMPETITOR_DESIGN_URL',
+  ].filter(Boolean) as string[];
+
+  return { ready: missing.length === 0, missing };
+}
+
 export async function dispatchAllResearch(payload: N8nDispatchPayload): Promise<void> {
   const targets: Array<{ name: string; url: string | undefined }> = [
     {

@@ -1,5 +1,6 @@
 import { resolveAnalysisLoadState } from './analysis-state';
 import { CUSTOMER_COPY } from './analysis-copy';
+import { sanitizeCustomerErrorMessage } from './analysis-sanitize';
 import { parseResearchData } from './parse-research';
 import type {
   CompetitorRow,
@@ -223,7 +224,10 @@ export function mapCustomerAnalysisViewModel(input: {
       },
     ],
     topKeywords,
-    visibilityGaps: parsed.gaps.slice(0, 3),
+    visibilityGaps: parsed.gaps
+      .map((gap) => sanitizeCustomerErrorMessage(gap) ?? gap.trim())
+      .filter(Boolean)
+      .slice(0, 3),
     benchmarkCompetitor: benchmark?.name || benchmark?.domain || null,
     designPatterns,
     performanceBadge: performanceBadgeFromSites(parsed.performanceSites),

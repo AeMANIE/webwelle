@@ -9,7 +9,6 @@ import { ShinyButton } from '@/components/ui/shiny-button';
 import {
   hasValidIndustryDetail,
   isGenericIndustry,
-  leadRequiresIndustryDetail,
 } from '@/lib/funnel/industry';
 import { marketLabel, validatePostalCode } from '@/lib/funnel/market';
 import type { DachMarket } from '@/lib/funnel/types';
@@ -45,6 +44,7 @@ function Funnel2Content() {
     raw: string;
     proposed: string;
   } | null>(null);
+  const [detailSaving, setDetailSaving] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -174,39 +174,8 @@ function Funnel2Content() {
       return;
     }
 
-    const leadForCheck = {
-      industry_normalized: lead?.industry_normalized,
-      industry_raw: lead?.industry_raw ?? industryInput,
-      industry_detail: industryDetail,
-    };
-
     setLoading(true);
     setError(null);
-
-    if (leadRequiresIndustryDetail(leadForCheck)) {
-      if (!hasValidIndustryDetail(industryDetail)) {
-        setLoading(false);
-        setError(
-          'Bitte wählen Sie einen Vorschlag oder beschreiben Sie konkret, was Sie anbieten.'
-        );
-        return;
-      }
-
-      const detailRes = await fetch(`/api/funnel/leads/${token}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          intent: 'industry-detail',
-          industryDetail: industryDetail.trim(),
-        }),
-      });
-      if (!detailRes.ok) {
-        const detailData = await detailRes.json();
-        setLoading(false);
-        setError(detailData.message || 'Branchen-Details konnten nicht gespeichert werden.');
-        return;
-      }
-    }
 
     const res = await fetch(`/api/funnel/leads/${token}`, {
       method: 'PATCH',
@@ -217,6 +186,9 @@ function Funnel2Content() {
         postalCode,
         city,
         marketChosenManually: marketManual || !lead?.market_auto_detected,
+        ...(hasValidIndustryDetail(industryDetail)
+          ? { industryDetail: industryDetail.trim() }
+          : {}),
       }),
     });
     const data = await res.json();
@@ -395,6 +367,7 @@ function Funnel2Content() {
           industryDetail={industryDetail}
           market={market}
           onDetailChange={setIndustryDetail}
+          onSavingChange={setDetailSaving}
           onDetailSaved={(detail) => {
             setLead((prev) => (prev ? { ...prev, industry_detail: detail } : prev));
           }}
@@ -405,7 +378,7 @@ function Funnel2Content() {
         <ShinyButton
           type="button"
           onClick={submit}
-          disabled={loading || !canStartAnalysis}
+          disabled={loading || !canStartAnalysis || detailSaving}
           className="w-full"
         >
           {loading ? 'Analyse wird gestartet…' : 'Analyse starten'}

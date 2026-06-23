@@ -17,6 +17,7 @@ export interface IndustryDetailPanelProps {
   market: DachMarket;
   onDetailChange: (detail: string) => void;
   onDetailSaved?: (detail: string) => void;
+  onSavingChange?: (saving: boolean) => void;
 }
 
 export default function IndustryDetailPanel({
@@ -27,6 +28,7 @@ export default function IndustryDetailPanel({
   market,
   onDetailChange,
   onDetailSaved,
+  onSavingChange,
 }: IndustryDetailPanelProps) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [followUpQuestion, setFollowUpQuestion] = useState(
@@ -96,6 +98,7 @@ export default function IndustryDetailPanel({
 
     setSaving(true);
     setSaveError(null);
+    onSavingChange?.(true);
     try {
       const res = await fetch(`/api/funnel/leads/${token}`, {
         method: 'PATCH',
@@ -115,6 +118,7 @@ export default function IndustryDetailPanel({
       return false;
     } finally {
       setSaving(false);
+      onSavingChange?.(false);
     }
   }
 

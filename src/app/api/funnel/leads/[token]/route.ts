@@ -23,6 +23,7 @@ import {
   dispatchProjectAnalysis,
   competitorsFromResearchPayloads,
   getCallbackBaseUrl,
+  getFunnelResearchDispatchReadiness,
 } from '@/lib/n8n/dispatch';
 import { PROJECT_BRIEF_MIN_LENGTH } from '@/lib/funnel/dwa';
 import { CUSTOMER_FREE_TEXT_LIMITS } from '@/lib/funnel/input-limits';
@@ -72,6 +73,80 @@ const STARTERWELLE_ONLY_INTENTS = new Set([
 ]);
 
 const DWA_ONLY_INTENTS = new Set(['project-brief', 'solution-selection', 'dw-submit']);
+
+async function applyIndustryDetailFromBody(
+  token: string,
+  lead: FunnelLead,
+  body: { industryDetail?: unknown }
+): Promise<{ lead: FunnelLead; error?: NextResponse }> {
+  const rawDetail =
+    typeof body.industryDetail === 'string' ? body.industryDetail.trim() : '';
+
+  if (!rawDetail) {
+    return { lead };
+  }
+
+  const prepared = prepareCustomerFreeText(rawDetail, 'industry_detail');
+  if (!prepared.valid || !prepared.value) {
+    if (leadRequiresIndustryDetail(lead)) {
+      return {
+        lead,
+        error: secureResponse(
+          {
+            error: 'invalid_industry_detail',
+            message:
+              prepared.hint ||
+              `Bitte konkretisieren Sie Ihre Branche (mindestens ${CUSTOMER_FREE_TEXT_LIMITS.industry_detail.min} Zeichen).`,
+          },
+          400
+        ),
+      };
+    }
+    return { lead };
+  }
+
+  const updated = await updateFunnelLead(token, { industry_detail: prepared.value });
+  if (!updated) {
+    return {
+      lead,
+      error: secureResponse(
+        { error: 'update_failed', message: 'Branchen-Details konnten nicht gespeichert werden.' },
+        500
+      ),
+    };
+  }
+
+  return { lead: updated };
+}
+
+function buildStarterwelleResearchPayload(
+  refreshed: FunnelLead,
+  token: string,
+  overrides?: { postalCode?: string; city?: string; market?: DachMarket }
+) {
+  const industryForResearch = buildIndustryForResearch(
+    refreshed.industry_normalized,
+    refreshed.industry_detail,
+    refreshed.industry_raw
+  );
+  const market = overrides?.market || refreshed.market || 'DE';
+
+  return {
+    leadId: refreshed.id,
+    token,
+    industry: industryForResearch,
+    industryRaw: refreshed.industry_raw || '',
+    industryDetail: refreshed.industry_detail || undefined,
+    industryForResearch,
+    postalCode: overrides?.postalCode ?? refreshed.postal_code ?? '',
+    city: overrides?.city ?? refreshed.city ?? '',
+    market,
+    country: market,
+    lat: refreshed.geo_lat ?? undefined,
+    lng: refreshed.geo_lng ?? undefined,
+    callbackBaseUrl: getCallbackBaseUrl(),
+  };
+}
 
 function rejectWrongFunnel(lead: FunnelLead, intent: string) {
   if (DWA_ONLY_INTENTS.has(intent) && !isWachstumsarchitekturLead(lead)) {
@@ -409,7 +484,11 @@ async function handleFunnelPatchIntent(
   }
 
   if (intent === 'geo') {
-    if (leadRequiresIndustryDetail(lead)) {
+    const detailApply = await applyIndustryDetailFromBody(token, lead, body);
+    if (detailApply.error) return detailApply.error;
+    let currentLead = detailApply.lead;
+
+    if (leadRequiresIndustryDetail(currentLead)) {
       return secureResponse(
         {
           error: 'industry_detail_required',
@@ -437,7 +516,7 @@ async function handleFunnelPatchIntent(
       country: market,
       market_auto_detected: marketChosenManually
         ? false
-        : lead.market_auto_detected,
+        : currentLead.market_auto_detected,
       postal_code: postalCode,
       city: city || undefined,
       status: 'geo_complete',
@@ -445,32 +524,29 @@ async function handleFunnelPatchIntent(
 
     await updateFunnelLead(token, { status: 'research_running' });
 
-    const refreshed = (await getFunnelLeadByToken(token)) || lead;
-    const industryForResearch = buildIndustryForResearch(
-      refreshed.industry_normalized,
-      refreshed.industry_detail,
-      refreshed.industry_raw
-    );
-
-    const payload = {
-      leadId: refreshed.id,
-      token,
-      industry: industryForResearch,
-      industryRaw: refreshed.industry_raw || '',
-      industryDetail: refreshed.industry_detail || undefined,
-      industryForResearch,
+    const refreshed = (await getFunnelLeadByToken(token)) || currentLead;
+    const payload = buildStarterwelleResearchPayload(refreshed, token, {
       postalCode,
       city,
       market,
-      country: market,
-      lat: refreshed.geo_lat ?? undefined,
-      lng: refreshed.geo_lng ?? undefined,
-      callbackBaseUrl: getCallbackBaseUrl(),
-    };
+    });
+
+    const dispatchReadiness = getFunnelResearchDispatchReadiness();
+    if (!dispatchReadiness.ready) {
+      console.error(
+        `funnel geo: fehlende n8n-Env für Lead ${refreshed.id}: ${dispatchReadiness.missing.join(', ')}`
+      );
+    }
 
     void dispatchAllResearch(payload);
 
-    return secureResponse({ lead: updated, researchStarted: true });
+    return secureResponse({
+      lead: updated,
+      researchStarted: true,
+      ...(dispatchReadiness.missing.length > 0
+        ? { researchDispatchWarning: dispatchReadiness.missing }
+        : {}),
+    });
   }
 
   if (intent === 'discount') {
@@ -840,26 +916,37 @@ async function handleFunnelPatchIntent(
   }
 
   if (intent === 'retry-research') {
-    const industryForResearch = buildIndustryForResearch(
-      lead.industry_normalized,
-      lead.industry_detail,
-      lead.industry_raw
-    );
-    const payload = {
-      leadId: lead.id,
-      token,
-      industry: industryForResearch,
-      industryRaw: lead.industry_raw || '',
-      industryDetail: lead.industry_detail || undefined,
-      industryForResearch,
-      postalCode: lead.postal_code || '',
-      city: lead.city || '',
-      market: lead.market || 'DE',
-      country: lead.country || lead.market || 'DE',
-      callbackBaseUrl: getCallbackBaseUrl(),
-    };
+    const detailApply = await applyIndustryDetailFromBody(token, lead, body);
+    if (detailApply.error) return detailApply.error;
+    const currentLead = detailApply.lead;
+
+    if (leadRequiresIndustryDetail(currentLead)) {
+      return secureResponse(
+        {
+          error: 'industry_detail_required',
+          message:
+            'Ihre Branche ist sehr allgemein. Bitte wählen Sie einen Vorschlag oder beschreiben Sie konkret, was Sie anbieten.',
+        },
+        400
+      );
+    }
+
+    const refreshed = (await getFunnelLeadByToken(token)) || currentLead;
+    const payload = buildStarterwelleResearchPayload(refreshed, token);
+    const dispatchReadiness = getFunnelResearchDispatchReadiness();
+    if (!dispatchReadiness.ready) {
+      console.error(
+        `funnel retry-research: fehlende n8n-Env für Lead ${refreshed.id}: ${dispatchReadiness.missing.join(', ')}`
+      );
+    }
+
     void dispatchAllResearch(payload);
-    return secureResponse({ ok: true });
+    return secureResponse({
+      ok: true,
+      ...(dispatchReadiness.missing.length > 0
+        ? { researchDispatchWarning: dispatchReadiness.missing }
+        : {}),
+    });
   }
 
   return secureResponse({ error: 'unknown_intent' }, 400);

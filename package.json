@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/responsive-layout-mode.test.ts src/lib/services-scroll-glow.test.ts src/lib/benefits-card-glow.test.ts src/lib/wave-path-auto-animate.test.ts src/lib/funnel/analysis/analysis-view-model.test.ts src/lib/funnel/analysis/keyword-clusters.test.ts src/lib/funnel/analysis/packages-selection.test.ts src/lib/funnel/funnel-stripe-line-items.test.ts src/lib/stripe-checkout-paid.test.ts",
+    "test": "tsx --test src/lib/responsive-layout-mode.test.ts src/lib/services-scroll-glow.test.ts src/lib/benefits-card-glow.test.ts src/lib/wave-path-auto-animate.test.ts src/lib/funnel/industry-generic-path.test.ts src/lib/funnel/analysis/analysis-view-model.test.ts src/lib/funnel/analysis/keyword-clusters.test.ts src/lib/funnel/analysis/packages-selection.test.ts src/lib/funnel/funnel-stripe-line-items.test.ts src/lib/stripe-checkout-paid.test.ts",
     "db:backup": "bash scripts/pg-backup.sh",
     "db:restore": "bash scripts/pg-restore.sh",
     "db:ops-health": "tsx scripts/db-ops-health.ts",
