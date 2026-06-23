@@ -120,6 +120,25 @@ export function buildKeywordVolumeChartData(keywords: KeywordRow[]): {
   };
 }
 
+/** Pie slices per keyword for the technical-details section (not cluster aggregation). */
+export function buildKeywordDetailsPieChartData(
+  keywords: KeywordRow[],
+  options?: { limit?: number }
+): {
+  rows: ClusterChartRow[];
+  usesRelevanceFallback: boolean;
+} {
+  const { rows, usesRelevanceFallback } = buildKeywordDetailsChartData(keywords, options);
+  return {
+    rows: rows.map(({ keyword, volume, cluster }) => ({
+      name: keyword.slice(0, 28),
+      value: volume,
+      cluster,
+    })),
+    usesRelevanceFallback,
+  };
+}
+
 /** Pie chart data: cluster groups, then keyword-volume fallback when only one cluster exists. */
 export function buildKeywordClusterChartData(
   keywords: KeywordRow[],

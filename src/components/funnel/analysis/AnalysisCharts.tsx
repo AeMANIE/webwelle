@@ -6,6 +6,8 @@ import {
   BarChart,
   Cell,
   Legend,
+  Pie,
+  PieChart,
   PolarAngleAxis,
   PolarGrid,
   PolarRadiusAxis,
@@ -18,9 +20,8 @@ import {
 } from 'recharts';
 import type { CompetitorRow, KeywordRow } from '@/lib/funnel/analysis/analysis-types';
 import {
-  buildKeywordDetailsChartData,
+  buildKeywordDetailsPieChartData,
   buildKeywordVolumeChartData,
-  type KeywordDetailChartRow,
 } from '@/lib/funnel/analysis/keyword-clusters';
 
 const CHART_COLORS = ['#DCA441', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
@@ -112,37 +113,8 @@ export function KeywordVolumeChart({ keywords, mounted }: { keywords: KeywordRow
   );
 }
 
-function KeywordDetailTooltip({
-  active,
-  payload,
-  usesRelevanceFallback,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload?: KeywordDetailChartRow }>;
-  usesRelevanceFallback: boolean;
-}) {
-  if (!active || !payload?.[0]?.payload) return null;
-  const row = payload[0].payload;
-  const valueLabel = usesRelevanceFallback ? 'Relevanz' : 'Suchvolumen';
-  const value = usesRelevanceFallback
-    ? row.volume
-    : row.volume.toLocaleString('de-DE');
-
-  return (
-    <div style={TOOLTIP_STYLE}>
-      <p style={TOOLTIP_LABEL_STYLE}>{row.keyword}</p>
-      {row.cluster && (
-        <p style={{ ...TOOLTIP_ITEM_STYLE, marginTop: 4 }}>Thema: {row.cluster}</p>
-      )}
-      <p style={{ ...TOOLTIP_ITEM_STYLE, marginTop: 4 }}>
-        {valueLabel}: {value}
-      </p>
-    </div>
-  );
-}
-
-/** All researched keywords for the expandable technical-details section. */
-export function KeywordDetailsChart({
+/** Round chart with every researched keyword in the technical-details section. */
+export function KeywordDetailsPieChart({
   keywords,
   mounted,
 }: {
@@ -150,55 +122,89 @@ export function KeywordDetailsChart({
   mounted: boolean;
 }) {
   const { rows: data, usesRelevanceFallback } = useMemo(
-    () => buildKeywordDetailsChartData(keywords, { limit: 30 }),
+    () => buildKeywordDetailsPieChartData(keywords, { limit: 30 }),
     [keywords]
   );
 
-  const axisWidth = useMemo(() => yAxisWidth(data.map((d) => d.keyword)), [data]);
-
   if (!data.length) return null;
+  if (data.length <= 1) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Für dieses Thema liegt aktuell nur ein Suchbegriff vor.
+      </p>
+    );
+  }
   if (!mounted) return <div className="h-60 rounded-xl bg-muted/20 animate-pulse" />;
+
+  const valueLabel = usesRelevanceFallback ? 'Relevanz' : 'Suchvolumen';
 
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
         {usesRelevanceFallback
-          ? 'Einzelne Suchbegriffe mit zugehörigem Thema – Suchvolumen liegt derzeit nicht vor.'
-          : 'Einzelne Suchbegriffe mit Suchvolumen und Themenzuordnung.'}
+          ? 'Alle recherchierten Suchbegriffe – Suchvolumen liegt derzeit nicht vor.'
+          : 'Alle recherchierten Suchbegriffe mit Suchvolumen.'}
       </p>
-      <ResponsiveContainer width="100%" height={Math.max(220, data.length * 32)}>
-        <BarChart
-          data={data}
-          layout="vertical"
-          margin={{ left: 4, right: 20, top: 4, bottom: 4 }}
-        >
-          <XAxis type="number" hide />
-          <YAxis
-            type="category"
-            dataKey="keyword"
-            width={axisWidth}
-            tick={{ fill: '#94a3b8', fontSize: 11 }}
-            tickLine={false}
-            axisLine={false}
-          />
-          <Tooltip
-            cursor={CURSOR_STYLE}
-            content={({ active, payload }) => (
-              <KeywordDetailTooltip
-                active={active}
-                payload={
-                  payload as unknown as Array<{ payload?: KeywordDetailChartRow }> | undefined
-                }
-                usesRelevanceFallback={usesRelevanceFallback}
-              />
-            )}
-          />
-          <Bar dataKey="volume" radius={[0, 6, 6, 0]}>
+      <ResponsiveContainer width="100%" height={Math.max(320, 260 + Math.min(data.length, 14) * 10)}>
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="42%"
+            outerRadius={88}
+            innerRadius={44}
+            paddingAngle={data.length > 1 ? 2 : 0}
+            labelLine={false}
+          >
             {data.map((_, i) => (
               <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
             ))}
-          </Bar>
-        </BarChart>
+          </Pie>
+          <Tooltip
+            content={({ active, payload }) => {
+              if (!active || !payload?.[0]?.payload) return null;
+              const row = payload[0].payload as {
+                name?: string;
+                value?: number;
+                cluster?: string;
+              };
+              return (
+                <div style={TOOLTIP_STYLE}>
+                  <p style={TOOLTIP_LABEL_STYLE}>{row.name}</p>
+                  {row.cluster ? (
+                    <p style={{ ...TOOLTIP_ITEM_STYLE, marginTop: 4 }}>Thema: {row.cluster}</p>
+                  ) : null}
+                  <p style={{ ...TOOLTIP_ITEM_STYLE, marginTop: 4 }}>
+                    {valueLabel}:{' '}
+                    {usesRelevanceFallback
+                      ? row.value
+                      : Number(row.value || 0).toLocaleString('de-DE')}
+                  </p>
+                </div>
+              );
+            }}
+          />
+          <Legend
+            verticalAlign="bottom"
+            formatter={(value: string, entry) => {
+              const count = (entry.payload as { value?: number })?.value;
+              const suffix =
+                typeof count === 'number'
+                  ? usesRelevanceFallback
+                    ? ''
+                    : ` (${count.toLocaleString('de-DE')})`
+                  : '';
+              return (
+                <span style={{ color: '#94a3b8', fontSize: 11 }}>
+                  {value}
+                  {suffix}
+                </span>
+              );
+            }}
+          />
+        </PieChart>
       </ResponsiveContainer>
     </div>
   );

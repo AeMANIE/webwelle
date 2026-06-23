@@ -31,7 +31,7 @@ import { ChartInsightWrapper } from './ChartInsightWrapper';
 import { StickyAddonSummary } from './StickyAddonSummary';
 import {
   DesignScoreChart,
-  KeywordDetailsChart,
+  KeywordDetailsPieChart,
   KeywordVolumeChart,
   PerformanceRadarChart,
   performanceBadgeLabel,
@@ -165,7 +165,7 @@ export default function CustomerAnalysisView({
               <KeywordVolumeChart keywords={vm.parsed.keywords} mounted={mounted} />
             }
             details={
-              <KeywordDetailsChart keywords={vm.parsed.keywords} mounted={mounted} />
+              <KeywordDetailsPieChart keywords={vm.parsed.keywords} mounted={mounted} />
             }
           />
           <div className="space-y-3 pt-2 border-t border-border">

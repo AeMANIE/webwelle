@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildKeywordClusterChartData,
   buildKeywordDetailsChartData,
+  buildKeywordDetailsPieChartData,
   buildKeywordVolumeChartData,
   normalizeSeoKeywords,
 } from './keyword-clusters';
@@ -83,5 +84,18 @@ describe('keyword-clusters', () => {
     assert.equal(rows.length, 4);
     assert.equal(rows[0].cluster, 'Kempten');
     assert.equal(rows[1].cluster, 'lokal');
+  });
+
+  it('details pie chart uses one slice per keyword instead of cluster groups', () => {
+    const keywords = [
+      { keyword: 'Arztpraxis Kempten', cluster: 'Kempten', volume: null },
+      { keyword: 'Arztpraxis in der Nähe', cluster: 'lokal', volume: null },
+      { keyword: 'praxis Arztpraxis', cluster: 'Kempten', volume: null },
+    ];
+    const { rows } = buildKeywordDetailsPieChartData(keywords);
+
+    assert.equal(rows.length, 3);
+    assert.equal(rows[0].name, 'Arztpraxis Kempten');
+    assert.equal(rows[1].name, 'Arztpraxis in der Nähe');
   });
 });
