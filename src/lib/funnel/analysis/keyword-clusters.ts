@@ -61,24 +61,35 @@ export function normalizeSeoKeywords(seoPayload: Record<string, unknown>): Keywo
 
 export type KeywordVolumeChartRow = { keyword: string; volume: number };
 
-/** Bar chart data: search volume when available, otherwise equal relevance weights. */
-export function buildKeywordVolumeChartData(keywords: KeywordRow[]): {
-  rows: KeywordVolumeChartRow[];
+export type KeywordDetailChartRow = KeywordVolumeChartRow & {
+  cluster?: string;
+};
+
+/** Per-keyword chart rows for technical details (not cluster aggregation). */
+export function buildKeywordDetailsChartData(
+  keywords: KeywordRow[],
+  options?: { limit?: number }
+): {
+  rows: KeywordDetailChartRow[];
   usesRelevanceFallback: boolean;
 } {
+  const limit = options?.limit ?? 30;
+
   const withVolume = keywords
     .filter((k) => k.volume != null && Number(k.volume) > 0)
-    .slice(0, 10)
     .map((k) => ({
       keyword: (k.keyword || k.cluster || 'Keyword').trim(),
       volume: Number(k.volume),
-    }));
+      cluster: (k.cluster || '').trim() || undefined,
+    }))
+    .sort((a, b) => b.volume - a.volume)
+    .slice(0, limit);
 
   if (withVolume.length > 0) {
     return { rows: withVolume, usesRelevanceFallback: false };
   }
 
-  const deduped: KeywordVolumeChartRow[] = [];
+  const deduped: KeywordDetailChartRow[] = [];
   const seen = new Set<string>();
   for (const k of keywords) {
     const keyword = (k.keyword || k.cluster || '').trim();
@@ -86,11 +97,27 @@ export function buildKeywordVolumeChartData(keywords: KeywordRow[]): {
     const key = keyword.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    deduped.push({ keyword, volume: 1 });
-    if (deduped.length >= 10) break;
+    deduped.push({
+      keyword,
+      volume: 1,
+      cluster: (k.cluster || '').trim() || undefined,
+    });
+    if (deduped.length >= limit) break;
   }
 
   return { rows: deduped, usesRelevanceFallback: deduped.length > 0 };
+}
+
+/** Bar chart data: search volume when available, otherwise equal relevance weights. */
+export function buildKeywordVolumeChartData(keywords: KeywordRow[]): {
+  rows: KeywordVolumeChartRow[];
+  usesRelevanceFallback: boolean;
+} {
+  const { rows, usesRelevanceFallback } = buildKeywordDetailsChartData(keywords, { limit: 10 });
+  return {
+    rows: rows.map(({ keyword, volume }) => ({ keyword, volume })),
+    usesRelevanceFallback,
+  };
 }
 
 /** Pie chart data: cluster groups, then keyword-volume fallback when only one cluster exists. */

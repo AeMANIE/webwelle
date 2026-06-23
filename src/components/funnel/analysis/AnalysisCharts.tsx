@@ -6,8 +6,6 @@ import {
   BarChart,
   Cell,
   Legend,
-  Pie,
-  PieChart,
   PolarAngleAxis,
   PolarGrid,
   PolarRadiusAxis,
@@ -20,9 +18,9 @@ import {
 } from 'recharts';
 import type { CompetitorRow, KeywordRow } from '@/lib/funnel/analysis/analysis-types';
 import {
-  buildKeywordClusterChartData,
+  buildKeywordDetailsChartData,
   buildKeywordVolumeChartData,
-  clusterChartUsesKeywordFallback,
+  type KeywordDetailChartRow,
 } from '@/lib/funnel/analysis/keyword-clusters';
 
 const CHART_COLORS = ['#DCA441', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
@@ -114,91 +112,93 @@ export function KeywordVolumeChart({ keywords, mounted }: { keywords: KeywordRow
   );
 }
 
-export function KeywordClusterChart({
+function KeywordDetailTooltip({
+  active,
+  payload,
+  usesRelevanceFallback,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload?: KeywordDetailChartRow }>;
+  usesRelevanceFallback: boolean;
+}) {
+  if (!active || !payload?.[0]?.payload) return null;
+  const row = payload[0].payload;
+  const valueLabel = usesRelevanceFallback ? 'Relevanz' : 'Suchvolumen';
+  const value = usesRelevanceFallback
+    ? row.volume
+    : row.volume.toLocaleString('de-DE');
+
+  return (
+    <div style={TOOLTIP_STYLE}>
+      <p style={TOOLTIP_LABEL_STYLE}>{row.keyword}</p>
+      {row.cluster && (
+        <p style={{ ...TOOLTIP_ITEM_STYLE, marginTop: 4 }}>Thema: {row.cluster}</p>
+      )}
+      <p style={{ ...TOOLTIP_ITEM_STYLE, marginTop: 4 }}>
+        {valueLabel}: {value}
+      </p>
+    </div>
+  );
+}
+
+/** All researched keywords for the expandable technical-details section. */
+export function KeywordDetailsChart({
   keywords,
   mounted,
-  seoPayload,
 }: {
   keywords: KeywordRow[];
   mounted: boolean;
-  seoPayload?: Record<string, unknown>;
 }) {
-  const data = useMemo(
-    () => buildKeywordClusterChartData(keywords, seoPayload),
-    [keywords, seoPayload]
+  const { rows: data, usesRelevanceFallback } = useMemo(
+    () => buildKeywordDetailsChartData(keywords, { limit: 30 }),
+    [keywords]
   );
-  const usesKeywordFallback = useMemo(
-    () => clusterChartUsesKeywordFallback(keywords, seoPayload),
-    [keywords, seoPayload]
-  );
+
+  const axisWidth = useMemo(() => yAxisWidth(data.map((d) => d.keyword)), [data]);
 
   if (!data.length) return null;
-  if (data.length <= 1) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Für dieses Thema liegt aktuell nur eine zusammengehörige Keyword-Gruppe vor. Die
-        einzelnen Suchbegriffe sehen Sie oben im Balkendiagramm.
-      </p>
-    );
-  }
   if (!mounted) return <div className="h-60 rounded-xl bg-muted/20 animate-pulse" />;
-
-  const valueLabel = usesKeywordFallback ? 'Suchvolumen' : 'Keywords';
 
   return (
     <div className="space-y-2">
-      {usesKeywordFallback && (
-        <p className="text-xs text-muted-foreground">
-          Aufteilung nach den wichtigsten Suchbegriffen (Suchvolumen).
-        </p>
-      )}
-      <ResponsiveContainer width="100%" height={280}>
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="45%"
-            outerRadius={88}
-            innerRadius={44}
-            paddingAngle={data.length > 1 ? 3 : 0}
-            labelLine={false}
-          >
+      <p className="text-xs text-muted-foreground">
+        {usesRelevanceFallback
+          ? 'Einzelne Suchbegriffe mit zugehörigem Thema – Suchvolumen liegt derzeit nicht vor.'
+          : 'Einzelne Suchbegriffe mit Suchvolumen und Themenzuordnung.'}
+      </p>
+      <ResponsiveContainer width="100%" height={Math.max(220, data.length * 32)}>
+        <BarChart
+          data={data}
+          layout="vertical"
+          margin={{ left: 4, right: 20, top: 4, bottom: 4 }}
+        >
+          <XAxis type="number" hide />
+          <YAxis
+            type="category"
+            dataKey="keyword"
+            width={axisWidth}
+            tick={{ fill: '#94a3b8', fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <Tooltip
+            cursor={CURSOR_STYLE}
+            content={({ active, payload }) => (
+              <KeywordDetailTooltip
+                active={active}
+                payload={
+                  payload as unknown as Array<{ payload?: KeywordDetailChartRow }> | undefined
+                }
+                usesRelevanceFallback={usesRelevanceFallback}
+              />
+            )}
+          />
+          <Bar dataKey="volume" radius={[0, 6, 6, 0]}>
             {data.map((_, i) => (
               <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
             ))}
-          </Pie>
-          <Tooltip
-            contentStyle={TOOLTIP_STYLE}
-            labelStyle={TOOLTIP_LABEL_STYLE}
-            itemStyle={TOOLTIP_ITEM_STYLE}
-            formatter={(v) => [
-              usesKeywordFallback
-                ? Number(v).toLocaleString('de-DE')
-                : Number(v),
-              valueLabel,
-            ]}
-          />
-          <Legend
-            verticalAlign="bottom"
-            formatter={(value: string, entry) => {
-              const count = (entry.payload as { value?: number })?.value;
-              const suffix =
-                typeof count === 'number'
-                  ? usesKeywordFallback
-                    ? ` (${count.toLocaleString('de-DE')})`
-                    : ` (${count})`
-                  : '';
-              return (
-                <span style={{ color: '#94a3b8', fontSize: 12 }}>
-                  {value}
-                  {suffix}
-                </span>
-              );
-            }}
-          />
-        </PieChart>
+          </Bar>
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );

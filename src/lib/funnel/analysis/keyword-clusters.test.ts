@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildKeywordClusterChartData,
+  buildKeywordDetailsChartData,
   buildKeywordVolumeChartData,
   normalizeSeoKeywords,
 } from './keyword-clusters';
@@ -67,5 +68,20 @@ describe('keyword-clusters', () => {
     assert.equal(rows.length, 3);
     assert.equal(rows[0].keyword, 'Arztpraxis Kempten');
     assert.equal(rows[0].volume, 1);
+  });
+
+  it('details chart lists individual keywords across multiple clusters', () => {
+    const keywords = [
+      { keyword: 'Arztpraxis Kempten', cluster: 'Kempten', volume: null },
+      { keyword: 'Arztpraxis in der Nähe', cluster: 'lokal', volume: null },
+      { keyword: 'praxis Arztpraxis', cluster: 'Kempten', volume: null },
+      { keyword: 'kempten Arztpraxis', cluster: 'Kempten', volume: null },
+    ];
+    const { rows, usesRelevanceFallback } = buildKeywordDetailsChartData(keywords);
+
+    assert.equal(usesRelevanceFallback, true);
+    assert.equal(rows.length, 4);
+    assert.equal(rows[0].cluster, 'Kempten');
+    assert.equal(rows[1].cluster, 'lokal');
   });
 });
