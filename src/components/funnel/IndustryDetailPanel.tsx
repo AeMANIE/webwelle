@@ -14,6 +14,8 @@ export interface IndustryDetailPanelProps {
   industryNormalized: string | null;
   industryRaw: string | null;
   industryDetail: string;
+  /** Persisted detail from lead — panel visibility uses this, not the draft input. */
+  savedIndustryDetail?: string | null;
   market: DachMarket;
   onDetailChange: (detail: string) => void;
   onDetailSaved?: (detail: string) => void;
@@ -25,6 +27,7 @@ export default function IndustryDetailPanel({
   industryNormalized,
   industryRaw,
   industryDetail,
+  savedIndustryDetail = null,
   market,
   onDetailChange,
   onDetailSaved,
@@ -42,7 +45,7 @@ export default function IndustryDetailPanel({
   const needsDetail = isGenericIndustry(
     industryNormalized,
     industryRaw,
-    industryDetail
+    savedIndustryDetail
   );
 
   useEffect(() => {

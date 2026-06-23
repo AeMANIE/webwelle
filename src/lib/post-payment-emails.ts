@@ -1,4 +1,5 @@
 import type Stripe from 'stripe';
+import { sendAdminPaidOrderNotification } from '@/lib/admin-order-notification';
 import { sendBookingConfirmation } from '@/lib/email-confirmation';
 import { sendPortalActivationEmail } from '@/lib/email-portal-activation';
 import { renderWebWelleInvoiceEmail } from '@/lib/email-templates/webwelle';
@@ -103,7 +104,13 @@ function offerItemsToPdfLines(items: OfferItemRow[], discountCents = 0) {
   return lines;
 }
 
-async function sendFunnelInvoiceEmail(params: {
+export interface FunnelInvoiceArtifacts {
+  invoiceNumber: string;
+  pdfBuffer: Buffer;
+  amountCents: number;
+}
+
+async function buildFunnelInvoiceArtifacts(params: {
   session: Stripe.Checkout.Session;
   customerEmail: string;
   customerName: string;
@@ -111,7 +118,7 @@ async function sendFunnelInvoiceEmail(params: {
   customerAddress?: string | null;
   offerItems: OfferItemRow[];
   offerDiscountCents?: number;
-}): Promise<void> {
+}): Promise<FunnelInvoiceArtifacts> {
   const invoiceNumber = funnelInvoiceNumber(params.session.id);
   const stripeInvoiceId = `checkout_${params.session.id}`;
   const amountCents = params.session.amount_total || 0;
@@ -145,6 +152,21 @@ async function sendFunnelInvoiceEmail(params: {
     issuer: 'WebWelle',
   });
 
+  return { invoiceNumber, pdfBuffer, amountCents };
+}
+
+async function sendFunnelInvoiceEmail(params: {
+  session: Stripe.Checkout.Session;
+  customerEmail: string;
+  customerName: string;
+  customerNumber?: string | null;
+  customerAddress?: string | null;
+  offerItems: OfferItemRow[];
+  offerDiscountCents?: number;
+}): Promise<FunnelInvoiceArtifacts> {
+  const artifacts = await buildFunnelInvoiceArtifacts(params);
+  const { invoiceNumber, pdfBuffer } = artifacts;
+
   const invoiceMail = renderWebWelleInvoiceEmail({
     customerName: params.customerName,
     customerEmail: params.customerEmail,
@@ -167,6 +189,7 @@ async function sendFunnelInvoiceEmail(params: {
   });
 
   console.log(`✅ Funnel-Rechnung ${invoiceNumber} an ${params.customerEmail} gesendet`);
+  return artifacts;
 }
 
 export async function sendPostPaymentEmails(params: PostPaymentEmailParams): Promise<void> {
@@ -174,9 +197,9 @@ export async function sendPostPaymentEmails(params: PostPaymentEmailParams): Pro
 
   console.log(`📧 sendPostPaymentEmails (${source}) für Session: ${session.id}`);
 
-  if (await wasEmailAlreadySent(session.id)) {
+  const customerAlreadySent = await wasEmailAlreadySent(session.id);
+  if (customerAlreadySent) {
     console.log('⚠️ E-Mail wurde bereits gesendet für Session:', session.id);
-    return;
   }
 
   const customerEmail = resolveSessionEmail(session, bookingData.customer_email);
@@ -210,69 +233,96 @@ export async function sendPostPaymentEmails(params: PostPaymentEmailParams): Pro
 
   const isMonthly = metadata.isMonthly === 'true' || !!session.subscription;
 
+  let invoiceArtifacts: FunnelInvoiceArtifacts | null = null;
+
+  if (!customerAlreadySent) {
+    try {
+      const confirmation = await sendBookingConfirmation({
+        customerName,
+        customerEmail,
+        packageName,
+        packagePrice,
+        isMonthly,
+        selectedAddons,
+        totalAmount: (session.amount_total || 0) / 100,
+        currency: session.currency || 'eur',
+        sessionId: session.id,
+        showZoomCta: true,
+      });
+
+      if (!confirmation.success) {
+        console.error(`❌ Bestellbestätigung fehlgeschlagen: ${confirmation.error || 'Unbekannt'}`);
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Senden der Bestellbestätigung:', error);
+    }
+
+    if (source === 'funnel') {
+      const invoiceItems =
+        params.offerItems?.length && params.offerItems.length > 0
+          ? params.offerItems
+          : [
+              {
+                label: packageName,
+                unit_amount_cents: session.amount_total || 0,
+                billing: 'one_time',
+              },
+            ];
+
+      try {
+        invoiceArtifacts = await sendFunnelInvoiceEmail({
+          session,
+          customerEmail,
+          customerName,
+          customerNumber: params.customerNumber,
+          customerAddress: params.customerAddress,
+          offerItems: invoiceItems,
+          offerDiscountCents: params.offerDiscountCents,
+        });
+      } catch (error) {
+        console.error('❌ Fehler beim Senden der Funnel-Rechnung:', error);
+      }
+    }
+
+    try {
+      const existingCustomer = await getCustomerByEmail(customerEmail);
+      if (existingCustomer?.portal_activated) {
+        console.log('ℹ️ Portal bereits aktiv – Aktivierungs-E-Mail übersprungen.');
+      } else {
+        const activationToken = generateActivationToken();
+        await saveActivationToken(customerEmail, activationToken, bookingData.session_id);
+        await sendPortalActivationEmail({ customerName, customerEmail, activationToken });
+        console.log(`✅ Portal-Aktivierungs-E-Mail gesendet an ${customerEmail}`);
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Senden der Portal-Aktivierungs-E-Mail:', error);
+    }
+
+    await markEmailSent(session.id);
+  }
+
+  const customerPhone = session.customer_details?.phone || metadata.phone || null;
+
   try {
-    const confirmation = await sendBookingConfirmation({
-      customerName,
-      customerEmail,
+    await sendAdminPaidOrderNotification({
+      session,
+      metadata,
+      source,
       packageName,
       packagePrice,
       isMonthly,
       selectedAddons,
-      totalAmount: (session.amount_total || 0) / 100,
-      currency: session.currency || 'eur',
-      sessionId: session.id,
-      showZoomCta: true,
+      customerName,
+      customerEmail,
+      customerPhone,
+      customerAddress: params.customerAddress,
+      customerNumber: params.customerNumber,
+      invoiceNumber: invoiceArtifacts?.invoiceNumber ?? null,
+      invoicePdf: invoiceArtifacts?.pdfBuffer ?? null,
     });
-
-    if (!confirmation.success) {
-      console.error(`❌ Bestellbestätigung fehlgeschlagen: ${confirmation.error || 'Unbekannt'}`);
-    }
   } catch (error) {
-    console.error('❌ Fehler beim Senden der Bestellbestätigung:', error);
+    console.error('❌ Fehler bei Admin-Bestellbenachrichtigung:', error);
   }
-
-  if (source === 'funnel') {
-    const invoiceItems =
-      params.offerItems?.length && params.offerItems.length > 0
-        ? params.offerItems
-        : [
-            {
-              label: packageName,
-              unit_amount_cents: session.amount_total || 0,
-              billing: 'one_time',
-            },
-          ];
-
-    try {
-      await sendFunnelInvoiceEmail({
-        session,
-        customerEmail,
-        customerName,
-        customerNumber: params.customerNumber,
-        customerAddress: params.customerAddress,
-        offerItems: invoiceItems,
-        offerDiscountCents: params.offerDiscountCents,
-      });
-    } catch (error) {
-      console.error('❌ Fehler beim Senden der Funnel-Rechnung:', error);
-    }
-  }
-
-  try {
-    const existingCustomer = await getCustomerByEmail(customerEmail);
-    if (existingCustomer?.portal_activated) {
-      console.log('ℹ️ Portal bereits aktiv – Aktivierungs-E-Mail übersprungen.');
-    } else {
-      const activationToken = generateActivationToken();
-      await saveActivationToken(customerEmail, activationToken, bookingData.session_id);
-      await sendPortalActivationEmail({ customerName, customerEmail, activationToken });
-      console.log(`✅ Portal-Aktivierungs-E-Mail gesendet an ${customerEmail}`);
-    }
-  } catch (error) {
-    console.error('❌ Fehler beim Senden der Portal-Aktivierungs-E-Mail:', error);
-  }
-
-  await markEmailSent(session.id);
 }
 
 export async function sendStripeInvoiceEmail(params: {

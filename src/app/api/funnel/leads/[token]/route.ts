@@ -813,6 +813,14 @@ async function handleFunnelPatchIntent(
 
     const updated = await updateFunnelLead(token, updatePayload);
 
+    if (updated) {
+      void import('@/lib/admin-order-notification').then(({ sendAdminDwaConsultationNotification }) =>
+        sendAdminDwaConsultationNotification(updated).catch((error) => {
+          console.error('❌ Fehler bei Admin-DWA-Benachrichtigung:', error);
+        })
+      );
+    }
+
     return secureResponse({ lead: updated, ok: true });
   }
 

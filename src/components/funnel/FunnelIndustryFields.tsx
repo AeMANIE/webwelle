@@ -67,7 +67,7 @@ const FunnelIndustryFields = forwardRef<FunnelIndustryFieldsHandle, FunnelIndust
       ? isGenericIndustry(
           lead?.industry_normalized,
           lead?.industry_raw ?? industryInput,
-          industryDetail
+          lead?.industry_detail
         )
       : false;
 
@@ -270,6 +270,7 @@ const FunnelIndustryFields = forwardRef<FunnelIndustryFieldsHandle, FunnelIndust
             industryNormalized={lead?.industry_normalized ?? null}
             industryRaw={lead?.industry_raw ?? industryInput}
             industryDetail={industryDetail}
+            savedIndustryDetail={lead?.industry_detail}
             market={market}
             onDetailChange={setIndustryDetail}
             onDetailSaved={(detail) => {

@@ -74,7 +74,7 @@ function Funnel2Content() {
     ? isGenericIndustry(
         lead?.industry_normalized,
         lead?.industry_raw ?? industryInput,
-        industryDetail
+        lead?.industry_detail
       )
     : false;
 
@@ -365,6 +365,7 @@ function Funnel2Content() {
           industryNormalized={lead?.industry_normalized ?? null}
           industryRaw={lead?.industry_raw ?? industryInput}
           industryDetail={industryDetail}
+          savedIndustryDetail={lead?.industry_detail}
           market={market}
           onDetailChange={setIndustryDetail}
           onSavingChange={setDetailSaving}
