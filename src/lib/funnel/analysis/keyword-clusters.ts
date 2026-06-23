@@ -59,6 +59,40 @@ export function normalizeSeoKeywords(seoPayload: Record<string, unknown>): Keywo
   return expanded.slice(0, 30);
 }
 
+export type KeywordVolumeChartRow = { keyword: string; volume: number };
+
+/** Bar chart data: search volume when available, otherwise equal relevance weights. */
+export function buildKeywordVolumeChartData(keywords: KeywordRow[]): {
+  rows: KeywordVolumeChartRow[];
+  usesRelevanceFallback: boolean;
+} {
+  const withVolume = keywords
+    .filter((k) => k.volume != null && Number(k.volume) > 0)
+    .slice(0, 10)
+    .map((k) => ({
+      keyword: (k.keyword || k.cluster || 'Keyword').trim(),
+      volume: Number(k.volume),
+    }));
+
+  if (withVolume.length > 0) {
+    return { rows: withVolume, usesRelevanceFallback: false };
+  }
+
+  const deduped: KeywordVolumeChartRow[] = [];
+  const seen = new Set<string>();
+  for (const k of keywords) {
+    const keyword = (k.keyword || k.cluster || '').trim();
+    if (!keyword) continue;
+    const key = keyword.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push({ keyword, volume: 1 });
+    if (deduped.length >= 10) break;
+  }
+
+  return { rows: deduped, usesRelevanceFallback: deduped.length > 0 };
+}
+
 /** Pie chart data: cluster groups, then keyword-volume fallback when only one cluster exists. */
 export function buildKeywordClusterChartData(
   keywords: KeywordRow[],

@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildKeywordClusterChartData,
+  buildKeywordVolumeChartData,
   normalizeSeoKeywords,
 } from './keyword-clusters';
 
@@ -53,5 +54,18 @@ describe('keyword-clusters', () => {
     assert.ok(chart.length > 1);
     assert.equal(chart[0].name, 'Anwalt A');
     assert.equal(chart[0].value, 900);
+  });
+
+  it('builds relevance fallback bars when search volume is missing', () => {
+    const { rows, usesRelevanceFallback } = buildKeywordVolumeChartData([
+      { keyword: 'Arztpraxis Kempten', volume: null },
+      { keyword: 'Arztpraxis in der Nähe', volume: null },
+      { keyword: 'praxis Arztpraxis', volume: null },
+    ]);
+
+    assert.equal(usesRelevanceFallback, true);
+    assert.equal(rows.length, 3);
+    assert.equal(rows[0].keyword, 'Arztpraxis Kempten');
+    assert.equal(rows[0].volume, 1);
   });
 });

@@ -7,8 +7,7 @@ import {
   updateFunnelLead,
 } from '@/lib/funnel-database';
 import {
-  buildDispatchPayloadFromLead,
-  dispatchSitePerformance,
+  maybeDispatchSitePerformance,
   ownSiteFromLead,
   type N8nCompetitorPayload,
 } from '@/lib/n8n/dispatch';
@@ -60,12 +59,9 @@ export async function POST(request: NextRequest) {
     if (body.done === true || body.status === 'done') {
       await updateFunnelLead(lead.token, { status: 'research_ready' });
       const competitors = normalizeCompetitors(body.discoveredCompetitors || body.competitors);
-      const ownSite = ownSiteFromLead(lead);
-      if (competitors.length > 0 || ownSite) {
-        void dispatchSitePerformance(buildDispatchPayloadFromLead(lead), competitors, {
-          ownSite,
-        });
-      }
+      void maybeDispatchSitePerformance(lead, competitors, {
+        ownSite: ownSiteFromLead(lead),
+      });
     }
   }
 

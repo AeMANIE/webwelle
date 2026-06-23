@@ -1,6 +1,6 @@
 import { resolveAnalysisLoadState } from './analysis-state';
 import { CUSTOMER_COPY } from './analysis-copy';
-import { sanitizeCustomerErrorMessage } from './analysis-sanitize';
+import { customerVisibilityGaps } from './analysis-sanitize';
 import { parseResearchData } from './parse-research';
 import type {
   CompetitorRow,
@@ -142,7 +142,7 @@ export function mapCustomerAnalysisViewModel(input: {
   const topKeywords = parsed.keywords
     .map((k) => k.keyword || k.cluster || '')
     .filter(Boolean)
-    .slice(0, 5);
+    .slice(0, 8);
 
   const benchmark =
     parsed.competitors.find((c) => (c.designScore ?? 0) >= 4) ||
@@ -224,10 +224,7 @@ export function mapCustomerAnalysisViewModel(input: {
       },
     ],
     topKeywords,
-    visibilityGaps: parsed.gaps
-      .map((gap) => sanitizeCustomerErrorMessage(gap) ?? gap.trim())
-      .filter(Boolean)
-      .slice(0, 3),
+    visibilityGaps: customerVisibilityGaps(parsed.gaps),
     benchmarkCompetitor: benchmark?.name || benchmark?.domain || null,
     designPatterns,
     performanceBadge: performanceBadgeFromSites(parsed.performanceSites),

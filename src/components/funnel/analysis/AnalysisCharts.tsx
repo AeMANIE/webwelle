@@ -21,6 +21,7 @@ import {
 import type { CompetitorRow, KeywordRow } from '@/lib/funnel/analysis/analysis-types';
 import {
   buildKeywordClusterChartData,
+  buildKeywordVolumeChartData,
   clusterChartUsesKeywordFallback,
 } from '@/lib/funnel/analysis/keyword-clusters';
 
@@ -58,53 +59,58 @@ function siteKey(site: CompetitorRow, idx: number) {
 }
 
 export function KeywordVolumeChart({ keywords, mounted }: { keywords: KeywordRow[]; mounted: boolean }) {
-  const data = useMemo(
-    () =>
-      keywords
-        .filter((k) => k.volume != null && Number(k.volume) > 0)
-        .slice(0, 10)
-        .map((k) => ({
-          keyword: (k.keyword || k.cluster || 'Keyword').trim(),
-          volume: Number(k.volume),
-        })),
+  const { rows: data, usesRelevanceFallback } = useMemo(
+    () => buildKeywordVolumeChartData(keywords),
     [keywords]
   );
 
   const axisWidth = useMemo(() => yAxisWidth(data.map((d) => d.keyword)), [data]);
+  const valueLabel = usesRelevanceFallback ? 'Relevanz' : 'Suchvolumen';
 
   if (!data.length) return null;
   if (!mounted) return <div className="h-40 rounded-xl bg-muted/20 animate-pulse" />;
 
   return (
-    <ResponsiveContainer width="100%" height={Math.max(180, data.length * 36)}>
-      <BarChart
-        data={data}
-        layout="vertical"
-        margin={{ left: 4, right: 20, top: 4, bottom: 4 }}
-      >
-        <XAxis type="number" hide />
-        <YAxis
-          type="category"
-          dataKey="keyword"
-          width={axisWidth}
-          tick={{ fill: '#94a3b8', fontSize: 11 }}
-          tickLine={false}
-          axisLine={false}
-        />
-        <Tooltip
-          formatter={(v) => [Number(v).toLocaleString('de-DE'), 'Suchvolumen']}
-          contentStyle={TOOLTIP_STYLE}
-          labelStyle={TOOLTIP_LABEL_STYLE}
-          itemStyle={TOOLTIP_ITEM_STYLE}
-          cursor={CURSOR_STYLE}
-        />
-        <Bar dataKey="volume" radius={[0, 6, 6, 0]}>
-          {data.map((_, i) => (
-            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="space-y-2">
+      {usesRelevanceFallback && (
+        <p className="text-xs text-muted-foreground">
+          Suchvolumen liegt derzeit nicht vor – die Balken zeigen die wichtigsten Suchbegriffe nach
+          Relevanz.
+        </p>
+      )}
+      <ResponsiveContainer width="100%" height={Math.max(180, data.length * 36)}>
+        <BarChart
+          data={data}
+          layout="vertical"
+          margin={{ left: 4, right: 20, top: 4, bottom: 4 }}
+        >
+          <XAxis type="number" hide />
+          <YAxis
+            type="category"
+            dataKey="keyword"
+            width={axisWidth}
+            tick={{ fill: '#94a3b8', fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <Tooltip
+            formatter={(v) => [
+              usesRelevanceFallback ? Number(v) : Number(v).toLocaleString('de-DE'),
+              valueLabel,
+            ]}
+            contentStyle={TOOLTIP_STYLE}
+            labelStyle={TOOLTIP_LABEL_STYLE}
+            itemStyle={TOOLTIP_ITEM_STYLE}
+            cursor={CURSOR_STYLE}
+          />
+          <Bar dataKey="volume" radius={[0, 6, 6, 0]}>
+            {data.map((_, i) => (
+              <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 

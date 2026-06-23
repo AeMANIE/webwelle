@@ -7,6 +7,11 @@ import {
   upsertResearchResult,
 } from '@/lib/funnel-database';
 import { mergeCompetitorDesignPayload } from '@/lib/n8n/research-merge';
+import {
+  competitorsFromResearchPayloads,
+  maybeDispatchSitePerformance,
+  ownSiteFromLead,
+} from '@/lib/n8n/dispatch';
 import { secureResponse } from '@/lib/api-security';
 
 export async function POST(request: NextRequest) {
@@ -59,6 +64,11 @@ export async function POST(request: NextRequest) {
     }
 
     await upsertResearchResult(lead.id, 'competitor_design', 'done', payload);
+
+    const competitors = competitorsFromResearchPayloads([payload]);
+    void maybeDispatchSitePerformance(lead, competitors, {
+      ownSite: ownSiteFromLead(lead),
+    });
   }
   return secureResponse({ ok: true });
 }

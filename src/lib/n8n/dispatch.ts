@@ -2,6 +2,8 @@ import { signPayload } from './signature';
 import { buildIndustryForResearch } from '@/lib/funnel/industry';
 import type { PipelineKeywordRecord } from '@/lib/blog-pipeline-keyword-data';
 import type { FunnelLead } from '@/lib/funnel/types';
+import { getResearchResults, upsertResearchResult } from '@/lib/funnel-database';
+import { sitePerformanceAlreadyStarted } from '@/lib/n8n/site-performance-guard';
 
 export interface N8nDispatchPayload {
   leadId: string;
@@ -249,6 +251,37 @@ export async function dispatchAllResearch(payload: N8nDispatchPayload): Promise<
   );
 
   await Promise.allSettled(ready.map((t) => postWebhook(t.url, payload)));
+}
+
+export async function maybeDispatchSitePerformance(
+  lead: LeadDispatchSource,
+  competitors: N8nCompetitorPayload[],
+  options?: { ownSite?: N8nCompetitorPayload | null }
+): Promise<boolean> {
+  const ownSite = options?.ownSite ?? ownSiteFromLead(lead);
+  if (competitors.length === 0 && !ownSite) return false;
+
+  if (!process.env.N8N_WEBHOOK_SITE_PERFORMANCE_URL?.trim()) {
+    console.warn(
+      `n8n site-performance übersprungen: N8N_WEBHOOK_SITE_PERFORMANCE_URL fehlt für Lead ${lead.id}`
+    );
+    return false;
+  }
+
+  const research = await getResearchResults(lead.id);
+  if (sitePerformanceAlreadyStarted(research)) {
+    console.log(`n8n site-performance übersprungen: bereits gestartet für Lead ${lead.id}`);
+    return false;
+  }
+
+  await upsertResearchResult(lead.id, 'site_performance', 'pending', {
+    dispatched: true,
+    receivedSites: 0,
+    totalSites: 0,
+  });
+
+  await dispatchSitePerformance(buildDispatchPayloadFromLead(lead), competitors, { ownSite });
+  return true;
 }
 
 export async function dispatchSitePerformance(
