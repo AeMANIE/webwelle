@@ -10,5 +10,17 @@
     "tags": ["Webdesign Kempten", "StarterWelle", "Webseiten-Design", "Allgäu", "Lokales SEO"],
     "featured": true,
     "publishedAt": "2026-06-24"
+  },
+  {
+    "slug": "website-mit-ki-erstellen-starterwelle",
+    "htmlFile": "website-mit-ki-erstellen-starterwelle.html",
+    "title": "Website mit KI erstellen: React-Websites ab 699 € netto",
+    "excerpt": "Was bedeutet Website mit KI erstellen wirklich? Warum WebWelle professionelle React-Websites mit StarterWelle erschwinglich macht – ohne Qualitätseinbußen.",
+    "metaDescription": "Website mit KI erstellen – was das wirklich bedeutet. Warum WebWelle professionelle React-Websites ab 699 € netto anbieten kann und wodurch sich gute Websites von billigen Lösungen unterscheiden.",
+    "featuredImageUrl": "/blog-images/Website-mit-KI-erstellen.webp",
+    "author": "SEO-Team WebWelle",
+    "tags": ["Website mit KI erstellen", "KI Website", "React Webdesign", "StarterWelle", "Webentwicklung"],
+    "featured": true,
+    "publishedAt": "2026-06-25"
   }
 ]
