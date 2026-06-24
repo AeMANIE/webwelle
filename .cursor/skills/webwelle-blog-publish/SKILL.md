@@ -222,6 +222,11 @@ public/blog-images/mein-hero.webp
 
 # 4. Deploy
 npm run build && git add … && git commit && git push
+
+# 5. Optional: Audio (lokal auf Mac, nicht im Deploy)
+npm run blog:audio -- --slug=mein-neuer-artikel
+# → MP3 + audioUrl in posts.json → erneut commit + push
+# Skill: webwelle-blog-audio
 ```
 
 ---
@@ -287,6 +292,7 @@ npm run build && git add … && git commit && git push
 |-------|-------------|
 | **Rechtseiten** (AGB, Datenschutz) | `webwelle-legal-pages` |
 | **Blog-Text schreiben** (SEO-Copy) | `webwelle-blogartikel` |
+| **Artikel vorlesen / MP3** | `webwelle-blog-audio` (lokal, Option B) |
 | **Automatische Pipeline** | Admin → Kunden-Blog / n8n |
 | **Manueller Admin-Editor** | `/admin` → Blog-Editor → Neuer Artikel |
 

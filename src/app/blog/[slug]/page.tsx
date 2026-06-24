@@ -7,6 +7,7 @@ import sanitizeHtml from 'sanitize-html';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ScrollToTop from '../../components/ScrollToTop';
+import BlogAudioPlayer from '../../components/BlogAudioPlayer';
 import { getBlogPostBySlug } from '@/lib/blog-database';
 import { getGitBlogPostBySlug, isGitBlogPostId } from '@/lib/blog-git-posts';
 import { getImagesForPost } from '@/lib/blog-jobs-database';
@@ -213,6 +214,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
               <span>{readTime} Min Lesezeit</span>
             </div>
           </div>
+
+          {post.audioUrl && (
+            <BlogAudioPlayer
+              audioUrl={post.audioUrl}
+              title={post.title}
+              durationHintMinutes={readTime}
+            />
+          )}
 
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-2">

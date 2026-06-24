@@ -9,6 +9,7 @@ interface GitBlogMeta {
   excerpt: string;
   metaDescription: string;
   featuredImageUrl: string;
+  audioUrl?: string;
   author: string;
   tags: string[];
   featured: boolean;
@@ -47,6 +48,7 @@ function toBlogPost(meta: GitBlogMeta): BlogPost | null {
     content,
     author: meta.author,
     featuredImageUrl: meta.featuredImageUrl,
+    audioUrl: meta.audioUrl,
     metaDescription: meta.metaDescription,
     tags: meta.tags,
     featured: meta.featured,

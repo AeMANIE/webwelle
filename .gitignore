@@ -16,3 +16,8 @@ yarn-error.log*
 .pnpm-debug.log*
 .DS_Store
 backups/
+
+# Blog-Audio TTS (Option B) – nur lokale Temp-Dateien
+public/blog-audio/.tmp/
+public/blog-audio/**/*.part.mp3
+.blog-audio-cache/

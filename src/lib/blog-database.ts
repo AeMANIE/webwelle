@@ -37,6 +37,7 @@ export interface BlogPost {
   content: string;
   author: string;
   featuredImageUrl?: string;
+  audioUrl?: string;
   metaDescription?: string;
   tags: string[];
   featured: boolean;
