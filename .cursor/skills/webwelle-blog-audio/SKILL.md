@@ -48,12 +48,17 @@ flowchart LR
 Optional in `.env.local`:
 
 ```
-OPENROUTER_TTS_MODEL=sesame/csm-1b
-OPENROUTER_TTS_VOICE=alloy
+OPENROUTER_TTS_MODEL=google/gemini-3.1-flash-tts-preview
+OPENROUTER_TTS_VOICE=Kore
+OPENROUTER_TTS_LANGUAGE=de-DE
 ```
 
+**Nicht** `sesame/csm-1b` für Blog-Vorlesen: Das Modell erzeugt Dialog mit mehreren Stimmen und weicht vom Text ab.
+
+Vorlese-Text nach Regeln in [`skillttslesen.md`](skillttslesen.md) schreiben (nur Deutsch, gesprochene Sprache, keine HTML-Listen).
+
 Verfügbare Modelle prüfen: `node scripts/list-openrouter-tts-models.mjs`  
-TTS-Test: `node scripts/test-openrouter-tts.mjs sesame/csm-1b`
+TTS-Test: `node scripts/test-openrouter-tts.mjs google/gemini-3.1-flash-tts-preview`
 
 ---
 
@@ -65,11 +70,13 @@ Wie [`webwelle-blog-publish`](../webwelle-blog-publish/SKILL.md): HTML + `posts.
 
 ### 2. Sprechtext vorbereiten
 
-**Bevorzugt:** eigene Vorlese-Version als Plain-Text (natürlicher, ohne HTML-Artefakte):
+**Bevorzugt:** eigene Vorlese-Version als Plain-Text nach [`skillttslesen.md`](skillttslesen.md):
 
 ```
 src/content/blog/speech/{slug}.txt
 ```
+
+Regeln kurz: nur Deutsch, kürzere Sätze, Abkürzungen ausschreiben, FAQ als „Frage … Antwort …“, keine URLs/HTML/Markdown.
 
 Falls keine `.txt` existiert, wird Titel + Excerpt + HTML automatisch konvertiert.
 

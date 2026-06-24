@@ -6,7 +6,8 @@ import { fileURLToPath } from 'url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const envPath = join(root, '.env.local');
-const model = process.argv[2] || 'mistralai/voxtral-mini-tts-2603';
+const model = process.argv[2] || 'google/gemini-3.1-flash-tts-preview';
+const voice = process.argv[3] || 'Kore';
 
 function parseEnv(path) {
   const env = {};
@@ -24,6 +25,7 @@ async function main() {
   const apiKey = parseEnv(envPath).OPENROUTER_API_KEY?.trim();
   if (!apiKey) throw new Error('OPENROUTER_API_KEY fehlt');
 
+  const usesPcm = model.startsWith('google/gemini');
   const res = await fetch('https://openrouter.ai/api/v1/audio/speech', {
     method: 'POST',
     headers: {
@@ -35,8 +37,9 @@ async function main() {
     body: JSON.stringify({
       model,
       input: 'Hallo, dies ist ein kurzer Test der deutschen Sprachausgabe.',
-      voice: 'alloy',
-      response_format: 'mp3',
+      voice,
+      response_format: usesPcm ? 'pcm' : 'mp3',
+      ...(usesPcm ? { provider: { google: { language_code: 'de-DE' } } } : {}),
     }),
   });
 

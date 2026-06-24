@@ -102,10 +102,55 @@ function ensureFfmpeg() {
   }
 }
 
+const PCM_SAMPLE_RATE = 24000;
+const PCM_CHANNELS = 1;
+
+function usesPcmOutput(model: string): boolean {
+  return model.startsWith('google/gemini');
+}
+
+function buildTtsRequestBody(
+  model: string,
+  voice: string,
+  text: string,
+  language: string,
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    model,
+    input: text,
+    voice,
+    response_format: usesPcmOutput(model) ? 'pcm' : 'mp3',
+  };
+
+  if (usesPcmOutput(model)) {
+    body.provider = { google: { language_code: language } };
+  }
+
+  return body;
+}
+
+function pcmBufferToMp3(pcm: Buffer): Buffer {
+  const pcmPath = join(TMP_DIR, `chunk-${Date.now()}-${Math.random().toString(36).slice(2)}.pcm`);
+  const mp3Path = pcmPath.replace('.pcm', '.mp3');
+  mkdirSync(TMP_DIR, { recursive: true });
+  writeFileSync(pcmPath, pcm);
+  try {
+    execSync(
+      `ffmpeg -y -f s16le -ar ${PCM_SAMPLE_RATE} -ac ${PCM_CHANNELS} -i "${pcmPath}" -codec:a libmp3lame -qscale:a 3 "${mp3Path}"`,
+      { stdio: 'ignore' },
+    );
+    return readFileSync(mp3Path);
+  } finally {
+    if (existsSync(pcmPath)) rmSync(pcmPath);
+    if (existsSync(mp3Path)) rmSync(mp3Path);
+  }
+}
+
 async function synthesizeChunk(
   apiKey: string,
   model: string,
   voice: string,
+  language: string,
   text: string,
 ): Promise<Buffer> {
   const res = await fetch('https://openrouter.ai/api/v1/audio/speech', {
@@ -116,12 +161,7 @@ async function synthesizeChunk(
       'HTTP-Referer': 'https://webwelle.com',
       'X-Title': 'WebWelle Blog Audio',
     },
-    body: JSON.stringify({
-      model,
-      input: text,
-      voice,
-      response_format: 'mp3',
-    }),
+    body: JSON.stringify(buildTtsRequestBody(model, voice, text, language)),
   });
 
   if (!res.ok) {
@@ -129,8 +169,8 @@ async function synthesizeChunk(
     throw new Error(`OpenRouter TTS HTTP ${res.status}: ${errText.slice(0, 300)}`);
   }
 
-  const arrayBuffer = await res.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+  const raw = Buffer.from(await res.arrayBuffer());
+  return usesPcmOutput(model) ? pcmBufferToMp3(raw) : raw;
 }
 
 function concatMp3WithFfmpeg(partPaths: string[], outputPath: string) {
@@ -140,7 +180,7 @@ function concatMp3WithFfmpeg(partPaths: string[], outputPath: string) {
 
   try {
     execSync(
-      `ffmpeg -y -f concat -safe 0 -i "${listFile}" -c copy "${outputPath}"`,
+      `ffmpeg -y -f concat -safe 0 -i "${listFile}" -codec:a libmp3lame -qscale:a 3 "${outputPath}"`,
       { stdio: 'inherit' },
     );
   } finally {
@@ -177,15 +217,16 @@ async function generateForPost(
   if (!apiKey) throw new Error('OPENROUTER_API_KEY fehlt in .env.local');
 
   const model =
-    env.OPENROUTER_TTS_MODEL?.trim() || 'sesame/csm-1b';
-  const voice = env.OPENROUTER_TTS_VOICE?.trim() || 'alloy';
+    env.OPENROUTER_TTS_MODEL?.trim() || 'google/gemini-3.1-flash-tts-preview';
+  const voice = env.OPENROUTER_TTS_VOICE?.trim() || 'Kore';
+  const language = env.OPENROUTER_TTS_LANGUAGE?.trim() || 'de-DE';
 
   ensureFfmpeg();
   mkdirSync(TMP_DIR, { recursive: true });
   mkdirSync(AUDIO_DIR, { recursive: true });
 
-  const chunks = splitSpeechTextForTts(speechText, 1200);
-  console.log(`TTS-Chunks: ${chunks.length} (Model: ${model}, Voice: ${voice})`);
+  const chunks = splitSpeechTextForTts(speechText, 2500);
+  console.log(`TTS-Chunks: ${chunks.length} (Model: ${model}, Voice: ${voice}, Sprache: ${language})`);
 
   const partPaths: string[] = [];
   for (let i = 0; i < chunks.length; i++) {
@@ -196,7 +237,7 @@ async function generateForPost(
       continue;
     }
     console.log(`  Chunk ${i + 1}/${chunks.length} (${chunks[i].length} Zeichen)…`);
-    const audio = await synthesizeChunk(apiKey, model, voice, chunks[i]);
+    const audio = await synthesizeChunk(apiKey, model, voice, language, chunks[i]);
     writeFileSync(partPath, audio);
     partPaths.push(partPath);
   }

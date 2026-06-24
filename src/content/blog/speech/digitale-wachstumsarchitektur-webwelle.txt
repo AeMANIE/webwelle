@@ -1,163 +1,121 @@
 Webdesign für Wachstum: Wenn gute Webseiten nicht reichen
-Wenn Ihre Website mehr als Visitenkarte sein soll: Digitale Wachstumsarchitektur für Funnels, Portale und Automatisierung – individuell von WebWelle.
-Viele Unternehmen haben eine Website – aber zu wenig Wirkung. Die Seite ist online, wirkt ordentlich und erklärt grob, was angeboten wird. Was fehlt, ist das Entscheidende: ein digitaler Auftritt, der aktiv mitarbeitet. Der Anfragen qualifiziert, Prozesse entlastet, Vertrauen aufbaut – und echtes Wachstum unterstützt.
+
+Wenn Ihre Website mehr als Visitenkarte sein soll, geht es um Digitale Wachstumsarchitektur für Funnels, Portale und Automatisierung. Individuell von WebWelle.
+
+Viele Unternehmen haben eine Website, aber zu wenig Wirkung. Die Seite ist online, wirkt ordentlich und erklärt grob, was angeboten wird. Was fehlt, ist das Entscheidende: ein digitaler Auftritt, der aktiv mitarbeitet. Er qualifiziert Anfragen, entlastet Prozesse, baut Vertrauen auf und unterstützt echtes Wachstum.
 
 Genau hier beginnt Digitale Wachstumsarchitektur von WebWelle.
 
-Dieses Angebot richtet sich an Unternehmen, die ihren digitalen Auftritt nicht als digitale Kulisse sehen – sondern als strategischen Umsatz- und Prozesshebel. Nicht als Visitenkarte, sondern als durchdachtes System aus Webseiten-Design, Nutzerführung, Funnels, Kundenportalen und Automatisierungen.
+Dieses Angebot richtet sich an Unternehmen, die ihren digitalen Auftritt nicht als Kulisse sehen, sondern als strategischen Umsatz- und Prozesshebel. Nicht als Visitenkarte, sondern als durchdachtes System aus Webseiten-Design, Nutzerführung, Funnels, Kundenportalen und Automatisierungen.
 
 Wenn Ihre Anforderungen über ein Standardpaket hinausgehen, entwickeln wir ein individuelles Konzept und ein passgenaues Angebot.
 
 Wann eine normale Website nicht mehr ausreicht
-Wer nach guten Webseiten oder modernem Webdesign sucht, denkt oft zuerst an Layout, Farben und eine ansprechende Startseite. Für viele Unternehmen – etwa mit StarterWelle – ist das ein sinnvoller und ausreichender Einstieg.
 
-Sobald mehr auf dem Spiel steht, reicht eine einfache Online-Präsenz nicht mehr:
+Wer nach guten Webseiten oder modernem Webdesign sucht, denkt oft zuerst an Layout, Farben und eine ansprechende Startseite. Für viele Unternehmen, etwa mit StarterWelle, ist das ein sinnvoller und ausreichender Einstieg.
 
-Ihre Leistungen sind erklärungsbedürftig und brauchen Kontext
-Ihre Kunden brauchen Orientierung, bevor sie überhaupt anfragen
-Ihr Auftragswert ist höher – und das muss die Website widerspiegeln
-Ihre Prozesse sind komplexer als ein Kontaktformular
-Sie wollen nicht nur sichtbar sein, sondern Interessenten gezielt qualifizieren
-Vertrieb, Kommunikation und interne Übergaben sollen digital professioneller laufen
-Dann brauchen Sie kein weiteres Webseiten-Design im engen Sinn – sondern eine digitale Struktur, die zu Ihrem Geschäftsmodell passt.
+Sobald mehr auf dem Spiel steht, reicht eine einfache Online-Präsenz nicht mehr. Vielleicht sind Ihre Leistungen erklärungsbedürftig und brauchen Kontext. Vielleicht brauchen Ihre Kunden Orientierung, bevor sie überhaupt anfragen. Vielleicht ist Ihr Auftragswert höher, und das muss die Website widerspiegeln. Vielleicht sind Ihre Prozesse komplexer als ein einfaches Kontaktformular. Vielleicht wollen Sie nicht nur sichtbar sein, sondern Interessenten gezielt qualifizieren. Und vielleicht sollen Vertrieb, Kommunikation und interne Übergaben digital professioneller laufen.
+
+Dann brauchen Sie kein weiteres Webseiten-Design im engen Sinn, sondern eine digitale Struktur, die zu Ihrem Geschäftsmodell passt.
 
 Was Digitale Wachstumsarchitektur bedeutet
-Digitale Wachstumsarchitektur ist mehr als eine schöne Website. Es ist der Aufbau eines digitalen Systems, das mehrere Aufgaben gleichzeitig erfüllt:
 
-professionell positionieren und modernes Webdesign mit Substanz verbinden
-Vertrauen aufbauen – bei Besuchern, die Sie noch nicht kennen
-Interessenten gezielt führen, statt sie suchen zu lassen
-Anfragen vorqualifizieren, bevor das erste Gespräch stattfindet
-interne Abläufe entlasten und Medienbrüche reduzieren
-Kundendaten und Prozesse sauber zusammenführen
-Statt einzelner Bausteine entsteht ein zusammenhängendes Setup – abgestimmt auf Ihr Unternehmen, Ihre Branche und Ihre Ziele.
+Digitale Wachstumsarchitektur ist mehr als eine schöne Website. Es ist der Aufbau eines digitalen Systems, das mehrere Aufgaben gleichzeitig erfüllt. Es positioniert Sie professionell und verbindet modernes Webdesign mit Substanz. Es baut Vertrauen auf, bei Besuchern, die Sie noch nicht kennen. Es führt Interessenten gezielt, statt sie suchen zu lassen. Es qualifiziert Anfragen vor, bevor das erste Gespräch stattfindet. Es entlastet interne Abläufe und reduziert Medienbrüche. Und es führt Kundendaten und Prozesse sauber zusammen.
 
-Bei WebWelle setzen wir dabei auf React und moderne Webtechnologie, weil damit individuelle Lösungen sauber, performant und zukunftsfähig umgesetzt werden können – deutlich flexibler als Standard-Baukästen oder klassische Website-CMS-Vorlagen.
+Statt einzelner Bausteine entsteht ein zusammenhängendes Setup, abgestimmt auf Ihr Unternehmen, Ihre Branche und Ihre Ziele.
+
+Bei WebWelle setzen wir dabei auf React und moderne Webtechnologie. Damit lassen sich individuelle Lösungen sauber, performant und zukunftsfähig umsetzen, deutlich flexibler als Standard-Baukästen oder klassische Content-Management-Systeme.
 
 Für wen Digitale Wachstumsarchitektur passt
-Dieses Angebot ist ideal für Unternehmen mit erklärungsbedürftigen Leistungen und höherem Auftragswert:
 
-Dienstleister und Beratungen, die hochwertige Kunden gewinnen wollen
-B2B-Anbieter mit komplexeren Entscheidungsprozessen auf Kundenseite
-Unternehmen mit mehreren Leistungsbereichen oder Zielgruppen
-Firmen, die online nicht nur Anfragen sammeln, sondern gezielt qualifizieren wollen
-Teams, die Vertrieb, Kommunikation und Übergaben digital professioneller aufstellen möchten
-Wenn Ihr Ziel lautet, Qualität sichtbar zu machen und hochwertige Kunden gezielt anzuziehen, ist eine einfache Onepage meist nicht mehr die richtige Lösung.
+Dieses Angebot ist ideal für Unternehmen mit erklärungsbedürftigen Leistungen und höherem Auftragswert. Zum Beispiel für Dienstleister und Beratungen, die hochwertige Kunden gewinnen wollen. Für B2B-Anbieter mit komplexeren Entscheidungsprozessen auf Kundenseite. Für Unternehmen mit mehreren Leistungsbereichen oder Zielgruppen. Für Firmen, die online nicht nur Anfragen sammeln, sondern gezielt qualifizieren wollen. Und für Teams, die Vertrieb, Kommunikation und Übergaben digital professioneller aufstellen möchten.
+
+Wenn Ihr Ziel lautet, Qualität sichtbar zu machen und hochwertige Kunden gezielt anzuziehen, ist eine einfache One-Page-Website meist nicht mehr die richtige Lösung.
 
 Typische Einsatzfelder
-Premium-Unternehmenswebsite
-Eine gute Webseite mit klarer Positionierung, starker Vertrauenswirkung und präziser Conversion-Führung. Nicht überladen – aber strategisch aufgebaut, damit Besucher schneller verstehen, warum Sie der richtige Anbieter sind.
 
-Strategische Funnels
-Für Unternehmen, die nicht jede Anfrage ungefiltert annehmen wollen. Ob Analysegespräch, Angebotsstrecke oder qualifizierte Erstberatung – Funnels helfen dabei, Interessenten strukturiert vorzubereiten und bessere Gespräche zu führen.
+Premium-Unternehmenswebsite. Eine gute Webseite mit klarer Positionierung, starker Vertrauenswirkung und präziser Konversionsführung. Nicht überladen, aber strategisch aufgebaut, damit Besucher schneller verstehen, warum Sie der richtige Anbieter sind.
 
-Kundenportal und Admin-Dashboard
-Wenn Zusammenarbeit über eine einfache E-Mail-Kette hinausgeht, schaffen Portale und Dashboards Klarheit. Kunden sehen relevante Informationen, interne Abläufe werden strukturiert – professionell, nachvollziehbar und auf Ihr Unternehmen abgestimmt.
+Strategische Funnels. Für Unternehmen, die nicht jede Anfrage ungefiltert annehmen wollen. Ob Analysegespräch, Angebotsstrecke oder qualifizierte Erstberatung: Funnels helfen dabei, Interessenten strukturiert vorzubereiten und bessere Gespräche zu führen.
 
-Automatisierte Prozessstrecken
-Viele Unternehmen verlieren täglich Zeit durch manuelle Schritte: Onboarding, Terminabstimmung, Angebotsprozesse, interne Übergaben. Eine digitale Prozessarchitektur reduziert Medienbrüche und beschleunigt Abläufe – spürbar.
+Kundenportal und Admin-Dashboard. Wenn Zusammenarbeit über eine einfache E-Mail-Kette hinausgeht, schaffen Portale und Dashboards Klarheit. Kunden sehen relevante Informationen, interne Abläufe werden strukturiert, professionell, nachvollziehbar und auf Ihr Unternehmen abgestimmt.
+
+Automatisierte Prozessstrecken. Viele Unternehmen verlieren täglich Zeit durch manuelle Schritte: Onboarding, Terminabstimmung, Angebotsprozesse, interne Übergaben. Eine digitale Prozessarchitektur reduziert Medienbrüche und beschleunigt Abläufe spürbar.
 
 Was wir individuell umsetzen können
-Digitale Wachstumsarchitektur ist bewusst kein Festpaket. Je nach Projektanforderung können folgende Bausteine Teil der Lösung sein:
 
-Internationale und mehrsprachige Websites
-Sauber strukturierte Sprachversionen für Unternehmen, die über regionale Grenzen hinaus professionell auftreten wollen.
+Digitale Wachstumsarchitektur ist bewusst kein Festpaket. Je nach Projektanforderung können folgende Bausteine Teil der Lösung sein.
 
-Größere Websiteprojekte
-Mehrstufige Auftritte mit vielen Seiten, Bereichen oder Nutzerrollen – wenn Ihr Angebot, Ihre Zielgruppen oder Inhalte mehr Tiefe brauchen als eine Onepage.
+Internationale und mehrsprachige Websites. Sauber strukturierte Sprachversionen für Unternehmen, die über regionale Grenzen hinaus professionell auftreten wollen.
 
-Spezielle Formulare und Buchungssysteme
-Individuelle Eingabemasken, Terminbuchung, Anfragekonfiguratoren oder strukturierte Eingabestrecken für komplexere Anforderungen.
+Größere Websiteprojekte. Mehrstufige Auftritte mit vielen Seiten, Bereichen oder Nutzerrollen, wenn Ihr Angebot, Ihre Zielgruppen oder Inhalte mehr Tiefe brauchen als eine One-Page-Website.
 
-CRM-Anbindung
-Verbindung zu bestehenden CRM-Systemen – damit Kundendaten, Anfragen und Prozesse nicht verloren gehen, sondern sauber weitergeführt werden.
+Spezielle Formulare und Buchungssysteme. Individuelle Eingabemasken, Terminbuchung, Anfragekonfiguratoren oder strukturierte Eingabestrecken für komplexere Anforderungen.
 
-Komplexe Automatisierungen
-Mehrstufige Workflows mit externen Systemen, APIs und abgestimmten Prozessen – für Anfragen, Angebote, Onboarding oder interne Freigaben.
+CRM-Anbindung. Verbindung zu bestehenden Kundenverwaltungssystemen, damit Kundendaten, Anfragen und Prozesse nicht verloren gehen, sondern sauber weitergeführt werden.
 
-UX- und Interaktionskonzepte
-Durchdachte Nutzererlebnisse für komplexe Produkte, Portale oder Plattformen – besonders wichtig, wenn Besucher viele Informationen brauchen, bevor sie entscheiden.
+Komplexe Automatisierungen. Mehrstufige Workflows mit externen Systemen, Schnittstellen und abgestimmten Prozessen, für Anfragen, Angebote, Onboarding oder interne Freigaben.
 
-E-Commerce und erweiterte Webprojekte
-Auch E-Commerce-Websites oder hybride Modelle mit Informations-, Anfrage- und Verkaufslogik sind möglich – wenn Ihr Geschäftsmodell mehr als eine klassische Unternehmensseite erfordert.
+Nutzererlebnis- und Interaktionskonzepte. Durchdachte Nutzererlebnisse für komplexe Produkte, Portale oder Plattformen, besonders wichtig, wenn Besucher viele Informationen brauchen, bevor sie entscheiden.
 
-Webdesigner, Website CMS oder individuelle Architektur?
-Viele Unternehmen starten mit der Frage, ob sie einen Webdesigner beauftragen, ein Website CMS nutzen oder eine Agentur für individuelle Entwicklung einschalten sollen.
+E-Commerce und erweiterte Webprojekte. Auch Online-Shop-Websites oder hybride Modelle mit Informations-, Anfrage- und Verkaufslogik sind möglich, wenn Ihr Geschäftsmodell mehr als eine klassische Unternehmensseite erfordert.
 
-Die Antwort hängt vom Ziel ab:
+Webdesigner, Content-Management-System oder individuelle Architektur?
 
-Ansatz	Passt gut für	Grenzen
-Baukasten / Standard-CMS	einfache Präsenz	wenig Individualität, begrenzte Prozesse
-Template-Webdesign	schneller Start	oft wenig strategische Tiefe
-Individuelle Wachstumsarchitektur	komplexe Business-Ziele	höherer Planungsaufwand – dafür passgenau
-Wer nach Website erstellen lassen Preise sucht, vergleicht oft nur den sichtbaren Preis – nicht den strategischen Nutzen dahinter. Eine individuelle Lösung kostet mehr als ein Standardpaket, liefert aber deutlich mehr: Klarheit, Skalierbarkeit, Prozessentlastung und bessere Conversion.
+Viele Unternehmen starten mit der Frage, ob sie einen Webdesigner beauftragen, ein Content-Management-System nutzen oder eine Agentur für individuelle Entwicklung einschalten sollen.
+
+Die Antwort hängt vom Ziel ab. Ein Baukasten oder Standard-Content-Management-System passt gut für eine einfache Präsenz, stößt aber bei Individualität und Prozessen schnell an Grenzen. Template-Webdesign ermöglicht einen schnellen Start, bietet aber oft wenig strategische Tiefe. Individuelle Wachstumsarchitektur eignet sich für komplexe Business-Ziele, mit höherem Planungsaufwand, dafür aber passgenau.
+
+Wer nach Preisen für eine Website sucht, vergleicht oft nur den sichtbaren Preis, nicht den strategischen Nutzen dahinter. Eine individuelle Lösung kostet mehr als ein Standardpaket, liefert aber deutlich mehr: Klarheit, Skalierbarkeit, Prozessentlastung und bessere Konversion.
 
 Was gute Webseiten von Wachstumsarchitektur unterscheidet
-Gute Webseiten überzeugen durch Klarheit, Vertrauen und professionelle Wirkung. Das ist wichtig – und für viele Unternehmen mit StarterWelle völlig ausreichend.
 
-Digitale Wachstumsarchitektur geht einen Schritt weiter. Sie verbindet:
+Gute Webseiten überzeugen durch Klarheit, Vertrauen und professionelle Wirkung. Das ist wichtig, und für viele Unternehmen mit StarterWelle völlig ausreichend.
 
-modernes Webdesign mit klarer strategischer Positionierung
-Inhalte mit durchdachter Nutzerführung
-visuelles Design mit technisch sauberer Umsetzung
-Sichtbarkeit mit Conversion-Logik
-Kundenerlebnis mit internen Prozessen
+Digitale Wachstumsarchitektur geht einen Schritt weiter. Sie verbindet modernes Webdesign mit klarer strategischer Positionierung. Inhalte mit durchdachter Nutzerführung. Visuelles Design mit technisch sauberer Umsetzung. Sichtbarkeit mit Konversionslogik. Und Kundenerlebnis mit internen Prozessen.
+
 So entsteht kein isoliertes Designprojekt, sondern ein digitales System, das im Alltag wirklich für Ihr Unternehmen arbeitet.
 
 Wie die Zusammenarbeit abläuft
-Weil jedes Projekt unterschiedlich ist, arbeiten wir nicht mit einem starren Paket, sondern mit einem klaren Prozess:
 
-1. Projekt beschreiben
-Sie schildern kurz, welche digitale Struktur Sie aufbauen möchten – und wo heute fehlende Klarheit, Medienbrüche oder manuelle Abläufe Wachstum und Effizienz begrenzen.
+Weil jedes Projekt unterschiedlich ist, arbeiten wir nicht mit einem starren Paket, sondern mit einem klaren Prozess.
 
-2. Branche und Zielbild klären
-Wir ordnen ein, wie Ihr Markt funktioniert, welche Anforderungen Ihre Zielgruppe hat und welche Lösung wirtschaftlich sinnvoll ist.
+Schritt eins: Projekt beschreiben. Sie schildern kurz, welche digitale Struktur Sie aufbauen möchten, und wo heute fehlende Klarheit, Medienbrüche oder manuelle Abläufe Wachstum und Effizienz begrenzen.
 
-3. Individuelles Konzept entwickeln
-Auf dieser Basis entsteht ein passgenaues Angebot – mit klarer Struktur, sinnvollen Bausteinen und nachvollziehbarem Leistungsumfang. Keine Überraschungen, keine offenen Projektkosten.
+Schritt zwei: Branche und Zielbild klären. Wir ordnen ein, wie Ihr Markt funktioniert, welche Anforderungen Ihre Zielgruppe hat und welche Lösung wirtschaftlich sinnvoll ist.
 
-4. Professionelle Umsetzung
-Ihre Lösung wird sauber aufgebaut, technisch solide umgesetzt und konsequent auf Ihr Unternehmen abgestimmt.
+Schritt drei: Individuelles Konzept entwickeln. Auf dieser Basis entsteht ein passgenaues Angebot mit klarer Struktur, sinnvollen Bausteinen und nachvollziehbarem Leistungsumfang. Keine Überraschungen, keine offenen Projektkosten.
+
+Schritt vier: Professionelle Umsetzung. Ihre Lösung wird sauber aufgebaut, technisch solide umgesetzt und konsequent auf Ihr Unternehmen abgestimmt.
 
 So entsteht kein Standardprojekt von der Stange, sondern eine digitale Architektur, die zu Ihrem Geschäft passt.
 
 Wann sich ein individuelles Angebot lohnt
-Ein individuelles Projekt lohnt sich besonders, wenn:
 
-Ihre Website mehrere Rollen gleichzeitig erfüllen soll
-Ihre Anfragen vorqualifiziert werden müssen, bevor Sie Zeit investieren
-mehrere Systeme nahtlos zusammenspielen sollen
-Kundenportale oder interne Dashboards gebraucht werden
-Prozesse automatisiert und Abläufe beschleunigt werden sollen
-Ihr Auftritt international oder mehrsprachig gedacht ist
-Standardlösungen technisch oder strategisch an Grenzen stoßen
-Dann ist die Frage nicht mehr „Was kostet eine Website?“, sondern: Welche digitale Struktur bringt meinem Unternehmen echten Mehrwert?
+Ein individuelles Projekt lohnt sich besonders, wenn Ihre Website mehrere Rollen gleichzeitig erfüllen soll. Wenn Ihre Anfragen vorqualifiziert werden müssen, bevor Sie Zeit investieren. Wenn mehrere Systeme nahtlos zusammenspielen sollen. Wenn Kundenportale oder interne Dashboards gebraucht werden. Wenn Prozesse automatisiert und Abläufe beschleunigt werden sollen. Wenn Ihr Auftritt international oder mehrsprachig gedacht ist. Oder wenn Standardlösungen technisch oder strategisch an Grenzen stoßen.
 
-Fazit: Nicht jede Website muss wachsen – aber die richtige schon
+Dann ist die Frage nicht mehr: Was kostet eine Website? Sondern: Welche digitale Struktur bringt meinem Unternehmen echten Mehrwert?
+
+Fazit: Nicht jede Website muss wachsen, aber die richtige schon
+
 Wenn Ihr Unternehmen online nur präsent sein will, reicht oft eine solide Website wie StarterWelle. Wenn Ihr Unternehmen online wachsen, überzeugen und effizienter arbeiten will, brauchen Sie mehr als modernes Webdesign von der Stange.
 
-Digitale Wachstumsarchitektur von WebWelle ist genau für diesen Fall gedacht: für Unternehmen, die ihren digitalen Auftritt als echten Business-Baustein verstehen – mit individueller Beratung, klarer Umsetzung und einem Angebot, das wirklich zu Ihrem Projekt passt.
+Digitale Wachstumsarchitektur von WebWelle ist genau für diesen Fall gedacht: für Unternehmen, die ihren digitalen Auftritt als echten Business-Baustein verstehen, mit individueller Beratung, klarer Umsetzung und einem Angebot, das wirklich zu Ihrem Projekt passt.
 
-Ihr nächster Schritt: Beschreiben Sie kurz Ihr Projekt und Ihre Branche – wir entwickeln darauf basierend ein individuelles Konzept für Ihre digitale Wachstumsarchitektur. Unverbindlich, klar strukturiert, auf Ihre Ziele ausgerichtet.
+Ihr nächster Schritt: Beschreiben Sie kurz Ihr Projekt und Ihre Branche. Wir entwickeln darauf basierend ein individuelles Konzept für Ihre digitale Wachstumsarchitektur. Unverbindlich, klar strukturiert, auf Ihre Ziele ausgerichtet.
 
-FAQ – Häufige Fragen zur Digitalen Wachstumsarchitektur
-Was ist Digitale Wachstumsarchitektur?
-Ein individuell geplantes digitales System aus Website, Funnel-Logik, Portalen, Prozessen und Automatisierungen – abgestimmt auf Unternehmensziele, nicht nur auf Design.
+Häufige Fragen zur Digitalen Wachstumsarchitektur
 
-Was ist der Unterschied zu StarterWelle?
-StarterWelle ist der professionelle Einstieg für Unternehmen, die einen klaren, modernen Auftritt brauchen. Digitale Wachstumsarchitektur ist für Unternehmen gedacht, deren Anforderungen über eine Onepage hinausgehen – mehr Seiten, komplexere Prozesse, höhere strategische Tiefe.
+Frage: Was ist Digitale Wachstumsarchitektur? Antwort: Ein individuell geplantes digitales System aus Website, Funnel-Logik, Portalen, Prozessen und Automatisierungen, abgestimmt auf Unternehmensziele, nicht nur auf Design.
 
-Was kostet so ein Projekt?
-Das hängt vom Umfang ab. Nach Ihrer Projektbeschreibung erhalten Sie ein individuelles Angebot – statt eines pauschalen Standardpakets ohne Bezug zu Ihren Zielen.
+Frage: Was ist der Unterschied zu StarterWelle? Antwort: StarterWelle ist der professionelle Einstieg für Unternehmen, die einen klaren, modernen Auftritt brauchen. Digitale Wachstumsarchitektur ist für Unternehmen gedacht, deren Anforderungen über eine One-Page-Website hinausgehen, mit mehr Seiten, komplexeren Prozessen und höherer strategischer Tiefe.
 
-Können auch E-Commerce- oder Portal-Lösungen umgesetzt werden?
-Ja. Je nach Anforderung sind komplexere Projekte mit Shop-Logik, Kundenportalen, Formularen, CRM-Anbindung und Automatisierungen möglich.
+Frage: Was kostet so ein Projekt? Antwort: Das hängt vom Umfang ab. Nach Ihrer Projektbeschreibung erhalten Sie ein individuelles Angebot, statt eines pauschalen Standardpakets ohne Bezug zu Ihren Zielen.
 
-Brauche ich ein Website CMS?
-Nicht zwingend. Entscheidend ist, welche Lösung für Ihr Projekt technisch und wirtschaftlich am sinnvollsten ist – nicht das Label.
+Frage: Können auch E-Commerce- oder Portal-Lösungen umgesetzt werden? Antwort: Ja. Je nach Anforderung sind komplexere Projekte mit Shop-Logik, Kundenportalen, Formularen, CRM-Anbindung und Automatisierungen möglich.
 
-Worin unterscheidet sich das von einer normalen Agentur-Website?
-Eine Agentur-Website zeigt Leistungen. Digitale Wachstumsarchitektur baut ein System, das Leistung, Prozesse, Nutzerführung und Wachstum zusammendenkt.
+Frage: Brauche ich ein Content-Management-System? Antwort: Nicht zwingend. Entscheidend ist, welche Lösung für Ihr Projekt technisch und wirtschaftlich am sinnvollsten ist, nicht das Label.
 
-Wie starte ich?
-Beschreiben Sie Ihr Vorhaben und Ihre Branche. Darauf basierend entwickeln wir ein passendes Konzept und erstellen Ihr individuelles Angebot.
+Frage: Worin unterscheidet sich das von einer normalen Agentur-Website? Antwort: Eine Agentur-Website zeigt Leistungen. Digitale Wachstumsarchitektur baut ein System, das Leistung, Prozesse, Nutzerführung und Wachstum zusammendenkt.
+
+Frage: Wie starte ich? Antwort: Beschreiben Sie Ihr Vorhaben und Ihre Branche. Darauf basierend entwickeln wir ein passendes Konzept und erstellen Ihr individuelles Angebot.
