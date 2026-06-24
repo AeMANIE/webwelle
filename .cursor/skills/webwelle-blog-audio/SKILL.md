@@ -63,7 +63,17 @@ TTS-Test: `node scripts/test-openrouter-tts.mjs sesame/csm-1b`
 
 Wie [`webwelle-blog-publish`](../webwelle-blog-publish/SKILL.md): HTML + `posts.json` + Hero.
 
-### 2. Sprechtext prüfen (dry-run)
+### 2. Sprechtext vorbereiten
+
+**Bevorzugt:** eigene Vorlese-Version als Plain-Text (natürlicher, ohne HTML-Artefakte):
+
+```
+src/content/blog/speech/{slug}.txt
+```
+
+Falls keine `.txt` existiert, wird Titel + Excerpt + HTML automatisch konvertiert.
+
+### 3. Sprechtext prüfen (dry-run)
 
 ```bash
 npm run blog:audio -- --slug=mein-artikel-slug --dry-run
@@ -71,11 +81,11 @@ npm run blog:audio -- --slug=mein-artikel-slug --dry-run
 
 Prüfen: **keine** HTML-Tags (`<p>`, `h2`, `strong`) im Output — nur lesbarer Text.
 
-### 3. MP3 generieren
+### 4. MP3 generieren
 
 ```bash
-# Ein Artikel
-npm run blog:audio -- --slug=mein-artikel-slug
+# Ein Artikel (neu erzwingen: --force)
+npm run blog:audio -- --slug=mein-artikel-slug --force
 
 # Alle Git-Artikel in posts.json
 npm run blog:audio -- --all

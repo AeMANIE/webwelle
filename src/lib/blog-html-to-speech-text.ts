@@ -132,6 +132,18 @@ function htmlBodyToSpeechText(html: string): string {
 }
 
 /**
+ * Normalizes a hand-written speak script (plain .txt) for TTS.
+ */
+export function plainTextToSpeechText(raw: string): string {
+  return normalizeWhitespace(
+    raw
+      .replace(/\u00a0/g, ' ')
+      .replace(/\t+/g, ' – ')
+      .replace(/\r\n/g, '\n'),
+  );
+}
+
+/**
  * Converts blog article metadata + HTML body to plain German speech text for TTS.
  * Never includes HTML tags or attribute values.
  */

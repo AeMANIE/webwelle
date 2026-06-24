@@ -14,11 +14,13 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import {
   htmlToSpeechText,
+  plainTextToSpeechText,
   splitSpeechTextForTts,
 } from '../src/lib/blog-html-to-speech-text';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_DIR = join(root, 'src/content/blog');
+const SPEECH_DIR = join(CONTENT_DIR, 'speech');
 const MANIFEST_PATH = join(CONTENT_DIR, 'posts.json');
 const AUDIO_DIR = join(root, 'public/blog-audio');
 const TMP_DIR = join(AUDIO_DIR, '.tmp');
@@ -48,14 +50,37 @@ function parseArgs(argv: string[]) {
   let slug: string | undefined;
   let all = false;
   let dryRun = false;
+  let force = false;
 
   for (const arg of argv) {
     if (arg === '--all') all = true;
     else if (arg === '--dry-run') dryRun = true;
+    else if (arg === '--force') force = true;
     else if (arg.startsWith('--slug=')) slug = arg.slice('--slug='.length).trim();
   }
 
-  return { slug, all, dryRun };
+  return { slug, all, dryRun, force };
+}
+
+function resolveSpeechText(meta: GitBlogMeta): { text: string; source: string } {
+  const speechPath = join(SPEECH_DIR, `${meta.slug}.txt`);
+  if (existsSync(speechPath)) {
+    return {
+      text: plainTextToSpeechText(readFileSync(speechPath, 'utf-8')),
+      source: `speech/${meta.slug}.txt`,
+    };
+  }
+
+  const htmlPath = join(CONTENT_DIR, meta.htmlFile);
+  const html = readFileSync(htmlPath, 'utf-8');
+  return {
+    text: htmlToSpeechText({
+      title: meta.title,
+      excerpt: meta.excerpt,
+      html,
+    }),
+    source: meta.htmlFile,
+  };
 }
 
 function loadManifest(): GitBlogMeta[] {
@@ -127,20 +152,18 @@ async function generateForPost(
   meta: GitBlogMeta,
   env: Record<string, string>,
   dryRun: boolean,
+  force: boolean,
 ): Promise<void> {
   const htmlPath = join(CONTENT_DIR, meta.htmlFile);
-  if (!existsSync(htmlPath)) {
-    throw new Error(`HTML fehlt: ${meta.htmlFile}`);
+  const speechPath = join(SPEECH_DIR, `${meta.slug}.txt`);
+  if (!existsSync(speechPath) && !existsSync(htmlPath)) {
+    throw new Error(`Weder speech/${meta.slug}.txt noch ${meta.htmlFile} gefunden`);
   }
 
-  const html = readFileSync(htmlPath, 'utf-8');
-  const speechText = htmlToSpeechText({
-    title: meta.title,
-    excerpt: meta.excerpt,
-    html,
-  });
+  const { text: speechText, source } = resolveSpeechText(meta);
 
   console.log(`\n=== ${meta.slug} ===`);
+  console.log(`Quelle: ${source}`);
   console.log(`Sprechtext: ${speechText.length} Zeichen`);
 
   if (dryRun) {
@@ -167,7 +190,7 @@ async function generateForPost(
   const partPaths: string[] = [];
   for (let i = 0; i < chunks.length; i++) {
     const partPath = join(TMP_DIR, `${meta.slug}-part-${i + 1}.mp3`);
-    if (existsSync(partPath) && readFileSync(partPath).length > 0) {
+    if (!force && existsSync(partPath) && readFileSync(partPath).length > 0) {
       console.log(`  Chunk ${i + 1}/${chunks.length} — vorhanden, übersprungen`);
       partPaths.push(partPath);
       continue;
@@ -201,10 +224,12 @@ async function generateForPost(
 }
 
 async function main() {
-  const { slug, all, dryRun } = parseArgs(process.argv.slice(2));
+  const { slug, all, dryRun, force } = parseArgs(process.argv.slice(2));
 
   if (!slug && !all) {
-    console.error('Verwendung: npm run blog:audio -- --slug=<slug> | --all [--dry-run]');
+    console.error(
+      'Verwendung: npm run blog:audio -- --slug=<slug> | --all [--dry-run] [--force]',
+    );
     process.exit(1);
   }
 
@@ -224,7 +249,7 @@ async function main() {
   }
 
   for (const meta of targets) {
-    await generateForPost(meta, env, dryRun);
+    await generateForPost(meta, env, dryRun, force);
   }
 
   if (!dryRun) {
