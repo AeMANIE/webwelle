@@ -22,5 +22,17 @@
     "tags": ["Website mit KI erstellen", "KI Website", "React Webdesign", "StarterWelle", "Webentwicklung"],
     "featured": true,
     "publishedAt": "2026-06-25"
+  },
+  {
+    "slug": "wordpress-wix-react-vergleich-starterwelle",
+    "htmlFile": "wordpress-wix-react-vergleich-starterwelle.html",
+    "title": "WordPress, Wix oder React? Der ehrliche Vergleich",
+    "excerpt": "WordPress, Wix, Strato oder React? Wir zeigen, wo Baukästen an ihre Grenzen stoßen – und warum StarterWelle der smartere Einstieg für Unternehmen ist.",
+    "metaDescription": "WordPress, Wix, Strato oder professionelle React-Website? Wir zeigen, wo Baukästen an ihre Grenzen stoßen – und warum StarterWelle von WebWelle der smartere Start für Unternehmen ist.",
+    "featuredImageUrl": "/blog-images/Split-concept_header_image__WordPress_Wix_vs._React_–_WebWelle_Artikel.webp",
+    "author": "SEO-Team WebWelle",
+    "tags": ["WordPress", "Wix", "React", "StarterWelle", "Webentwicklung"],
+    "featured": true,
+    "publishedAt": "2026-06-26"
   }
 ]
