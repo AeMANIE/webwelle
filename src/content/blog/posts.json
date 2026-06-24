@@ -34,5 +34,29 @@
     "tags": ["WordPress", "Wix", "React", "StarterWelle", "Webentwicklung"],
     "featured": true,
     "publishedAt": "2026-06-26"
+  },
+  {
+    "slug": "webdesign-preise-conversion-starterwelle",
+    "htmlFile": "webdesign-preise-conversion-starterwelle.html",
+    "title": "Webdesign Preise & Conversion: Besucher zu Kunden",
+    "excerpt": "Webdesign Preise allein sagen wenig aus. Erfahren Sie, wie gute Websites Besucher zu Kunden machen – und warum StarterWelle der klare Einstieg ist.",
+    "metaDescription": "Was kostet gutes Webdesign wirklich – und was muss eine Website leisten, damit Besucher anfragen? Warum StarterWelle der smartere Einstieg für professionelle React-Websites ist.",
+    "featuredImageUrl": "/blog-images/Professionelles_Header-Bild__Webdesign_Preise_&_Conversion_–_WebWelle.webp",
+    "author": "SEO-Team WebWelle",
+    "tags": ["Webdesign Preise", "Conversion", "Website Design", "StarterWelle", "Webentwicklung"],
+    "featured": true,
+    "publishedAt": "2026-06-27"
+  },
+  {
+    "slug": "digitale-wachstumsarchitektur-webwelle",
+    "htmlFile": "digitale-wachstumsarchitektur-webwelle.html",
+    "title": "Webdesign für Wachstum: Wenn gute Webseiten nicht reichen",
+    "excerpt": "Wenn Ihre Website mehr als Visitenkarte sein soll: Digitale Wachstumsarchitektur für Funnels, Portale und Automatisierung – individuell von WebWelle.",
+    "metaDescription": "Mehr als Webseiten-Design: Digitale Wachstumsarchitektur für Unternehmen mit Anspruch. Individuelle Websites, Funnels, Portale und Automatisierungen – maßgeschneidert von WebWelle.",
+    "featuredImageUrl": "/blog-images/Premium_Header__Digitale_Wachstumsarchitektur_–_WebWelle.webp",
+    "author": "SEO-Team WebWelle",
+    "tags": ["Digitale Wachstumsarchitektur", "Webdesign", "Webseiten-Design", "React", "Webentwicklung"],
+    "featured": true,
+    "publishedAt": "2026-06-28"
   }
 ]
