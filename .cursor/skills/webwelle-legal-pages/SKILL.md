@@ -2,36 +2,113 @@
 name: webwelle-legal-pages
 description: >-
   Aktualisiert WebWelle-Rechtseiten (AGB, Datenschutz, Impressum, Widerruf) mit
-  neuem Text bei gleichem Design. Nutzen wenn der Nutzer Rechtstexte einspielt,
-  info/agbneu.txt, info/datenschutz.txt, AGB/Datenschutz/Impressum/Widerruf
-  aktualisieren, Footer-Rechtliches oder „gleiches Design wie Datenschutz“ sagt.
+  neuem Text bei gleichem Design. Veröffentlichung per Git-Push + Deploy.
+  Nutzen wenn der Nutzer Rechtstexte einspielt, info/agbneu.txt, info/datenschutz.txt,
+  AGB/Datenschutz/Impressum/Widerruf aktualisieren, Footer-Rechtliches,
+  Google-Metadaten Rechtseiten oder „gleiches Design wie Datenschutz“ sagt.
 ---
 
-# WebWelle – Rechtseiten (Text + Design)
+# WebWelle – Rechtseiten (Text + Design + Git-Publish)
 
 ## Wann anwenden
 
 - Nutzer liefert neuen Text für AGB, Datenschutz, Impressum oder Widerruf
 - Nutzer verweist auf `info/*.txt` oder sagt „Text einbauen, Design gleich lassen“
-- Neue Rechtseite im Stil der bestehenden vier Seiten
+- Nutzer will Rechtseiten **per GitHub-Push** live schalten (ohne Admin/DB)
+- Google-Metadaten (Title, Description, Canonical, OG) für Rechtseiten prüfen/anpassen
 
-## Workflow
+## Veröffentlichung (Git-Push)
+
+Rechtseiten liegen **im Code** — kein Admin, keine Datenbank.
+
+1. Text in die Ziel-Komponente einbauen (siehe Mapping)
+2. **`layout.tsx`** Meta prüfen/anpassen (Google, siehe unten)
+3. `npm run build` lokal (optional, vor Push)
+4. **Commit + Push** → Coolify deployt → Seite live unter `/agb`, `/datenschutz`, …
+
+| Seite | Live-URL |
+|-------|----------|
+| AGB | `https://webwelle.com/agb` |
+| Datenschutz | `https://webwelle.com/datenschutz` |
+| Impressum | `https://webwelle.com/impressum` |
+| Widerruf | `https://webwelle.com/widerruf` |
+
+## Workflow Inhalt
 
 1. **Referenz lesen** – `src/app/components/Datenschutz.tsx` (Hauptvorlage)
-2. **Zielkomponente** öffnen (siehe Mapping unten)
+2. **Zielkomponente** öffnen (siehe Mapping)
 3. **Text wortgetreu** aus Nutzerdatei in JSX übernehmen
 4. **Nur Inhalt** in der Komponente ändern – Layout-Klassen 1:1 von Referenz
-5. **Meta** in `layout.tsx` nur bei inhaltlich relevanten Änderungen anpassen
+5. **Meta** in `layout.tsx` bei inhaltlichen Änderungen anpassen (Pflicht für Google)
 6. **Nicht ändern**: Footer-Link, Sitemap, Route – sofern schon vorhanden
 
 ## Datei-Mapping
 
-| Seite | Komponente | `page.tsx` | `layout.tsx` | Typische Textquelle |
-|-------|------------|------------|--------------|---------------------|
+| Seite | Komponente | `page.tsx` | `layout.tsx` (Meta!) | Typische Textquelle |
+|-------|------------|------------|------------------------|---------------------|
 | AGB | `src/app/components/AGB.tsx` | `src/app/agb/page.tsx` | `src/app/agb/layout.tsx` | `info/agbneu.txt` |
 | Datenschutz | `src/app/components/Datenschutz.tsx` | `src/app/datenschutz/page.tsx` | `src/app/datenschutz/layout.tsx` | `info/datenschutz.txt` |
 | Impressum | `src/app/components/Impressum.tsx` | `src/app/impressum/page.tsx` | `src/app/impressum/layout.tsx` | Nutzerangabe |
 | Widerruf | `src/app/components/Widerruf.tsx` | `src/app/widerruf/page.tsx` | `src/app/widerruf/layout.tsx` | Nutzerangabe |
+
+## Google-Metadaten (Pflicht in `layout.tsx`)
+
+Bei Textänderungen **immer** prüfen und ggf. anpassen. Referenz: `src/app/datenschutz/layout.tsx`.
+
+| Feld | Regel |
+|------|-------|
+| `title` | `{Seitenthema} \| WebWelle – {Nutzen/Kontext}` — 50–60 Zeichen ideal |
+| `description` | 120–160 Zeichen, klarer Inhalt der Seite, Keyword natürlich |
+| `keywords` | 5–10 Begriffe, kommagetrennt, inkl. WebWelle, Kempten/Allgäu wenn passend |
+| `alternates.canonical` | `https://webwelle.com/{route}` — **immer setzen** |
+| `robots` | `index: true, follow: true` + `googleBot` mit `max-image-preview: large` |
+| `openGraph` | `type: website`, `locale: de_DE`, `url`, `title`, `description`, `images` |
+| `twitter` | `summary_large_image`, gleicher Title/Description wie OG |
+
+### Meta-Vorlage (Canonical ergänzen wenn fehlt)
+
+```tsx
+const BASE = 'https://webwelle.com';
+const PATH = '/datenschutz'; // pro Seite anpassen
+
+export const metadata: Metadata = {
+  title: 'Datenschutzerklärung | WebWelle – Transparenz & Sicherheit',
+  description: '… 120–160 Zeichen …',
+  keywords: 'Datenschutzerklärung, DSGVO, WebWelle, Kempten, Allgäu',
+  authors: [{ name: 'WebWelle' }],
+  creator: 'WebWelle',
+  publisher: 'WebWelle',
+  alternates: { canonical: `${BASE}${PATH}` },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'de_DE',
+    url: `${BASE}${PATH}`,
+    siteName: 'WebWelle',
+    title: '… wie title …',
+    description: '… wie description …',
+    images: [{ url: '/logo.png', width: 1200, height: 630, alt: 'WebWelle Logo' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '…',
+    description: '…',
+    images: ['/logo.png'],
+  },
+};
+```
+
+**Rechtseiten:** `robots.index: true` — Impressum/Datenschutz sollen von Google indexiert werden.
 
 ## Seiten-Gerüst (exakt)
 
@@ -159,20 +236,23 @@ Absatz zwei.
 - Produktabschnitte (StarterWelle, E-Mail): optional Hinweis-Box bei Laufzeit/Verlängerung
 - Abschnitt mit Verboten/Listen: Bullet-Liste in grauer Box
 - Backup-Pflichten: gelber „Wichtig“-Hinweis
-- Interne Prüflisten (z. B. Abschnitt 29): graue Box, Liste `text-gray-300` – nur wenn Nutzer explizit will
 
 ## Was nicht tun
 
 - Kein neues Layout, keine neuen Komponenten/Mapper ohne Auftrag
 - Kein `prose-invert` oder andere Abweichungen von den vier Referenzseiten
-- Keine Meta-/Footer-/Sitemap-Änderungen ohne Anlass
-- Kein Commit/Push ohne explizite Nutzeranfrage
+- Meta nicht vergessen bei inhaltlichen Updates
+- Kein Push ohne explizite Nutzeranfrage
 
-## Checkliste vor Abschluss
+## Checkliste vor Push
 
 - [ ] Gleiche Wrapper-Klassen wie Datenschutz/Impressum
 - [ ] H1 zentriert, Untertitel `text-gray-300`
 - [ ] Alle Abschnitte aus Quelltext vorhanden
-- [ ] Info-Boxen/Listen/Hinweise wo inhaltlich sinnvoll (wie Referenzseiten)
-- [ ] „Zurück zur Startseite“-Button unten
-- [ ] Lint der geänderten Dateien prüfen
+- [ ] **`layout.tsx`:** title, description (120–160), canonical, OG, twitter, googleBot
+- [ ] `npm run build` erfolgreich
+- [ ] Commit + Push → Live unter `/agb` etc.
+
+## Abgrenzung Blog (Git-Publish)
+
+Blog-Artikel (nicht Rechtseiten): `src/content/blog/posts.json` + HTML — siehe Git-Blog in `src/lib/blog-git-posts.ts`.

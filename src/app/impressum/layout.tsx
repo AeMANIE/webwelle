@@ -11,7 +11,8 @@ export const metadata: Metadata = {
   authors: [{ name: 'WebWelle' }],
   creator: 'WebWelle',
   publisher: 'WebWelle',
-  robots: { 
+  alternates: { canonical: 'https://webwelle.com/impressum' },
+  robots: {
     index: true, 
     follow: true,
     googleBot: {

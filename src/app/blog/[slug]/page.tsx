@@ -8,6 +8,7 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ScrollToTop from '../../components/ScrollToTop';
 import { getBlogPostBySlug } from '@/lib/blog-database';
+import { getGitBlogPostBySlug, isGitBlogPostId } from '@/lib/blog-git-posts';
 import { getImagesForPost } from '@/lib/blog-jobs-database';
 import {
   estimateReadTimeMinutes,
@@ -31,6 +32,9 @@ async function loadPost(slug: string) {
 
   if (!post) {
     post = await getBlogPostBySlug(slug);
+    if (!post) {
+      post = getGitBlogPostBySlug(slug);
+    }
     if (post && redis && (await redis.status) === 'ready') {
       await redis.setex(`blog:post:${slug}`, 900, JSON.stringify(post));
     }
@@ -47,21 +51,53 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return { title: 'Artikel nicht gefunden | WebWelle' };
   }
 
-  const images = await getImagesForPost(post.id).catch(() => []);
-  const featured = images.find((i) => i.role === 'featured') || images[0];
+  const images = isGitBlogPostId(post.id)
+    ? []
+    : await getImagesForPost(post.id).catch(() => []);
+  const featured =
+    images.find((i) => i.role === 'featured') ||
+    (post.featuredImageUrl
+      ? {
+          url: post.featuredImageUrl,
+          alt: post.title,
+          width: 1200,
+          height: 630,
+          role: 'featured' as const,
+        }
+      : undefined);
   const description = post.metaDescription || post.excerpt || '';
   const canonical = `${BASE_URL}/blog/${slug}`;
+  const keywords = normalizePostTags(post.tags).join(', ');
 
   return {
     title: `${post.title} | WebWelle Blog`,
     description,
+    keywords: keywords || undefined,
+    authors: [{ name: post.author || 'WebWelle' }],
+    creator: 'WebWelle',
+    publisher: 'WebWelle',
     alternates: { canonical },
-    robots: { index: true, follow: true, 'max-image-preview': 'large' },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
     openGraph: {
       type: 'article',
+      locale: 'de_DE',
+      siteName: 'WebWelle',
       title: post.title,
       description,
       url: canonical,
+      publishedTime: safeToIsoDate(post.publishedAt || post.createdAt),
+      modifiedTime: safeToIsoDate(post.updatedAt || post.publishedAt || post.createdAt),
+      tags: normalizePostTags(post.tags),
       images: featured
         ? [{ url: featured.url, width: featured.width, height: featured.height, alt: featured.alt }]
         : undefined,
@@ -89,8 +125,20 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     notFound();
   }
 
-  const images = await getImagesForPost(post.id).catch(() => []);
-  const featured = images.find((i) => i.role === 'featured');
+  const images = isGitBlogPostId(post.id)
+    ? []
+    : await getImagesForPost(post.id).catch(() => []);
+  const featured =
+    images.find((i) => i.role === 'featured') ||
+    (post.featuredImageUrl
+      ? {
+          url: post.featuredImageUrl,
+          alt: post.title,
+          width: 1200,
+          height: 630,
+          role: 'featured' as const,
+        }
+      : undefined);
   const inlineImages = images.filter((i) => i.role === 'inline');
   const content = normalizeBlogContent(post.content);
   const tags = normalizePostTags(post.tags);
@@ -186,7 +234,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             sizes="(max-width: 768px) 100vw, 896px"
             className="w-full rounded-2xl object-cover shadow-lg"
           />
-          {featured.caption && (
+          {'caption' in featured && featured.caption && (
             <p className="text-sm text-muted-foreground mt-2 text-center">{featured.caption}</p>
           )}
         </div>

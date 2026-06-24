@@ -5,6 +5,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ScrollToTop from '../components/ScrollToTop';
 import { getAllBlogPosts } from '@/lib/blog-database';
+import { mergeBlogPostsWithGit } from '@/lib/blog-git-posts';
 import { getRedisClient } from '@/lib/redis';
 
 export const dynamic = 'force-dynamic';
@@ -34,11 +35,11 @@ async function getBlogPosts() {
 
     if (!posts) {
       try {
-        // Nur veröffentlichte Posts
-        posts = await getAllBlogPosts('published');
+        // Nur veröffentlichte Posts (+ Git-Artikel aus src/content/blog)
+        posts = mergeBlogPostsWithGit(await getAllBlogPosts('published'));
       } catch {
-        // DB nicht erreichbar oder Tabelle fehlt → leere Liste
-        posts = [];
+        // DB nicht erreichbar → nur Git-Artikel
+        posts = mergeBlogPostsWithGit([]);
       }
 
       // Cache speichern (15 Minuten), Fehler ignorieren
