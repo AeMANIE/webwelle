@@ -63,7 +63,7 @@ Die Seite rendert automatisch:
 ```
 [Gradient-Header: H1 = title, Excerpt, Autor, Datum, Tags]
 [Hero-Bild — featuredImageUrl, rounded-2xl]
-[Artikel-Body — prose mit H2/H3/Absätzen]
+[Artikel-Body — .blog-article-content mit H2/H3/Absätzen + Luft]
 [Autor-Box + Zoom-CTA]
 [Banner-CTA + Zoom-Link]
 ```
@@ -79,16 +79,33 @@ Die Seite rendert automatisch:
 | **Liste** | `<ul><li>` | Tipps, Checklisten, Paket-Inhalte |
 | **Fett** | `<strong>` | Sparsam — Keywords, Produktnamen |
 
-### Abstände
+### Abstände & Luft zwischen Absätzen (Pflicht)
 
-- In der HTML-Datei: **Leerzeile** zwischen Block-Elementen
-- Rendering: `BLOG_ARTICLE_PROSE_CLASS` — `prose-h2:mt-10`, `prose-p:mb-6`, `prose-h3:mt-8`
-- Keine `<br><br>`-Ketten — immer echte `<p>`-Tags
+**Lesbarkeit kommt aus zwei Ebenen:**
+
+1. **HTML:** Jeder Abschnitt = eigenes Tag, **Leerzeile zwischen Blöcken** in der `.html`-Datei
+2. **CSS:** Klasse `blog-article-content` in `src/app/globals.css` — **nicht** Tailwind `prose` (Plugin fehlt im Projekt!)
+
+| Element | CSS-Abstand (live) |
+|---------|-------------------|
+| `<p>` | `margin-bottom: 1.75rem` (Desktop: 2rem) |
+| `<h2>` | `margin-top: 3.5rem`, `margin-bottom: 1.25rem` |
+| `<h3>` | `margin-top: 2.25rem`, `margin-bottom: 0.875rem` |
+| `<ul>` / `<ol>` | `margin-bottom: 2rem`, Listenpunkte mit Abstand |
+
+Konstante im Code: `BLOG_ARTICLE_PROSE_CLASS = 'blog-article-content'` in `src/lib/blog-post-display.ts`
+
+**Regeln für Autoren:**
+- **Nie** alles in ein `<p>` packen — jeder Gedanke = eigenes `<p>`
+- **Leerzeile** zwischen `</p>` und `<h2>`, zwischen `</ul>` und nächstem `<p>`
+- Keine `<br><br>`-Ketten als Ersatz für Absätze
+- Nach jedem H2 kurzer Intro-`<p>`, dann Detail-Absätze
 
 ### Technisch kritisch
 
 - Sanitizer **muss** `h2` und `h3` erlauben → `BLOG_CONTENT_SANITIZE_OPTIONS`
-- Fehlt `h3` in allowedTags → Überschriften werden gestrippt, Text wirkt „zusammengeklebt“
+- Fehlt `h3` in allowedTags → Überschriften verschwinden, Text wirkt „zusammengeklebt“
+- **`prose`-Klassen allein reichen nicht** — Abstände kommen aus `.blog-article-content`
 
 ---
 
@@ -219,7 +236,7 @@ npm run build && git add … && git commit && git push
 | Nur Admin/Pipeline gedacht | Artikel nicht live nach Push | Git-Pfad `src/content/blog/` |
 | metaDescription zu kurz/lang | Schlechtes Snippet | 120–160 Zeichen |
 | Hero nur in JSON, nicht in `public/` | Bild 404 | Beide Pfade pflegen |
-| Slug-Kollision mit DB | DB-Artikel überschreibt Git | Eindeutigen Slug wählen |
+| `prose`-Klassen ohne Typography-Plugin | Keine Abstände, Text klebt | `.blog-article-content` in globals.css |
 
 ---
 
@@ -256,7 +273,8 @@ npm run build && git add … && git commit && git push
 | `src/content/blog/posts.json` | Artikel-Manifest |
 | `src/content/blog/*.html` | Artikel-Inhalte |
 | `src/lib/blog-git-posts.ts` | Git-Artikel laden |
-| `src/lib/blog-post-display.ts` | Prose, Sanitize, Zoom-URL |
+| `src/lib/blog-post-display.ts` | Sanitize, Zoom-URL, CSS-Klassenname |
+| `src/app/globals.css` | `.blog-article-content` Abstände |
 | `src/app/blog/[slug]/page.tsx` | Seiten-Layout + SEO |
 | `src/app/blog/page.tsx` | Blog-Übersicht (merge DB + Git) |
 | `Dockerfile` | Kopiert `src/content/blog` in Container |
