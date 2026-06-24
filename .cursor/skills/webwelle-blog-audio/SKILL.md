@@ -103,8 +103,8 @@ npm run blog:audio -- --all
 Das Script:
 - liest **`speech/{slug}.txt`** (bevorzugt) oder Titel + Excerpt + HTML
 - sendet den Text an Gemini TTS (`de-DE`, eine Stimme)
-- **Gemini:** Text in **Abschnitte à ~3.500 Zeichen** (Absatzgrenzen) — **kein** Ein-Durchgang (API kürzt ab!)
-- PCM-Abschnitte mit kurzer Pause zusammenführen → **ein** MP3, eine ffmpeg-Kodierung
+- **Gemini:** Text in **Abschnitte à ~2.800 Zeichen** (Absatzgrenzen) — kein Ein-Durchgang (API kürzt ab)
+- PCM-Abschnitte: Stille trimmen + **Crossfade** (0,12 s) → ein MP3
 - Prüfung: Gesamtdauer muss zum Text passen, sonst Abbruch mit Fehler
 - setzt `audioUrl` in `posts.json`
 
@@ -167,7 +167,7 @@ OpenRouter bekommt **niemals** rohes HTML.
 |--------|---------|--------|
 | `OPENROUTER_API_KEY fehlt` | Kein Key in `.env.local` | Key setzen |
 | Stimme springt / fremde Dialoge | Falsches Modell (`sesame/csm-1b`) | Gemini in `.env.local`, `--force` neu generieren |
-| Sprung mitten im Text | Alte MP3 mit vielen Chunks | `--force` — PCM-Zusammenführung, ~3.500 Zeichen/Abschnitt |
+| Sprung mitten im Text | Harte Chunk-Pause / Stimmenwechsel | Crossfade-Merge, ~2.800 Zeichen/Abschnitt, `--force` |
 | MP3 zu kurz (~2 Min.) | Gemini-Ein-Durchgang kürzt ab | `--force` neu; Script prüft Mindestdauer |
 | HTTP 402 | Credits/Key-Limit | Credits aufladen; `--force` neu starten |
 | `ffmpeg nicht gefunden` | Nicht installiert | `brew install ffmpeg` |

@@ -106,11 +106,12 @@ const PCM_SAMPLE_RATE = 24000;
 const PCM_CHANNELS = 1;
 const PCM_BYTES_PER_SAMPLE = 2;
 /** Gemini truncates long single requests — split at paragraph boundaries. */
-const GEMINI_CHUNK_MAX_CHARS = 3_500;
-/** Short pause between PCM sections (milliseconds). */
-const CHUNK_PAUSE_MS = 400;
-/** ~27 chars/sec observed; fail if shorter than this ratio. */
-const MIN_SECONDS_PER_CHAR = 1 / 35;
+const GEMINI_CHUNK_MAX_CHARS = 2_800;
+/** Crossfade between PCM sections (seconds) — smoother than hard pause. */
+const CHUNK_CROSSFADE_SEC = 0.12;
+/** ~25 chars/sec for German; fail if shorter than this ratio. */
+const MIN_SECONDS_PER_CHAR = 1 / 25;
+const CHUNK_MIN_COVERAGE_RATIO = 0.8;
 
 function usesPcmOutput(model: string): boolean {
   return model.startsWith('google/gemini');
@@ -139,16 +140,53 @@ function mp3DurationSec(mp3Path: string): number {
   return Number.parseFloat(out);
 }
 
-function assertChunkCoverage(chunkText: string, pcm: Buffer, index: number, total: number) {
+function assertChunkCoverage(chunkText: string, pcm: Buffer, index: string): void {
   const duration = pcmDurationSec(pcm);
-  const minSec = chunkText.length * MIN_SECONDS_PER_CHAR * 0.55;
+  const minSec = chunkText.length * MIN_SECONDS_PER_CHAR * CHUNK_MIN_COVERAGE_RATIO;
   if (duration < minSec) {
     throw new Error(
-      `Abschnitt ${index}/${total} zu kurz (${formatDuration(duration)} für ${chunkText.length} Zeichen). ` +
-        `Gemini hat vermutlich abgeschnitten — Chunk-Größe verkleinern oder erneut --force.`,
+      `Abschnitt ${index} zu kurz (${formatDuration(duration)} für ${chunkText.length} Zeichen, min. ${formatDuration(minSec)}).`,
     );
   }
   console.log(`    → ${formatDuration(duration)} Audio`);
+}
+
+async function synthesizeChunkEnsured(
+  apiKey: string,
+  model: string,
+  voice: string,
+  language: string,
+  text: string,
+  label: string,
+): Promise<Buffer[]> {
+  const pcm = await synthesizeChunk(apiKey, model, voice, language, text);
+  const minSec = text.length * MIN_SECONDS_PER_CHAR * CHUNK_MIN_COVERAGE_RATIO;
+
+  if (pcmDurationSec(pcm) >= minSec || text.length < 500) {
+    assertChunkCoverage(text, pcm, label);
+    return [pcm];
+  }
+
+  console.log(`    ⚠ Abschnitt ${label} unvollständig — wird halbiert und erneut synthetisiert`);
+  const parts = splitSpeechTextForTts(text, Math.max(400, Math.ceil(text.length / 2)));
+  if (parts.length < 2) {
+    assertChunkCoverage(text, pcm, label);
+    return [pcm];
+  }
+
+  const buffers: Buffer[] = [];
+  for (let i = 0; i < parts.length; i++) {
+    const sub = await synthesizeChunkEnsured(
+      apiKey,
+      model,
+      voice,
+      language,
+      parts[i],
+      `${label}.${i + 1}`,
+    );
+    buffers.push(...sub);
+  }
+  return buffers;
 }
 
 function buildTtsRequestBody(
@@ -197,9 +235,56 @@ async function synthesizeChunk(
   return Buffer.from(await res.arrayBuffer());
 }
 
-function pcmSilenceMs(ms: number): Buffer {
-  const samples = Math.round((PCM_SAMPLE_RATE * ms) / 1000);
-  return Buffer.alloc(samples * PCM_CHANNELS * PCM_BYTES_PER_SAMPLE);
+function trimPcmSilence(inputPath: string, outputPath: string) {
+  execSync(
+    `ffmpeg -y -f s16le -ar ${PCM_SAMPLE_RATE} -ac ${PCM_CHANNELS} -i "${inputPath}" ` +
+      `-af "silenceremove=start_periods=1:start_silence=0.04:start_threshold=-45dB:detection=peak,` +
+      `areverse,silenceremove=start_periods=1:start_silence=0.04:start_threshold=-45dB:detection=peak,areverse" ` +
+      `-f s16le -ar ${PCM_SAMPLE_RATE} -ac ${PCM_CHANNELS} "${outputPath}"`,
+    { stdio: 'ignore' },
+  );
+}
+
+function buildCrossfadeFilter(partCount: number): string {
+  if (partCount <= 1) return '';
+  let filter = `[0][1]acrossfade=d=${CHUNK_CROSSFADE_SEC}:c1=tri:c2=tri[a1]`;
+  for (let i = 2; i < partCount; i++) {
+    const prev = `a${i - 1}`;
+    const out = i === partCount - 1 ? 'out' : `a${i}`;
+    filter += `;[${prev}][${i}]acrossfade=d=${CHUNK_CROSSFADE_SEC}:c1=tri:c2=tri[${out}]`;
+  }
+  return filter;
+}
+
+function concatPcmWithCrossfade(partPaths: string[], outputPcmPath: string) {
+  if (partPaths.length === 1) {
+    writeFileSync(outputPcmPath, readFileSync(partPaths[0]));
+    return;
+  }
+
+  const trimmedPaths: string[] = [];
+  for (let i = 0; i < partPaths.length; i++) {
+    const trimmed = join(TMP_DIR, `trim-${Date.now()}-${i}.pcm`);
+    trimPcmSilence(partPaths[i], trimmed);
+    trimmedPaths.push(trimmed);
+  }
+
+  const inputs = trimmedPaths
+    .map((p) => `-f s16le -ar ${PCM_SAMPLE_RATE} -ac ${PCM_CHANNELS} -i "${p}"`)
+    .join(' ');
+  const filter = buildCrossfadeFilter(trimmedPaths.length);
+
+  try {
+    execSync(
+      `ffmpeg -y ${inputs} -filter_complex "${filter}" -map "[out]" ` +
+        `-f s16le -ar ${PCM_SAMPLE_RATE} -ac ${PCM_CHANNELS} "${outputPcmPath}"`,
+      { stdio: 'ignore' },
+    );
+  } finally {
+    for (const p of trimmedPaths) {
+      if (existsSync(p)) rmSync(p);
+    }
+  }
 }
 
 function pcmBufferToMp3File(pcm: Buffer, mp3Path: string) {
@@ -213,23 +298,6 @@ function pcmBufferToMp3File(pcm: Buffer, mp3Path: string) {
   } finally {
     if (existsSync(pcmPath)) rmSync(pcmPath);
   }
-}
-
-function concatPcmWithPauses(pcmParts: Buffer[]): Buffer {
-  if (pcmParts.length === 1) return pcmParts[0];
-  const pause = pcmSilenceMs(CHUNK_PAUSE_MS);
-  const total = pcmParts.reduce((sum, part, i) => sum + part.length + (i < pcmParts.length - 1 ? pause.length : 0), 0);
-  const merged = Buffer.alloc(total);
-  let offset = 0;
-  for (let i = 0; i < pcmParts.length; i++) {
-    pcmParts[i].copy(merged, offset);
-    offset += pcmParts[i].length;
-    if (i < pcmParts.length - 1) {
-      pause.copy(merged, offset);
-      offset += pause.length;
-    }
-  }
-  return merged;
 }
 
 function concatMp3WithFfmpeg(partPaths: string[], outputPath: string) {
@@ -266,6 +334,12 @@ async function generateForPost(
   console.log(`Sprechtext: ${speechText.length} Zeichen`);
 
   if (dryRun) {
+    const chunkLimit = maxCharsForModel(
+      env.OPENROUTER_TTS_MODEL?.trim() || 'google/gemini-3.1-flash-tts-preview',
+    );
+    const chunks = splitSpeechTextForTts(speechText, chunkLimit);
+    console.log(`Abschnitte: ${chunks.length} (max. ${chunkLimit} Zeichen)`);
+    chunks.forEach((c, i) => console.log(`  ${i + 1}: ${c.length} Zeichen`));
     console.log('--- Vorschau (erste 800 Zeichen) ---');
     console.log(speechText.slice(0, 800));
     if (speechText.length > 800) console.log('…');
@@ -286,7 +360,8 @@ async function generateForPost(
 
   const chunkLimit = maxCharsForModel(model);
   const chunks = splitSpeechTextForTts(speechText, chunkLimit);
-  const mode = chunks.length === 1 ? 'ein Durchgang' : `${chunks.length} Abschnitte mit Pause`;
+  const mode =
+    chunks.length === 1 ? 'ein Durchgang' : `${chunks.length} Abschnitte mit Crossfade`;
   console.log(`TTS: ${mode} (Model: ${model}, Voice: ${voice}, Sprache: ${language})`);
 
   const pcmParts: Buffer[] = [];
@@ -301,17 +376,39 @@ async function generateForPost(
       continue;
     }
     console.log(`  Abschnitt ${i + 1}/${chunks.length} (${chunks[i].length} Zeichen)…`);
-    const audio = await synthesizeChunk(apiKey, model, voice, language, chunks[i]);
-    if (usesPcmOutput(model)) assertChunkCoverage(chunks[i], audio, i + 1, chunks.length);
-    writeFileSync(partPath, audio);
-    if (usesPcmOutput(model)) pcmParts.push(audio);
+    const partBuffers = await synthesizeChunkEnsured(
+      apiKey,
+      model,
+      voice,
+      language,
+      chunks[i],
+      `${i + 1}/${chunks.length}`,
+    );
+    for (const buf of partBuffers) {
+      pcmParts.push(buf);
+    }
+    if (usesPcmOutput(model)) {
+      writeFileSync(partPath, partBuffers.length === 1 ? partBuffers[0] : Buffer.concat(partBuffers));
+    }
     else mp3PartPaths.push(partPath);
   }
 
   const outputPath = join(AUDIO_DIR, `${meta.slug}.mp3`);
   if (usesPcmOutput(model)) {
-    const mergedPcm = concatPcmWithPauses(pcmParts);
-    pcmBufferToMp3File(mergedPcm, outputPath);
+    const pcmPartPaths = pcmParts.map((buf, i) => {
+      const p = join(TMP_DIR, `${meta.slug}-merge-${i + 1}.pcm`);
+      writeFileSync(p, buf);
+      return p;
+    });
+    const mergedPcmPath = join(TMP_DIR, `${meta.slug}-merged.pcm`);
+    try {
+      concatPcmWithCrossfade(pcmPartPaths, mergedPcmPath);
+      pcmBufferToMp3File(readFileSync(mergedPcmPath), outputPath);
+    } finally {
+      for (const p of [...pcmPartPaths, mergedPcmPath]) {
+        if (existsSync(p)) rmSync(p);
+      }
+    }
   } else if (mp3PartPaths.length === 1) {
     writeFileSync(outputPath, readFileSync(mp3PartPaths[0]));
   } else {
@@ -319,7 +416,7 @@ async function generateForPost(
   }
 
   const totalDuration = mp3DurationSec(outputPath);
-  const minDuration = speechText.length * MIN_SECONDS_PER_CHAR;
+  const minDuration = speechText.length * MIN_SECONDS_PER_CHAR * 0.9;
   console.log(`  Gesamtdauer: ${formatDuration(totalDuration)} (Minimum erwartet: ${formatDuration(minDuration)})`);
   if (totalDuration < minDuration) {
     throw new Error(
