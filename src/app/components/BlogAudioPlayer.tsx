@@ -3,10 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pause, Play, Volume2 } from 'lucide-react';
 
+const PLAYBACK_SPEEDS = [1, 1.5, 2] as const;
+type PlaybackSpeed = (typeof PLAYBACK_SPEEDS)[number];
+
 interface BlogAudioPlayerProps {
   audioUrl: string;
   title: string;
   durationHintMinutes?: number;
+}
+
+function formatSpeedLabel(speed: PlaybackSpeed): string {
+  return speed === 1 ? '1×' : `${speed.toString().replace('.', ',')}×`;
 }
 
 function formatTime(seconds: number): string {
@@ -26,6 +33,12 @@ export default function BlogAudioPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [ready, setReady] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<PlaybackSpeed>(1);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) audio.playbackRate = playbackSpeed;
+  }, [playbackSpeed, audioUrl]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -134,6 +147,32 @@ export default function BlogAudioPlayer({
               <span>{formatTime(duration)}</span>
             </div>
           )}
+        </div>
+
+        <div
+          className="flex shrink-0 items-center gap-1 rounded-lg border border-border bg-muted/40 p-1"
+          role="group"
+          aria-label="Wiedergabegeschwindigkeit"
+        >
+          {PLAYBACK_SPEEDS.map((speed) => {
+            const active = playbackSpeed === speed;
+            return (
+              <button
+                key={speed}
+                type="button"
+                onClick={() => setPlaybackSpeed(speed)}
+                className={`min-w-[2.5rem] rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                  active
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+                aria-pressed={active}
+                aria-label={`${formatSpeedLabel(speed)} Geschwindigkeit`}
+              >
+                {formatSpeedLabel(speed)}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
