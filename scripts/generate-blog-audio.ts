@@ -105,18 +105,50 @@ function ensureFfmpeg() {
 const PCM_SAMPLE_RATE = 24000;
 const PCM_CHANNELS = 1;
 const PCM_BYTES_PER_SAMPLE = 2;
-/** Gemini handles long German articles in one request — avoids voice jumps at chunk seams. */
-const GEMINI_SINGLE_SHOT_MAX_CHARS = 28_000;
-/** Short pause between chunks when splitting is unavoidable (milliseconds). */
-const CHUNK_PAUSE_MS = 450;
+/** Gemini truncates long single requests — split at paragraph boundaries. */
+const GEMINI_CHUNK_MAX_CHARS = 3_500;
+/** Short pause between PCM sections (milliseconds). */
+const CHUNK_PAUSE_MS = 400;
+/** ~27 chars/sec observed; fail if shorter than this ratio. */
+const MIN_SECONDS_PER_CHAR = 1 / 35;
 
 function usesPcmOutput(model: string): boolean {
   return model.startsWith('google/gemini');
 }
 
 function maxCharsForModel(model: string): number {
-  if (usesPcmOutput(model)) return GEMINI_SINGLE_SHOT_MAX_CHARS;
+  if (usesPcmOutput(model)) return GEMINI_CHUNK_MAX_CHARS;
   return 2500;
+}
+
+function pcmDurationSec(pcm: Buffer): number {
+  return pcm.length / (PCM_SAMPLE_RATE * PCM_CHANNELS * PCM_BYTES_PER_SAMPLE);
+}
+
+function formatDuration(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function mp3DurationSec(mp3Path: string): number {
+  const out = execSync(
+    `ffprobe -v error -show_entries format=duration -of csv=p=0 "${mp3Path}"`,
+    { encoding: 'utf-8' },
+  ).trim();
+  return Number.parseFloat(out);
+}
+
+function assertChunkCoverage(chunkText: string, pcm: Buffer, index: number, total: number) {
+  const duration = pcmDurationSec(pcm);
+  const minSec = chunkText.length * MIN_SECONDS_PER_CHAR * 0.55;
+  if (duration < minSec) {
+    throw new Error(
+      `Abschnitt ${index}/${total} zu kurz (${formatDuration(duration)} für ${chunkText.length} Zeichen). ` +
+        `Gemini hat vermutlich abgeschnitten — Chunk-Größe verkleinern oder erneut --force.`,
+    );
+  }
+  console.log(`    → ${formatDuration(duration)} Audio`);
 }
 
 function buildTtsRequestBody(
@@ -270,6 +302,7 @@ async function generateForPost(
     }
     console.log(`  Abschnitt ${i + 1}/${chunks.length} (${chunks[i].length} Zeichen)…`);
     const audio = await synthesizeChunk(apiKey, model, voice, language, chunks[i]);
+    if (usesPcmOutput(model)) assertChunkCoverage(chunks[i], audio, i + 1, chunks.length);
     writeFileSync(partPath, audio);
     if (usesPcmOutput(model)) pcmParts.push(audio);
     else mp3PartPaths.push(partPath);
@@ -285,13 +318,23 @@ async function generateForPost(
     concatMp3WithFfmpeg(mp3PartPaths, outputPath);
   }
 
+  const totalDuration = mp3DurationSec(outputPath);
+  const minDuration = speechText.length * MIN_SECONDS_PER_CHAR;
+  console.log(`  Gesamtdauer: ${formatDuration(totalDuration)} (Minimum erwartet: ${formatDuration(minDuration)})`);
+  if (totalDuration < minDuration) {
+    throw new Error(
+      `MP3 zu kurz (${formatDuration(totalDuration)}) — nicht der ganze Artikel wurde gesprochen. ` +
+        'Erneut mit --force generieren.',
+    );
+  }
+
   for (let i = 0; i < chunks.length; i++) {
     const ext = usesPcmOutput(model) ? 'pcm' : 'mp3';
     const p = join(TMP_DIR, `${meta.slug}-part-${i + 1}.${ext}`);
     if (existsSync(p)) rmSync(p);
   }
 
-  const audioUrl = `/blog-audio/${meta.slug}.mp3`;
+  const audioUrl = `/blog-audio/${meta.slug}.mp3?v=${Date.now()}`;
   const manifest = loadManifest();
   const idx = manifest.findIndex((p) => p.slug === meta.slug);
   if (idx === -1) throw new Error(`Slug nicht in posts.json: ${meta.slug}`);

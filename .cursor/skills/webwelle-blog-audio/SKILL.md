@@ -19,7 +19,8 @@ description: >-
 
 | Ebene | Pfad / Code | Rolle |
 |-------|-------------|--------|
-| **Sprechtext** | `src/lib/blog-html-to-speech-text.ts` | HTML → Plain Text (kein TTS von Tags) |
+| **Sprechtext (bevorzugt)** | `src/content/blog/speech/{slug}.txt` | TTS-Vorlesefassung nach [`skillttslesen.md`](skillttslesen.md) |
+| **Sprechtext (Fallback)** | `src/lib/blog-html-to-speech-text.ts` | HTML → Plain Text |
 | **Generator** | `scripts/generate-blog-audio.ts` | Lokal: OpenRouter TTS → MP3 |
 | **Audio-Datei** | `public/blog-audio/{slug}.mp3` | Committen + Push für Live |
 | **Manifest** | `posts.json` → `audioUrl` | Player-Quelle |
@@ -28,8 +29,9 @@ description: >-
 
 ```mermaid
 flowchart LR
-  HTML[posts.json + slug.html] --> Strip[htmlToSpeechText]
-  Strip --> TTS[OpenRouter audio/speech]
+  Speech[speech/slug.txt] --> TTS[OpenRouter Gemini TTS]
+  HTML[slug.html Fallback] --> Strip[htmlToSpeechText]
+  Strip --> TTS
   TTS --> MP3[public/blog-audio/slug.mp3]
   MP3 --> Git[commit + push]
   Git --> Player[BlogAudioPlayer live]
@@ -99,14 +101,16 @@ npm run blog:audio -- --all
 ```
 
 Das Script:
-- liest Titel + Excerpt + HTML
-- wandelt in Sprechtext um
-- splittet in TTS-Chunks (~4.000 Zeichen)
-- ruft `POST https://openrouter.ai/api/v1/audio/speech` auf
-- concat mit ffmpeg → `public/blog-audio/{slug}.mp3`
+- liest **`speech/{slug}.txt`** (bevorzugt) oder Titel + Excerpt + HTML
+- sendet den Text an Gemini TTS (`de-DE`, eine Stimme)
+- **Gemini:** Text in **Abschnitte à ~3.500 Zeichen** (Absatzgrenzen) — **kein** Ein-Durchgang (API kürzt ab!)
+- PCM-Abschnitte mit kurzer Pause zusammenführen → **ein** MP3, eine ffmpeg-Kodierung
+- Prüfung: Gesamtdauer muss zum Text passen, sonst Abbruch mit Fehler
 - setzt `audioUrl` in `posts.json`
 
-### 4. Lokal testen
+**Modell:** `google/gemini-3.1-flash-tts-preview` — **nicht** `sesame/csm-1b` (erzeugt fremde Dialog-Stimmen).
+
+### 5. Lokal testen
 
 ```bash
 npm run dev
@@ -114,7 +118,7 @@ npm run dev
 
 `/blog/{slug}` — Play-Button unter Autor/Datum/Lesezeit.
 
-### 5. Live schalten
+### 6. Live schalten
 
 ```bash
 git add public/blog-audio/{slug}.mp3 src/content/blog/posts.json
@@ -162,11 +166,24 @@ OpenRouter bekommt **niemals** rohes HTML.
 | Fehler | Ursache | Lösung |
 |--------|---------|--------|
 | `OPENROUTER_API_KEY fehlt` | Kein Key in `.env.local` | Key setzen |
-| HTTP 402 | Credits/Key-Limit | Credits aufladen unter https://openrouter.ai/settings/credits — Script setzt bei erneutem Lauf fort (vorhandene Chunks in `.tmp/` werden übersprungen) |
+| Stimme springt / fremde Dialoge | Falsches Modell (`sesame/csm-1b`) | Gemini in `.env.local`, `--force` neu generieren |
+| Sprung mitten im Text | Alte MP3 mit vielen Chunks | `--force` — PCM-Zusammenführung, ~3.500 Zeichen/Abschnitt |
+| MP3 zu kurz (~2 Min.) | Gemini-Ein-Durchgang kürzt ab | `--force` neu; Script prüft Mindestdauer |
+| HTTP 402 | Credits/Key-Limit | Credits aufladen; `--force` neu starten |
 | `ffmpeg nicht gefunden` | Nicht installiert | `brew install ffmpeg` |
-| Player fehlt live | MP3 nicht gepusht | `audioUrl` + MP3 committen |
-| Stimme liest „h zwei“ | HTML direkt an TTS | `--dry-run` prüfen, `htmlToSpeechText` nutzen |
-| Chunk-Fehler | Text zu lang | Script splittet automatisch; ggf. Absätze kürzen |
+| Player fehlt live | MP3 nicht gepusht oder Redis-Cache | MP3 + `audioUrl` committen; Seite hart neu laden |
+| Stimme liest „h zwei“ | HTML direkt an TTS | `speech/{slug}.txt` nutzen oder `--dry-run` prüfen |
+
+---
+
+## Zwei Skills — Aufgaben
+
+| Datei | Wofür |
+|-------|--------|
+| **`SKILL.md`** (diese Datei) | Technik: `npm run blog:audio`, Gemini, MP3, Deploy, Fehler |
+| **`skillttslesen.md`** | Inhalt: Wie der **Vorlese-Text** formuliert wird (Deutsch, Pausen, FAQ) |
+
+Chunk-Logik gehört in **`SKILL.md`**. Gemini darf **nicht** den ganzen Artikel auf einmal — es kürzt ab. Das Script teilt automatisch (~3.500 Zeichen, Absatzgrenzen) und prüft die Länge.
 
 ---
 
@@ -182,7 +199,7 @@ OpenRouter bekommt **niemals** rohes HTML.
 | Datei | Zweck |
 |-------|--------|
 | `src/lib/blog-html-to-speech-text.ts` | HTML → Sprechtext + Chunk-Split |
-| `scripts/generate-blog-audio.ts` | Lokales Generierungs-Script |
+| `scripts/generate-blog-audio.ts` | TTS-Abschnitte (~3.5k Zeichen), PCM-Merge, Längen-Check |
 | `src/app/components/BlogAudioPlayer.tsx` | Play-UI |
 | `src/app/blog/[slug]/page.tsx` | Player-Einbindung |
 | `src/lib/blog-git-posts.ts` | `audioUrl` aus Manifest |
@@ -197,3 +214,4 @@ OpenRouter bekommt **niemals** rohes HTML.
 | Artikel schreiben/publishen | `webwelle-blog-publish` |
 | TTS im Deploy/n8n | **Nicht** — nur lokales Script |
 | Live-TTS pro Klick | **Nicht** — Option B (vorab MP3) |
+| Vorlese-Text formulieren | `skillttslesen.md` |
