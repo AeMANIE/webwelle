@@ -105,13 +105,14 @@ function ensureFfmpeg() {
 const PCM_SAMPLE_RATE = 24000;
 const PCM_CHANNELS = 1;
 const PCM_BYTES_PER_SAMPLE = 2;
-/** Gemini truncates long single requests — split at paragraph boundaries. */
-const GEMINI_CHUNK_MAX_CHARS = 2_800;
+/** Gemini reads ~1.000–1.200 Zeichen zuverlässig; kleinere Chunks = vollständiger Text. */
+const GEMINI_CHUNK_MAX_CHARS = 1_200;
 /** Crossfade between PCM sections (seconds) — smoother than hard pause. */
 const CHUNK_CROSSFADE_SEC = 0.12;
 /** ~25 chars/sec for German; fail if shorter than this ratio. */
 const MIN_SECONDS_PER_CHAR = 1 / 25;
-const CHUNK_MIN_COVERAGE_RATIO = 0.8;
+const CHUNK_MIN_COVERAGE_RATIO = 0.85;
+const MIN_SPLIT_CHARS = 350;
 
 function usesPcmOutput(model: string): boolean {
   return model.startsWith('google/gemini');
@@ -162,7 +163,7 @@ async function synthesizeChunkEnsured(
   const pcm = await synthesizeChunk(apiKey, model, voice, language, text);
   const minSec = text.length * MIN_SECONDS_PER_CHAR * CHUNK_MIN_COVERAGE_RATIO;
 
-  if (pcmDurationSec(pcm) >= minSec || text.length < 500) {
+  if (pcmDurationSec(pcm) >= minSec || text.length < MIN_SPLIT_CHARS) {
     assertChunkCoverage(text, pcm, label);
     return [pcm];
   }
@@ -362,7 +363,11 @@ async function generateForPost(
   const chunks = splitSpeechTextForTts(speechText, chunkLimit);
   const mode =
     chunks.length === 1 ? 'ein Durchgang' : `${chunks.length} Abschnitte mit Crossfade`;
-  console.log(`TTS: ${mode} (Model: ${model}, Voice: ${voice}, Sprache: ${language})`);
+  console.log(`TTS: ${mode} (max. ${chunkLimit} Zeichen/Abschnitt)`);
+  chunks.forEach((c, i) => {
+    const preview = c.replace(/\s+/g, ' ').slice(0, 72);
+    console.log(`  Geplant ${i + 1}/${chunks.length}: ${c.length} Z. — „${preview}…“`);
+  });
 
   const pcmParts: Buffer[] = [];
   const mp3PartPaths: string[] = [];

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { htmlToSpeechText, splitSpeechTextForTts } from './blog-html-to-speech-text';
+import { htmlToSpeechText, plainTextToSpeechText, splitSpeechTextForTts } from './blog-html-to-speech-text';
 
 const SAMPLE_HTML = `
 <p>Früher war eine professionelle Onepage-Website mit React ein erheblicher Budgetposten.</p>
@@ -63,6 +63,32 @@ describe('htmlToSpeechText', () => {
     const excerptIdx = result.indexOf('Kurzer Teaser.');
     const bodyIdx = result.indexOf('Body-Text.');
     assert.ok(titleIdx < excerptIdx && excerptIdx < bodyIdx);
+  });
+});
+
+describe('plainTextToSpeechText', () => {
+  it('converts bare list lines to Erstens/Zweitens speech', () => {
+    const raw = `Sobald mehr auf dem Spiel steht, reicht eine einfache Online-Präsenz nicht mehr:
+
+Ihre Leistungen sind erklärungsbedürftig und brauchen Kontext
+Ihre Kunden brauchen Orientierung, bevor sie überhaupt anfragen
+Ihr Auftragswert ist höher – und das muss die Website widerspiegeln
+Dann brauchen Sie kein weiteres Webseiten-Design im engen Sinn – sondern eine digitale Struktur.`;
+
+    const result = plainTextToSpeechText(raw);
+    assert.ok(result.includes('Erstens: Ihre Leistungen'));
+    assert.ok(result.includes('Zweitens: Ihre Kunden'));
+    assert.ok(result.includes('Drittens: Ihr Auftragswert'));
+    assert.ok(result.includes('Dann brauchen Sie kein weiteres'));
+    assert.ok(!result.includes('Erstens: Dann'));
+  });
+
+  it('joins short title lines with following paragraph', () => {
+    const raw = `Kundenportal und Admin-Dashboard
+Wenn Zusammenarbeit über eine einfache E-Mail-Kette hinausgeht, schaffen Portale Klarheit.`;
+
+    const result = plainTextToSpeechText(raw);
+    assert.ok(result.includes('Kundenportal und Admin-Dashboard. Wenn Zusammenarbeit'));
   });
 });
 

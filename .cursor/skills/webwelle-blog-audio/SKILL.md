@@ -102,10 +102,12 @@ npm run blog:audio -- --all
 
 Das Script:
 - liest **`speech/{slug}.txt`** (bevorzugt) oder Titel + Excerpt + HTML
+- normalisiert Plain-Text: **Listenzeilen → Erstens/Zweitens**, Überschrift+Absatz verbinden
 - sendet den Text an Gemini TTS (`de-DE`, eine Stimme)
-- **Gemini:** Text in **Abschnitte à ~2.800 Zeichen** (Absatzgrenzen) — kein Ein-Durchgang (API kürzt ab)
+- **Gemini:** Text in **~10–12 Abschnitte à ~1.200 Zeichen** (Absatzgrenzen) — kleine Chunks, weil große Blöcke Listen überspringen
+- bei zu kurzer Audio-Antwort: Chunk wird **automatisch halbiert** und erneut gesendet
 - PCM-Abschnitte: Stille trimmen + **Crossfade** (0,12 s) → ein MP3
-- Prüfung: Gesamtdauer muss zum Text passen, sonst Abbruch mit Fehler
+- Prüfung: Gesamtdauer muss zum Text passen (≥ 85 % erwarteter Mindestdauer), sonst Abbruch
 - setzt `audioUrl` in `posts.json`
 
 **Modell:** `google/gemini-3.1-flash-tts-preview` — **nicht** `sesame/csm-1b` (erzeugt fremde Dialog-Stimmen).
@@ -167,8 +169,8 @@ OpenRouter bekommt **niemals** rohes HTML.
 |--------|---------|--------|
 | `OPENROUTER_API_KEY fehlt` | Kein Key in `.env.local` | Key setzen |
 | Stimme springt / fremde Dialoge | Falsches Modell (`sesame/csm-1b`) | Gemini in `.env.local`, `--force` neu generieren |
-| Sprung mitten im Text | Harte Chunk-Pause / Stimmenwechsel | Crossfade-Merge, ~2.800 Zeichen/Abschnitt, `--force` |
-| MP3 zu kurz (~2 Min.) | Gemini-Ein-Durchgang kürzt ab | `--force` neu; Script prüft Mindestdauer |
+| Sprung mitten im Text / Listen fehlen | Chunks zu groß oder Listen ohne Satzzeichen | `speech/{slug}.txt` nach `skillttslesen.md`; `--dry-run` (10–12 Abschnitte); `--force` |
+| MP3 zu kurz (~2 Min.) | Gemini-Ein-Durchgang kürzt ab | Script nutzt ~1.200 Zeichen/Chunk; `--force` neu generieren |
 | HTTP 402 | Credits/Key-Limit | Credits aufladen; `--force` neu starten |
 | `ffmpeg nicht gefunden` | Nicht installiert | `brew install ffmpeg` |
 | Player fehlt live | MP3 nicht gepusht oder Redis-Cache | MP3 + `audioUrl` committen; Seite hart neu laden |
@@ -183,7 +185,7 @@ OpenRouter bekommt **niemals** rohes HTML.
 | **`SKILL.md`** (diese Datei) | Technik: `npm run blog:audio`, Gemini, MP3, Deploy, Fehler |
 | **`skillttslesen.md`** | Inhalt: Wie der **Vorlese-Text** formuliert wird (Deutsch, Pausen, FAQ) |
 
-Chunk-Logik gehört in **`SKILL.md`**. Gemini darf **nicht** den ganzen Artikel auf einmal — es kürzt ab. Das Script teilt automatisch (~3.500 Zeichen, Absatzgrenzen) und prüft die Länge.
+Chunk-Logik gehört in **`SKILL.md`**. Gemini liest **kleine Abschnitte** (~1.200 Zeichen) zuverlässiger als große Blöcke — besonders bei Listen. Das Script teilt automatisch an Absatzgrenzen, halbiert bei zu kurzer Antwort und prüft die Gesamtdauer.
 
 ---
 
@@ -198,8 +200,8 @@ Chunk-Logik gehört in **`SKILL.md`**. Gemini darf **nicht** den ganzen Artikel 
 
 | Datei | Zweck |
 |-------|--------|
-| `src/lib/blog-html-to-speech-text.ts` | HTML → Sprechtext + Chunk-Split |
-| `scripts/generate-blog-audio.ts` | TTS-Abschnitte (~3.5k Zeichen), PCM-Merge, Längen-Check |
+| `src/lib/blog-html-to-speech-text.ts` | HTML/Plain → Sprechtext, Listen-Erweiterung, Chunk-Split |
+| `scripts/generate-blog-audio.ts` | TTS-Abschnitte (~1.200 Zeichen), Auto-Split, PCM-Merge, Längen-Check |
 | `src/app/components/BlogAudioPlayer.tsx` | Play-UI |
 | `src/app/blog/[slug]/page.tsx` | Player-Einbindung |
 | `src/lib/blog-git-posts.ts` | `audioUrl` aus Manifest |

@@ -133,14 +133,127 @@ function htmlBodyToSpeechText(html: string): string {
 
 /**
  * Normalizes a hand-written speak script (plain .txt) for TTS.
+ * Converts bare list lines (single newlines) into spoken "Erstens/Zweitens" form
+ * so Gemini does not skip them inside large blocks.
  */
 export function plainTextToSpeechText(raw: string): string {
-  return normalizeWhitespace(
-    raw
-      .replace(/\u00a0/g, ' ')
-      .replace(/\t+/g, ' – ')
-      .replace(/\r\n/g, '\n'),
-  );
+  const normalized = raw
+    .replace(/\u00a0/g, ' ')
+    .replace(/\t+/g, ' – ')
+    .replace(/\r\n/g, '\n');
+
+  const lines = normalized.split('\n');
+  const paragraphs: string[] = [];
+  let buffer: string[] = [];
+
+  const flushBuffer = () => {
+    if (!buffer.length) return;
+    paragraphs.push(formatSpeechLines(buffer));
+    buffer = [];
+  };
+
+  for (const line of lines) {
+    const t = line.trim();
+    if (!t) {
+      flushBuffer();
+      continue;
+    }
+    buffer.push(t);
+  }
+  flushBuffer();
+
+  return normalizeWhitespace(paragraphs.join('\n\n'));
+}
+
+function formatSpeechLines(lines: string[]): string {
+  if (lines.length === 1) return ensureSentenceEnd(lines[0]);
+
+  const { listLines, rest } = extractListPrefix(lines);
+  const parts: string[] = [];
+
+  if (listLines.length) {
+    parts.push(formatListAsSpeech(listLines));
+  }
+  if (rest.length) {
+    parts.push(formatNonListLines(rest));
+  }
+
+  return parts.join(' ');
+}
+
+function extractListPrefix(lines: string[]): { listLines: string[]; rest: string[] } {
+  if (lines.length < 3) return { listLines: [], rest: lines };
+
+  const listLines: string[] = [];
+  const conclusionRe = /^(Dann|Statt|Wenn|Bei|Das|Dieses|Genau|Für|Hier|So|Nicht)\b/;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (listLines.length >= 3 && (conclusionRe.test(line) || (line.length > 130 && /[.!?]$/.test(line)))) {
+      return { listLines, rest: lines.slice(i) };
+    }
+
+    const canBeListItem =
+      line.length <= 160 &&
+      !line.endsWith(':') &&
+      (!/[.!?]$/.test(line) || listLines.length > 0);
+
+    if (canBeListItem && (listLines.length > 0 || i + 2 < lines.length)) {
+      listLines.push(line);
+      continue;
+    }
+
+    if (listLines.length >= 3) {
+      return { listLines, rest: lines.slice(i) };
+    }
+
+    return { listLines: [], rest: lines };
+  }
+
+  return listLines.length >= 3 ? { listLines, rest: [] } : { listLines: [], rest: lines };
+}
+
+function formatListAsSpeech(lines: string[]): string {
+  return lines
+    .map((line, i) => {
+      const label = ORDINALS_DE[i] ?? `Punkt ${i + 1}`;
+      return `${label}: ${ensureSentenceEnd(line)}`;
+    })
+    .join(' ');
+}
+
+function formatNonListLines(lines: string[]): string {
+  if (lines.length === 1) return ensureSentenceEnd(lines[0]);
+
+  const parts: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const cur = lines[i];
+    const next = lines[i + 1];
+
+    if (cur.endsWith('?') && next) {
+      parts.push(`Frage: ${cur} Antwort: ${ensureSentenceEnd(next)}`);
+      i += 2;
+      continue;
+    }
+
+    if (next && cur.length < 95 && next.length > cur.length && !/[.!?:]$/.test(cur)) {
+      parts.push(`${ensureSentenceEnd(cur)} ${next}`);
+      i += 2;
+      continue;
+    }
+
+    parts.push(ensureSentenceEnd(cur));
+    i += 1;
+  }
+
+  return parts.join(' ');
+}
+
+function ensureSentenceEnd(line: string): string {
+  if (/[.!?:]$/.test(line)) return line;
+  return `${line}.`;
 }
 
 /**
