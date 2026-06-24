@@ -9,18 +9,11 @@ import {
   estimateReadTimeMinutes,
   formatBlogDate,
   normalizeBlogContent,
+  BLOG_ARTICLE_PROSE_CLASS,
+  BLOG_CONTENT_SANITIZE_OPTIONS,
 } from '@/lib/blog-post-display';
 
 export const dynamic = 'force-dynamic';
-
-const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
-  allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1', 'h2']),
-  allowedAttributes: {
-    ...sanitizeHtml.defaults.allowedAttributes,
-    a: ['href', 'title', 'target', 'rel'],
-  },
-  allowedSchemes: ['http', 'https', 'mailto'],
-};
 
 export default async function AdminBlogPreviewPage({
   params,
@@ -114,9 +107,9 @@ export default async function AdminBlogPreviewPage({
       <article className="py-12">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div
-            className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-a:text-primary"
+            className={BLOG_ARTICLE_PROSE_CLASS}
             dangerouslySetInnerHTML={{
-              __html: sanitizeHtml(content, SANITIZE_OPTIONS),
+              __html: sanitizeHtml(content, BLOG_CONTENT_SANITIZE_OPTIONS),
             }}
           />
         </div>

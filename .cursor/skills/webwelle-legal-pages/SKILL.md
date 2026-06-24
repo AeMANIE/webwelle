@@ -255,4 +255,12 @@ Absatz zwei.
 
 ## Abgrenzung Blog (Git-Publish)
 
-Blog-Artikel (nicht Rechtseiten): `src/content/blog/posts.json` + HTML — siehe Git-Blog in `src/lib/blog-git-posts.ts`.
+Blog-Artikel (nicht Rechtseiten): `src/content/blog/posts.json` + HTML — Skill **`webwelle-blog-publish`**.
+
+### Blog-Typografie (Kurzregel)
+
+- **H1** nur als Seitentitel (nicht im HTML-Body)
+- **H2/H3** im HTML — `h3` darf beim Sanitize nicht fehlen (`BLOG_CONTENT_SANITIZE_OPTIONS`)
+- **Absatzabstand:** eigene `<p>`-Tags + Leerzeilen; Prose-Klassen `BLOG_ARTICLE_PROSE_CLASS`
+- **CTAs** „Kontakt“ / „Erstgespräch“ → Zoom Scheduler (siehe Blog-Skill)
+

@@ -16,6 +16,9 @@ import {
   normalizeBlogContent,
   normalizePostTags,
   safeToIsoDate,
+  BLOG_ARTICLE_PROSE_CLASS,
+  BLOG_CONTENT_SANITIZE_OPTIONS,
+  BLOG_ZOOM_CONSULTATION_URL,
 } from '@/lib/blog-post-display';
 import { getRedisClient } from '@/lib/redis';
 
@@ -243,16 +246,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       <article className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
-            className="prose prose-lg max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline"
+            className={BLOG_ARTICLE_PROSE_CLASS}
             dangerouslySetInnerHTML={{
-              __html: sanitizeHtml(content, {
-                allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1', 'h2']),
-                allowedAttributes: {
-                  ...sanitizeHtml.defaults.allowedAttributes,
-                  a: ['href', 'title', 'target', 'rel'],
-                },
-                allowedSchemes: ['http', 'https', 'mailto'],
-              }),
+              __html: sanitizeHtml(content, BLOG_CONTENT_SANITIZE_OPTIONS),
             }}
           />
 
@@ -297,9 +293,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                   kennen wir die Besonderheiten unserer Region.
                 </p>
                 <div className="flex gap-4">
-                  <Link href="/#cta" className="text-primary hover:text-primary/80 font-medium">
+                  <a
+                    href={BLOG_ZOOM_CONSULTATION_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:text-primary/80 font-medium"
+                  >
                     Kontakt aufnehmen
-                  </Link>
+                  </a>
                   <Link href="/#produkte" className="text-primary hover:text-primary/80 font-medium">
                     Webdesign-Pakete
                   </Link>
@@ -318,12 +319,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           <p className="text-xl text-primary-foreground/90 mb-8">
             Lassen Sie uns gemeinsam Ihre Website zu einer der erfolgreichsten im Allgäu machen.
           </p>
-          <Link
-            href="/#cta"
+          <a
+            href={BLOG_ZOOM_CONSULTATION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="bg-primary-foreground text-primary px-8 py-3 rounded-lg font-semibold hover:bg-primary-foreground/90 transition-colors inline-block"
           >
             Kostenloses Erstgespräch vereinbaren
-          </Link>
+          </a>
         </div>
       </section>
       <Footer />

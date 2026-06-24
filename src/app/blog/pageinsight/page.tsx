@@ -4,6 +4,7 @@ import { Calendar, User, ArrowLeft, Tag, Clock } from 'lucide-react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ScrollToTop from '../../components/ScrollToTop';
+import { BLOG_ARTICLE_PROSE_CLASS, BLOG_ZOOM_CONSULTATION_URL } from '@/lib/blog-post-display';
 
 export const metadata: Metadata = {
   title: 'Warum ein PageSpeed Insights Score über 90 unverzichtbar ist | WebWelle',
@@ -303,7 +304,7 @@ export default async function PageInsightArticle() {
       <article className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
-            className="prose prose-lg max-w-none prose-headings:tracking-tight prose-headings:font-bold prose-h2:text-2xl md:prose-h2:text-3xl prose-h3:text-xl md:prose-h3:text-2xl prose-p:text-muted-foreground prose-p:leading-7 md:prose-p:leading-8 prose-strong:text-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-ul:list-disc prose-ol:list-decimal prose-li:my-1.5 prose-hr:my-8 prose-blockquote:border-l-4 prose-blockquote:pl-4 prose-blockquote:italic"
+            className={BLOG_ARTICLE_PROSE_CLASS}
             dangerouslySetInnerHTML={{ __html: simpleMarkdownToHtml(blogPost.markdown) }}
           />
         </div>
@@ -326,12 +327,14 @@ export default async function PageInsightArticle() {
                   und Webdesign kennen wir die Besonderheiten unserer Region.
                 </p>
                 <div className="flex gap-4">
-                  <Link 
-                    href="/#cta"
+                  <a
+                    href={BLOG_ZOOM_CONSULTATION_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-primary hover:text-primary/80 font-medium"
                   >
                     Kontakt aufnehmen
-                  </Link>
+                  </a>
                   <Link 
                     href="/#produkte"
                     className="text-primary hover:text-primary/80 font-medium"
@@ -354,12 +357,14 @@ export default async function PageInsightArticle() {
           <p className="text-xl text-primary-foreground/90 mb-8">
             Lassen Sie uns gemeinsam Ihre Website zu einer der erfolgreichsten im Allgäu machen.
           </p>
-          <Link 
-            href="/#cta"
+          <a
+            href={BLOG_ZOOM_CONSULTATION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="bg-primary-foreground text-primary px-8 py-3 rounded-lg font-semibold hover:bg-primary-foreground/90 transition-colors inline-block"
           >
             Kostenloses Erstgespräch vereinbaren
-          </Link>
+          </a>
         </div>
       </section>
       <Footer />
