@@ -104,9 +104,19 @@ function ensureFfmpeg() {
 
 const PCM_SAMPLE_RATE = 24000;
 const PCM_CHANNELS = 1;
+const PCM_BYTES_PER_SAMPLE = 2;
+/** Gemini handles long German articles in one request — avoids voice jumps at chunk seams. */
+const GEMINI_SINGLE_SHOT_MAX_CHARS = 28_000;
+/** Short pause between chunks when splitting is unavoidable (milliseconds). */
+const CHUNK_PAUSE_MS = 450;
 
 function usesPcmOutput(model: string): boolean {
   return model.startsWith('google/gemini');
+}
+
+function maxCharsForModel(model: string): number {
+  if (usesPcmOutput(model)) return GEMINI_SINGLE_SHOT_MAX_CHARS;
+  return 2500;
 }
 
 function buildTtsRequestBody(
@@ -127,23 +137,6 @@ function buildTtsRequestBody(
   }
 
   return body;
-}
-
-function pcmBufferToMp3(pcm: Buffer): Buffer {
-  const pcmPath = join(TMP_DIR, `chunk-${Date.now()}-${Math.random().toString(36).slice(2)}.pcm`);
-  const mp3Path = pcmPath.replace('.pcm', '.mp3');
-  mkdirSync(TMP_DIR, { recursive: true });
-  writeFileSync(pcmPath, pcm);
-  try {
-    execSync(
-      `ffmpeg -y -f s16le -ar ${PCM_SAMPLE_RATE} -ac ${PCM_CHANNELS} -i "${pcmPath}" -codec:a libmp3lame -qscale:a 3 "${mp3Path}"`,
-      { stdio: 'ignore' },
-    );
-    return readFileSync(mp3Path);
-  } finally {
-    if (existsSync(pcmPath)) rmSync(pcmPath);
-    if (existsSync(mp3Path)) rmSync(mp3Path);
-  }
 }
 
 async function synthesizeChunk(
@@ -169,8 +162,42 @@ async function synthesizeChunk(
     throw new Error(`OpenRouter TTS HTTP ${res.status}: ${errText.slice(0, 300)}`);
   }
 
-  const raw = Buffer.from(await res.arrayBuffer());
-  return usesPcmOutput(model) ? pcmBufferToMp3(raw) : raw;
+  return Buffer.from(await res.arrayBuffer());
+}
+
+function pcmSilenceMs(ms: number): Buffer {
+  const samples = Math.round((PCM_SAMPLE_RATE * ms) / 1000);
+  return Buffer.alloc(samples * PCM_CHANNELS * PCM_BYTES_PER_SAMPLE);
+}
+
+function pcmBufferToMp3File(pcm: Buffer, mp3Path: string) {
+  const pcmPath = mp3Path.replace(/\.mp3$/, '.pcm');
+  writeFileSync(pcmPath, pcm);
+  try {
+    execSync(
+      `ffmpeg -y -f s16le -ar ${PCM_SAMPLE_RATE} -ac ${PCM_CHANNELS} -i "${pcmPath}" -codec:a libmp3lame -qscale:a 3 "${mp3Path}"`,
+      { stdio: 'ignore' },
+    );
+  } finally {
+    if (existsSync(pcmPath)) rmSync(pcmPath);
+  }
+}
+
+function concatPcmWithPauses(pcmParts: Buffer[]): Buffer {
+  if (pcmParts.length === 1) return pcmParts[0];
+  const pause = pcmSilenceMs(CHUNK_PAUSE_MS);
+  const total = pcmParts.reduce((sum, part, i) => sum + part.length + (i < pcmParts.length - 1 ? pause.length : 0), 0);
+  const merged = Buffer.alloc(total);
+  let offset = 0;
+  for (let i = 0; i < pcmParts.length; i++) {
+    pcmParts[i].copy(merged, offset);
+    offset += pcmParts[i].length;
+    if (i < pcmParts.length - 1) {
+      pause.copy(merged, offset);
+      offset += pause.length;
+    }
+  }
+  return merged;
 }
 
 function concatMp3WithFfmpeg(partPaths: string[], outputPath: string) {
@@ -225,31 +252,42 @@ async function generateForPost(
   mkdirSync(TMP_DIR, { recursive: true });
   mkdirSync(AUDIO_DIR, { recursive: true });
 
-  const chunks = splitSpeechTextForTts(speechText, 2500);
-  console.log(`TTS-Chunks: ${chunks.length} (Model: ${model}, Voice: ${voice}, Sprache: ${language})`);
+  const chunkLimit = maxCharsForModel(model);
+  const chunks = splitSpeechTextForTts(speechText, chunkLimit);
+  const mode = chunks.length === 1 ? 'ein Durchgang' : `${chunks.length} Abschnitte mit Pause`;
+  console.log(`TTS: ${mode} (Model: ${model}, Voice: ${voice}, Sprache: ${language})`);
 
-  const partPaths: string[] = [];
+  const pcmParts: Buffer[] = [];
+  const mp3PartPaths: string[] = [];
+
   for (let i = 0; i < chunks.length; i++) {
-    const partPath = join(TMP_DIR, `${meta.slug}-part-${i + 1}.mp3`);
+    const partPath = join(TMP_DIR, `${meta.slug}-part-${i + 1}.${usesPcmOutput(model) ? 'pcm' : 'mp3'}`);
     if (!force && existsSync(partPath) && readFileSync(partPath).length > 0) {
-      console.log(`  Chunk ${i + 1}/${chunks.length} — vorhanden, übersprungen`);
-      partPaths.push(partPath);
+      console.log(`  Abschnitt ${i + 1}/${chunks.length} — vorhanden, übersprungen`);
+      if (usesPcmOutput(model)) pcmParts.push(readFileSync(partPath));
+      else mp3PartPaths.push(partPath);
       continue;
     }
-    console.log(`  Chunk ${i + 1}/${chunks.length} (${chunks[i].length} Zeichen)…`);
+    console.log(`  Abschnitt ${i + 1}/${chunks.length} (${chunks[i].length} Zeichen)…`);
     const audio = await synthesizeChunk(apiKey, model, voice, language, chunks[i]);
     writeFileSync(partPath, audio);
-    partPaths.push(partPath);
+    if (usesPcmOutput(model)) pcmParts.push(audio);
+    else mp3PartPaths.push(partPath);
   }
 
   const outputPath = join(AUDIO_DIR, `${meta.slug}.mp3`);
-  if (partPaths.length === 1) {
-    writeFileSync(outputPath, readFileSync(partPaths[0]));
+  if (usesPcmOutput(model)) {
+    const mergedPcm = concatPcmWithPauses(pcmParts);
+    pcmBufferToMp3File(mergedPcm, outputPath);
+  } else if (mp3PartPaths.length === 1) {
+    writeFileSync(outputPath, readFileSync(mp3PartPaths[0]));
   } else {
-    concatMp3WithFfmpeg(partPaths, outputPath);
+    concatMp3WithFfmpeg(mp3PartPaths, outputPath);
   }
 
-  for (const p of partPaths) {
+  for (let i = 0; i < chunks.length; i++) {
+    const ext = usesPcmOutput(model) ? 'pcm' : 'mp3';
+    const p = join(TMP_DIR, `${meta.slug}-part-${i + 1}.${ext}`);
     if (existsSync(p)) rmSync(p);
   }
 
