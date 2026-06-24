@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import ScrollToTop from '../components/ScrollToTop';
 import { getAllBlogPosts } from '@/lib/blog-database';
 import { mergeBlogPostsWithGit } from '@/lib/blog-git-posts';
+import { filterPublicBlogList, BLOG_STARTERWELLE_URL, BLOG_ZOOM_CONSULTATION_URL } from '@/lib/blog-post-display';
 import { getRedisClient } from '@/lib/redis';
 
 export const dynamic = 'force-dynamic';
@@ -51,7 +52,7 @@ async function getBlogPosts() {
       } catch {}
     }
 
-    return posts;
+    return filterPublicBlogList(posts);
   } catch {
     return [];
   }
@@ -235,6 +236,7 @@ export default async function BlogPage() {
           <h2 className="text-3xl font-bold text-foreground mb-8 text-center">
             Weitere Artikel
           </h2>
+          {displayRegular.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {displayRegular.map((post) => (
               <Link
@@ -281,6 +283,11 @@ export default async function BlogPage() {
               </Link>
             ))}
           </div>
+          ) : (
+            <p className="text-center text-muted-foreground">
+              Aktuell keine weiteren Artikel – alle Highlights finden Sie oben.
+            </p>
+          )}
         </div>
       </section>
 
@@ -294,14 +301,16 @@ export default async function BlogPage() {
             Unser SEO-Team aus Kempten hilft Ihnen dabei, online gefunden zu werden.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/#cta"
+            <a
+              href={BLOG_ZOOM_CONSULTATION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="bg-primary-foreground text-primary px-8 py-3 rounded-lg font-semibold hover:bg-primary-foreground/90 transition-colors"
             >
               Kostenloses Erstgespräch
-            </Link>
-            <Link 
-              href="/#produkte"
+            </a>
+            <Link
+              href={BLOG_STARTERWELLE_URL}
               className="border-2 border-primary-foreground text-primary-foreground px-8 py-3 rounded-lg font-semibold hover:bg-primary-foreground/10 transition-colors"
             >
               Webdesign-Pakete

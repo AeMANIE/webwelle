@@ -43,6 +43,25 @@ export function normalizeBlogContent(content: unknown): string {
 export const BLOG_ZOOM_CONSULTATION_URL =
   'https://scheduler.zoom.us/aemanie-gmbh/30-minuten-mit-aemanie-gmbh-herr-manie';
 
+/** StarterWelle – Webdesign-Pakete in Blog-CTAs */
+export const BLOG_STARTERWELLE_URL = '/buchung/starterwelle';
+
+/** DB-Testartikel / Legacy – nicht auf /blog listen */
+const BLOG_HIDDEN_FROM_LIST_TITLES = new Set([
+  'das ist meine produkt für webwelle.com StarterWelle',
+  'Kempten Webdesign Allgäu',
+  'Next.js & React – Warum moderne Websites von WebWelle einfach besser performen',
+]);
+
+export function isBlogPostHiddenFromPublicList(post: { title?: string | null }): boolean {
+  const title = (post.title ?? '').trim();
+  return BLOG_HIDDEN_FROM_LIST_TITLES.has(title);
+}
+
+export function filterPublicBlogList<T extends { title?: string | null }>(posts: T[]): T[] {
+  return posts.filter((post) => !isBlogPostHiddenFromPublicList(post));
+}
+
 /** CSS-Klasse für Blog-Body — Abstände in globals.css (.blog-article-content), nicht Tailwind prose */
 export const BLOG_ARTICLE_PROSE_CLASS = 'blog-article-content';
 
