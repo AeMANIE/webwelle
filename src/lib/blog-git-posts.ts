@@ -72,6 +72,11 @@ export function getGitBlogPostBySlug(slug: string): BlogPost | null {
   return toBlogPost(meta);
 }
 
+/** Audio from git manifest (e.g. after cache hit without audioUrl). */
+export function getGitBlogAudioUrl(slug: string): string | undefined {
+  return loadManifest().find((p) => p.slug === slug)?.audioUrl;
+}
+
 /** DB posts win when slug collides. */
 export function mergeBlogPostsWithGit<T extends { slug: string }>(dbPosts: T[]): (T | BlogPost)[] {
   const dbSlugs = new Set(dbPosts.map((p) => p.slug));

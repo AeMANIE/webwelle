@@ -9,7 +9,11 @@ import Footer from '../../components/Footer';
 import ScrollToTop from '../../components/ScrollToTop';
 import BlogAudioPlayer from '../../components/BlogAudioPlayer';
 import { getBlogPostBySlug } from '@/lib/blog-database';
-import { getGitBlogPostBySlug, isGitBlogPostId } from '@/lib/blog-git-posts';
+import {
+  getGitBlogAudioUrl,
+  getGitBlogPostBySlug,
+  isGitBlogPostId,
+} from '@/lib/blog-git-posts';
 import { getImagesForPost } from '@/lib/blog-jobs-database';
 import {
   estimateReadTimeMinutes,
@@ -41,6 +45,13 @@ async function loadPost(slug: string) {
     }
     if (post && redis && (await redis.status) === 'ready') {
       await redis.setex(`blog:post:${slug}`, 900, JSON.stringify(post));
+    }
+  }
+
+  if (post && !post.audioUrl) {
+    const gitAudioUrl = getGitBlogAudioUrl(slug);
+    if (gitAudioUrl) {
+      post = { ...post, audioUrl: gitAudioUrl };
     }
   }
 
