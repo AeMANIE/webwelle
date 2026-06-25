@@ -5,6 +5,7 @@ import Footer from '../../components/Footer';
 import KICheckout from '../../components/KICheckout';
 import ScrollToTop from '../../components/ScrollToTop';
 import CookieBanner from '../../components/CookieBanner';
+import { ROBOTS_NOINDEX } from '@/lib/seo-index';
 
 export const metadata: Metadata = {
   title: "FlowWelle buchen | KI-Agent Einstieg | WebWelle",
@@ -13,17 +14,7 @@ export const metadata: Metadata = {
   authors: [{ name: "WebWelle" }],
   creator: "WebWelle",
   publisher: "WebWelle",
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
+  robots: ROBOTS_NOINDEX,
   openGraph: {
     type: 'website',
     locale: 'de_DE',

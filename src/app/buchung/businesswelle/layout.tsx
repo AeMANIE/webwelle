@@ -1,18 +1,12 @@
 import type { Metadata } from 'next';
+import { ROBOTS_NOINDEX } from '@/lib/seo-index';
 
 export const metadata: Metadata = {
   title: "BusinessWelle buchen | WebWelle – Webdesign-Paket für wachsende Unternehmen",
   description: "BusinessWelle Webdesign-Paket buchen. Professionelle Website mit erweiterten Features für wachsende Unternehmen. Festpreis, transparent, modern.",
   keywords: "BusinessWelle buchen, Webdesign-Paket, Website für Unternehmen, WebWelle",
   authors: [{ name: "WebWelle" }],
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-    },
-  },
+  robots: ROBOTS_NOINDEX,
   alternates: {
     canonical: 'https://webwelle.com/buchung/businesswelle',
   },

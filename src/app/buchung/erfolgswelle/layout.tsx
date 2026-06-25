@@ -1,18 +1,12 @@
 import type { Metadata } from 'next';
+import { ROBOTS_NOINDEX } from '@/lib/seo-index';
 
 export const metadata: Metadata = {
   title: "ErfolgsWelle buchen | WebWelle – Premium Webdesign-Paket für Marktführer",
   description: "ErfolgsWelle Webdesign-Paket buchen. Premium Website mit allen Features für Marktführer. Festpreis, transparent, modern.",
   keywords: "ErfolgsWelle buchen, Premium Webdesign-Paket, Website für Marktführer, WebWelle",
   authors: [{ name: "WebWelle" }],
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-    },
-  },
+  robots: ROBOTS_NOINDEX,
   alternates: {
     canonical: 'https://webwelle.com/buchung/erfolgswelle',
   },

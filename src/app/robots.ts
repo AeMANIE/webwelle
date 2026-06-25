@@ -1,23 +1,8 @@
-import { MetadataRoute } from 'next'
+import type { MetadataRoute } from 'next';
+import { buildRobotsRules } from '@/lib/seo-index';
 
-export default function robots(): MetadataRoute.Robots {
-  return {
-    rules: {
-      userAgent: '*',
-      allow: '/',
-      disallow: [
-        '/admin/',
-        '/api/',
-        '/customer/',
-        '/_next/',
-        '/success',
-        '/verify-email',
-        '/reset-password',
-        '/forgot-password',
-        '/canva/',
-        '/canvamausinteraktiv/',
-      ],
-    },
-    sitemap: 'https://webwelle.com/sitemap.xml',
-  }
+export const dynamic = 'force-dynamic';
+
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  return buildRobotsRules();
 }

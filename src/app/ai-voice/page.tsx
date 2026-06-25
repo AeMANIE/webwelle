@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import ScrollToTop from '../components/ScrollToTop';
 import CookieBanner from '../components/CookieBanner';
 import { Check, Phone, Clock, Shield, Zap } from 'lucide-react';
+import { ROBOTS_NOINDEX } from '@/lib/seo-index';
 
 // Lazy load nicht-kritische Komponenten für bessere Performance (nach initial render)
 const AIVoiceCheckout = dynamic(() => import('../components/AIVoiceCheckout'), {
@@ -27,17 +28,7 @@ export const metadata: Metadata = {
   authors: [{ name: "WebWelle" }],
   creator: "WebWelle",
   publisher: "WebWelle",
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
+  robots: ROBOTS_NOINDEX,
   openGraph: {
     type: 'website',
     locale: 'de_DE',

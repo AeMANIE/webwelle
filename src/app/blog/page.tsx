@@ -7,6 +7,7 @@ import ScrollToTop from '../components/ScrollToTop';
 import { getAllBlogPosts } from '@/lib/blog-database';
 import { mergeBlogPostsWithGit } from '@/lib/blog-git-posts';
 import { filterPublicBlogList, BLOG_STARTERWELLE_URL, BLOG_ZOOM_CONSULTATION_URL } from '@/lib/blog-post-display';
+import { ROBOTS_INDEX } from '@/lib/seo-index';
 import { getRedisClient } from '@/lib/redis';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,18 @@ export const metadata: Metadata = {
   title: "Blog & Insights | WebWelle – Webdesign Kempten (Allgäu)",
   description: "Lokale SEO-Artikel und Webdesign-Insights aus Kempten. Tipps für digitale Sichtbarkeit im Allgäu und Bayern.",
   keywords: "Webdesign Blog Kempten, SEO Tipps Allgäu, Digitale Sichtbarkeit Bayern, Webdesign Trends",
+  robots: ROBOTS_INDEX,
+  alternates: {
+    canonical: 'https://webwelle.com/blog',
+  },
+  openGraph: {
+    title: "Blog & Insights | WebWelle – Webdesign Kempten (Allgäu)",
+    description: "Lokale SEO-Artikel und Webdesign-Insights aus Kempten. Tipps für digitale Sichtbarkeit im Allgäu und Bayern.",
+    type: 'website',
+    locale: 'de_DE',
+    url: 'https://webwelle.com/blog',
+    siteName: 'WebWelle',
+  },
 };
 
 async function getBlogPosts() {

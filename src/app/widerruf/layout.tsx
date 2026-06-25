@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ScrollToTop from '../components/ScrollToTop';
 import CookieBanner from '../components/CookieBanner';
+import { ROBOTS_NOINDEX } from '@/lib/seo-index';
 
 export const metadata: Metadata = {
   title: 'Stornierung und Erstattungen | WebWelle – B2B-Regelungen',
@@ -12,17 +13,7 @@ export const metadata: Metadata = {
   creator: 'WebWelle',
   publisher: 'WebWelle',
   alternates: { canonical: 'https://webwelle.com/widerruf' },
-  robots: {
-    index: true, 
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
+  robots: ROBOTS_NOINDEX,
   openGraph: {
     type: 'website',
     locale: 'de_DE',

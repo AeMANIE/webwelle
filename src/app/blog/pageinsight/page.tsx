@@ -5,11 +5,13 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import ScrollToTop from '../../components/ScrollToTop';
 import { BLOG_ARTICLE_PROSE_CLASS, BLOG_ZOOM_CONSULTATION_URL } from '@/lib/blog-post-display';
+import { ROBOTS_NOINDEX } from '@/lib/seo-index';
 
 export const metadata: Metadata = {
   title: 'Warum ein PageSpeed Insights Score über 90 unverzichtbar ist | WebWelle',
   description:
     'Erfahren Sie, warum ein PageSpeed Insights Score > 90 für Unternehmen in Kempten und dem Allgäu entscheidend ist – inklusive Vorteile, Core Web Vitals und Praxis-Tipps.',
+  robots: ROBOTS_NOINDEX,
 };
 
 const blogPost = {

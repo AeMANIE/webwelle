@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import UmamiAnalytics from "./components/UmamiAnalytics";
 import { getUmamiConfig } from "@/lib/umami";
+import { ROBOTS_NOINDEX } from "@/lib/seo-index";
 
 const umamiConfig = getUmamiConfig();
 
@@ -20,17 +21,7 @@ export const metadata: Metadata = {
     "WebWelle entwickelt professionelle Websites für Selbstständige und Unternehmen im Allgäu – klar aufgebaut, auf Vertrauen ausgerichtet, für mehr Anfragen.",
   keywords: "Webdesign Kempten, Webdesign Allgäu, Website erstellen Kempten, SEO Agentur Allgäu, Festpreis Webdesign, Webdesign Bayern",
   authors: [{ name: "WebWelle" }],
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-    },
-  },
-  alternates: {
-    canonical: 'https://webwelle.com',
-  },
+  robots: ROBOTS_NOINDEX,
   icons: {
     icon: '/favicon.png',
     shortcut: '/favicon.ico',

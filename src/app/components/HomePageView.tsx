@@ -10,10 +10,17 @@ import Workflow from './Workflow';
 import Products from './Products';
 import { WavePath } from '@/components/ui/wave-path';
 import FAQ from './FAQ';
+import { getHomepageJsonLd } from '@/lib/seo-local-business';
 
 export default function HomePageView() {
+  const jsonLd = getHomepageJsonLd();
+
   return (
     <div className="min-h-screen bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Header />
       <main>
         <Hero />

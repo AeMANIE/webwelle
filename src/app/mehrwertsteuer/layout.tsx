@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ROBOTS_INDEX } from "@/lib/seo-index";
 
 export const metadata: Metadata = {
   title: `Mehrwertsteuer-Rechner | Brutto, Netto + MwSt berechnen | WebWelle`,
@@ -7,17 +8,7 @@ export const metadata: Metadata = {
   authors: [{ name: "WebWelle" }],
   creator: "WebWelle",
   publisher: "WebWelle",
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
+  robots: ROBOTS_INDEX,
   openGraph: {
     type: 'website',
     locale: 'de_DE',

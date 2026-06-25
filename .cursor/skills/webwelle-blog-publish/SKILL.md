@@ -176,7 +176,29 @@ Markdown-Quellen: `##` → h2, `###` → h3 via `normalizeHtmlForQuill` (Admin-E
 | `featuredImageUrl` | OG/Twitter Bild (1200×630 empfohlen) |
 | `publishedAt` | `datePublished` Schema.org |
 
-Automatisch generiert in `[slug]/page.tsx`: canonical, googleBot, Open Graph, Twitter Card, BlogPosting JSON-LD.
+Automatisch generiert in `[slug]/page.tsx`: canonical, googleBot, Open Graph, Twitter Card, BlogPosting JSON-LD (nur bei Featured-Artikeln mit Google-Index).
+
+---
+
+## Indexierung & Sitemap (automatisch)
+
+Google-Indexierung für Blog-Artikel erfolgt **nur** bei **`"featured": true`** in `posts.json` — dann erscheint der Artikel unter **„Featured Artikel“** auf `/blog`.
+
+| `featured` | `/blog` Liste | Google-Index | Sitemap |
+|------------|---------------|--------------|---------|
+| `true` | Featured Artikel | Ja (Priority 0.8) | Automatisch |
+| `false` | Weitere Artikel (falls vorhanden) | Nein (`noindex`) | Nein |
+
+**Technik:** Nach Deploy liest `src/lib/seo-index.ts` die Featured-Artikel über `getFeaturedPublicBlogPosts()` aus `src/lib/blog-post-display.ts` und trägt sie in `/sitemap.xml` und `robots.txt` ein. **Kein manuelles Editieren** von `sitemap.ts` pro Artikel.
+
+**Workflow für neuen indexierbaren Artikel:**
+
+1. Eintrag in `posts.json` mit `"featured": true`
+2. `npm run build` grün
+3. Commit + Push → Deploy
+4. Optional: URL in Google Search Console prüfen
+
+**Nicht indexiert:** Legacy-Routen wie `/blog/pageinsight`, Artikel mit `featured: false`, versteckte Test-Titel aus `BLOG_HIDDEN_FROM_LIST_TITLES`.
 
 ---
 
@@ -262,6 +284,7 @@ npm run blog:audio -- --slug=mein-neuer-artikel
 - [ ] excerpt ≠ metaDescription
 - [ ] 3–5 Tags
 - [ ] Hero vorhanden und erreichbar
+- [ ] `"featured": true` wenn Google-Index gewünscht
 
 ### Technik
 - [ ] `posts.json` valides JSON
@@ -278,7 +301,8 @@ npm run blog:audio -- --slug=mein-neuer-artikel
 | `src/content/blog/posts.json` | Artikel-Manifest |
 | `src/content/blog/*.html` | Artikel-Inhalte |
 | `src/lib/blog-git-posts.ts` | Git-Artikel laden |
-| `src/lib/blog-post-display.ts` | Sanitize, Zoom-URL, CSS-Klassenname |
+| `src/lib/blog-post-display.ts` | Sanitize, Zoom-URL, Featured-Index-Logik |
+| `src/lib/seo-index.ts` | Sitemap + robots Allowlist |
 | `src/app/globals.css` | `.blog-article-content` Abstände |
 | `src/app/blog/[slug]/page.tsx` | Seiten-Layout + SEO |
 | `src/app/blog/page.tsx` | Blog-Übersicht (merge DB + Git) |

@@ -62,6 +62,46 @@ export function filterPublicBlogList<T extends { title?: string | null }>(posts:
   return posts.filter((post) => !isBlogPostHiddenFromPublicList(post));
 }
 
+export type FeaturedBlogPostRef = {
+  slug: string;
+  title: string;
+  featured: boolean;
+  status?: string;
+  publishedAt?: Date;
+  createdAt: Date;
+};
+
+/** Same criteria as "Featured Artikel" on /blog — used for sitemap and indexation. */
+export async function getFeaturedPublicBlogPosts(): Promise<FeaturedBlogPostRef[]> {
+  const { getAllBlogPosts } = await import('@/lib/blog-database');
+  const { mergeBlogPostsWithGit } = await import('@/lib/blog-git-posts');
+
+  let dbPosts: FeaturedBlogPostRef[] = [];
+  try {
+    const published = await getAllBlogPosts('published');
+    dbPosts = published.map((post) => ({
+      slug: post.slug,
+      title: post.title,
+      featured: post.featured,
+      status: post.status,
+      publishedAt: post.publishedAt,
+      createdAt: post.createdAt,
+    }));
+  } catch {
+    dbPosts = [];
+  }
+
+  const merged = mergeBlogPostsWithGit(dbPosts) as FeaturedBlogPostRef[];
+  return filterPublicBlogList(merged).filter(
+    (post) => post.featured && (post.status === undefined || post.status === 'published')
+  );
+}
+
+export async function isBlogSlugIndexable(slug: string): Promise<boolean> {
+  const featured = await getFeaturedPublicBlogPosts();
+  return featured.some((post) => post.slug === slug);
+}
+
 /** CSS-Klasse für Blog-Body — Abstände in globals.css (.blog-article-content), nicht Tailwind prose */
 export const BLOG_ARTICLE_PROSE_CLASS = 'blog-article-content';
 

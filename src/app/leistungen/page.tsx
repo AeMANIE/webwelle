@@ -6,6 +6,7 @@ import LeistungenServicesOverview from '../components/LeistungenServicesOverview
 import LeistungenProducts from '../components/LeistungenProducts';
 import ScrollToTop from '../components/ScrollToTop';
 import CookieBanner from '../components/CookieBanner';
+import { ROBOTS_INDEX } from '@/lib/seo-index';
 
 export const metadata: Metadata = {
   title: 'Leistungen & Webdesign-Pakete | Festpreis-Websites | WebWelle',
@@ -16,17 +17,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'WebWelle' }],
   creator: 'WebWelle',
   publisher: 'WebWelle',
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
+  robots: ROBOTS_INDEX,
   openGraph: {
     type: 'website',
     locale: 'de_DE',

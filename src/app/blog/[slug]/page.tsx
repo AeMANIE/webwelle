@@ -21,10 +21,12 @@ import {
   normalizeBlogContent,
   normalizePostTags,
   safeToIsoDate,
+  isBlogSlugIndexable,
   BLOG_ARTICLE_PROSE_CLASS,
   BLOG_CONTENT_SANITIZE_OPTIONS,
   BLOG_ZOOM_CONSULTATION_URL,
 } from '@/lib/blog-post-display';
+import { ROBOTS_INDEX, ROBOTS_NOINDEX } from '@/lib/seo-index';
 import { getRedisClient } from '@/lib/redis';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://webwelle.com';
@@ -83,6 +85,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const description = post.metaDescription || post.excerpt || '';
   const canonical = `${BASE_URL}/blog/${slug}`;
   const keywords = normalizePostTags(post.tags).join(', ');
+  const indexable = await isBlogSlugIndexable(slug);
 
   return {
     title: `${post.title} | WebWelle Blog`,
@@ -92,17 +95,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     creator: 'WebWelle',
     publisher: 'WebWelle',
     alternates: { canonical },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        'max-video-preview': -1,
-        'max-image-preview': 'large',
-        'max-snippet': -1,
-      },
-    },
+    robots: indexable ? ROBOTS_INDEX : ROBOTS_NOINDEX,
     openGraph: {
       type: 'article',
       locale: 'de_DE',
@@ -162,6 +155,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const canonical = `${BASE_URL}/blog/${slug}`;
   const datePublished = safeToIsoDate(publishDate);
   const dateModified = safeToIsoDate(post.updatedAt || publishDate);
+  const indexable = await isBlogSlugIndexable(slug);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -181,10 +175,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   return (
     <div className="min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      {indexable && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <Header />
       <div className="bg-gradient-to-r from-primary/10 to-primary/5 py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
