@@ -314,6 +314,8 @@ export default function CustomerPortal() {
     try {
       setSelectedBooking(booking);
       setShowDetails(true);
+      setInvoices([]);
+      setSubscription(null);
 
       // Lade Rechnungen
       const invoicesResponse = await fetch(`/api/customer-portal?action=invoices&bookingId=${booking.id}`);
@@ -755,7 +757,10 @@ export default function CustomerPortal() {
                         </button>
                         {booking.status === 'paid' && (
                           <>
-                            <button className="flex items-center gap-2 border border-primary text-primary px-4 py-2 rounded hover:bg-primary/10 transition-colors text-sm">
+                            <button
+                              onClick={() => fetchBookingDetails(booking)}
+                              className="flex items-center gap-2 border border-primary text-primary px-4 py-2 rounded hover:bg-primary/10 transition-colors text-sm"
+                            >
                               <FileText className="w-4 h-4" />
                               Rechnungen
                             </button>
@@ -1056,9 +1061,9 @@ export default function CustomerPortal() {
                   )}
 
                   {/* Invoices */}
-                  {invoices.length > 0 && (
-                    <div className="bg-card rounded-lg p-4 border border-border">
-                      <h3 className="font-semibold text-foreground mb-2">Rechnungen</h3>
+                  <div className="bg-card rounded-lg p-4 border border-border">
+                    <h3 className="font-semibold text-foreground mb-2">Rechnungen</h3>
+                    {invoices.length > 0 ? (
                       <div className="space-y-2">
                         {invoices.map((invoice) => (
                           <div key={invoice.id} className="flex justify-between items-center py-2 border-b border-border last:border-b-0">
@@ -1072,22 +1077,24 @@ export default function CustomerPortal() {
                               <span className="text-primary font-medium">
                                 {invoice.amount.toFixed(2)} {invoice.currency.toUpperCase()}
                               </span>
-                              {invoice.pdfUrl && (
-                                <a
-                                  href={invoice.pdfUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:text-primary/80"
-                                >
-                                  <Download className="w-4 h-4" />
-                                </a>
-                              )}
+                              <a
+                                href={`/api/customer/invoices/pdf?id=${encodeURIComponent(invoice.id)}`}
+                                className="inline-flex items-center gap-1 text-primary hover:text-primary/80 text-sm"
+                                title="WebWelle-Rechnung herunterladen"
+                              >
+                                <Download className="w-4 h-4" />
+                                PDF
+                              </a>
                             </div>
                           </div>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Für diese Buchung wurde noch keine Rechnung gefunden.
+                      </p>
+                    )}
+                  </div>
 
                   {/* Subscription Management */}
                   {subscription && (

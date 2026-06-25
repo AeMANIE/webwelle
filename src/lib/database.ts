@@ -1685,6 +1685,9 @@ export interface InvoiceData {
   customer_email: string;
   customer_name?: string | null;
   customer_number?: string | null;
+  booking_id?: string | null;
+  session_id?: string | null;
+  stripe_subscription_id?: string | null;
   amount_cents: number;
   currency: string;
   status: string;
@@ -1699,21 +1702,28 @@ export interface InvoiceData {
 
 // Rechnung speichern
 export async function saveInvoice(invoiceData: InvoiceData): Promise<InvoiceData> {
+  const { ensureInvoiceColumns } = await import('@/lib/invoices/schema');
+  await ensureInvoiceColumns();
+
   const client = await pool.connect();
   
   try {
     const query = `
       INSERT INTO invoices (
         stripe_invoice_id, invoice_number, customer_id, customer_email, customer_name, customer_number,
+        booking_id, session_id, stripe_subscription_id,
         amount_cents, currency, status, paid_at, due_date, pdf_url, hosted_invoice_url, issuer
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       ON CONFLICT (stripe_invoice_id) 
       DO UPDATE SET
         invoice_number = EXCLUDED.invoice_number,
-        customer_id = EXCLUDED.customer_id,
+        customer_id = COALESCE(EXCLUDED.customer_id, invoices.customer_id),
         customer_email = EXCLUDED.customer_email,
         customer_name = EXCLUDED.customer_name,
         customer_number = EXCLUDED.customer_number,
+        booking_id = COALESCE(EXCLUDED.booking_id, invoices.booking_id),
+        session_id = COALESCE(EXCLUDED.session_id, invoices.session_id),
+        stripe_subscription_id = COALESCE(EXCLUDED.stripe_subscription_id, invoices.stripe_subscription_id),
         amount_cents = EXCLUDED.amount_cents,
         currency = EXCLUDED.currency,
         status = EXCLUDED.status,
@@ -1733,6 +1743,9 @@ export async function saveInvoice(invoiceData: InvoiceData): Promise<InvoiceData
       invoiceData.customer_email,
       invoiceData.customer_name || null,
       invoiceData.customer_number || null,
+      invoiceData.booking_id || null,
+      invoiceData.session_id || null,
+      invoiceData.stripe_subscription_id || null,
       invoiceData.amount_cents,
       invoiceData.currency || 'EUR',
       invoiceData.status,
@@ -1837,173 +1850,8 @@ interface BookingRow {
 }
 
 export async function getInvoicesByBookingId(bookingId: string): Promise<InvoiceData[]> {
-  let client;
-  let connectionError: Error | null = null;
-  
-  try {
-    client = await pool.connect();
-    // Prüfe zuerst webwelle_invoices (verknüpft mit booking_id)
-    const webwelleInvoicesQuery = `
-      SELECT 
-        id,
-        invoice_number,
-        amount_cents,
-        currency,
-        status,
-        paid_at,
-        due_date,
-        pdf_url,
-        created_at,
-        booking_id as stripe_invoice_id
-      FROM webwelle_invoices 
-      WHERE booking_id = $1 
-      ORDER BY created_at DESC
-    `;
-    const webwelleResult = await client.query(webwelleInvoicesQuery, [bookingId]);
-    
-    // Dann prüfe invoices (verknüpft mit customer_email oder customer_id)
-    const bookingQuery = 'SELECT customer_email, customer_id FROM webwelle_bookings WHERE id = $1';
-    const bookingResult = await client.query(bookingQuery, [bookingId]);
-    
-    let invoices: InvoiceData[] = [];
-    
-    if (webwelleResult.rows.length > 0) {
-      invoices = webwelleResult.rows.map((row: WebwelleInvoiceRow): InvoiceData => ({
-        id: row.id,
-        invoice_number: row.invoice_number || null,
-        amount_cents: row.amount_cents,
-        currency: row.currency || 'EUR',
-        status: row.status,
-        paid_at: row.paid_at || null,
-        due_date: row.due_date || null,
-        pdf_url: row.pdf_url || null,
-        hosted_invoice_url: null,
-        stripe_invoice_id: row.stripe_invoice_id || '',
-        customer_email: bookingResult.rows[0]?.customer_email || '',
-        customer_id: bookingResult.rows[0]?.customer_id || null,
-        customer_name: null,
-        customer_number: null,
-        issuer: 'WebWelle',
-        created_at: row.created_at,
-        updated_at: row.created_at,
-      }));
-    }
-    
-    // Zusätzlich: Lade Stripe-Invoices (falls vorhanden)
-    if (bookingResult.rows.length > 0) {
-      const booking = bookingResult.rows[0] as BookingRow;
-      let invoicesQuery = 'SELECT * FROM invoices WHERE customer_email = $1';
-      const invoicesParams: (string | null)[] = [booking.customer_email || null];
-      
-      if (booking.customer_id) {
-        invoicesQuery = 'SELECT * FROM invoices WHERE customer_id = $1 OR customer_email = $2';
-        invoicesParams.push(booking.customer_email || null);
-      }
-      
-      invoicesQuery += ' ORDER BY created_at DESC';
-      const invoicesResult = await client.query(invoicesQuery, invoicesParams);
-      
-      // Kombiniere beide Ergebnisse (webwelle_invoices haben Priorität)
-      const existingInvoiceNumbers = new Set(invoices.map(inv => inv.invoice_number));
-      invoicesResult.rows.forEach((row: InvoiceData) => {
-        if (!existingInvoiceNumbers.has(row.invoice_number)) {
-          invoices.push(row);
-        }
-      });
-    }
-    
-    client.release();
-    return invoices;
-  } catch (error) {
-    if (client) client.release();
-    connectionError = error instanceof Error ? error : new Error('Unbekannter Fehler');
-    
-    // SSL-Fallback für VPS
-    if (connectionError.message.includes('certificate') || 
-        connectionError.message.includes('SSL') || 
-        connectionError.message.includes('TLS') ||
-        connectionError.message.includes('unable to verify')) {
-      const tempPool = await createTempPool({ rejectUnauthorized: false });
-      
-      try {
-        client = await tempPool.connect();
-        const webwelleInvoicesQuery = `
-          SELECT 
-            id,
-            invoice_number,
-            amount_cents,
-            currency,
-            status,
-            paid_at,
-            due_date,
-            pdf_url,
-            created_at,
-            booking_id as stripe_invoice_id
-          FROM webwelle_invoices 
-          WHERE booking_id = $1 
-          ORDER BY created_at DESC
-        `;
-        const webwelleResult = await client.query(webwelleInvoicesQuery, [bookingId]);
-        
-        const bookingQuery = 'SELECT customer_email, customer_id FROM webwelle_bookings WHERE id = $1';
-        const bookingResult = await client.query(bookingQuery, [bookingId]);
-        
-        let invoices: InvoiceData[] = [];
-        
-        if (webwelleResult.rows.length > 0) {
-          invoices = webwelleResult.rows.map((row: WebwelleInvoiceRow): InvoiceData => ({
-            id: row.id,
-            invoice_number: row.invoice_number || null,
-            amount_cents: row.amount_cents,
-            currency: row.currency || 'EUR',
-            status: row.status,
-            paid_at: row.paid_at || null,
-            due_date: row.due_date || null,
-            pdf_url: row.pdf_url || null,
-            hosted_invoice_url: null,
-            stripe_invoice_id: row.stripe_invoice_id || '',
-            customer_email: bookingResult.rows[0]?.customer_email || '',
-            customer_id: bookingResult.rows[0]?.customer_id || null,
-            customer_name: null,
-            customer_number: null,
-            issuer: 'WebWelle',
-            created_at: row.created_at,
-            updated_at: row.created_at,
-          }));
-        }
-        
-        if (bookingResult.rows.length > 0) {
-          const booking = bookingResult.rows[0] as BookingRow;
-          let invoicesQuery = 'SELECT * FROM invoices WHERE customer_email = $1';
-          const invoicesParams: (string | null)[] = [booking.customer_email || null];
-          
-          if (booking.customer_id) {
-            invoicesQuery = 'SELECT * FROM invoices WHERE customer_id = $1 OR customer_email = $2';
-            invoicesParams.push(booking.customer_email || null);
-          }
-          
-          invoicesQuery += ' ORDER BY created_at DESC';
-          const invoicesResult = await client.query(invoicesQuery, invoicesParams);
-          
-          const existingInvoiceNumbers = new Set(invoices.map(inv => inv.invoice_number));
-          invoicesResult.rows.forEach((row: InvoiceData) => {
-            if (!existingInvoiceNumbers.has(row.invoice_number)) {
-              invoices.push(row);
-            }
-          });
-        }
-        
-        client.release();
-        await tempPool.end();
-        return invoices;
-      } catch (fallbackError) {
-        if (client) client.release();
-        await tempPool.end();
-        throw fallbackError;
-      }
-    }
-    throw connectionError;
-  }
+  const { resolveInvoicesForBooking } = await import('@/lib/invoices/resolve');
+  return resolveInvoicesForBooking(bookingId);
 }
 
 // Abonnement nach Booking-ID abrufen

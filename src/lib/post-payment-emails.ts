@@ -8,6 +8,7 @@ import { generateInvoicePdf } from '@/lib/invoice-pdf';
 import { sendEmail } from '@/lib/email';
 import { generateActivationToken, saveActivationToken } from '@/lib/portal-activation';
 import { getCustomerByEmail, saveInvoice } from '@/lib/database';
+import { lookupBookingLinkBySessionId } from '@/lib/invoices/booking-link';
 
 export const INVOICE_BANKING = {
   companyName: 'AeManie GmbH',
@@ -136,12 +137,18 @@ async function buildFunnelInvoiceArtifacts(params: {
     banking: INVOICE_BANKING,
   });
 
+  const bookingLink = await lookupBookingLinkBySessionId(params.session.id);
+
   await saveInvoice({
     stripe_invoice_id: stripeInvoiceId,
     invoice_number: invoiceNumber,
     customer_email: params.customerEmail,
     customer_name: params.customerName,
     customer_number: params.customerNumber || null,
+    customer_id: bookingLink.customer_id || null,
+    booking_id: bookingLink.booking_id || null,
+    session_id: bookingLink.session_id || params.session.id,
+    stripe_subscription_id: bookingLink.stripe_subscription_id || null,
     amount_cents: amountCents,
     currency: (params.session.currency || 'eur').toUpperCase(),
     status: 'paid',

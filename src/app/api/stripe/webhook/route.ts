@@ -457,10 +457,28 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice, stripe: St
     
     // Kundennummer abrufen
     let customerNumber: string | null = null;
+    let customerId: string | null = null;
     if (customerEmail) {
       const dbCustomer = await getCustomerByEmail(customerEmail);
       customerNumber = dbCustomer?.customer_number || null;
+      customerId = dbCustomer?.id ? String(dbCustomer.id) : null;
     }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const invSubscription = (inv as any).subscription as string | Stripe.Subscription | null;
+    const subscriptionId =
+      typeof invSubscription === 'string'
+        ? invSubscription
+        : invSubscription && typeof invSubscription === 'object' && 'id' in invSubscription
+          ? String(invSubscription.id)
+          : null;
+
+    const { lookupBookingLinkForStripeInvoice } = await import('@/lib/invoices/booking-link');
+    const bookingLink = await lookupBookingLinkForStripeInvoice({
+      stripeInvoiceId: String(inv.id),
+      stripeSubscriptionId: subscriptionId,
+      customerEmail,
+    });
     
     // Rechnung in Datenbank speichern
     await saveInvoice({
@@ -469,6 +487,10 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice, stripe: St
       customer_email: customerEmail || '',
       customer_name: customerName,
       customer_number: customerNumber,
+      customer_id: bookingLink.customer_id || customerId,
+      booking_id: bookingLink.booking_id || null,
+      session_id: bookingLink.session_id || null,
+      stripe_subscription_id: bookingLink.stripe_subscription_id || subscriptionId,
       amount_cents: inv.amount_paid || inv.amount_due || 0,
       currency: inv.currency?.toUpperCase() || 'EUR',
       status: String(inv.status || 'unknown'),
