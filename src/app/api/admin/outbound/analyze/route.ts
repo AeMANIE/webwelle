@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth, secureResponse } from '@/lib/api-security';
-import { upsertProspectFromDraft, type N8nProspectDraft } from '@/lib/outbound-database';
+import { ensureOutboundTables, upsertProspectFromDraft, type N8nProspectDraft } from '@/lib/outbound-database';
 import { n8nAnalyze, n8nGetDraft } from '@/lib/outbound/n8n-client';
 
 export async function POST(request: NextRequest) {
@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
   if (!websiteUrl) return secureResponse({ error: 'websiteUrl_required' }, 400);
 
   try {
+    await ensureOutboundTables();
     const analyze = await n8nAnalyze({
       websiteUrl,
       googleMapsUrl: body.googleMapsUrl,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth, secureResponse } from '@/lib/api-security';
 import { sendEmail } from '@/lib/email';
 import {
+  ensureOutboundTables,
   getOutboundProspectById,
   markOutboundProspectSent,
   rowToProspectView,
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest, ctx: RouteCtx) {
   if (auth instanceof NextResponse) return auth;
   const { user } = auth;
 
+  await ensureOutboundTables();
   const { id } = await ctx.params;
   const row = await getOutboundProspectById(id);
   if (!row) return secureResponse({ error: 'not_found' }, 404);

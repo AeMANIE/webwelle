@@ -46,7 +46,11 @@ export default function MarketingTab() {
       if (search.trim()) params.set('search', search.trim());
       const res = await fetch(`/api/admin/outbound/prospects?${params}`);
       const data = await res.json();
-      if (res.ok) setItems(data.prospects || []);
+      if (res.ok) {
+        setItems(data.prospects || []);
+      } else {
+        console.error('outbound list:', data.error);
+      }
     } finally {
       setLoading(false);
     }

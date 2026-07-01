@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth, secureResponse } from '@/lib/api-security';
 import {
+  ensureOutboundTables,
   getOutboundProspectById,
   rowToProspectView,
   updateOutboundProspectFromPatch,
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest, ctx: RouteCtx) {
   const auth = await requireAdminAuth(request);
   if (auth instanceof NextResponse) return auth;
 
+  await ensureOutboundTables();
   const { id } = await ctx.params;
   const row = await getOutboundProspectById(id);
   if (!row) return secureResponse({ error: 'not_found' }, 404);
@@ -37,6 +39,7 @@ export async function PATCH(request: NextRequest, ctx: RouteCtx) {
   const auth = await requireAdminAuth(request);
   if (auth instanceof NextResponse) return auth;
 
+  await ensureOutboundTables();
   const { id } = await ctx.params;
   const row = await getOutboundProspectById(id);
   if (!row) return secureResponse({ error: 'not_found' }, 404);

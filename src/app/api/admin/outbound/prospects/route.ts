@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth, secureResponse } from '@/lib/api-security';
-import { listOutboundProspects } from '@/lib/outbound-database';
+import { ensureOutboundTables, listOutboundProspects } from '@/lib/outbound-database';
 
 export async function GET(request: NextRequest) {
   const auth = await requireAdminAuth(request);
@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
   const search = request.nextUrl.searchParams.get('search') || undefined;
 
   try {
+    await ensureOutboundTables();
     const rows = await listOutboundProspects({ status, search, limit: 200 });
     return secureResponse({
       prospects: rows.map((r) => ({
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (e) {
     console.error('outbound prospects list:', e);
-    return secureResponse({ error: 'list_failed' }, 500);
+    const msg = e instanceof Error ? e.message : 'list_failed';
+    return secureResponse({ error: msg }, 500);
   }
 }

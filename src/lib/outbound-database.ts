@@ -1,6 +1,7 @@
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { pool } from './database';
+import { OUTBOUND_MIGRATION_SQL } from './outbound-migration-sql';
 
 export type OutboundProspectStatus = 'analyzing' | 'draft' | 'sent' | 'replied' | 'lost' | 'bounced';
 
@@ -82,7 +83,7 @@ export async function ensureOutboundTables(): Promise<void> {
   const client = await pool.connect();
   try {
     const sqlPath = join(process.cwd(), 'src/lib/sql/outbound_tables.sql');
-    const sql = readFileSync(sqlPath, 'utf8');
+    const sql = existsSync(sqlPath) ? readFileSync(sqlPath, 'utf8') : OUTBOUND_MIGRATION_SQL;
     await client.query(sql);
     await client.query(`
       ALTER TABLE outbound_prospects ADD COLUMN IF NOT EXISTS sent_by_staff_id UUID;
@@ -201,25 +202,29 @@ export async function linkOutboundProspect(
       if (c.rows[0]) customerId = String(c.rows[0].id);
     }
 
-    if (row.preferred_email && !leadId) {
-      const l = await client.query(
-        `SELECT id FROM funnel_leads
-         WHERE LOWER(email) = LOWER($1)
-            OR (existing_website_url IS NOT NULL AND existing_website_url ILIKE $2)
-         ORDER BY created_at DESC LIMIT 1`,
-        [row.preferred_email, `%${row.domain}%`],
-      );
-      if (l.rows[0]) leadId = String(l.rows[0].id);
-    }
+    try {
+      if (row.preferred_email && !leadId) {
+        const l = await client.query(
+          `SELECT id FROM funnel_leads
+           WHERE LOWER(email) = LOWER($1)
+              OR (existing_website_url IS NOT NULL AND existing_website_url ILIKE $2)
+           ORDER BY created_at DESC LIMIT 1`,
+          [row.preferred_email, `%${row.domain}%`],
+        );
+        if (l.rows[0]) leadId = String(l.rows[0].id);
+      }
 
-    if (!leadId && row.domain) {
-      const l2 = await client.query(
-        `SELECT id FROM funnel_leads
-         WHERE existing_website_url IS NOT NULL AND existing_website_url ILIKE $1
-         ORDER BY created_at DESC LIMIT 1`,
-        [`%${row.domain}%`],
-      );
-      if (l2.rows[0]) leadId = String(l2.rows[0].id);
+      if (!leadId && row.domain) {
+        const l2 = await client.query(
+          `SELECT id FROM funnel_leads
+           WHERE existing_website_url IS NOT NULL AND existing_website_url ILIKE $1
+           ORDER BY created_at DESC LIMIT 1`,
+          [`%${row.domain}%`],
+        );
+        if (l2.rows[0]) leadId = String(l2.rows[0].id);
+      }
+    } catch (linkErr) {
+      console.warn('linkOutboundProspect funnel_leads:', linkErr);
     }
 
     await client.query(
