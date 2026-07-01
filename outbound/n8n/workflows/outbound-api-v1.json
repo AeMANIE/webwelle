@@ -1,0 +1,204 @@
+{
+  "name": "outbound-api-v1",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "outbound-status",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "ob-status-wh",
+      "name": "Webhook Status",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        -200
+      ],
+      "webhookId": "ob-status-wh"
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "outbound-draft",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "ob-draft-get-wh",
+      "name": "Webhook Draft GET",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        0
+      ],
+      "webhookId": "ob-draft-get-wh"
+    },
+    {
+      "parameters": {
+        "httpMethod": "PATCH",
+        "path": "outbound-draft-update",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "ob-draft-patch-wh",
+      "name": "Webhook Draft PATCH",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        200
+      ],
+      "webhookId": "ob-draft-patch-wh"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "outbound-send",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "ob-send-wh",
+      "name": "Webhook Send",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        400
+      ],
+      "webhookId": "ob-send-wh"
+    },
+    {
+      "parameters": {
+        "httpMethod": "OPTIONS",
+        "path": "outbound-options",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "ob-options-wh",
+      "name": "Webhook OPTIONS",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        600
+      ],
+      "webhookId": "ob-options-wh"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "/**\n * n8n API handler: status, draft GET/PATCH, send\n * Webhook path determines action via $json.path or node name\n */\nconst httpRequest = this.helpers.httpRequest.bind(this.helpers);\nconst nodemailer = require('nodemailer');\n\nfunction storeApi() {\n  const store = $getWorkflowStaticData('global');\n  if (!store.prospects) store.prospects = {};\n  return {\n    get(id) { return store.prospects[id] || null; },\n    save(id, data) {\n      store.prospects[id] = { ...data, updatedAt: new Date().toISOString() };\n      return store.prospects[id];\n    },\n  };\n}\n\nfunction cors() {\n  return {\n    'Access-Control-Allow-Origin': '*',\n    'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',\n    'Access-Control-Allow-Headers': 'Content-Type, X-Outbound-Secret',\n  };\n}\n\nfunction verify(headers) {\n  const exp = $env.OUTBOUND_API_SECRET || '';\n  if (!exp) return true;\n  const got = headers?.['x-outbound-secret'] || headers?.['X-Outbound-Secret'] || '';\n  return got === exp;\n}\n\nfunction respond(statusCode, body, extraHeaders = {}) {\n  return [{\n    json: {\n      __response: true,\n      statusCode,\n      headers: { ...cors(), 'Content-Type': 'application/json', ...extraHeaders },\n      body: typeof body === 'string' ? body : JSON.stringify(body),\n    },\n  }];\n}\n\nconst item = items[0].json;\nconst headers = item.headers || {};\nconst method = (item.httpMethod || item.method || 'GET').toUpperCase();\n\nlet route = 'unknown';\ntry {\n  if ($('Webhook Status').isExecuted) route = 'status';\n  else if ($('Webhook Draft GET').isExecuted) route = 'draft-get';\n  else if ($('Webhook Draft PATCH').isExecuted) route = 'draft-patch';\n  else if ($('Webhook Send').isExecuted) route = 'send';\n  else if ($('Webhook OPTIONS').isExecuted) route = 'options';\n} catch { /* single-webhook import */ }\n\nconst path = item.path || item.webhookPath || route;\n\nif (method === 'OPTIONS' || route === 'options') {\n  return respond(204, '');\n}\n\nif (!verify(headers)) {\n  return respond(401, { error: 'Unauthorized' });\n}\n\nconst store = storeApi();\nconst query = item.query || {};\nconst body = item.body && typeof item.body === 'object' ? item.body : (typeof item.body === 'string' ? JSON.parse(item.body || '{}') : {});\nconst prospectId = query.id || body.id || '';\n\n// Route: outbound-status\nif (route === 'status' || path.includes('outbound-status')) {\n  const p = store.get(prospectId);\n  if (!p) return respond(404, { error: 'not_found' });\n  return respond(200, { id: p.id, status: p.status, domain: p.domain, updatedAt: p.updatedAt });\n}\n\n// Route: outbound-draft GET\nif (route === 'draft-get' || (path.includes('outbound-draft') && method === 'GET' && !path.includes('update'))) {\n  const p = store.get(prospectId);\n  if (!p) return respond(404, { error: 'not_found' });\n  return respond(200, { ...p, hasPdf: Boolean(p.pdfBase64) });\n}\n\n// Route: outbound-draft PATCH\nif (route === 'draft-patch' || path.includes('outbound-draft-update') || method === 'PATCH') {\n  const p = store.get(prospectId);\n  if (!p) return respond(404, { error: 'not_found' });\n  const patch = body.patch || body;\n  if (patch.contacts) p.contacts = { ...p.contacts, ...patch.contacts };\n  if (patch.company) p.company = { ...p.company, ...patch.company };\n  if (patch.email) p.email = { ...p.email, ...patch.email };\n  if (patch.offer) p.offer = { ...p.offer, ...patch.offer };\n  if (patch.googleBusiness) p.googleBusiness = { ...p.googleBusiness, ...patch.googleBusiness };\n  if (Array.isArray(patch.painPoints)) p.offer = { ...p.offer, painPoints: patch.painPoints };\n  p.editedByUser = true;\n  store.save(prospectId, p);\n  return respond(200, { ok: true, id: prospectId });\n}\n\n// Route: outbound-send\nif (route === 'send' || path.includes('outbound-send')) {\n  const p = store.get(prospectId);\n  if (!p) return respond(404, { error: 'not_found' });\n  const to = body.to || p.contacts?.preferredEmail;\n  if (!to) return respond(400, { error: 'no_recipient' });\n\n  const user = $env.EMAIL_SMTP_USER;\n  const pass = $env.EMAIL_SMTP_PASSWORD;\n  if (!user || !pass) return respond(500, { error: 'smtp_not_configured' });\n\n  const transporter = nodemailer.createTransport({\n    host: 'smtp.hostinger.com', port: 465, secure: true, auth: { user, pass },\n  });\n\n  const attachments = [];\n  if (p.pdfBase64) {\n    attachments.push({\n      filename: `WebWelle-Audit-${p.domain || 'Kunde'}.pdf`,\n      content: Buffer.from(p.pdfBase64, 'base64'),\n      contentType: 'application/pdf',\n    });\n  }\n\n  await transporter.sendMail({\n    from: `\"Herr Manie, WebWelle\" <${user}>`,\n    to,\n    subject: p.email?.subject || `Kurzanalyse ${p.domain}`,\n    html: p.email?.html || '',\n    attachments,\n  });\n\n  p.status = 'sent';\n  p.sentAt = new Date().toISOString();\n  p.sentTo = to;\n  store.save(prospectId, p);\n  return respond(200, { ok: true, sentTo: to });\n}\n\nreturn respond(400, { error: 'unknown_route', path, method });\n"
+      },
+      "id": "ob-api-handler",
+      "name": "API Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.__response ? JSON.parse($json.body) : $json }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode || 200 }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "ob-api-resp",
+      "name": "Respond API",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        40,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Status": {
+      "main": [
+        [
+          {
+            "node": "API Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Draft GET": {
+      "main": [
+        [
+          {
+            "node": "API Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Draft PATCH": {
+      "main": [
+        [
+          {
+            "node": "API Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Send": {
+      "main": [
+        [
+          {
+            "node": "API Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook OPTIONS": {
+      "main": [
+        [
+          {
+            "node": "API Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API Handler": {
+      "main": [
+        [
+          {
+            "node": "Respond API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    "outbound",
+    "webwelle"
+  ]
+}

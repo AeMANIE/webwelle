@@ -1,0 +1,32 @@
+{
+  "primaryOffer": {
+    "default": "starterwelle",
+    "dwaMinComplexity": 6,
+    "dwaSignals": ["portal", "funnel", "mehrseitig", "e-commerce", "automation"]
+  },
+  "alternatives": {
+    "dwa": { "minComplexity": 6, "label": "Wenn Sie mehr wünschen: Digitale Wachstumsarchitektur" },
+    "executive_ki": {
+      "industries": ["beratung", "steuerberater", "rechtsanwalt", "coach", "gf", "geschäftsführer"],
+      "label": "Wenn Sie mehr wünschen: Executive KI-Systeme"
+    }
+  },
+  "upsells": {
+    "seo_profi": { "maxSeoScore": 60, "titleMetaWeak": true },
+    "blog_bundle_10": { "noBlogContent": true },
+    "gmb_komplett": { "maxGbpCompleteness": 70, "localBusiness": true },
+    "branding": { "maxDesignScore": 5 },
+    "animation": { "designScoreMin": 4, "designScoreMax": 7 }
+  },
+  "painPointTemplates": {
+    "performance": "Die mobile Ladezeit (Score {{mobileScore}}) kostet Sie vermutlich Anfragen.",
+    "seo": "Title und Meta-Beschreibung sind für Google nicht optimal aufgebaut.",
+    "tech_baukasten": "Die Seite läuft auf {{platform}} – oft mit Plugin-Chaos und Performance-Nachteilen.",
+    "gbp_incomplete": "Ihr Google-Profil ist nur zu {{completenessScore}} % ausgeschöpft.",
+    "gbp_no_posts": "Keine aktuellen Google-Posts – Google wertet Inaktivität negativ.",
+    "gbp_few_photos": "Nur {{photoCount}} Profilfotos – zu wenig Vertrauen in Maps.",
+    "gbp_not_found": "Kein Google-Unternehmensprofil gefunden – lokale Sichtbarkeit verschenkt.",
+    "legal": "Impressum oder rechtliche Pflichtangaben sind unvollständig.",
+    "conversion": "Kontakt/CTA ist auf dem Handy nicht schnell erreichbar."
+  }
+}

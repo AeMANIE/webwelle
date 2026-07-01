@@ -1,0 +1,17 @@
+{
+  "n8n": {
+    "OPENROUTER_API_KEY": "LLM: Impressum, Marketing-Text, Betreff",
+    "WEBWELLE_OPENROUTER_MODEL": "OpenRouter Modell (z. B. google/gemini-2.5-pro)",
+    "GOOGLE_PAGESPEED_API_KEY": "PageSpeed Insights mobile + desktop",
+    "GOOGLE_MAPS_API_KEY": "Google Business / Places API",
+    "EMAIL_SMTP_USER": "Hostinger SMTP Absender",
+    "EMAIL_SMTP_PASSWORD": "Hostinger SMTP Passwort",
+    "OUTBOUND_API_SECRET": "Header X-Outbound-Secret für UI-Webhooks",
+    "OUTBOUND_ZOOM_URL": "CTA-Link in E-Mail und PDF",
+    "GOTENBERG_URL": "PDF-Generierung (z. B. http://gotenberg:3000)"
+  },
+  "ui": {
+    "n8nWebhookBase": "Basis-URL ohne trailing slash, z. B. https://n8n.example.com/webhook",
+    "apiSecret": "Gleicher Wert wie OUTBOUND_API_SECRET auf n8n"
+  }
+}

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebWelle Outbound – Vorschau</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <style>
+    .preview-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 16px; }
+    @media (max-width: 900px) { .preview-layout { grid-template-columns: 1fr; } }
+    .offer-list { margin-top: 12px; font-size: 14px; color: var(--muted); }
+    .offer-list li { margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">WebWelle</div>
+      <h1>Vorschau – E-Mail & PDF</h1>
+      <p id="previewMeta">–</p>
+    </header>
+
+    <div id="previewError" class="status err hidden">Keine Vorschau-Daten – bitte aus der Review-UI öffnen.</div>
+
+    <section class="card hidden" id="previewCard">
+      <div class="preview-layout">
+        <div>
+          <label>E-Mail-Vorschau (live)</label>
+          <iframe id="emailPreview" class="preview-frame" title="E-Mail Vorschau" style="min-height:480px;"></iframe>
+        </div>
+        <div>
+          <label>PDF & Angebot</label>
+          <div class="offer-list" id="offerSummary"></div>
+          <div class="actions" style="margin-top:16px;">
+            <button type="button" class="btn btn-secondary" id="btnPdfOpen">PDF öffnen</button>
+            <button type="button" class="btn btn-secondary" id="btnPdfPrint">Druckansicht</button>
+          </div>
+          <p class="readonly-block" id="pdfHint">PDF wird im Browser erzeugt.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="vendor/jspdf.umd.min.js"></script>
+  <script src="config.js"></script>
+  <script src="offer-render.js"></script>
+  <script src="pdf-client.js"></script>
+  <script src="pdf-render.js"></script>
+  <script src="preview.js"></script>
+</body>
+</html>

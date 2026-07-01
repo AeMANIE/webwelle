@@ -1635,6 +1635,14 @@ export async function createTables(): Promise<void> {
     } catch (blogErr) {
       console.warn('⚠️ Blog-Pipeline-Tabellen:', blogErr);
     }
+
+    try {
+      const { ensureOutboundTables } = await import('./outbound-database');
+      await ensureOutboundTables();
+      console.log('✅ Outbound-Prospect-Tabellen überprüft');
+    } catch (outboundErr) {
+      console.warn('⚠️ Outbound-Tabellen:', outboundErr);
+    }
   } finally {
     client.release();
   }

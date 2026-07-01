@@ -10,6 +10,7 @@ import {
   Newspaper,
   Database,
   Search,
+  Megaphone,
 } from 'lucide-react';
 import DashboardShell from '../../components/dashboard/DashboardShell';
 import BookingsTab from '../../components/admin/BookingsTab';
@@ -20,8 +21,9 @@ import BlogJobsTab from '../../components/admin/BlogJobsTab';
 import DatabaseTab from '../../components/admin/DatabaseTab';
 import OffersTab from '../../components/admin/OffersTab';
 import SeoTab from '../../components/admin/SeoTab';
+import MarketingTab from '../../components/admin/MarketingTab';
 
-type TabId = 'bookings' | 'customers' | 'invoices' | 'offers' | 'blog' | 'blog-jobs' | 'seo' | 'database';
+type TabId = 'bookings' | 'customers' | 'invoices' | 'offers' | 'marketing' | 'blog' | 'blog-jobs' | 'seo' | 'database';
 
 const TAB_META: Record<TabId, { title: string; subtitle: string }> = {
   bookings: {
@@ -39,6 +41,10 @@ const TAB_META: Record<TabId, { title: string; subtitle: string }> = {
   offers: {
     title: 'Leads & Angebote',
     subtitle: 'Funnel-Leads, Angebote und DocuSeal-Workflows',
+  },
+  marketing: {
+    title: 'Marketing',
+    subtitle: 'Cold-Outbound: Website analysieren, Angebote versenden, Versandhistorie',
   },
   blog: {
     title: 'Blog-Editor',
@@ -114,6 +120,7 @@ export default function AdminPage() {
       { id: 'customers', label: 'Kunden', icon: <Users className="h-4 w-4" /> },
       { id: 'invoices', label: 'Rechnungen', icon: <FileText className="h-4 w-4" /> },
       { id: 'offers', label: 'Leads & Angebote', icon: <FileText className="h-4 w-4" /> },
+      { id: 'marketing', label: 'Marketing', icon: <Megaphone className="h-4 w-4" /> },
       { id: 'blog', label: 'Blog-Editor', icon: <PenLine className="h-4 w-4" /> },
       { id: 'blog-jobs', label: 'Kunden-Blog', icon: <Newspaper className="h-4 w-4" /> },
       { id: 'seo', label: 'SEO', icon: <Search className="h-4 w-4" /> },
@@ -148,6 +155,7 @@ export default function AdminPage() {
       {activeTab === 'customers' && <CustomersTab />}
       {activeTab === 'invoices' && <InvoicesTab />}
       {activeTab === 'offers' && <OffersTab />}
+      {activeTab === 'marketing' && <MarketingTab />}
       {activeTab === 'blog' && <BlogTab />}
       {activeTab === 'blog-jobs' && <BlogJobsTab />}
       {activeTab === 'seo' && <SeoTab />}

@@ -12,7 +12,8 @@
     "db:restore": "bash scripts/pg-restore.sh",
     "db:ops-health": "tsx scripts/db-ops-health.ts",
     "db:check-tables": "tsx scripts/check-database-tables.ts",
-    "blog:audio": "tsx scripts/generate-blog-audio.ts"
+    "blog:audio": "tsx scripts/generate-blog-audio.ts",
+    "outbound:ui": "node outbound/scripts/serve-ui.mjs"
   },
   "dependencies": {
     "@radix-ui/react-separator": "^1.1.7",

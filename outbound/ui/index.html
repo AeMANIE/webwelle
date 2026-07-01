@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebWelle Outbound – Analyse & Versand</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">WebWelle</div>
+      <h1>Outbound Prospecting</h1>
+      <p>Website analysieren · Angebot prüfen · E-Mail freigeben</p>
+    </header>
+
+    <div id="configWarning" class="status err hidden">
+      Bitte <code>config.js</code> aus <code>config.example.js</code> anlegen und n8n-URL eintragen.
+    </div>
+
+    <!-- Schritt 1: Eingabe -->
+    <section class="card" id="stepInput">
+      <h2>1. Prospect-URL</h2>
+      <label for="websiteUrl">Website-URL *</label>
+      <input id="websiteUrl" type="url" placeholder="https://beispiel-firma.de" />
+
+      <div class="row">
+        <div>
+          <label for="googleMapsUrl">Google-Maps-Link (optional)</label>
+          <input id="googleMapsUrl" type="url" placeholder="https://maps.google.com/..." />
+        </div>
+        <div>
+          <label for="industryHint">Branche (optional)</label>
+          <input id="industryHint" type="text" placeholder="z. B. Elektriker" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="btnAnalyze">Analyse starten</button>
+      </div>
+      <div id="analyzeStatus" class="status info hidden"></div>
+    </section>
+
+    <!-- Schritt 2: Review -->
+    <section class="card hidden" id="stepReview">
+      <h2>2. Prüfen & korrigieren</h2>
+      <p>Prospect-ID: <span class="pill" id="prospectIdLabel">–</span> · Status: <span id="statusLabel">–</span></p>
+
+      <div class="row">
+        <div>
+          <label for="companyName">Firma</label>
+          <input id="companyName" type="text" />
+          <label for="managingDirector">Geschäftsführer</label>
+          <input id="managingDirector" type="text" />
+          <label for="preferredEmail">E-Mail Empfänger *</label>
+          <input id="preferredEmail" type="email" />
+        </div>
+        <div>
+          <label for="gbpScore">Google-Profil Vollständigkeit (%)</label>
+          <input id="gbpScore" type="number" min="0" max="100" />
+          <label for="gbpMapsUrl">Google Maps URL</label>
+          <input id="gbpMapsUrl" type="url" />
+          <div class="readonly-block" id="gbpBlock"></div>
+          <div class="readonly-block" id="techBlock"></div>
+          <div class="readonly-block" id="perfBlock"></div>
+        </div>
+      </div>
+
+      <label for="painPoints">Pain Points (eine pro Zeile)</label>
+      <textarea id="painPoints" rows="4"></textarea>
+
+      <label for="emailSubject">Betreff</label>
+      <input id="emailSubject" type="text" />
+
+      <label for="emailGreeting">Anrede</label>
+      <input id="emailGreeting" type="text" />
+
+      <label>Hauptangebot</label>
+      <select id="primaryOffer">
+        <option value="starterwelle">StarterWelle (699 € / 24 Monate)</option>
+        <option value="dwa">Digitale Wachstumsarchitektur</option>
+        <option value="executive_ki">Executive KI-Systeme</option>
+      </select>
+
+      <div class="checks">
+        <strong style="color:var(--muted);font-size:13px;">Als Alternative erwähnen</strong>
+        <label><input type="checkbox" id="altDwa" /> Digitale Wachstumsarchitektur</label>
+        <label><input type="checkbox" id="altExecutive" /> Executive KI-Systeme</label>
+        <strong style="color:var(--muted);font-size:13px;margin-top:8px;">Upsells</strong>
+        <label><input type="checkbox" id="upSeo" /> SEO Profi (299 €)</label>
+        <label><input type="checkbox" id="upBlog" /> 10 Blog-Artikel (499 €)</label>
+        <label><input type="checkbox" id="upGmb" /> Google My Business Komplett (499 €)</label>
+      </div>
+
+      <div class="preview-grid" style="margin-top:20px;">
+        <div>
+          <label>E-Mail-Vorschau</label>
+          <iframe id="emailPreview" class="preview-frame" title="E-Mail Vorschau"></iframe>
+        </div>
+        <div>
+          <label>PDF</label>
+          <div class="actions">
+            <button type="button" class="btn btn-secondary" id="btnPreviewOpen">Vorschau öffnen</button>
+            <button type="button" class="btn btn-secondary" id="btnPdfOpen">PDF öffnen</button>
+            <button type="button" class="btn btn-secondary" id="btnPdfPrint">Druckansicht</button>
+          </div>
+          <p class="readonly-block" id="pdfHint">PDF wird im Browser erzeugt – kein Gotenberg nötig.</p>
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top:24px;">
+        <button type="button" class="btn btn-secondary" id="btnSave">Entwurf speichern</button>
+        <button type="button" class="btn btn-success" id="btnSend">Freigeben & senden</button>
+      </div>
+      <div id="reviewStatus" class="status hidden"></div>
+    </section>
+  </div>
+
+  <script src="vendor/jspdf.umd.min.js"></script>
+  <script src="config.js"></script>
+  <script src="offer-render.js"></script>
+  <script src="pdf-client.js"></script>
+  <script src="pdf-render.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

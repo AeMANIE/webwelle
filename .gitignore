@@ -21,3 +21,7 @@ backups/
 public/blog-audio/.tmp/
 public/blog-audio/**/*.part.mp3
 .blog-audio-cache/
+
+# Outbound Prospecting – nur lokale Secrets
+outbound/ui/config.js
+outbound/.env

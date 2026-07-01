@@ -1,0 +1,81 @@
+{
+  "sender": {
+    "name": "Herr Manie",
+    "company": "AeManie GmbH",
+    "website": "webwelle.com",
+    "signature": "Herr Manie, AeManie GmbH, webwelle.com"
+  },
+  "products": [
+    {
+      "id": "starterwelle",
+      "name": "StarterWelle",
+      "priceLabel": "699 € netto / 24 Monate",
+      "priceCents": 69900,
+      "role": "primary",
+      "features": [
+        "Individuell gestaltete Onepage-Website",
+        "Header, Footer und 3 Inhaltsbereiche",
+        "Optional Kontaktformular",
+        "3 individuelle KI-Bilder",
+        "SEO-Grundlage",
+        "Impressum, Datenschutz, Cookie-Banner",
+        "Hosting, Wartung, Domain und Backups"
+      ],
+      "benefit": "Professioneller React-Auftritt ohne Baukasten-Kompromisse – planbar und klar kalkuliert."
+    },
+    {
+      "id": "dwa",
+      "name": "Digitale Wachstumsarchitektur",
+      "priceLabel": "individuelles Angebot",
+      "role": "alternative",
+      "benefit": "Für Unternehmen, die über eine Onepage hinaus Funnels, Portale und Automatisierung brauchen."
+    },
+    {
+      "id": "executive_ki",
+      "name": "Executive KI-Systeme",
+      "priceLabel": "individuelles Angebot",
+      "role": "alternative",
+      "benefit": "KI-gestützte Vorbereitung von Kommunikation, Angeboten und Entscheidungsunterlagen auf C-Level."
+    },
+    {
+      "id": "seo_profi",
+      "name": "SEO Profi Zusatzpaket",
+      "priceLabel": "299 € netto",
+      "priceCents": 29900,
+      "role": "upsell",
+      "benefit": "Keyword-Strategie, OnPage-Optimierung und laufendes Monitoring für mehr Google-Sichtbarkeit."
+    },
+    {
+      "id": "blog_bundle_10",
+      "name": "10 Blog-Artikel Paket",
+      "priceLabel": "499 € netto",
+      "priceCents": 49900,
+      "role": "upsell",
+      "benefit": "SEO-optimierte Fachartikel für dauerhaft mehr organischen Traffic."
+    },
+    {
+      "id": "gmb_komplett",
+      "name": "Google My Business Komplettservice",
+      "priceLabel": "499 € netto einmalig",
+      "priceCents": 49900,
+      "role": "upsell",
+      "benefit": "3 KI-Fotos, 3 optimierte Google-Posts, Produkte einpflegen, Buchungen aktivieren."
+    },
+    {
+      "id": "branding",
+      "name": "Branding & Logo",
+      "priceLabel": "199 € netto",
+      "priceCents": 19900,
+      "role": "upsell",
+      "benefit": "4 Logo-Entwürfe zur Auswahl für einen professionellen ersten Eindruck."
+    },
+    {
+      "id": "animation",
+      "name": "Animationspaket",
+      "priceLabel": "999 € netto",
+      "priceCents": 99900,
+      "role": "upsell",
+      "benefit": "Scroll-Animationen und Übergänge für mehr Wirkung ohne Ladezeit-Einbußen."
+    }
+  ]
+}
