@@ -10,7 +10,12 @@ function storeApi() {
   return {
     get(id) { return store.prospects[id] || null; },
     save(id, data) {
-      store.prospects[id] = { ...data, updatedAt: new Date().toISOString() };
+      const { pdfBase64, ...rest } = data || {};
+      if (rest.email?.html) {
+        const { html, ...emailRest } = rest.email;
+        rest.email = emailRest;
+      }
+      store.prospects[id] = { ...rest, updatedAt: new Date().toISOString() };
       return store.prospects[id];
     },
   };
@@ -292,11 +297,19 @@ async function placeDetailsLegacy(placeId, key) {
   } catch { return null; }
 }
 
+function formatRating(rating) {
+  const n = Number(rating);
+  if (!Number.isFinite(n)) return '';
+  return n.toFixed(1).replace('.', ',');
+}
+
 function buildGbpGaps(details) {
   const gaps = [];
-  if (!details.rating) gaps.push('Keine sichtbaren Google-Bewertungen');
+  const ratingNum = Number(details.rating);
+  const hasRating = Number.isFinite(ratingNum) && ratingNum > 0;
+  if (!hasRating) gaps.push('Keine sichtbaren Google-Bewertungen');
   else if ((details.user_ratings_total || 0) < 10) {
-    gaps.push(`Nur ${details.user_ratings_total} Google-Bewertung(en) – bei Ø ${details.rating?.toFixed(1).replace('.', ',')} ausbaufähig`);
+    gaps.push(`Nur ${details.user_ratings_total} Google-Bewertung(en) – bei Ø ${formatRating(ratingNum)} ausbaufähig`);
   }
   if (!details.opening_hours?.weekday_text?.length) gaps.push('Öffnungszeiten fehlen oder unvollständig');
   if (!(details.photos || []).length) gaps.push('Keine oder wenige Fotos im Profil');
@@ -373,9 +386,9 @@ async function gbpEnrich({ domain, companyName, city, postalCode, street, phones
   if (!details) return { ...notFound, searchAttempts };
 
   const websiteUri = details.website || '';
-  const websiteMatchesDomain = websiteUri ? normGbpToken(websiteUri).includes(normGbpToken(domain)) : false;
+  const domainWebsiteMatch = websiteUri ? normGbpToken(websiteUri).includes(normGbpToken(domain)) : false;
   const gaps = buildGbpGaps(details);
-  if (websiteUri && !websiteMatchesDomain) {
+  if (websiteUri && !domainWebsiteMatch) {
     gaps.unshift('Google-Profil verlinkt nicht eindeutig auf die analysierte Website');
   }
   if ((details.user_ratings_total || 0) < 5) {
@@ -392,12 +405,12 @@ async function gbpEnrich({ domain, companyName, city, postalCode, street, phones
     address: details.formatted_address || '',
     phone: details.formatted_phone_number || '',
     mapsUrl: details.url || googleMapsUrl || '',
-    rating: details.rating ?? null,
+    rating: Number.isFinite(Number(details.rating)) ? Number(details.rating) : null,
     reviewCount: details.user_ratings_total || 0,
     categories: details.types || [],
     websiteUri,
-    websiteMatchesDomain,
-    completenessScore: gbpCompleteness(details, websiteMatchesDomain),
+    websiteMatchesDomain: domainWebsiteMatch,
+    completenessScore: gbpCompleteness(details, domainWebsiteMatch),
     gaps,
     hoursSet: hours.length > 0,
     openingHours: hours.slice(0, 7),
@@ -572,6 +585,7 @@ ${n8nOfferPdfBlock(p)}
 }
 
 // --- Main ---
+try {
 const rawItem = items[0].json;
 const body = rawItem.body && typeof rawItem.body === 'object' ? rawItem.body : rawItem;
 const websiteUrl = normalizeUrl(body.websiteUrl);
@@ -655,8 +669,7 @@ const benefits = composed.benefits || [
   'SEO- und Google-Grundlage für mehr lokale Sichtbarkeit',
 ];
 
-let pdfBase64 = '';
-const gotenberg = ($env.GOTENBERG_URL || '').replace(/\/$/, '');
+// PDF wird im WebWelle-Admin serverseitig erzeugt – spart n8n-Speicher und Laufzeit.
 const prospectDraft = {
   id: prospectId, websiteUrl, domain, status: 'draft',
   company, contacts, technology, seo, performance, conversion, legal, googleBusiness,
@@ -670,20 +683,9 @@ const prospectDraft = {
   sentAt: null,
 };
 prospectDraft.email.html = renderEmailHtml(prospectDraft);
-
-if (gotenberg) {
-  try {
-    const pdfHtml = renderPdfHtml(prospectDraft);
-    const pdfBuf = await httpRequest({
-      method: 'POST', url: `${gotenberg}/forms/chromium/convert/html`,
-      headers: { 'Content-Type': 'multipart/form-data' },
-      formData: { files: { value: Buffer.from(pdfHtml), options: { filename: 'index.html', contentType: 'text/html' } } },
-      encoding: 'arraybuffer', timeout: 120000,
-    });
-    pdfBase64 = Buffer.from(pdfBuf).toString('base64');
-  } catch { /* PDF optional */ }
-}
-prospectDraft.pdfBase64 = pdfBase64;
 store.save(prospectId, prospectDraft);
 
 return [{ json: { ok: true, prospectId, status: 'draft', domain, preferredEmail: contacts.preferredEmail } }];
+} catch (err) {
+  throw new Error(`Outbound-Analyse fehlgeschlagen: ${err?.message || err}`);
+}
