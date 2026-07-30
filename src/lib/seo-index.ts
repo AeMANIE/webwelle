@@ -37,6 +37,10 @@ export const INDEXED_STATIC_ROUTES: Array<{
   { path: '/mehrwertsteuer', priority: 0.8, changeFrequency: 'monthly' },
 ];
 
+// Nur echte private/nicht-öffentliche Bereiche blockieren.
+// WICHTIG: Seiten mit noindex-Meta-Tag (Rechtseiten, Buchungsseiten)
+// dürfen NICHT hier blockiert werden, da Google sonst den noindex-Tag
+// nicht lesen kann ("Durch robots.txt blockiert" statt "Durch noindex ausgeschlossen").
 const ROBOTS_DISALLOW_PREFIXES = [
   '/admin/',
   '/api/',
@@ -49,14 +53,9 @@ const ROBOTS_DISALLOW_PREFIXES = [
   '/canva/',
   '/canvamausinteraktiv/',
   '/ai-voice',
-  '/buchung/',
   '/funnel',
   '/funnel-dw/',
   '/register',
-  '/impressum',
-  '/datenschutz',
-  '/agb',
-  '/widerruf',
   '/analyse/',
   '/blog/pageinsight',
 ];
@@ -93,21 +92,16 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
 }
 
 export async function buildRobotsRules(): Promise<MetadataRoute.Robots> {
-  const blogPosts = await getIndexedBlogSlugs();
-  const allow = [
-    '/$',
-    '/leistungen$',
-    '/app-entwicklung$',
-    '/blog$',
-    '/mehrwertsteuer$',
-    ...blogPosts.map((post) => `/blog/${post.slug}$`),
-  ];
-
+  // Strategie: Alles crawlen lassen (Default = erlaubt).
+  // Nur echte private/technische Bereiche blockieren (siehe ROBOTS_DISALLOW_PREFIXES).
+  // Seiten mit noindex-Meta-Tag (Rechtseiten, Buchungsseiten) bleiben für den Crawler
+  // erreichbar, damit Google den noindex-Tag lesen kann – das verhindert den Fehler
+  // "Durch robots.txt-Datei blockiert" in der Search Console.
   return {
     rules: {
       userAgent: '*',
-      allow,
-      disallow: ['/', ...ROBOTS_DISALLOW_PREFIXES],
+      allow: '/',
+      disallow: ROBOTS_DISALLOW_PREFIXES,
     },
     sitemap: `${BASE_URL}/sitemap.xml`,
   };

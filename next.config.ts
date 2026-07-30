@@ -122,6 +122,29 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // X-Robots-Tag: noindex für Rechtseiten und Buchungsseiten.
+      // Server-Level Schutz (zusätzlich zum noindex Meta-Tag) – die stärkste Methode,
+      // damit Google diese Seiten garantiert NICHT indexiert.
+      {
+        source: '/agb',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+      {
+        source: '/widerruf',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+      {
+        source: '/impressum',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+      {
+        source: '/datenschutz',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+      {
+        source: '/buchung/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
       // CSS-Dateien in chunks mit korrektem MIME-Type (MUSS VOR JS-Header stehen!)
       {
         source: '/_next/static/chunks/(.*)\\.css',
